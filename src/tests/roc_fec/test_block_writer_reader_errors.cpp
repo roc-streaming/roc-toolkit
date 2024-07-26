@@ -157,13 +157,12 @@ TEST(block_writer_reader_errors, writer_cant_resize_block) {
 
     size_t sn = 0;
 
-    CHECK(writer.resize(NumSourcePackets, BlockSize1));
+    LONGS_EQUAL(status::StatusOK, writer.resize(NumSourcePackets, BlockSize1));
 
     for (size_t i = 0; i < NumSourcePackets; ++i) {
         LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(sn++)));
     }
 
-    CHECK(writer.is_alive());
     UNSIGNED_LONGS_EQUAL(NumSourcePackets, dispatcher.source_size());
     UNSIGNED_LONGS_EQUAL(BlockSize1, dispatcher.repair_size());
 
@@ -172,15 +171,8 @@ TEST(block_writer_reader_errors, writer_cant_resize_block) {
 
     mock_arena.set_fail(true);
 
-    CHECK(writer.resize(NumSourcePackets, BlockSize2));
-
-    for (size_t i = 0; i < NumSourcePackets; ++i) {
-        const status::StatusCode expected_status =
-            (i == 0) ? status::StatusNoMem : status::StatusAbort;
-        LONGS_EQUAL(expected_status, writer.write(generate_packet(sn++)));
-
-        CHECK(!writer.is_alive());
-    }
+    LONGS_EQUAL(status::StatusOK, writer.resize(NumSourcePackets, BlockSize2));
+    LONGS_EQUAL(status::StatusNoMem, writer.write(generate_packet(sn++)));
 
     UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
     UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
@@ -210,26 +202,18 @@ TEST(block_writer_reader_errors, writer_cant_encode_packet) {
 
     size_t sn = 0;
 
-    CHECK(writer.resize(BlockSize1, NumRepairPackets));
+    LONGS_EQUAL(status::StatusOK, writer.resize(BlockSize1, NumRepairPackets));
 
     for (size_t i = 0; i < BlockSize1; ++i) {
         LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(sn++)));
     }
 
-    CHECK(writer.is_alive());
     UNSIGNED_LONGS_EQUAL(BlockSize1, dispatcher.source_size());
     UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
 
     mock_arena.set_fail(true);
-    CHECK(writer.resize(BlockSize2, NumRepairPackets));
-
-    for (size_t i = 0; i < BlockSize2; ++i) {
-        const status::StatusCode expected_status =
-            (i == 0) ? status::StatusNoMem : status::StatusAbort;
-        LONGS_EQUAL(expected_status, writer.write(generate_packet(sn++)));
-
-        CHECK(!writer.is_alive());
-    }
+    LONGS_EQUAL(status::StatusOK, writer.resize(BlockSize2, NumRepairPackets));
+    LONGS_EQUAL(status::StatusNoMem, writer.write(generate_packet(sn++)));
 
     UNSIGNED_LONGS_EQUAL(BlockSize1, dispatcher.source_size());
     UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
@@ -271,7 +255,7 @@ TEST(block_writer_reader_errors, reader_cant_resize_block) {
     size_t sn = 0;
 
     // write first block
-    CHECK(writer.resize(BlockSize1, NumRepairPackets));
+    LONGS_EQUAL(status::StatusOK, writer.resize(BlockSize1, NumRepairPackets));
     for (size_t i = 0; i < BlockSize1; ++i) {
         LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(sn++)));
     }
@@ -289,7 +273,7 @@ TEST(block_writer_reader_errors, reader_cant_resize_block) {
     }
 
     // write second block
-    CHECK(writer.resize(BlockSize2, NumRepairPackets));
+    LONGS_EQUAL(status::StatusOK, writer.resize(BlockSize2, NumRepairPackets));
     for (size_t i = 0; i < BlockSize2; ++i) {
         LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(sn++)));
     }
@@ -303,9 +287,8 @@ TEST(block_writer_reader_errors, reader_cant_resize_block) {
     // reader should get an error from arena when trying
     // to resize the block and shut down
     packet::PacketPtr pp;
-    LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
+    LONGS_EQUAL(status::StatusNoMem, reader.read(pp, packet::ModeFetch));
     CHECK(!pp);
-    CHECK(!reader.is_alive());
 }
 
 TEST(block_writer_reader_errors, reader_cant_decode_packet) {
@@ -343,7 +326,7 @@ TEST(block_writer_reader_errors, reader_cant_decode_packet) {
     size_t sn = 0;
 
     // write first block
-    CHECK(writer.resize(BlockSize1, NumRepairPackets));
+    LONGS_EQUAL(status::StatusOK, writer.resize(BlockSize1, NumRepairPackets));
     for (size_t i = 0; i < BlockSize1; ++i) {
         LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(sn++)));
     }
@@ -365,7 +348,7 @@ TEST(block_writer_reader_errors, reader_cant_decode_packet) {
     dispatcher.lose(10);
 
     // write second block
-    CHECK(writer.resize(BlockSize2, NumRepairPackets));
+    LONGS_EQUAL(status::StatusOK, writer.resize(BlockSize2, NumRepairPackets));
     for (size_t i = 0; i < BlockSize2; ++i) {
         LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(sn++)));
     }
@@ -390,10 +373,6 @@ TEST(block_writer_reader_errors, reader_cant_decode_packet) {
     packet::PacketPtr pp;
     LONGS_EQUAL(status::StatusNoMem, reader.read(pp, packet::ModeFetch));
     CHECK(!pp);
-    CHECK(!reader.is_alive());
-
-    // reader should get an abort error if it is not alive
-    LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
 }
 
 TEST(block_writer_reader_errors, reader_cant_read_source_packet) {

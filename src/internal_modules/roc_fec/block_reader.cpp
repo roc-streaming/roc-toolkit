@@ -32,7 +32,6 @@ BlockReader::BlockReader(const BlockReaderConfig& config,
     , repair_queue_(0)
     , source_block_(arena)
     , repair_block_(arena)
-    , alive_(true)
     , started_(false)
     , can_repair_(false)
     , head_index_(0)
@@ -61,10 +60,6 @@ bool BlockReader::is_started() const {
     return started_;
 }
 
-bool BlockReader::is_alive() const {
-    return alive_;
-}
-
 packet::stream_timestamp_t BlockReader::max_block_duration() const {
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -74,20 +69,28 @@ packet::stream_timestamp_t BlockReader::max_block_duration() const {
 status::StatusCode BlockReader::read(packet::PacketPtr& pp, packet::PacketReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (!alive_) {
-        return status::StatusAbort;
-    }
+    status::StatusCode code = status::NoStatus;
 
-    const status::StatusCode code = read_(pp, mode);
-
-    if (code != status::StatusOK && code != status::StatusDrain) {
-        pp = NULL;
+    // Greedily fetch packets from underlying readers to queues.
+    if ((code = fetch_all_packets_()) != status::StatusOK) {
+        roc_panic_if(code == status::StatusDrain);
         return code;
     }
 
-    if (!alive_) {
-        pp = NULL;
-        return status::StatusAbort;
+    // Try starting until we get first eligible packet.
+    if (!started_) {
+        if ((code = try_start_()) != status::StatusOK) {
+            roc_panic_if(code == status::StatusDrain);
+            return code;
+        }
+    }
+
+    if (!started_) {
+        // Until started, just forward all source packets.
+        code = source_queue_.read(pp, mode);
+    } else {
+        // Normal read.
+        code = get_next_packet_(pp, mode);
     }
 
     if (code == status::StatusOK && mode == packet::ModeFetch) {
@@ -95,49 +98,44 @@ status::StatusCode BlockReader::read(packet::PacketPtr& pp, packet::PacketReadMo
     }
     return code;
 }
-status::StatusCode BlockReader::read_(packet::PacketPtr& pp,
-                                      packet::PacketReadMode mode) {
-    const status::StatusCode code = fetch_all_packets_();
-    if (code != status::StatusOK) {
-        return code;
-    }
 
-    if (!started_) {
-        started_ = try_start_();
-    }
-
-    if (!started_) {
-        // Until started, just forward all source packets.
-        return source_queue_.read(pp, mode);
-    }
-
-    return get_next_packet_(pp, mode);
-}
-
-bool BlockReader::try_start_() {
+status::StatusCode BlockReader::try_start_() {
     packet::PacketPtr pp = source_queue_.head();
     if (!pp) {
-        return false;
+        return status::StatusOK;
     }
 
     const packet::FEC& fec = *pp->fec();
 
-    if (!process_source_packet_(pp)) {
+    const status::StatusCode code = process_source_packet_(pp);
+    if (code == status::StatusBadPacket) {
+        // Wait until we receive a valid packet.
         roc_log(LogTrace,
-                "fec block reader: dropping leading source packet:"
+                "fec block reader: skipping leading source packet:"
                 " esi=%lu sblen=%lu blen=%lu payload_size=%lu",
                 (unsigned long)fec.encoding_symbol_id,
                 (unsigned long)fec.source_block_length, (unsigned long)fec.block_length,
                 (unsigned long)fec.payload.size());
-        return false;
+        return status::StatusOK;
+    }
+    if (code != status::StatusOK) {
+        // Unexpected failure, aborting.
+        return code;
     }
 
     cur_sbn_ = fec.source_block_number;
     drop_repair_packets_from_prev_blocks_();
 
-    if (pp->fec()->encoding_symbol_id > 0) {
-        // Wait until we receive first packet in block (ESI=0), see also gh-186.
-        return false;
+    if (fec.encoding_symbol_id > 0) {
+        // Wait until we receive first packet in block (ESI=0).
+        // See also gh-186.
+        roc_log(LogTrace,
+                "fec block reader: skipping leading source packet:"
+                " esi=%lu sblen=%lu blen=%lu payload_size=%lu",
+                (unsigned long)fec.encoding_symbol_id,
+                (unsigned long)fec.source_block_length, (unsigned long)fec.block_length,
+                (unsigned long)fec.payload.size());
+        return status::StatusOK;
     }
 
     roc_log(LogDebug,
@@ -147,26 +145,30 @@ bool BlockReader::try_start_() {
 
     started_ = true;
 
-    return true;
+    return status::StatusOK;
 }
 
 status::StatusCode BlockReader::get_next_packet_(packet::PacketPtr& result_pkt,
                                                  packet::PacketReadMode mode) {
-    fill_block_();
+    const status::StatusCode code = fill_block_();
+    if (code != status::StatusOK) {
+        roc_panic_if(code == status::StatusDrain);
+        return code;
+    }
 
     packet::PacketPtr pkt = source_block_[head_index_];
 
-    while (alive_) {
+    for (;;) {
         size_t next_index = 0;
 
         if (pkt) {
             next_index = head_index_ + 1;
         } else {
-            // try repairing as much as possible and store in block
-            const status::StatusCode status_code = try_repair_();
-            if (status_code != status::StatusOK) {
-                roc_panic_if(status_code == status::StatusDrain);
-                return status_code;
+            // Try repairing as much as possible and store in block.
+            const status::StatusCode code = try_repair_();
+            if (code != status::StatusOK) {
+                roc_panic_if(code == status::StatusDrain);
+                return code;
             }
 
             // Find first present packet in block, starting from head.
@@ -195,7 +197,11 @@ status::StatusCode BlockReader::get_next_packet_(packet::PacketPtr& result_pkt,
         // Switch to next packet and maybe next block.
         head_index_ = next_index;
         if (head_index_ == source_block_.size()) {
-            next_block_();
+            const status::StatusCode code = next_block_();
+            if (code != status::StatusOK) {
+                roc_panic_if(code == status::StatusDrain);
+                return code;
+            }
         }
 
         if (pkt) { // Found packet.
@@ -207,7 +213,7 @@ status::StatusCode BlockReader::get_next_packet_(packet::PacketPtr& result_pkt,
     return pkt ? status::StatusOK : status::StatusDrain;
 }
 
-void BlockReader::next_block_() {
+status::StatusCode BlockReader::next_block_() {
     roc_log(LogTrace, "fec block reader: next block: sbn=%lu", (unsigned long)cur_sbn_);
 
     if (source_block_[0]) {
@@ -233,29 +239,28 @@ void BlockReader::next_block_() {
 
     can_repair_ = false;
 
-    fill_block_();
-}
-
-bool BlockReader::is_block_resized_() const {
-    return source_block_resized_ && repair_block_resized_ && payload_resized_;
+    return fill_block_();
 }
 
 status::StatusCode BlockReader::try_repair_() {
-    if (!can_repair_ || !is_block_resized_()) {
+    const bool is_block_resized =
+        source_block_resized_ && repair_block_resized_ && payload_resized_;
+
+    if (!can_repair_ || !is_block_resized) {
+        // Can't do anything right now.
         return status::StatusOK;
     }
 
-    const status::StatusCode status_code = block_decoder_.begin_block(
+    const status::StatusCode code = block_decoder_.begin_block(
         source_block_.size(), repair_block_.size(), payload_size_);
 
-    if (status_code != status::StatusOK) {
-        roc_log(LogDebug,
-                "fec block reader: can't begin decoder block, shutting down:"
+    if (code != status::StatusOK) {
+        roc_log(LogError,
+                "fec block reader: can't begin decoder block:"
                 " sbl=%lu rbl=%lu payload_size=%lu",
                 (unsigned long)source_block_.size(), (unsigned long)repair_block_.size(),
                 (unsigned long)payload_size_);
-        alive_ = false;
-        return status_code;
+        return code;
     }
 
     for (size_t n = 0; n < source_block_.size(); n++) {
@@ -283,36 +288,44 @@ status::StatusCode BlockReader::try_repair_() {
             continue;
         }
 
-        packet::PacketPtr pp = parse_repaired_packet_(buffer);
-        if (!pp) {
+        packet::PacketPtr packet;
+        const status::StatusCode code = parse_repaired_packet_(buffer, packet);
+        if (code == status::StatusBadPacket) {
             continue;
         }
+        if (code != status::StatusOK) {
+            return code;
+        }
 
-        source_block_[n] = pp;
+        source_block_[n] = packet;
     }
 
     block_decoder_.end_block();
     can_repair_ = false;
+
     return status::StatusOK;
 }
 
-packet::PacketPtr
-BlockReader::parse_repaired_packet_(const core::Slice<uint8_t>& buffer) {
+status::StatusCode BlockReader::parse_repaired_packet_(const core::Slice<uint8_t>& buffer,
+                                                       packet::PacketPtr& result_packet) {
     packet::PacketPtr pp = packet_factory_.new_packet();
     if (!pp) {
         roc_log(LogError, "fec block reader: can't allocate packet");
-        return NULL;
+        return status::StatusNoMem;
     }
 
     if (!parser_.parse(*pp, buffer)) {
         roc_log(LogDebug, "fec block reader: can't parse repaired packet");
-        return NULL;
+        // Upper code expects StatusBadPacket in this case.
+        return status::StatusBadPacket;
     }
 
     pp->set_buffer(buffer);
     pp->add_flags(packet::Packet::FlagRestored);
 
-    return pp;
+    result_packet = pp;
+
+    return status::StatusOK;
 }
 
 status::StatusCode BlockReader::fetch_all_packets_() {
@@ -335,18 +348,20 @@ status::StatusCode BlockReader::fetch_packets_(packet::IReader& reader,
         packet::PacketPtr pp;
 
         status::StatusCode code = reader.read(pp, packet::ModeFetch);
+        if (code == status::StatusDrain) {
+            // Fine, no more packets right now.
+            break;
+        }
         if (code != status::StatusOK) {
-            if (code == status::StatusDrain) {
-                break;
-            }
             return code;
         }
 
         if (!validate_fec_packet_(pp)) {
-            break;
+            return status::StatusAbort;
         }
 
-        if ((code = writer.write(pp)) != status::StatusOK) {
+        code = writer.write(pp);
+        if (code != status::StatusOK) {
             return code;
         }
     }
@@ -354,12 +369,21 @@ status::StatusCode BlockReader::fetch_packets_(packet::IReader& reader,
     return status::StatusOK;
 }
 
-void BlockReader::fill_block_() {
-    fill_source_block_();
-    fill_repair_block_();
+status::StatusCode BlockReader::fill_block_() {
+    status::StatusCode code = status::NoStatus;
+
+    if ((code = fill_source_block_()) != status::StatusOK) {
+        return code;
+    }
+
+    if ((code = fill_repair_block_()) != status::StatusOK) {
+        return code;
+    }
+
+    return status::StatusOK;
 }
 
-void BlockReader::fill_source_block_() {
+status::StatusCode BlockReader::fill_source_block_() {
     unsigned n_fetched = 0, n_added = 0, n_dropped = 0;
 
     for (;;) {
@@ -369,7 +393,7 @@ void BlockReader::fill_source_block_() {
         }
 
         if (!validate_sbn_sequence_(pp)) {
-            break;
+            return status::StatusAbort;
         }
 
         const packet::FEC& fec = *pp->fec();
@@ -379,7 +403,7 @@ void BlockReader::fill_source_block_() {
         }
 
         packet::PacketPtr p;
-        const status::StatusCode code = source_queue_.read(p, packet::ModeFetch);
+        status::StatusCode code = source_queue_.read(p, packet::ModeFetch);
         roc_panic_if_msg(code != status::StatusOK,
                          "failed to read source packet: status=%s",
                          status::code_to_str(code));
@@ -398,7 +422,8 @@ void BlockReader::fill_source_block_() {
         // Should not happen: we have handled preceding and following blocks above.
         roc_panic_if_not(fec.source_block_number == cur_sbn_);
 
-        if (!process_source_packet_(pp)) {
+        code = process_source_packet_(pp);
+        if (code == status::StatusBadPacket) {
             roc_log(LogTrace,
                     "fec block reader: dropping source packet from current block:"
                     " esi=%lu sblen=%lu blen=%lu payload_size=%lu",
@@ -407,6 +432,10 @@ void BlockReader::fill_source_block_() {
                     (unsigned long)fec.block_length, (unsigned long)fec.payload.size());
             n_dropped++;
             continue;
+        }
+        if (code != status::StatusOK) {
+            // Unexpected failure, aborting.
+            return code;
         }
 
         // Should not happen: we have handled validation and block size above.
@@ -427,9 +456,11 @@ void BlockReader::fill_source_block_() {
                 "fec block reader: source queue: fetched=%u added=%u dropped=%u",
                 n_fetched, n_added, n_dropped);
     }
+
+    return status::StatusOK;
 }
 
-void BlockReader::fill_repair_block_() {
+status::StatusCode BlockReader::fill_repair_block_() {
     unsigned n_fetched = 0, n_added = 0, n_dropped = 0;
 
     for (;;) {
@@ -439,7 +470,7 @@ void BlockReader::fill_repair_block_() {
         }
 
         if (!validate_sbn_sequence_(pp)) {
-            break;
+            return status::StatusAbort;
         }
 
         const packet::FEC& fec = *pp->fec();
@@ -449,7 +480,7 @@ void BlockReader::fill_repair_block_() {
         }
 
         packet::PacketPtr p;
-        const status::StatusCode code = repair_queue_.read(p, packet::ModeFetch);
+        status::StatusCode code = repair_queue_.read(p, packet::ModeFetch);
         roc_panic_if_msg(code != status::StatusOK,
                          "failed to read repair packet: status=%s",
                          status::code_to_str(code));
@@ -467,7 +498,8 @@ void BlockReader::fill_repair_block_() {
         // Should not happen: we have handled preceding and following blocks above.
         roc_panic_if(fec.source_block_number != cur_sbn_);
 
-        if (!process_repair_packet_(pp)) {
+        code = process_repair_packet_(pp);
+        if (code == status::StatusBadPacket) {
             roc_log(LogTrace,
                     "fec block reader: dropping repair packet from current block:"
                     " esi=%lu sblen=%lu blen=%lu payload_size=%lu",
@@ -476,6 +508,10 @@ void BlockReader::fill_repair_block_() {
                     (unsigned long)fec.block_length, (unsigned long)fec.payload.size());
             n_dropped++;
             continue;
+        }
+        if (code != status::StatusOK) {
+            // Unexpected failure, aborting.
+            return code;
         }
 
         // Should not happen: we have handled validation and block size above.
@@ -498,82 +534,86 @@ void BlockReader::fill_repair_block_() {
                 "fec block reader: repair queue: fetched=%u added=%u dropped=%u",
                 n_fetched, n_added, n_dropped);
     }
+
+    return status::StatusOK;
 }
 
-bool BlockReader::process_source_packet_(const packet::PacketPtr& pp) {
+status::StatusCode BlockReader::process_source_packet_(const packet::PacketPtr& pp) {
+    status::StatusCode code = status::NoStatus;
+
     const packet::FEC& fec = *pp->fec();
 
     if (!validate_incoming_source_packet_(pp)) {
-        return false;
+        return status::StatusBadPacket;
     }
 
     if (!can_update_payload_size_(fec.payload.size())) {
-        return false;
+        return status::StatusBadPacket;
     }
 
     if (!can_update_source_block_size_(fec.source_block_length)) {
-        return false;
+        return status::StatusBadPacket;
     }
 
-    if (!update_payload_size_(fec.payload.size())) {
-        return false;
+    if ((code = update_payload_size_(fec.payload.size())) != status::StatusOK) {
+        return code;
     }
 
-    if (!update_source_block_size_(fec.source_block_length)) {
-        return false;
+    if ((code = update_source_block_size_(fec.source_block_length)) != status::StatusOK) {
+        return code;
     }
 
-    return true;
+    return status::StatusOK;
 }
 
-bool BlockReader::process_repair_packet_(const packet::PacketPtr& pp) {
+status::StatusCode BlockReader::process_repair_packet_(const packet::PacketPtr& pp) {
+    status::StatusCode code = status::NoStatus;
+
     const packet::FEC& fec = *pp->fec();
 
     if (!validate_incoming_repair_packet_(pp)) {
-        return false;
+        return status::StatusBadPacket;
     }
 
     if (!can_update_payload_size_(fec.payload.size())) {
-        return false;
+        return status::StatusBadPacket;
     }
 
     if (!can_update_source_block_size_(fec.source_block_length)) {
-        return false;
+        return status::StatusBadPacket;
     }
 
     if (!can_update_repair_block_size_(fec.block_length)) {
-        return false;
+        return status::StatusBadPacket;
     }
 
-    if (!update_payload_size_(fec.payload.size())) {
-        return false;
+    if ((code = update_payload_size_(fec.payload.size())) != status::StatusOK) {
+        return code;
     }
 
-    if (!update_source_block_size_(fec.source_block_length)) {
-        return false;
+    if ((code = update_source_block_size_(fec.source_block_length)) != status::StatusOK) {
+        return code;
     }
 
-    if (!update_repair_block_size_(fec.block_length)) {
-        return false;
+    if ((code = update_repair_block_size_(fec.block_length)) != status::StatusOK) {
+        return code;
     }
 
-    return true;
+    return status::StatusOK;
 }
 
 bool BlockReader::validate_fec_packet_(const packet::PacketPtr& pp) {
-    const packet::FEC* fec = pp->fec();
-
-    if (!fec) {
-        roc_panic("fec block reader: unexpected non-fec source packet");
+    if (!pp->has_flags(packet::Packet::FlagFEC)) {
+        roc_panic("fec block reader: unexpected non-fec packet");
     }
 
-    if (fec->fec_scheme != fec_scheme_) {
+    if (pp->fec()->fec_scheme != fec_scheme_) {
         roc_log(LogDebug,
-                "fec block reader: unexpected packet fec scheme, shutting down:"
+                "fec block reader: unexpected packet fec scheme:"
                 " packet_scheme=%s session_scheme=%s",
-                packet::fec_scheme_to_str(fec->fec_scheme),
+                packet::fec_scheme_to_str(pp->fec()->fec_scheme),
                 packet::fec_scheme_to_str(fec_scheme_));
-        return (alive_ = false);
+        return false;
     }
 
     return true;
@@ -591,11 +631,11 @@ bool BlockReader::validate_sbn_sequence_(const packet::PacketPtr& pp) {
 
     if ((size_t)blk_dist > max_sbn_jump_) {
         roc_log(LogDebug,
-                "fec block reader: too long source block number jump, shutting down:"
+                "fec block reader: too long source block number jump:"
                 " cur_sbn=%lu pkt_sbn=%lu dist=%lu max=%lu",
                 (unsigned long)cur_sbn_, (unsigned long)fec.source_block_number,
                 (unsigned long)blk_dist, (unsigned long)max_sbn_jump_);
-        return (alive_ = false);
+        return false;
     }
 
     return true;
@@ -670,10 +710,10 @@ bool BlockReader::can_update_payload_size_(size_t new_payload_size) {
     return true;
 }
 
-bool BlockReader::update_payload_size_(size_t new_payload_size) {
+status::StatusCode BlockReader::update_payload_size_(size_t new_payload_size) {
     if (payload_size_ == new_payload_size) {
         payload_resized_ = true;
-        return true;
+        return status::StatusOK;
     }
 
     roc_log(
@@ -685,7 +725,7 @@ bool BlockReader::update_payload_size_(size_t new_payload_size) {
     payload_size_ = new_payload_size;
     payload_resized_ = true;
 
-    return true;
+    return status::StatusOK;
 }
 
 bool BlockReader::can_update_source_block_size_(size_t new_sblen) {
@@ -705,49 +745,48 @@ bool BlockReader::can_update_source_block_size_(size_t new_sblen) {
         return false;
     }
 
-    if (new_sblen > block_decoder_.max_block_length()) {
-        roc_log(LogDebug,
-                "fec block reader: can't change source block size above maximum, "
-                "shutting down:"
-                " cur_sblen=%lu new_sblen=%lu max_blen=%lu",
-                (unsigned long)cur_sblen, (unsigned long)new_sblen,
-                (unsigned long)block_decoder_.max_block_length());
-        return (alive_ = false);
-    }
-
     return true;
 }
 
-bool BlockReader::update_source_block_size_(size_t new_sblen) {
+status::StatusCode BlockReader::update_source_block_size_(size_t new_sblen) {
     const size_t cur_sblen = source_block_.size();
 
     if (cur_sblen == new_sblen) {
         source_block_resized_ = true;
-        return true;
+        return status::StatusOK;
     }
+
+    if (new_sblen > block_decoder_.max_block_length()) {
+        roc_log(LogDebug,
+                "fec block reader: can't change source block size above maximum:"
+                " cur_sblen=%lu new_sblen=%lu max_blen=%lu",
+                (unsigned long)cur_sblen, (unsigned long)new_sblen,
+                (unsigned long)block_decoder_.max_block_length());
+        return status::StatusAbort;
+    }
+
+    if (!source_block_.resize(new_sblen)) {
+        roc_log(LogError,
+                "fec block reader: can't allocate source block memory:"
+                " cur_sblen=%lu new_sblen=%lu",
+                (unsigned long)cur_sblen, (unsigned long)new_sblen);
+        return status::StatusNoMem;
+    }
+
+    roc_log(LogDebug,
+            "fec block reader: updated source block size:"
+            " cur_sblen=%lu cur_rblen=%lu new_sblen=%lu",
+            (unsigned long)cur_sblen, (unsigned long)repair_block_.size(),
+            (unsigned long)new_sblen);
 
     // max_block_duration() reports maximum duration since last resize,
     // so when resize happens, we reset maximum.
     prev_block_timestamp_valid_ = false;
     block_max_duration_ = 0;
 
-    if (!source_block_.resize(new_sblen)) {
-        roc_log(LogDebug,
-                "fec block reader: can't allocate source block memory, shutting down:"
-                " cur_sblen=%lu new_sblen=%lu",
-                (unsigned long)cur_sblen, (unsigned long)new_sblen);
-        return (alive_ = false);
-    }
-
-    roc_log(LogDebug,
-            "fec block reader: update source block size:"
-            " cur_sblen=%lu cur_rblen=%lu new_sblen=%lu",
-            (unsigned long)cur_sblen, (unsigned long)repair_block_.size(),
-            (unsigned long)new_sblen);
-
     source_block_resized_ = true;
 
-    return true;
+    return status::StatusOK;
 }
 
 bool BlockReader::can_update_repair_block_size_(size_t new_blen) {
@@ -766,20 +805,10 @@ bool BlockReader::can_update_repair_block_size_(size_t new_blen) {
         return false;
     }
 
-    if (new_blen > block_decoder_.max_block_length()) {
-        roc_log(LogDebug,
-                "fec block reader: can't change repair block size above maximum, "
-                "shutting down:"
-                " cur_blen=%lu new_blen=%lu max_blen=%lu",
-                (unsigned long)cur_blen, (unsigned long)new_blen,
-                (unsigned long)block_decoder_.max_block_length());
-        return (alive_ = false);
-    }
-
     return true;
 }
 
-bool BlockReader::update_repair_block_size_(size_t new_blen) {
+status::StatusCode BlockReader::update_repair_block_size_(size_t new_blen) {
     const size_t cur_sblen = source_block_.size();
     const size_t cur_rblen = repair_block_.size();
 
@@ -787,35 +816,44 @@ bool BlockReader::update_repair_block_size_(size_t new_blen) {
 
     if (new_blen == cur_blen) {
         repair_block_resized_ = true;
-        return true;
+        return status::StatusOK;
     }
+
+    if (new_blen > block_decoder_.max_block_length()) {
+        roc_log(LogDebug,
+                "fec block reader: can't change repair block size above maximum:"
+                " cur_blen=%lu new_blen=%lu max_blen=%lu",
+                (unsigned long)cur_blen, (unsigned long)new_blen,
+                (unsigned long)block_decoder_.max_block_length());
+        return status::StatusAbort;
+    }
+
+    // Should not happen: sblen should be validated in upper code.
+    roc_panic_if_not(new_blen > cur_sblen);
+
+    const size_t new_rblen = new_blen - cur_sblen;
+
+    if (!repair_block_.resize(new_rblen)) {
+        roc_log(LogError,
+                "fec block reader: can't allocate repair block memory:"
+                " cur_rblen=%lu new_rblen=%lu",
+                (unsigned long)cur_rblen, (unsigned long)new_rblen);
+        return status::StatusNoMem;
+    }
+
+    roc_log(LogDebug,
+            "fec block reader: updated repair block size:"
+            " cur_sblen=%lu cur_rblen=%lu new_rblen=%lu",
+            (unsigned long)cur_sblen, (unsigned long)cur_rblen, (unsigned long)new_rblen);
 
     // max_block_duration() reports maximum duration since last resize,
     // so when resize happens, we reset maximum.
     prev_block_timestamp_valid_ = false;
     block_max_duration_ = 0;
 
-    // Should not happen: sblen should be validated in upper code
-    roc_panic_if_not(new_blen > cur_sblen);
-
-    const size_t new_rblen = new_blen - cur_sblen;
-
-    if (!repair_block_.resize(new_rblen)) {
-        roc_log(LogDebug,
-                "fec block reader: can't allocate repair block memory, shutting down:"
-                " cur_rblen=%lu new_rblen=%lu",
-                (unsigned long)cur_rblen, (unsigned long)new_rblen);
-        return (alive_ = false);
-    }
-
-    roc_log(LogDebug,
-            "fec block reader: update repair block size:"
-            " cur_sblen=%lu cur_rblen=%lu new_rblen=%lu",
-            (unsigned long)cur_sblen, (unsigned long)cur_rblen, (unsigned long)new_rblen);
-
     repair_block_resized_ = true;
 
-    return true;
+    return status::StatusOK;
 }
 
 void BlockReader::drop_repair_packets_from_prev_blocks_() {
@@ -857,6 +895,7 @@ void BlockReader::update_block_duration_(const packet::PacketPtr& curr_block_pkt
         block_dur = packet::stream_timestamp_diff(curr_block_pkt->stream_timestamp(),
                                                   prev_block_timestamp_);
     }
+
     if (block_dur < 0) {
         roc_log(LogTrace,
                 "fec block reader: negative block duration: prev_ts=%lu curr_ts=%lu",

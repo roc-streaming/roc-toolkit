@@ -1302,7 +1302,6 @@ TEST(block_writer_reader, invalid_esi) {
                 check_restored(p, i == 5);
             }
 
-            CHECK(reader.is_alive());
             UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
             UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
         }
@@ -1381,7 +1380,6 @@ TEST(block_writer_reader, invalid_sbl) {
                 check_restored(p, i == 5);
             }
 
-            CHECK(reader.is_alive());
             UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
             UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
         }
@@ -1459,7 +1457,6 @@ TEST(block_writer_reader, invalid_nes) {
                 check_restored(p, false);
             }
 
-            CHECK(reader.is_alive());
             UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
             UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
         }
@@ -1547,7 +1544,6 @@ TEST(block_writer_reader, invalid_payload_size) {
                 check_restored(p, i == 5 || (n_block == 3 && i == 0));
             }
 
-            CHECK(reader.is_alive());
             UNSIGNED_LONGS_EQUAL(0, source_queue.size());
             UNSIGNED_LONGS_EQUAL(0, repair_queue.size());
         }
@@ -1635,7 +1631,6 @@ TEST(block_writer_reader, zero_source_packets) {
                 }
             }
 
-            CHECK(reader.is_alive());
             UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
             UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
         }
@@ -1721,7 +1716,6 @@ TEST(block_writer_reader, zero_repair_packets) {
                 }
             }
 
-            CHECK(reader.is_alive());
             UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
             UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
         }
@@ -1809,7 +1803,6 @@ TEST(block_writer_reader, zero_payload_size) {
                 }
             }
 
-            CHECK(reader.is_alive());
             UNSIGNED_LONGS_EQUAL(0, source_queue.size());
             UNSIGNED_LONGS_EQUAL(0, repair_queue.size());
         }
@@ -1880,8 +1873,6 @@ TEST(block_writer_reader, sbn_jump) {
             check_restored(p, false);
         }
 
-        CHECK(reader.is_alive());
-
         // write second block to the dispatcher
         // shift it ahead but in the allowed range
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
@@ -1907,8 +1898,6 @@ TEST(block_writer_reader, sbn_jump) {
             check_restored(p, false);
         }
 
-        CHECK(reader.is_alive());
-
         // write third block to the dispatcher
         // shift it ahead too far
         for (size_t i = 0; i < NumSourcePackets + NumRepairPackets; ++i) {
@@ -1929,12 +1918,9 @@ TEST(block_writer_reader, sbn_jump) {
         packet::PacketPtr pp;
         LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
         CHECK(!pp);
-        CHECK(!reader.is_alive());
 
         UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
         UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
-
-        LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
     }
 }
 
@@ -2070,7 +2056,8 @@ TEST(block_writer_reader, writer_resize_blocks) {
         packet::seqnum_t rd_sn = 0;
 
         for (size_t n = 0; n < ROC_ARRAY_SIZE(source_sizes); ++n) {
-            CHECK(writer.resize(source_sizes[n], repair_sizes[n]));
+            LONGS_EQUAL(status::StatusOK,
+                        writer.resize(source_sizes[n], repair_sizes[n]));
 
             for (size_t i = 0; i < source_sizes[n]; ++i) {
                 packet::PacketPtr p = generate_packet(wr_sn, payload_sizes[n]);
@@ -2143,7 +2130,8 @@ TEST(block_writer_reader, resize_block_begin) {
         packet::seqnum_t rd_sn = 0;
 
         for (size_t n = 0; n < ROC_ARRAY_SIZE(source_sizes); ++n) {
-            CHECK(writer.resize(source_sizes[n], repair_sizes[n]));
+            LONGS_EQUAL(status::StatusOK,
+                        writer.resize(source_sizes[n], repair_sizes[n]));
 
             for (size_t i = 0; i < source_sizes[n]; ++i) {
                 packet::PacketPtr p = generate_packet(wr_sn, payload_sizes[n]);
@@ -2238,7 +2226,8 @@ TEST(block_writer_reader, resize_block_middle) {
             }
 
             // Update source block size.
-            CHECK(writer.resize(source_sizes[n], repair_sizes[n]));
+            LONGS_EQUAL(status::StatusOK,
+                        writer.resize(source_sizes[n], repair_sizes[n]));
 
             // Write the remaining packets.
             for (size_t i = prev_sblen / 2; i < prev_sblen; ++i) {
@@ -2316,7 +2305,8 @@ TEST(block_writer_reader, resize_block_losses) {
         packet::seqnum_t rd_sn = 0;
 
         for (size_t n = 0; n < ROC_ARRAY_SIZE(source_sizes); ++n) {
-            CHECK(writer.resize(source_sizes[n], repair_sizes[n]));
+            LONGS_EQUAL(status::StatusOK,
+                        writer.resize(source_sizes[n], repair_sizes[n]));
 
             dispatcher.resize(source_sizes[n], repair_sizes[n]);
             dispatcher.reset();
@@ -2402,7 +2392,8 @@ TEST(block_writer_reader, resize_block_repair_first) {
         }
 
         // Resize.
-        CHECK(writer.resize(NumSourcePackets * 2, NumRepairPackets * 2));
+        LONGS_EQUAL(status::StatusOK,
+                    writer.resize(NumSourcePackets * 2, NumRepairPackets * 2));
 
         // Lose one packet.
         dispatcher.resize(NumSourcePackets * 2, NumRepairPackets * 2);
@@ -2477,7 +2468,8 @@ TEST(block_writer_reader, writer_oversized_block) {
         LONGS_EQUAL(status::StatusOK, reader.init_status());
 
         // try to resize writer with an invalid value
-        CHECK(!writer.resize(encoder->max_block_length() + 1, NumRepairPackets));
+        LONGS_EQUAL(status::StatusBadConfig,
+                    writer.resize(encoder->max_block_length() + 1, NumRepairPackets));
 
         // ensure that the block size was not updated
         for (size_t n = 0; n < 10; ++n) {
@@ -2506,7 +2498,6 @@ TEST(block_writer_reader, writer_oversized_block) {
                 UNSIGNED_LONGS_EQUAL(NumSourcePackets, p->fec()->source_block_length);
             }
 
-            CHECK(reader.is_alive());
             UNSIGNED_LONGS_EQUAL(0, dispatcher.source_size());
             UNSIGNED_LONGS_EQUAL(0, dispatcher.repair_size());
         }
@@ -2583,7 +2574,6 @@ TEST(block_writer_reader, reader_oversized_source_block) {
         packet::PacketPtr pp;
         LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
         CHECK(!pp);
-        CHECK(!reader.is_alive());
     }
 }
 
@@ -2657,58 +2647,6 @@ TEST(block_writer_reader, reader_oversized_repair_block) {
         packet::PacketPtr pp;
         LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
         CHECK(!pp);
-        CHECK(!reader.is_alive());
-    }
-}
-
-TEST(block_writer_reader, writer_invalid_payload_size_change) {
-    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
-        codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
-
-        core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
-        CHECK(encoder);
-
-        test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
-                                          packet_factory, NumSourcePackets,
-                                          NumRepairPackets);
-
-        BlockWriter writer(writer_config, codec_config.scheme, *encoder, dispatcher,
-                           source_composer(), repair_composer(), packet_factory, arena);
-        LONGS_EQUAL(status::StatusOK, writer.init_status());
-
-        size_t sn = 0;
-
-        // write the first block with the same payload size
-        for (size_t i = 0; i < NumSourcePackets; ++i) {
-            LONGS_EQUAL(status::StatusOK,
-                        writer.write(generate_packet(sn++, FECPayloadSize)));
-        }
-
-        CHECK(writer.is_alive());
-        UNSIGNED_LONGS_EQUAL(NumSourcePackets, dispatcher.source_size());
-        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
-
-        // write a half of the second block with another payload size
-        for (size_t i = 0; i < NumSourcePackets / 2; ++i) {
-            LONGS_EQUAL(status::StatusOK,
-                        writer.write(generate_packet(sn++, FECPayloadSize - 1)));
-        }
-
-        CHECK(writer.is_alive());
-        UNSIGNED_LONGS_EQUAL(NumSourcePackets + NumSourcePackets / 2,
-                             dispatcher.source_size());
-        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
-
-        // write a packet with different payload size
-        LONGS_EQUAL(status::StatusOK, writer.write(generate_packet(sn, FECPayloadSize)));
-
-        // writer should be terminated
-        CHECK(!writer.is_alive());
-        UNSIGNED_LONGS_EQUAL(NumSourcePackets + NumSourcePackets / 2,
-                             dispatcher.source_size());
-        UNSIGNED_LONGS_EQUAL(NumRepairPackets, dispatcher.repair_size());
     }
 }
 
@@ -2760,7 +2698,6 @@ TEST(block_writer_reader, reader_invalid_fec_scheme_source_packet) {
         for (size_t i = 0; i < NumSourcePackets / 2; ++i) {
             packet::PacketPtr p;
             LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
-            CHECK(reader.is_alive());
         }
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
 
@@ -2780,7 +2717,6 @@ TEST(block_writer_reader, reader_invalid_fec_scheme_source_packet) {
         packet::PacketPtr pp;
         LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
         CHECK(!pp);
-        CHECK(!reader.is_alive());
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
     }
 }
@@ -2844,7 +2780,6 @@ TEST(block_writer_reader, reader_invalid_fec_scheme_repair_packet) {
         for (size_t i = 0; i < NumSourcePackets / 2; ++i) {
             packet::PacketPtr p;
             LONGS_EQUAL(status::StatusOK, reader.read(p, packet::ModeFetch));
-            CHECK(reader.is_alive());
         }
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
         UNSIGNED_LONGS_EQUAL(0, repair_queue.size());
@@ -2883,7 +2818,6 @@ TEST(block_writer_reader, reader_invalid_fec_scheme_repair_packet) {
         packet::PacketPtr pp;
         LONGS_EQUAL(status::StatusAbort, reader.read(pp, packet::ModeFetch));
         CHECK(!pp);
-        CHECK(!reader.is_alive());
         UNSIGNED_LONGS_EQUAL(0, source_queue.size());
         UNSIGNED_LONGS_EQUAL(0, repair_queue.size());
     }

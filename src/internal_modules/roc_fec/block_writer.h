@@ -50,17 +50,6 @@ struct BlockWriterConfig {
 class BlockWriter : public packet::IWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    //!
-    //! @b Parameters
-    //!  - @p config contains FEC scheme parameters
-    //!  - @p fec_scheme is FEC codec ID
-    //!  - @p block_encoder is FEC codec implementation
-    //!  - @p writer is used to write coded source and repair packets
-    //!  - @p source_composer is used to format source packets
-    //!  - @p repair_composer is used to format repair packets
-    //!  - @p packet_factory is used to allocate repair packets
-    //!  - @p buffer_factory is used to allocate buffers for repair packets
-    //!  - @p arena is used to initialize a packet array
     BlockWriter(const BlockWriterConfig& config,
                 packet::FecScheme fec_scheme,
                 IBlockEncoder& block_encoder,
@@ -73,14 +62,13 @@ public:
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
 
-    //! Check if writer is still working.
-    bool is_alive() const;
-
     //! Get maximal FEC block duration seen since last block resize.
     packet::stream_timestamp_t max_block_duration() const;
 
     //! Set number of source packets per block.
-    bool resize(size_t sblen, size_t rblen);
+    //! @note
+    //!  Actual reallocation may happen later.
+    ROC_ATTR_NODISCARD status::StatusCode resize(size_t sblen, size_t rblen);
 
     //! Write packet.
     //! @remarks
@@ -90,21 +78,20 @@ public:
 
 private:
     status::StatusCode begin_block_(const packet::PacketPtr& pp);
-    void end_block_();
+    status::StatusCode end_block_();
     void next_block_();
 
     bool apply_sizes_(size_t sblen, size_t rblen, size_t payload_size);
 
     status::StatusCode write_source_packet_(const packet::PacketPtr&);
-    void make_repair_packets_();
-    packet::PacketPtr make_repair_packet_(packet::seqnum_t n);
-    void encode_repair_packets_();
-    void compose_repair_packets_();
+    status::StatusCode make_repair_packets_();
+    status::StatusCode make_repair_packet_(packet::seqnum_t n, packet::PacketPtr& pp);
+    status::StatusCode encode_repair_packets_();
+    status::StatusCode compose_repair_packets_();
     status::StatusCode write_repair_packets_();
     void fill_packet_fec_fields_(const packet::PacketPtr& packet, packet::seqnum_t n);
 
-    void validate_fec_packet_(const packet::PacketPtr&);
-    bool validate_source_packet_(const packet::PacketPtr&);
+    void validate_packet_(const packet::PacketPtr&);
 
     void update_block_duration_(const packet::PacketPtr& curr_block_pkt);
 
@@ -117,7 +104,7 @@ private:
     size_t cur_payload_size_;
 
     IBlockEncoder& block_encoder_;
-    packet::IWriter& writer_;
+    packet::IWriter& pkt_writer_;
 
     packet::IComposer& source_composer_;
     packet::IComposer& repair_composer_;
@@ -127,7 +114,6 @@ private:
     core::Array<packet::PacketPtr> repair_block_;
 
     bool first_packet_;
-    bool alive_;
 
     packet::blknum_t cur_sbn_;
     packet::seqnum_t cur_block_repair_sn_;

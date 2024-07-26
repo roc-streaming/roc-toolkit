@@ -8,12 +8,13 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/mock_arena.h"
+
 #include "roc_core/array.h"
 #include "roc_core/fast_random.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_fec/codec_map.h"
-#include "test_helpers/mock_arena.h"
 
 namespace roc {
 namespace fec {
@@ -132,32 +133,6 @@ TEST(block_encoder_decoder, without_loss) {
     }
 }
 
-TEST(block_encoder_decoder, no_memory) {
-    enum { NumSourcePackets = 20, NumRepairPackets = 10, PayloadSize = 251 };
-
-    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
-        CodecConfig config;
-        config.scheme = CodecMap::instance().nth_scheme(n_scheme);
-
-        { // test encoder
-            Codec code(config);
-            code.set_fail(true);
-            LONGS_EQUAL(status::StatusNoMem,
-                        code.encoder().begin_block(NumSourcePackets, NumRepairPackets,
-                                                   PayloadSize));
-        }
-
-        { // test decoder
-            Codec code(config);
-            code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
-            code.set_fail(true);
-            LONGS_EQUAL(status::StatusNoMem,
-                        code.decoder().begin_block(NumSourcePackets, NumRepairPackets,
-                                                   PayloadSize));
-        }
-    }
-}
-
 TEST(block_encoder_decoder, lost_1) {
     enum { NumSourcePackets = 20, NumRepairPackets = 10, PayloadSize = 251 };
 
@@ -262,6 +237,32 @@ TEST(block_encoder_decoder, full_repair_payload_sizes) {
             CHECK(code.decode(NumSourcePackets, p_size));
 
             code.decoder().end_block();
+        }
+    }
+}
+
+TEST(block_encoder_decoder, no_memory) {
+    enum { NumSourcePackets = 20, NumRepairPackets = 10, PayloadSize = 251 };
+
+    for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); n_scheme++) {
+        CodecConfig config;
+        config.scheme = CodecMap::instance().nth_scheme(n_scheme);
+
+        { // test encoder
+            Codec code(config);
+            code.set_fail(true);
+            LONGS_EQUAL(status::StatusNoMem,
+                        code.encoder().begin_block(NumSourcePackets, NumRepairPackets,
+                                                   PayloadSize));
+        }
+
+        { // test decoder
+            Codec code(config);
+            code.encode(NumSourcePackets, NumRepairPackets, PayloadSize);
+            code.set_fail(true);
+            LONGS_EQUAL(status::StatusNoMem,
+                        code.decoder().begin_block(NumSourcePackets, NumRepairPackets,
+                                                   PayloadSize));
         }
     }
 }

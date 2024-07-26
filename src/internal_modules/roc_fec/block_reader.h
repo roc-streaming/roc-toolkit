@@ -51,16 +51,6 @@ struct BlockReaderConfig {
 class BlockReader : public packet::IReader, public core::NonCopyable<> {
 public:
     //! Initialize.
-    //!
-    //! @b Parameters
-    //!  - @p config contains FEC scheme parameters
-    //!  - @p fec_scheme is FEC codec ID
-    //!  - @p decoder is FEC codec implementation
-    //!  - @p source_reader specifies input queue with data packets
-    //!  - @p repair_reader specifies input queue with FEC packets
-    //!  - @p parser specifies packet parser for restored packets
-    //!  - @p packet_factory is used to allocate restored packets
-    //!  - @p arena is used to initialize a packet array
     BlockReader(const BlockReaderConfig& config,
                 packet::FecScheme fec_scheme,
                 IBlockDecoder& block_decoder,
@@ -76,9 +66,6 @@ public:
     //! Did decoder catch block beginning?
     bool is_started() const;
 
-    //! Is decoder alive?
-    bool is_alive() const;
-
     //! Get maximal FEC block duration seen since last block resize.
     packet::stream_timestamp_t max_block_duration() const;
 
@@ -89,26 +76,24 @@ public:
                                                        packet::PacketReadMode mode);
 
 private:
-    status::StatusCode read_(packet::PacketPtr& packet, packet::PacketReadMode mode);
-
-    bool try_start_();
+    status::StatusCode try_start_();
     status::StatusCode get_next_packet_(packet::PacketPtr& packet,
                                         packet::PacketReadMode mode);
+    status::StatusCode next_block_();
 
-    void next_block_();
     status::StatusCode try_repair_();
-
-    packet::PacketPtr parse_repaired_packet_(const core::Slice<uint8_t>& buffer);
+    status::StatusCode parse_repaired_packet_(const core::Slice<uint8_t>& buffer,
+                                              packet::PacketPtr& packet);
 
     status::StatusCode fetch_all_packets_();
     status::StatusCode fetch_packets_(packet::IReader&, packet::IWriter&);
 
-    void fill_block_();
-    void fill_source_block_();
-    void fill_repair_block_();
+    status::StatusCode fill_block_();
+    status::StatusCode fill_source_block_();
+    status::StatusCode fill_repair_block_();
 
-    bool process_source_packet_(const packet::PacketPtr&);
-    bool process_repair_packet_(const packet::PacketPtr&);
+    status::StatusCode process_source_packet_(const packet::PacketPtr&);
+    status::StatusCode process_repair_packet_(const packet::PacketPtr&);
 
     bool validate_fec_packet_(const packet::PacketPtr&);
     bool validate_sbn_sequence_(const packet::PacketPtr&);
@@ -120,15 +105,12 @@ private:
     bool can_update_source_block_size_(size_t);
     bool can_update_repair_block_size_(size_t);
 
-    bool update_payload_size_(size_t);
-    bool update_source_block_size_(size_t);
-    bool update_repair_block_size_(size_t);
+    status::StatusCode update_payload_size_(size_t);
+    status::StatusCode update_source_block_size_(size_t);
+    status::StatusCode update_repair_block_size_(size_t);
 
     void drop_repair_packets_from_prev_blocks_();
-
     void update_block_duration_(const packet::PacketPtr& curr_block_pkt);
-
-    bool is_block_resized_() const;
 
     IBlockDecoder& block_decoder_;
 
@@ -143,7 +125,6 @@ private:
     core::Array<packet::PacketPtr> source_block_;
     core::Array<packet::PacketPtr> repair_block_;
 
-    bool alive_;
     bool started_;
     bool can_repair_;
 

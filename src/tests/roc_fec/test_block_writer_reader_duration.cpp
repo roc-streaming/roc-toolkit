@@ -389,9 +389,11 @@ TEST(block_writer_reader_duration, resize_block_middle) {
         dispatcher.clear_losses();
 
         if (i_block == 3) {
-            writer.resize(sb_len[i_block], dispatcher.repair_size());
+            LONGS_EQUAL(status::StatusOK,
+                        writer.resize(sb_len[i_block], dispatcher.repair_size()));
         } else if (i_block == 6) {
-            writer.resize(sb_len[i_block], dispatcher.repair_size());
+            LONGS_EQUAL(status::StatusOK,
+                        writer.resize(sb_len[i_block], dispatcher.repair_size()));
         }
         if (!packets.resize(sb_len[i_block])) {
             FAIL("resize failed");
