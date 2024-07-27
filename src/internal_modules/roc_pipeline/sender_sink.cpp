@@ -200,6 +200,10 @@ bool SenderSink::has_clock() const {
     return sink_config_.enable_cpu_clock;
 }
 
+status::StatusCode SenderSink::close() {
+    return status::StatusOK;
+}
+
 status::StatusCode SenderSink::write(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 

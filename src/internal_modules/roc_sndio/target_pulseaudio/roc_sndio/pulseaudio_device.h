@@ -79,6 +79,9 @@ public:
     //! Check if the device has own clock.
     virtual bool has_clock() const;
 
+    //! Explicitly close the device.
+    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+
     //! Restart reading from beginning.
     virtual ROC_ATTR_NODISCARD status::StatusCode rewind();
 

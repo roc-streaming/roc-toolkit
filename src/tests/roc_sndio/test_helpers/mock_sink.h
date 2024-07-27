@@ -65,6 +65,10 @@ public:
         return false;
     }
 
+    virtual status::StatusCode close() {
+        return status::StatusOK;
+    }
+
     virtual status::StatusCode write(audio::Frame& frame) {
         CHECK(pos_ + frame.num_raw_samples() <= MaxSz);
 

@@ -10,6 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_sndio/backend_map.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace sndio {
@@ -74,7 +75,13 @@ SoxSource::SoxSource(audio::FrameFactory& frame_factory,
 }
 
 SoxSource::~SoxSource() {
-    close_();
+    if (input_) {
+        roc_panic("sox source: input file is not closed");
+    }
+}
+
+status::StatusCode SoxSource::close() {
+    return close_();
 }
 
 status::StatusCode SoxSource::init_status() const {
@@ -150,7 +157,12 @@ status::StatusCode SoxSource::pause() {
             input_name_.c_str());
 
     if (driver_type_ == DriverType_Device) {
-        close_();
+        const status::StatusCode close_code = close_();
+        if (close_code != status::StatusOK) {
+            roc_log(LogError, "sox source: failed to close input during pause: %s",
+                    status::code_to_str(close_code));
+            return close_code;
+        }
     }
 
     paused_ = true;
@@ -199,7 +211,12 @@ status::StatusCode SoxSource::rewind() {
         sample_spec_.clear();
 
         if (input_) {
-            close_();
+            const status::StatusCode close_code = close_();
+            if (close_code != status::StatusOK) {
+                roc_log(LogError, "sox source: failed to close input during rewind: %s",
+                        status::code_to_str(close_code));
+                return close_code;
+            }
         }
 
         const status::StatusCode code = open_();
@@ -386,19 +403,22 @@ status::StatusCode SoxSource::seek_(uint64_t offset) {
     return status::StatusOK;
 }
 
-void SoxSource::close_() {
+status::StatusCode SoxSource::close_() {
     if (!input_) {
-        return;
+        return status::StatusOK;
     }
 
     roc_log(LogInfo, "sox source: closing input");
 
     const int err = sox_close(input_);
     if (err != SOX_SUCCESS) {
-        roc_panic("sox source: can't close input: %s", sox_strerror(err));
+        roc_log(LogError, "sox source: can't close input: %s", sox_strerror(err));
+        return status::StatusErrFile;
     }
 
     input_ = NULL;
+
+    return status::StatusOK;
 }
 
 } // namespace sndio

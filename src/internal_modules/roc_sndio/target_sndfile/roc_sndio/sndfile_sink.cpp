@@ -170,7 +170,13 @@ SndfileSink::SndfileSink(audio::FrameFactory& frame_factory,
 }
 
 SndfileSink::~SndfileSink() {
-    close_();
+    if (file_) {
+        roc_panic("sndfile sink: output file is not closed");
+    }
+}
+
+status::StatusCode SndfileSink::close() {
+    return close_();
 }
 
 status::StatusCode SndfileSink::init_status() const {
@@ -273,9 +279,9 @@ status::StatusCode SndfileSink::open_(const char* driver, const char* path) {
     return status::StatusOK;
 }
 
-void SndfileSink::close_() {
+status::StatusCode SndfileSink::close_() {
     if (!file_) {
-        return;
+        return status::StatusOK;
     }
 
     roc_log(LogDebug, "sndfile sink: closing output");
@@ -285,9 +291,12 @@ void SndfileSink::close_() {
         roc_log(LogError,
                 "sndfile sink: sf_close() failed, cannot properly close output: %s",
                 sf_error_number(err));
+        return status::StatusErrFile;
     }
 
     file_ = NULL;
+
+    return status::StatusOK;
 }
 
 } // namespace sndio

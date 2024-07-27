@@ -152,6 +152,7 @@ private:
     virtual core::nanoseconds_t latency() const;
     virtual bool has_clock() const;
     virtual status::StatusCode write(audio::Frame& frame);
+    virtual status::StatusCode close();
 
     // Methods of PipelineLoop
     virtual core::nanoseconds_t timestamp_imp() const;

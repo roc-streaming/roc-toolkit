@@ -112,6 +112,7 @@ TEST(backend_source, open) {
         CHECK(!backend_source->has_state());
         CHECK(!backend_source->has_latency());
         CHECK(!backend_source->has_clock());
+        LONGS_EQUAL(status::StatusOK, backend_source->close());
     }
 }
 
@@ -189,6 +190,7 @@ TEST(backend_source, rewind) {
             != 0) {
             FAIL("frames should be equal");
         }
+        LONGS_EQUAL(status::StatusOK, backend_source->close());
     }
 }
 
@@ -220,6 +222,7 @@ TEST(backend_source, rewind_after_eof) {
             // rewind
             LONGS_EQUAL(status::StatusOK, backend_source->rewind());
         }
+        LONGS_EQUAL(status::StatusOK, backend_source->close());
     }
 }
 

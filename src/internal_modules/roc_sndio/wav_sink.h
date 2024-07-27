@@ -60,12 +60,15 @@ public:
     //! Check if the sink has own clock.
     virtual bool has_clock() const;
 
+    //! Explicitly close the sink.
+    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+
     //! Write frame.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
 
 private:
     status::StatusCode open_(const char* path);
-    void close_();
+    status::StatusCode close_();
 
     audio::SampleSpec sample_spec_;
 

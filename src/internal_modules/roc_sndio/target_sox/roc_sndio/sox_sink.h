@@ -75,6 +75,9 @@ public:
     //! Check if the sink has own clock.
     virtual bool has_clock() const;
 
+    //! Explicitly close the sink.
+    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+
     //! Write frame.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
 
@@ -84,7 +87,7 @@ private:
 
     status::StatusCode open_();
     status::StatusCode write_(const sox_sample_t* samples, size_t n_samples);
-    void close_();
+    status::StatusCode close_();
 
     const DriverType driver_type_;
     core::StringBuffer driver_name_;

@@ -72,9 +72,11 @@ status::StatusCode Pump::run() {
         code = status::StatusOK; // EOF is fine
     }
 
+    status::StatusCode close_code = close_all_devices_();
+
     roc_log(LogDebug, "pump: exiting main loop");
 
-    return code;
+    return (code != status::StatusOK) ? code : close_code;
 }
 
 void Pump::stop() {
@@ -271,6 +273,26 @@ status::StatusCode Pump::transfer_frame_(ISource& source, ISink& sink) {
     }
 
     return status::StatusOK;
+}
+
+status::StatusCode Pump::close_all_devices_() {
+    IDevice* devices[] = { &main_source_, &sink_, backup_source_ };
+    status::StatusCode first_error = status::StatusOK;
+
+    for (size_t i = 0; i < ROC_ARRAY_SIZE(devices); ++i) {
+        if (devices[i]) {
+            status::StatusCode device_code = devices[i]->close();
+            if (device_code != status::StatusOK) {
+                roc_log(LogError, "pump: failed to close device with error %s",
+                        status::code_to_str(device_code));
+                if (first_error == status::StatusOK) {
+                    first_error = device_code;
+                }
+            }
+        }
+    }
+
+    return first_error;
 }
 
 } // namespace sndio

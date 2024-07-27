@@ -76,6 +76,9 @@ public:
     //! Check if the source has own clock.
     virtual bool has_clock() const;
 
+    //! Explicitly close the source.
+    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+
     //! Restart reading from beginning.
     virtual ROC_ATTR_NODISCARD status::StatusCode rewind();
 
@@ -94,7 +97,7 @@ private:
 
     status::StatusCode open_();
     status::StatusCode seek_(uint64_t offset);
-    void close_();
+    status::StatusCode close_();
 
     audio::FrameFactory& frame_factory_;
 

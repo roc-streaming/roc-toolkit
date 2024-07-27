@@ -57,6 +57,10 @@ public:
         return false;
     }
 
+    virtual status::StatusCode close() {
+        return status::StatusOK;
+    }
+
     virtual status::StatusCode write(audio::Frame& frame) {
         CHECK(frame.num_raw_samples() % n_chans_ == 0);
 

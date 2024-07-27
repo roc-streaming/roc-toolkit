@@ -117,6 +117,13 @@ public:
     //!  If false, the user is responsible to maintain the clock and
     //!  perform writes or read in-time.
     virtual bool has_clock() const = 0;
+
+    //! Explicitly close the device.
+    //! @remarks
+    //!  This method should be called to release resources held by the device
+    //!  before the object is destructed. If this method is not called before
+    //!  the destructor, the destructor will trigger a panic.
+    virtual ROC_ATTR_NODISCARD status::StatusCode close() = 0;
 };
 
 } // namespace sndio

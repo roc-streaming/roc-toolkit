@@ -137,6 +137,10 @@ bool TranscoderSource::has_clock() const {
     return input_source_.has_clock();
 }
 
+status::StatusCode TranscoderSource::close() {
+    return input_source_.close();
+}
+
 status::StatusCode TranscoderSource::rewind() {
     return input_source_.rewind();
 }
