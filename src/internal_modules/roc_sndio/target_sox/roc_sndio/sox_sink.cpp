@@ -10,6 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_sndio/backend_map.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace sndio {
@@ -70,7 +71,13 @@ SoxSink::SoxSink(audio::FrameFactory& frame_factory,
 }
 
 SoxSink::~SoxSink() {
-    close_();
+    if (output_) {
+        roc_panic("sox sink: output file is not closed");
+    }
+}
+
+status::StatusCode SoxSink::close() {
+    return close_();
 }
 
 status::StatusCode SoxSink::init_status() const {
@@ -146,7 +153,12 @@ status::StatusCode SoxSink::pause() {
             output_name_.c_str());
 
     if (driver_type_ == DriverType_Device) {
-        close_();
+        const status::StatusCode close_code = close_();
+        if (close_code != status::StatusOK) {
+            roc_log(LogError, "sox sink: failed to close output during pause: %s",
+                    status::code_to_str(close_code));
+            return close_code;
+        }
     }
 
     paused_ = true;
@@ -312,19 +324,23 @@ status::StatusCode SoxSink::write_(const sox_sample_t* samples, size_t n_samples
     return status::StatusOK;
 }
 
-void SoxSink::close_() {
+status::StatusCode SoxSink::close_() {
     if (!output_) {
-        return;
+        return status::StatusOK;
     }
 
     roc_log(LogDebug, "sox sink: closing output");
 
     const int err = sox_close(output_);
     if (err != SOX_SUCCESS) {
-        roc_panic("sox sink: can't close output: %s", sox_strerror(err));
+        roc_log(LogError, "sox sink: can't close output: %s", sox_strerror(err));
+        return driver_type_ == DriverType_File ? status::StatusErrFile
+                                               : status::StatusErrDevice;
     }
 
     output_ = NULL;
+
+    return status::StatusOK;
 }
 
 } // namespace sndio

@@ -208,6 +208,10 @@ bool ReceiverSource::has_clock() const {
     return source_config_.common.enable_cpu_clock;
 }
 
+status::StatusCode ReceiverSource::close() {
+    return status::StatusOK;
+}
+
 status::StatusCode ReceiverSource::rewind() {
     return status::StatusOK;
 }

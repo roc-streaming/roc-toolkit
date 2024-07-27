@@ -36,7 +36,13 @@ WavSource::WavSource(audio::FrameFactory& frame_factory,
 }
 
 WavSource::~WavSource() {
-    close_();
+    if (file_opened_) {
+        roc_panic("wav source: input file is not closed");
+    }
+}
+
+status::StatusCode WavSource::close() {
+    return close_();
 }
 
 status::StatusCode WavSource::init_status() const {
@@ -183,13 +189,13 @@ status::StatusCode WavSource::open_(const char* path) {
     return status::StatusOK;
 }
 
-void WavSource::close_() {
-    if (!file_opened_) {
-        return;
+status::StatusCode WavSource::close_() {
+    if (file_opened_) {
+        file_opened_ = false;
+        drwav_uninit(&wav_);
     }
 
-    file_opened_ = false;
-    drwav_uninit(&wav_);
+    return status::StatusOK;
 }
 
 } // namespace sndio

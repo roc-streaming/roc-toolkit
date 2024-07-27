@@ -79,6 +79,10 @@ public:
         return false;
     }
 
+    virtual status::StatusCode close() {
+        return status::StatusOK;
+    }
+
     virtual status::StatusCode rewind() {
         state_ = sndio::DeviceState_Active;
         return status::StatusOK;

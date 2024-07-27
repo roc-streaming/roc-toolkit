@@ -153,6 +153,7 @@ private:
     virtual bool has_latency() const;
     virtual core::nanoseconds_t latency() const;
     virtual bool has_clock() const;
+    virtual status::StatusCode close();
     virtual status::StatusCode rewind();
     virtual void reclock(core::nanoseconds_t timestamp);
     virtual status::StatusCode read(audio::Frame& frame,

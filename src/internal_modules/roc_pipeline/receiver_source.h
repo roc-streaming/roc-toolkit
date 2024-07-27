@@ -109,6 +109,9 @@ public:
     //! Check if the source has own clock.
     virtual bool has_clock() const;
 
+    //! Explicitly close the source.
+    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+
     //! Restart reading from beginning.
     virtual ROC_ATTR_NODISCARD status::StatusCode rewind();
 

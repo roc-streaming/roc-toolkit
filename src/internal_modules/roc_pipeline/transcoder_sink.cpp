@@ -123,6 +123,10 @@ bool TranscoderSink::has_clock() const {
     return false;
 }
 
+status::StatusCode TranscoderSink::close() {
+    return status::StatusOK;
+}
+
 status::StatusCode TranscoderSink::write(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 

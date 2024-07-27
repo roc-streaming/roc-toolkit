@@ -75,6 +75,10 @@ public:
         return false;
     }
 
+    virtual status::StatusCode close() {
+        return status::StatusOK;
+    }
+
     virtual status::StatusCode rewind() {
         FAIL("not implemented");
         return status::StatusAbort;

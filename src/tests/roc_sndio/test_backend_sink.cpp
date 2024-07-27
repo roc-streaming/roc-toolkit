@@ -67,6 +67,7 @@ TEST(backend_sink, open) {
         CHECK(!backend_sink->has_state());
         CHECK(!backend_sink->has_latency());
         CHECK(!backend_sink->has_clock());
+        LONGS_EQUAL(status::StatusOK, backend_sink->close());
     }
 }
 
@@ -127,6 +128,7 @@ TEST(backend_sink, open_default_config) {
                                backend_sink);
 
         CHECK(backend_sink->sample_spec().is_valid());
+        LONGS_EQUAL(status::StatusOK, backend_sink->close());
     }
 }
 

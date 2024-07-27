@@ -11,6 +11,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_sndio/backend_map.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace sndio {
@@ -41,7 +42,13 @@ SndfileSource::SndfileSource(audio::FrameFactory& frame_factory,
 }
 
 SndfileSource::~SndfileSource() {
-    close_();
+    if (file_) {
+        roc_panic("sndfile source: input file is not closed");
+    }
+}
+
+status::StatusCode SndfileSource::close() {
+    return close_();
 }
 
 status::StatusCode SndfileSource::init_status() const {
@@ -107,8 +114,14 @@ status::StatusCode SndfileSource::rewind() {
     }
 
     if (file_) {
-        close_();
+        const status::StatusCode close_code = close_();
+        if (close_code != status::StatusOK) {
+            roc_log(LogError, "sndfile source: failed to close file during rewind: %s",
+                    status::code_to_str(close_code));
+            return close_code;
+        }
     }
+
     return open_();
 }
 
@@ -197,9 +210,9 @@ status::StatusCode SndfileSource::open_() {
     return status::StatusOK;
 }
 
-void SndfileSource::close_() {
+status::StatusCode SndfileSource::close_() {
     if (!file_) {
-        return;
+        return status::StatusOK;
     }
 
     roc_log(LogInfo, "sndfile source: closing input");
@@ -209,9 +222,12 @@ void SndfileSource::close_() {
         roc_log(LogError,
                 "sndfile source: sf_close() failed, cannot properly close input: %s",
                 sf_error_number(err));
+        return status::StatusErrFile;
     }
 
     file_ = NULL;
+
+    return status::StatusOK;
 }
 
 } // namespace sndio

@@ -158,6 +158,11 @@ bool SenderLoop::has_state() const {
     return sink_.has_state();
 }
 
+status::StatusCode SenderLoop::close() {
+    core::Mutex::Lock lock(sink_mutex_);
+    return sink_.close();
+}
+
 sndio::DeviceState SenderLoop::state() const {
     core::Mutex::Lock lock(sink_mutex_);
 

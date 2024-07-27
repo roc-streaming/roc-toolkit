@@ -48,7 +48,13 @@ WavSink::WavSink(audio::FrameFactory& frame_factory,
 }
 
 WavSink::~WavSink() {
-    close_();
+    if (output_file_) {
+        roc_panic("wav sink: output file is not closed");
+    }
+}
+
+status::StatusCode WavSink::close() {
+    return close_();
 }
 
 status::StatusCode WavSink::init_status() const {
@@ -161,9 +167,9 @@ status::StatusCode WavSink::open_(const char* path) {
     return status::StatusOK;
 }
 
-void WavSink::close_() {
+status::StatusCode WavSink::close_() {
     if (!output_file_) {
-        return;
+        return status::StatusOK;
     }
 
     roc_log(LogDebug, "wav sink: closing output file");
@@ -171,9 +177,12 @@ void WavSink::close_() {
     if (fclose(output_file_)) {
         roc_log(LogError, "wav sink: can't properly close output file: %s",
                 core::errno_to_str(errno).c_str());
+        return status::StatusErrFile;
     }
 
     output_file_ = NULL;
+
+    return status::StatusOK;
 }
 
 } // namespace sndio
