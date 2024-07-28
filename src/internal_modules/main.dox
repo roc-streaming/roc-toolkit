@@ -90,3 +90,9 @@ namespace roc {
   //! Sound I/O.
   namepsace sndio {}
 }
+
+namespace roc {
+  //! @namespace roc::sndio
+  //! Debugging I/O.
+  namepsace dbgio {}
+}

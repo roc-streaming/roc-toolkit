@@ -25,6 +25,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_fec/block_writer.h"
 #include "roc_fec/iblock_encoder.h"
 #include "roc_packet/interleaver.h"
@@ -61,7 +62,7 @@ public:
                   packet::PacketFactory& packet_factory,
                   audio::FrameFactory& frame_factory,
                   core::IArena& arena,
-                  core::CsvDumper* dumper);
+                  dbgio::CsvDumper* dumper);
 
     //! Check if the pipeline was successfully constructed.
     status::StatusCode init_status() const;
@@ -170,7 +171,7 @@ private:
 
     audio::IFrameWriter* frame_writer_;
 
-    core::CsvDumper* dumper_;
+    dbgio::CsvDumper* dumper_;
 
     status::StatusCode init_status_;
     status::StatusCode fail_status_;

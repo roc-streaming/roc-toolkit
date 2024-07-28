@@ -14,11 +14,11 @@
 
 #include "roc_audio/latency_tuner.h"
 #include "roc_audio/sample_spec.h"
-#include "roc_core/csv_dumper.h"
 #include "roc_core/iarena.h"
 #include "roc_core/mov_stats.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/ilink_meter.h"
 #include "roc_packet/iwriter.h"
 #include "roc_rtcp/reports.h"
@@ -44,7 +44,7 @@ public:
               const audio::LatencyConfig& latency_config,
               const EncodingMap& encoding_map,
               core::IArena& arena,
-              core::CsvDumper* dumper);
+              dbgio::CsvDumper* dumper);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
@@ -107,7 +107,7 @@ private:
     packet::stream_timestamp_t prev_stream_timestamp_;
     core::MovStats<core::nanoseconds_t> packet_jitter_stats_;
 
-    core::CsvDumper* dumper_;
+    dbgio::CsvDumper* dumper_;
 };
 
 } // namespace rtp

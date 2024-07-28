@@ -17,7 +17,7 @@ LinkMeter::LinkMeter(packet::IWriter& writer,
                      const audio::LatencyConfig& latency_config,
                      const EncodingMap& encoding_map,
                      core::IArena& arena,
-                     core::CsvDumper* dumper)
+                     dbgio::CsvDumper* dumper)
     : encoding_map_(encoding_map)
     , encoding_(NULL)
     , writer_(writer)
@@ -164,7 +164,7 @@ size_t LinkMeter::running_window_len() const {
 void LinkMeter::dump_(const packet::Packet& packet,
                       const long d_enq_ns,
                       const long d_s_ns) {
-    core::CsvEntry e;
+    dbgio::CsvEntry e;
     e.type = 'm';
     e.n_fields = 5;
     e.fields[0] = packet.udp()->queue_timestamp;

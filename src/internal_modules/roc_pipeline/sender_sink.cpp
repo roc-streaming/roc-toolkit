@@ -33,7 +33,7 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
     sink_config_.deduce_defaults(processor_map);
 
     if (sink_config_.dumper.dump_file) {
-        dumper_.reset(new (dumper_) core::CsvDumper(sink_config_.dumper, arena));
+        dumper_.reset(new (dumper_) dbgio::CsvDumper(sink_config_.dumper, arena));
         if ((init_status_ = dumper_->open()) != status::StatusOK) {
             return;
         }

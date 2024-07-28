@@ -20,7 +20,7 @@ SenderSession::SenderSession(const SenderSinkConfig& sink_config,
                              packet::PacketFactory& packet_factory,
                              audio::FrameFactory& frame_factory,
                              core::IArena& arena,
-                             core::CsvDumper* dumper)
+                             dbgio::CsvDumper* dumper)
     : arena_(arena)
     , sink_config_(sink_config)
     , processor_map_(processor_map)

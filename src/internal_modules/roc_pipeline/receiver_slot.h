@@ -17,10 +17,10 @@
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/mixer.h"
 #include "roc_audio/processor_map.h"
-#include "roc_core/csv_dumper.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list_node.h"
 #include "roc_core/ref_counted.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/metrics.h"
 #include "roc_pipeline/receiver_endpoint.h"
@@ -49,7 +49,7 @@ public:
                  packet::PacketFactory& packet_factory,
                  audio::FrameFactory& frame_factory,
                  core::IArena& arena,
-                 core::CsvDumper* dumper);
+                 dbgio::CsvDumper* dumper);
 
     //! Check if the pipeline was successfully constructed.
     status::StatusCode init_status() const;

@@ -8,10 +8,8 @@
 
 #include "roc_pipeline/receiver_session_group.h"
 #include "roc_address/socket_addr_to_str.h"
-#include "roc_core/csv_dumper.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_rtcp/participant_info.h"
 #include "roc_status/code_to_str.h"
 
 namespace roc {
@@ -26,7 +24,7 @@ ReceiverSessionGroup::ReceiverSessionGroup(const ReceiverSourceConfig& source_co
                                            packet::PacketFactory& packet_factory,
                                            audio::FrameFactory& frame_factory,
                                            core::IArena& arena,
-                                           core::CsvDumper* dumper)
+                                           dbgio::CsvDumper* dumper)
     : source_config_(source_config)
     , slot_config_(slot_config)
     , state_tracker_(state_tracker)

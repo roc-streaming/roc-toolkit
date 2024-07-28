@@ -68,7 +68,7 @@ double dot_prod(const double* coeff,
 
 FreqEstimator::FreqEstimator(FreqEstimatorProfile profile,
                              packet::stream_timestamp_t target_latency,
-                             core::CsvDumper* dumper)
+                             dbgio::CsvDumper* dumper)
     : config_(make_config(profile))
     , target_(target_latency)
     , dec1_ind_(0)
@@ -202,7 +202,7 @@ double FreqEstimator::run_controller_(double current) {
 }
 
 void FreqEstimator::dump_(double filtered) {
-    core::CsvEntry e;
+    dbgio::CsvEntry e;
     e.type = 'f';
     e.n_fields = 5;
     e.fields[0] = core::timestamp(core::ClockUnix);

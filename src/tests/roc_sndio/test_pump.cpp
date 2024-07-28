@@ -15,7 +15,7 @@
 #include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
-#include "roc_core/temp_file.h"
+#include "roc_dbgio/temp_file.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/config.h"
 #include "roc_sndio/pump.h"
@@ -71,7 +71,7 @@ TEST(pump, write_read) {
             continue;
         }
 
-        core::TempFile file("test.wav");
+        dbgio::TempFile file("test.wav");
 
         test::MockSource mock_source(frame_factory, sink_config.sample_spec);
         mock_source.add(NumSamples);
@@ -120,7 +120,7 @@ TEST(pump, write_overwrite_read) {
             continue;
         }
 
-        core::TempFile file("test.wav");
+        dbgio::TempFile file("test.wav");
 
         test::MockSource mock_source(frame_factory, sink_config.sample_spec);
         mock_source.add(NumSamples);

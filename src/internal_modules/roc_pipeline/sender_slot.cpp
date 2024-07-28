@@ -23,7 +23,7 @@ SenderSlot::SenderSlot(const SenderSinkConfig& sink_config,
                        packet::PacketFactory& packet_factory,
                        audio::FrameFactory& frame_factory,
                        core::IArena& arena,
-                       core::CsvDumper* dumper)
+                       dbgio::CsvDumper* dumper)
     : core::RefCounted<SenderSlot, core::ArenaAllocation>(arena)
     , sink_config_(sink_config)
     , fanout_(fanout)

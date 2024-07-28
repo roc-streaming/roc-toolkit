@@ -721,6 +721,7 @@ env['ROC_SOVER'] = '.'.join(env['ROC_VERSION'].split('.')[:2])
 env['ROC_MODULES'] = [
     'roc_core',
     'roc_status',
+    'roc_dbgio',
     'roc_address',
     'roc_packet',
     'roc_audio',

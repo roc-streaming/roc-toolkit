@@ -33,7 +33,7 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
     source_config_.deduce_defaults(processor_map);
 
     if (source_config.common.dumper.dump_file) {
-        dumper_.reset(new (dumper_) core::CsvDumper(source_config.common.dumper, arena));
+        dumper_.reset(new (dumper_) dbgio::CsvDumper(source_config.common.dumper, arena));
         if ((init_status_ = dumper_->open()) != status::StatusOK) {
             return;
         }

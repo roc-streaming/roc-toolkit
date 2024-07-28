@@ -191,7 +191,7 @@ LatencyConfig::calc_latency_tolerance(const core::nanoseconds_t latency,
 
 LatencyTuner::LatencyTuner(const LatencyConfig& config,
                            const SampleSpec& sample_spec,
-                           core::CsvDumper* dumper)
+                           dbgio::CsvDumper* dumper)
     : stream_pos_(0)
     , scale_interval_(0)
     , scale_pos_(0)
@@ -439,7 +439,7 @@ void LatencyTuner::write_metrics(const LatencyMetrics& latency_metrics,
     }
 
     if (dumper_) {
-        core::CsvEntry e;
+        dbgio::CsvEntry e;
         e.type = 't';
         e.n_fields = 3;
         e.fields[0] = core::timestamp(core::ClockUnix);

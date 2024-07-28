@@ -18,10 +18,10 @@
 #include "roc_audio/pcm_mapper_reader.h"
 #include "roc_audio/processor_map.h"
 #include "roc_audio/profiling_reader.h"
-#include "roc_core/csv_dumper.h"
 #include "roc_core/iarena.h"
 #include "roc_core/optional.h"
 #include "roc_core/stddefs.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/receiver_endpoint.h"
@@ -138,7 +138,7 @@ private:
 
     StateTracker state_tracker_;
 
-    core::Optional<core::CsvDumper> dumper_;
+    core::Optional<dbgio::CsvDumper> dumper_;
 
     core::Optional<audio::Mixer> mixer_;
     core::Optional<audio::ProfilingReader> profiler_;

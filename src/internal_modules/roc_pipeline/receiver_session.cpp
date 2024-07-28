@@ -21,7 +21,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                  packet::PacketFactory& packet_factory,
                                  audio::FrameFactory& frame_factory,
                                  core::IArena& arena,
-                                 core::CsvDumper* dumper)
+                                 dbgio::CsvDumper* dumper)
     : core::RefCounted<ReceiverSession, core::ArenaAllocation>(arena)
     , frame_reader_(NULL)
     , dumper_(dumper)

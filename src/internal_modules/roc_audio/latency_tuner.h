@@ -14,10 +14,10 @@
 
 #include "roc_audio/freq_estimator.h"
 #include "roc_audio/sample_spec.h"
-#include "roc_core/csv_dumper.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/time.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/ilink_meter.h"
 #include "roc_packet/units.h"
 #include "roc_status/status_code.h"
@@ -251,7 +251,7 @@ public:
     //! Initialize.
     LatencyTuner(const LatencyConfig& config,
                  const SampleSpec& sample_spec,
-                 core::CsvDumper* dumper);
+                 dbgio::CsvDumper* dumper);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
@@ -350,7 +350,7 @@ private:
 
     core::RateLimiter last_lat_limiter_;
 
-    core::CsvDumper* dumper_;
+    dbgio::CsvDumper* dumper_;
 
     status::StatusCode init_status_;
     void try_decrease_latency_(const core::nanoseconds_t estimate,

@@ -12,7 +12,7 @@
 
 #include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_core/temp_file.h"
+#include "roc_dbgio/temp_file.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/pump.h"
 
@@ -54,7 +54,7 @@ TEST(backend_sink, open) {
             continue;
         }
 
-        core::TempFile file("test.wav");
+        dbgio::TempFile file("test.wav");
 
         core::ScopedPtr<ISink> backend_sink;
         test::expect_open_sink(status::StatusOK, backend, frame_factory, arena,
@@ -96,7 +96,7 @@ TEST(backend_sink, open_bad_config) {
             continue;
         }
 
-        core::TempFile file("test.wav");
+        dbgio::TempFile file("test.wav");
 
         Config bad_config = sink_config;
         bad_config.sample_spec.set_pcm_format(audio::PcmFormat_SInt18_3_Be);
@@ -117,7 +117,7 @@ TEST(backend_sink, open_default_config) {
             continue;
         }
 
-        core::TempFile file("test.wav");
+        dbgio::TempFile file("test.wav");
 
         Config default_config = sink_config;
         default_config.sample_spec.clear();

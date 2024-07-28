@@ -6,15 +6,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_core/csv_dumper.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_core/errno_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
 namespace roc {
-namespace core {
+namespace dbgio {
 
-CsvDumper::CsvDumper(const CsvConfig& config, IArena& arena)
+CsvDumper::CsvDumper(const CsvConfig& config, core::IArena& arena)
     : config_(config)
     , open_flag_(false)
     , stop_flag_(false)
@@ -32,7 +32,7 @@ CsvDumper::~CsvDumper() {
 }
 
 status::StatusCode CsvDumper::open() {
-    Mutex::Lock lock(open_mutex_);
+    core::Mutex::Lock lock(open_mutex_);
 
     if (open_flag_) {
         roc_panic("csv dumper: open() already called");
@@ -52,7 +52,7 @@ status::StatusCode CsvDumper::open() {
 }
 
 void CsvDumper::close() {
-    Mutex::Lock lock(open_mutex_);
+    core::Mutex::Lock lock(open_mutex_);
 
     stop_flag_ = true;
     write_sem_.post();
@@ -121,13 +121,14 @@ void CsvDumper::run() {
     roc_log(LogDebug, "csv dumper: exiting background thread");
 }
 
-RateLimiter& CsvDumper::limiter_(char type) {
+core::RateLimiter& CsvDumper::limiter_(char type) {
     roc_panic_if(!isalnum(type));
 
     const size_t idx = (size_t)type;
 
     if (!rate_lims_[idx]) {
-        rate_lims_[idx].reset(new (rate_lims_[idx]) RateLimiter(config_.max_interval));
+        rate_lims_[idx].reset(new (rate_lims_[idx])
+                                  core::RateLimiter(config_.max_interval));
     }
 
     return *rate_lims_[idx];
@@ -139,7 +140,7 @@ bool CsvDumper::open_(const char* path) {
     file_ = fopen(path, "w");
     if (!file_) {
         roc_log(LogError, "csv dumper: failed to open output file \"%s\": %s", path,
-                errno_to_str().c_str());
+                core::errno_to_str().c_str());
         return false;
     }
 
@@ -150,7 +151,7 @@ void CsvDumper::close_() {
     if (file_) {
         if (fclose(file_) != 0) {
             roc_log(LogError, "csv dumper: failed to close output file: %s",
-                    errno_to_str().c_str());
+                    core::errno_to_str().c_str());
         }
         file_ = NULL;
     }
@@ -180,12 +181,12 @@ bool CsvDumper::dump_(const CsvEntry& entry) {
 
     if (fprintf(file_, "%s\n", line) < 0) {
         roc_log(LogError, "csv dumper: failed to write output file: %s",
-                errno_to_str().c_str());
+                core::errno_to_str().c_str());
         return false;
     }
 
     return true;
 }
 
-} // namespace core
+} // namespace dbgio
 } // namespace roc

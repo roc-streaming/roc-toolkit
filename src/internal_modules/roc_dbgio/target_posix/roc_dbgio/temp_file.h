@@ -6,17 +6,17 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_posix/roc_core/temp_file.h
+//! @file roc_dbgio/target_posix/roc_dbgio/temp_file.h
 //! @brief Filesystem functions.
 
-#ifndef ROC_CORE_TEMP_FILE_H_
-#define ROC_CORE_TEMP_FILE_H_
+#ifndef ROC_DBGIO_TEMP_FILE_H_
+#define ROC_DBGIO_TEMP_FILE_H_
 
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
-namespace core {
+namespace dbgio {
 
 //! Temporary file.
 //! @remarks
@@ -39,7 +39,7 @@ private:
     char file_[1024];
 };
 
-} // namespace core
+} // namespace dbgio
 } // namespace roc
 
-#endif // ROC_CORE_TEMP_FILE_H_
+#endif // ROC_DBGIO_TEMP_FILE_H_

@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/csv_dumper.h
+//! @file roc_dbgio/csv_dumper.h
 //! @brief Asynchronous CSV dumper.
 
-#ifndef ROC_CORE_CSV_DUMPER_H_
-#define ROC_CORE_CSV_DUMPER_H_
+#ifndef ROC_DBGIO_CSV_DUMPER_H_
+#define ROC_DBGIO_CSV_DUMPER_H_
 
 #include "roc_core/atomic.h"
 #include "roc_core/mutex.h"
@@ -24,7 +24,7 @@
 #include "roc_status/status_code.h"
 
 namespace roc {
-namespace core {
+namespace dbgio {
 
 //! Maximum number of fields in CSV entry.
 static const size_t Csv_MaxFields = 10;
@@ -55,22 +55,22 @@ struct CsvConfig {
     //! Maximum allowed interval between subsequent entries of same type.
     //! If zero, there is no limit.
     //! If non-zero, each entry type is rate-limited according to this.
-    nanoseconds_t max_interval;
+    core::nanoseconds_t max_interval;
 
     CsvConfig()
         : dump_file(NULL)
         , max_queued(1000)
-        , max_interval(Millisecond) {
+        , max_interval(core::Millisecond) {
     }
 };
 
 //! Asynchronous CSV dumper.
 //! Writes entries to CSV file from background thread.
 //! Recommended to be used from a single thread.
-class CsvDumper : private Thread {
+class CsvDumper : private core::Thread {
 public:
     //! Initialize.
-    CsvDumper(const CsvConfig& config, IArena& arena);
+    CsvDumper(const CsvConfig& config, core::IArena& arena);
     ~CsvDumper();
 
     //! Open file and start background thread.
@@ -92,7 +92,7 @@ public:
 private:
     virtual void run();
 
-    RateLimiter& limiter_(char type);
+    core::RateLimiter& limiter_(char type);
 
     bool open_(const char* path);
     void close_();
@@ -100,19 +100,19 @@ private:
 
     const CsvConfig config_;
 
-    Mutex open_mutex_;
-    Atomic<int> open_flag_;
-    Atomic<int> stop_flag_;
+    core::Mutex open_mutex_;
+    core::Atomic<int> open_flag_;
+    core::Atomic<int> stop_flag_;
     FILE* file_;
 
-    Mutex write_mutex_;
-    Semaphore write_sem_;
-    SpscRingBuffer<CsvEntry> ringbuf_;
+    core::Mutex write_mutex_;
+    core::Semaphore write_sem_;
+    core::SpscRingBuffer<CsvEntry> ringbuf_;
 
-    Optional<RateLimiter> rate_lims_[128];
+    core::Optional<core::RateLimiter> rate_lims_[128];
 };
 
-} // namespace core
+} // namespace dbgio
 } // namespace roc
 
-#endif // ROC_CORE_CSV_DUMPER_H_
+#endif // ROC_DBGIO_CSV_DUMPER_H_

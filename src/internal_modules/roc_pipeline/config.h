@@ -22,6 +22,7 @@
 #include "roc_audio/watchdog.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_fec/block_reader.h"
 #include "roc_fec/block_writer.h"
 #include "roc_fec/codec_config.h"
@@ -103,7 +104,7 @@ struct SenderSinkConfig {
     bool enable_profiling;
 
     //! Parameters for a logger in csv format with some run-time metrics.
-    core::CsvConfig dumper;
+    dbgio::CsvConfig dumper;
 
     //! Initialize config.
     SenderSinkConfig();
@@ -145,7 +146,7 @@ struct ReceiverCommonConfig {
     bool enable_profiling;
 
     //! Parameters for a logger in csv format with some run-time metrics.
-    core::CsvConfig dumper;
+    dbgio::CsvConfig dumper;
 
     //! Initialize config.
     ReceiverCommonConfig();

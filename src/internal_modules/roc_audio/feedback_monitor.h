@@ -20,6 +20,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/time.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/ilink_meter.h"
 
 namespace roc {
@@ -69,7 +70,7 @@ public:
                     const FeedbackConfig& feedback_config,
                     const LatencyConfig& latency_config,
                     const SampleSpec& sample_spec,
-                    core::CsvDumper* dumper);
+                    dbgio::CsvDumper* dumper);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;

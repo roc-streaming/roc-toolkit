@@ -14,7 +14,7 @@
 #include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/slab_pool.h"
-#include "roc_core/temp_file.h"
+#include "roc_dbgio/temp_file.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/pump.h"
 
@@ -98,7 +98,7 @@ TEST(backend_source, open) {
             continue;
         }
 
-        core::TempFile file("test.wav");
+        dbgio::TempFile file("test.wav");
         write_wav(backend, sink_config, file.path(), MaxBufSize * 10);
 
         core::ScopedPtr<ISource> backend_source;
@@ -141,7 +141,7 @@ TEST(backend_source, open_bad_config) {
             continue;
         }
 
-        core::TempFile file("test.wav");
+        dbgio::TempFile file("test.wav");
         write_wav(backend, sink_config, file.path(), MaxBufSize * 10);
 
         Config bad_config = source_config;
@@ -163,7 +163,7 @@ TEST(backend_source, rewind) {
             continue;
         }
 
-        core::TempFile file("test.wav");
+        dbgio::TempFile file("test.wav");
         write_wav(backend, sink_config, file.path(), MaxBufSize * 10);
 
         core::ScopedPtr<ISource> backend_source;
@@ -203,7 +203,7 @@ TEST(backend_source, rewind_after_eof) {
             continue;
         }
 
-        core::TempFile file("test.wav");
+        dbgio::TempFile file("test.wav");
         write_wav(backend, sink_config, file.path(), FrameSize * 2);
 
         core::ScopedPtr<ISource> backend_source;

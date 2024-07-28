@@ -21,6 +21,7 @@
 #include "roc_core/ipool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/sender_endpoint.h"
@@ -126,7 +127,7 @@ private:
 
     StateTracker state_tracker_;
 
-    core::Optional<core::CsvDumper> dumper_;
+    core::Optional<dbgio::CsvDumper> dumper_;
 
     core::Optional<audio::Fanout> fanout_;
     core::Optional<audio::ProfilingWriter> profiler_;

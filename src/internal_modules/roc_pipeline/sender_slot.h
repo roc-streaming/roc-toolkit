@@ -21,6 +21,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/ref_counted.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/metrics.h"
@@ -49,7 +50,7 @@ public:
                packet::PacketFactory& packet_factory,
                audio::FrameFactory& frame_factory,
                core::IArena& arena,
-               core::CsvDumper* dumper);
+               dbgio::CsvDumper* dumper);
 
     ~SenderSlot();
 

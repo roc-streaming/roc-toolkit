@@ -25,12 +25,12 @@
 #include "roc_audio/processor_map.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/watchdog.h"
-#include "roc_core/csv_dumper.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list_node.h"
 #include "roc_core/optional.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_fec/block_reader.h"
 #include "roc_fec/iblock_decoder.h"
 #include "roc_packet/delayed_reader.h"
@@ -71,7 +71,7 @@ public:
                     packet::PacketFactory& packet_factory,
                     audio::FrameFactory& frame_factory,
                     core::IArena& arena,
-                    core::CsvDumper* dumper);
+                    dbgio::CsvDumper* dumper);
 
     //! Check if the pipeline was successfully constructed.
     status::StatusCode init_status() const;
@@ -158,7 +158,7 @@ private:
 
     core::Optional<audio::LatencyMonitor> latency_monitor_;
 
-    core::CsvDumper* dumper_;
+    dbgio::CsvDumper* dumper_;
 
     status::StatusCode init_status_;
     status::StatusCode fail_status_;

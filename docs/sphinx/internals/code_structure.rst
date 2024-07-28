@@ -83,6 +83,7 @@ module            description
 `roc_ctl`_        Control loop that handles signaling protocols and background tasks
 `roc_netio`_      Network I/O loop
 `roc_sndio`_      Sound I/O loop
+`roc_dbgio`_      Debugging I/O (dumps, temp files)
 `roc_node`_       Top-level module that glues everything together
 ================= =================================
 
@@ -99,6 +100,7 @@ module            description
 .. _roc_ctl: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1ctl.html
 .. _roc_netio: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1netio.html
 .. _roc_sndio: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1sndio.html
+.. _roc_dbgio: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1dbgio.html
 .. _roc_node: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1node.html
 
 .. _targets:

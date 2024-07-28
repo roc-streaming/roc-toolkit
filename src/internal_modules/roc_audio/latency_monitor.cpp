@@ -24,7 +24,7 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
                                const LatencyConfig& config,
                                const SampleSpec& packet_sample_spec,
                                const SampleSpec& frame_sample_spec,
-                               core::CsvDumper* dumper)
+                               dbgio::CsvDumper* dumper)
     : tuner_(config, frame_sample_spec, dumper)
     , frame_reader_(frame_reader)
     , incoming_queue_(incoming_queue)
