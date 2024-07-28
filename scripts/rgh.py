@@ -224,9 +224,16 @@ def query_pr_info(org, repo, pr_number, no_git=False):
         'source_remote': response['head']['repo']['ssh_url'],
         # branch in upstream repo
         'target_branch': response['base']['ref'],
-        'target_sha': response['base']['sha'],
         'target_remote': response['base']['repo']['ssh_url'],
     }
+
+    if not no_git:
+        try:
+            pr_info['target_sha'] = subprocess.run(
+                ['git', 'ls-remote', pr_info['target_remote'], pr_info['target_branch']],
+                capture_output=True, text=True, check=True).stdout.split()[0]
+        except subprocess.CalledProcessError as e:
+            error("can't determine target commit")
 
     if response['milestone']:
         pr_info['pr_milestone'] = response['milestone']['title']
@@ -303,6 +310,25 @@ def query_pr_commits(org, repo, pr_number, no_git=False):
                 commit['authors'][0]['name'], commit['authors'][0]['email']))
 
     return results
+
+# find commit in target branch from which PR's branch was forked
+@functools.cache
+def find_pr_fork_point(org, repo, pr_number):
+    pr_info = query_pr_info(org, repo, pr_number)
+
+    try:
+        # find oldest commit in current branch that is not present in target
+        first_commit = subprocess.run(
+            ['git', 'rev-list', '--first-parent', '^'+pr_info['target_sha'], pr_info['source_sha']],
+            capture_output=True, text=True, check=True).stdout.split()[-1].strip()
+        # find its parent
+        fork_point = subprocess.run(
+            ['git', 'rev-parse', first_commit+'^'],
+            capture_output=True, text=True, check=True).stdout.strip()
+    except subprocess.CalledProcessError as e:
+        error("can't determine fork point")
+
+    return fork_point
 
 # print info about PR and linked issue
 def show_pr(org, repo, pr_number, show_json):
@@ -537,23 +563,24 @@ def update_pr_metadata(org, repo, pr_number, issue_number, issue_milestone,
             update_milestone_of_issue()
             update_milestone_of_pr()
 
-# rebase PR's local branch on its target branch
-def rebase_pr_commits(org, repo, pr_number):
+# fetch source and target commits
+def fetch_pr_commits(org, repo, pr_number):
     pr_info = query_pr_info(org, repo, pr_number)
 
-    # find where PR's branch forked from target branch
-    pr_commits = query_pr_commits(org, repo, pr_number)
-    fork_point = pr_commits[0][0]
+    run_cmd([
+        'git', 'fetch', pr_info['source_remote'], pr_info['source_sha']
+        ])
 
     run_cmd([
-        'git', 'rebase', '--onto', pr_info['target_sha'], f'{fork_point}^'
+        'git', 'fetch', pr_info['target_remote'], pr_info['target_sha']
         ])
 
 # squash all commits in PR's local branch into one
-# invoked after rebase
+# invoked before rebase
 def squash_pr_commits(org, repo, pr_number, title, no_issue):
     pr_info = query_pr_info(org, repo, pr_number)
 
+    # build and validate commit message
     commit_message = make_message(
         org, repo,
         pr_info['issue_link'] if not no_issue else None,
@@ -562,16 +589,32 @@ def squash_pr_commits(org, repo, pr_number, title, no_issue):
     if len(commit_message) > 72:
         error("commit message too long, use --title to overwrite")
 
-    run_cmd([
-        'git', 'rebase', '-i', pr_info['target_sha'],
-        ],
-        env={
-            'GIT_EDITOR': ':',
-            'GIT_SEQUENCE_EDITOR': "sed -i '1 ! s,^pick,fixup,g'",
-        })
+    # find where PR's branch forked from target branch
+    fork_point = find_pr_fork_point(org, repo, pr_number)
 
+    # squash all commits since fork point into one
+    run_cmd([
+        'git', 'reset', '--soft', fork_point,
+        ])
+    run_cmd([
+        'git', 'commit', '-C', pr_info['source_sha'],
+        ])
+
+    # edit message
     run_cmd([
         'git', 'commit', '--amend', '--no-edit', '-m', commit_message,
+        ])
+
+# rebase PR's local branch on its target branch
+def rebase_pr_commits(org, repo, pr_number):
+    pr_info = query_pr_info(org, repo, pr_number)
+
+    # find where PR's branch forked from target branch
+    fork_point = find_pr_fork_point(org, repo, pr_number)
+
+    # rebase commits from fork point to HEAD on target
+    run_cmd([
+        'git', 'rebase', '--onto', pr_info['target_sha'], fork_point
         ])
 
 # add issue prefix to every commit in PR's local branch
@@ -681,46 +724,44 @@ common_parser.add_argument('--org', default='roc-streaming',
 common_parser.add_argument('--repo', default='roc-toolkit',
                            help='github repo')
 
-pr_action_parser = argparse.ArgumentParser(add_help=False)
-pr_action_parser.add_argument('--issue', type=int, dest='issue_number',
-                    help="overwrite issue to link with")
-pr_action_parser.add_argument('--no-issue', action='store_true', dest='no_issue',
-                    help="don't link issue")
-pr_action_parser.add_argument('-m', '--milestone', type=str, dest='milestone_name',
-                    help="overwrite issue milestone")
-pr_action_parser.add_argument('-M', '--no-milestone', action='store_true', dest='no_milestone',
-                    help="don't set issue milestone")
-pr_action_parser.add_argument('--no-checks', action='store_true', dest='no_checks',
-                    help="proceed even if pr checks are failed")
-pr_action_parser.add_argument('--no-push', action='store_true', dest='no_push',
-                    help="don't actually push anything")
-pr_action_parser.add_argument('-n', '--dry-run', action='store_true', dest='dry_run',
-                    help="don't actually run commands, just print them")
-
 subparsers = parser.add_subparsers(dest='command')
+
+stb_rebase_parser = subparsers.add_parser(
+    'stb_rebase', parents=[common_parser],
+    help="rebase local branch preserving author and date")
+stb_rebase_parser.add_argument('base_branch', action='store_true')
 
 show_pr_parser = subparsers.add_parser(
     'show_pr', parents=[common_parser],
     help="show pull request info")
 show_pr_parser.add_argument('pr_number', type=int)
 show_pr_parser.add_argument('--json', action='store_true', dest='json',
-                         help="output in json format")
+                            help="output in json format")
 
 merge_pr_parser = subparsers.add_parser(
-    'merge_pr', parents=[common_parser, pr_action_parser],
-    help="link and merge pull request")
-merge_pr_parser.add_argument('--rebase', action='store_true',
-                          help='merge using rebase')
-merge_pr_parser.add_argument('--squash', action='store_true',
-                          help='merge using squash')
-merge_pr_parser.add_argument('-t', '--title', dest='title',
-                          help='overwrite commit message title')
+    'merge_pr', parents=[common_parser],
+    help="squash-merge or rebase-merge pull request")
 merge_pr_parser.add_argument('pr_number', type=int)
-
-stb_rebase_parser = subparsers.add_parser(
-    'stb_rebase', parents=[common_parser],
-    help="rebase local branch preserving author and date")
-stb_rebase_parser.add_argument('base_branch', action='store_true')
+merge_pr_parser.add_argument('--rebase', action='store_true',
+                             help='merge using rebase')
+merge_pr_parser.add_argument('--squash', action='store_true',
+                             help='merge using squash')
+merge_pr_parser.add_argument('-t', '--title', dest='title',
+                             help='overwrite commit message title')
+merge_pr_parser.add_argument('--issue', type=int, dest='issue_number',
+                             help="overwrite issue to link with")
+merge_pr_parser.add_argument('--no-issue', action='store_true', dest='no_issue',
+                             help="don't link issue")
+merge_pr_parser.add_argument('-m', '--milestone', type=str, dest='milestone_name',
+                             help="overwrite issue milestone")
+merge_pr_parser.add_argument('-M', '--no-milestone', action='store_true', dest='no_milestone',
+                             help="don't set issue milestone")
+merge_pr_parser.add_argument('--no-checks', action='store_true', dest='no_checks',
+                             help="proceed even if pr checks are failed")
+merge_pr_parser.add_argument('--no-push', action='store_true', dest='no_push',
+                             help="don't actually push and merge anything")
+merge_pr_parser.add_argument('-n', '--dry-run', action='store_true', dest='dry_run',
+                             help="don't actually run commands, just print them")
 
 args = parser.parse_args()
 
@@ -728,6 +769,10 @@ if hasattr(args, 'dry_run'):
     DRY_RUN = args.dry_run
 
 colorama.init()
+
+if args.command == 'stb_rebase':
+    stb_rebase(args.base_branch)
+    exit(0)
 
 if args.command == 'show_pr':
     show_pr(args.org, args.repo, args.pr_number, args.json)
@@ -738,29 +783,37 @@ if args.command == 'merge_pr':
         error("either --rebase or --squash should be specified")
     verify_pr(args.org, args.repo, args.pr_number, args.issue_number,
               args.milestone_name, args.no_checks, args.no_issue, args.no_milestone)
+    # create new worktree in /tmp, where we'll checkout pr's branch
     orig_path = enter_worktree()
     merged = False
     try:
         checkout_pr(args.org, args.repo, args.pr_number)
         pr_ref = remember_ref()
+        # first update metadata, so that subsequent calls to query_xxx_info()
+        # will return correct values
         update_pr_metadata(args.org, args.repo, args.pr_number, args.issue_number,
                            args.milestone_name, args.no_issue, args.no_milestone)
+        # ensure that all commits we're going to manipulate are available locally
+        fetch_pr_commits(args.org, args.repo, args.pr_number)
+        if args.squash:
+            # if we're going to squash-merge, then squash commits before rebasing
+            # this squash-merge will work even when rebase-merge produces conflicts
+            squash_pr_commits(args.org, args.repo, args.pr_number, args.title, args.no_issue)
+        # no matter if we do squash-merge or rebase-merge, rebase pr on target
         rebase_pr_commits(args.org, args.repo, args.pr_number)
         if args.rebase:
+            # if we're doing rebase-merge, we must preserve original commits,
+            # but ensure that each commit message has correct prefix
             reword_pr_commits(args.org, args.repo, args.pr_number, args.title, args.no_issue)
-        else:
-            squash_pr_commits(args.org, args.repo, args.pr_number, args.title, args.no_issue)
         print_pr_commits(args.org, args.repo, args.pr_number)
         if not args.no_push:
             force_push_pr(args.org, args.repo, args.pr_number)
             merge_pr(args.org, args.repo, args.pr_number)
             merged = True
     finally:
+        # remove worktree in /tmp
         leave_worktree(orig_path)
         if merged:
+            # delete temp branch (but only on success)
             delete_ref(pr_ref)
-    exit(0)
-
-if args.command == 'stb_rebase':
-    stb_rebase(args.base_branch)
     exit(0)
