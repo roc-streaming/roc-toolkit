@@ -268,7 +268,7 @@ if 'libogg' in autobuild_dependencies:
     env = conf.Finish()
 
 elif 'libogg' in system_dependencies:
-    conf = Configure(subenvs.libs, custom_tests=env.CustomTests)
+    conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('ogg', '--cflags --libs', exclude_from_pc=True):
         conf.env.AddManualDependency(libs=['ogg'], exclude_from_pc=True)
