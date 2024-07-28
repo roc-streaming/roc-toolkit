@@ -1438,6 +1438,26 @@ elif ctx.pkg_name == 'pulseaudio':
         install_files(ctx, 'builddir/src/pulse/libpulse-simple.so.0', ctx.pkg_rpath_dir)
         install_files(ctx, 'builddir/src/libpulsecommon-*.so', ctx.pkg_lib_dir)
         install_files(ctx, 'builddir/src/libpulsecommon-*.so', ctx.pkg_rpath_dir)
+elif ctx.pkg_name == 'libvorbis':
+    download(
+        ctx,
+        'https://downloads.xiph.org/releases/vorbis/libvorbis-{ctx.pkg_ver}.tar.gz',
+        'libvorbis-{ctx.pkg_ver}.tar.gz')
+    unpack(ctx,
+           'libvorbis-{ctx.pkg_ver}.tar.gz',
+           'libvorbis-{ctx.pkg_ver}')
+    changedir(ctx, 'src/libvorbis-{ctx.pkg_ver}')
+    execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
+        host=ctx.toolchain,
+        vars=format_vars(ctx),
+        flags=format_flags(ctx, cflags='-fPIC'),
+        opts=' '.join([
+            '--disable-shared',
+            '--enable-static',
+           ])))
+    execute_make(ctx)
+    install_tree(ctx, 'include', ctx.pkg_inc_dir, include=['*.h'])
+    install_files(ctx, 'lib/.libs/libvorbis.a', ctx.pkg_lib_dir)
 elif ctx.pkg_name == 'ltdl':
     download(
         ctx,

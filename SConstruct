@@ -209,6 +209,11 @@ AddOption('--disable-sox',
           action='store_true',
           help='disable SoX support in tools')
 
+AddOption('--disable-libvorbis',
+          dest='disable_libvorbis',
+          action='store_true',
+          help='disable libvorbis support')
+
 AddOption('--disable-sndfile',
           dest='disable_sndfile',
           action='store_true',
@@ -818,6 +823,11 @@ else:
     env.Append(ROC_TARGETS=[
         'target_libuv',
     ])
+
+    if not GetOption('disable_libvorbis'):
+        env.Append(ROC_TARGETS=[
+            'target_libvorbis',
+        ])
 
     if not GetOption('disable_openfec'):
         env.Append(ROC_TARGETS=[

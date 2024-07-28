@@ -20,6 +20,7 @@ thirdparty_versions = {
     'libatomic_ops':    '7.6.10',
     'libunwind':        '1.2.1',
     'libuv':            '1.35.0',
+    'libvorbis':        '1.3.7',
     'ltdl':             '2.4.6',
     'openfec':          '1.4.2.11',
     'openssl':          '3.0.8',
@@ -430,6 +431,21 @@ elif 'google-benchmark' in system_dependencies:
         subenvs.tests.AppendUnique(CPPDEFINES=['ROC_BENCHMARK_USE_ACCESSORS'])
 
     subenvs.tests = conf.Finish()
+
+# dep: libvorbis
+if 'libvorbis' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_versions, 'libvorbis')
+
+elif 'libvorbis' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('vorbis', '--cflags --libs'):
+        conf.env.AddManualDependency(libs=['vorbis'])
+
+    if not conf.CheckLibWithHeader('vorbis', 'vorbis/vorbisenc.h', 'C'):
+        env.Die("libvorbis not found (see 'config.log' for details)")
+
+    env = conf.Finish()
 
 # end of deps
 
