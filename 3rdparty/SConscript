@@ -273,7 +273,7 @@ elif 'libogg' in system_dependencies:
     if not conf.AddPkgConfigDependency('ogg', '--cflags --libs', exclude_from_pc=True):
         conf.env.AddManualDependency(libs=['ogg'], exclude_from_pc=True)
 
-    if not conf.CheckLibWithHeader('ogg', 'ogg/ogg.h', 'C', run=False):
+    if not conf.CheckLibWithHeaderExt('ogg', 'ogg/ogg.h', 'C', run=False):
         env.Die("libogg not found (see 'config.log' for details)")
 
     env = conf.Finish()
