@@ -83,9 +83,9 @@ section "Options"
     option "oneshot" 1 "Exit when last connected client disconnects"
         flag off
 
-    option "profiling" - "Enable self-profiling" flag off
+    option "profile" - "Enable self-profiling" flag off
 
-    option "dump" - "Path for a CSV file where to dump some useful run-time metrics"
+    option "dump" - "Path for a CSV file where to dump run-time metrics"
         string optional
 
     option "color" - "Set colored logging mode for stderr output"

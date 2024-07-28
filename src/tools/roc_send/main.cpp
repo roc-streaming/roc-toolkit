@@ -230,8 +230,7 @@ int main(int argc, char** argv) {
         break;
     }
 
-    sender_config.enable_interleaving = args.interleaving_flag;
-    sender_config.enable_profiling = args.profiling_flag;
+    sender_config.enable_profiling = args.profile_flag;
 
     node::ContextConfig context_config;
 

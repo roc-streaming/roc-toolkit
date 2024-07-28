@@ -26,7 +26,7 @@ section "Options"
     option "resampler-profile" - "Resampler profile"
         values="low","medium","high" default="medium" enum optional
 
-    option "profiling" - "Enable self profiling" flag off
+    option "profile" - "Enable self profiling" flag off
 
     option "color" - "Set colored logging mode for stderr output"
         values="auto","always","never" default="auto" enum optional

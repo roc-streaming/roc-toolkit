@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
         break;
     }
 
-    transcoder_config.enable_profiling = args.profiling_flag;
+    transcoder_config.enable_profiling = args.profile_flag;
 
     audio::IFrameWriter* output_writer = NULL;
 

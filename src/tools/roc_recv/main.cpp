@@ -292,7 +292,7 @@ int main(int argc, char** argv) {
         break;
     }
 
-    receiver_config.common.enable_profiling = args.profiling_flag;
+    receiver_config.common.enable_profiling = args.profile_flag;
 
     node::ContextConfig context_config;
 

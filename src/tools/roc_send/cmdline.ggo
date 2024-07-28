@@ -62,11 +62,9 @@ section "Options"
     option "resampler-profile" - "Resampler profile"
         values="low","medium","high" default="medium" enum optional
 
-    option "interleaving" - "Enable packet interleaving" flag off
+    option "profile" - "Enable self-profiling" flag off
 
-    option "profiling" - "Enable self profiling" flag off
-
-    option "dump" - "Path for a CSV file where to dump some useful run-time metrics"
+    option "dump" - "Path for a CSV file where to dump run-time metrics"
         string optional
 
     option "color" - "Set colored logging mode for stderr output"
