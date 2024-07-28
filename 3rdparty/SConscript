@@ -255,6 +255,25 @@ elif 'sndfile' in system_dependencies:
 
     env = conf.Finish()
 
+# dep: libvorbis
+if 'libvorbis' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_versions, 'libvorbis')
+
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    env = conf.Finish()
+
+elif 'libvorbis' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('vorbis', '--cflags --libs', exclude_from_pc=True):
+        conf.env.AddManualDependency(libs=['vorbis'], exclude_from_pc=True)
+
+    if not conf.CheckLibWithHeaderExt('vorbis', 'vorbis/vorbisenc.h', 'C', run=False):
+        env.Die("libvorbis not found (see 'config.log' for details)")
+
+    env = conf.Finish()
+
 # dep: alsa
 if 'alsa' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_versions, 'alsa')
@@ -431,21 +450,6 @@ elif 'google-benchmark' in system_dependencies:
         subenvs.tests.AppendUnique(CPPDEFINES=['ROC_BENCHMARK_USE_ACCESSORS'])
 
     subenvs.tests = conf.Finish()
-
-# dep: libvorbis
-if 'libvorbis' in autobuild_dependencies:
-    env.BuildThirdParty(thirdparty_versions, 'libvorbis')
-
-elif 'libvorbis' in system_dependencies:
-    conf = Configure(env, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('vorbis', '--cflags --libs'):
-        conf.env.AddManualDependency(libs=['vorbis'])
-
-    if not conf.CheckLibWithHeader('vorbis', 'vorbis/vorbisenc.h', 'C'):
-        env.Die("libvorbis not found (see 'config.log' for details)")
-
-    env = conf.Finish()
 
 # end of deps
 
