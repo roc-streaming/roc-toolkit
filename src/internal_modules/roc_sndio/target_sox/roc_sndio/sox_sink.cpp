@@ -76,10 +76,6 @@ SoxSink::~SoxSink() {
     }
 }
 
-status::StatusCode SoxSink::close() {
-    return close_();
-}
-
 status::StatusCode SoxSink::init_status() const {
     return init_status_;
 }
@@ -106,6 +102,10 @@ status::StatusCode SoxSink::open(const char* driver, const char* path) {
     }
 
     return status::StatusOK;
+}
+
+status::StatusCode SoxSink::close() {
+    return close_();
 }
 
 DeviceType SoxSink::type() const {
@@ -155,8 +155,6 @@ status::StatusCode SoxSink::pause() {
     if (driver_type_ == DriverType_Device) {
         const status::StatusCode close_code = close_();
         if (close_code != status::StatusOK) {
-            roc_log(LogError, "sox sink: failed to close output during pause: %s",
-                    status::code_to_str(close_code));
             return close_code;
         }
     }
@@ -304,8 +302,8 @@ status::StatusCode SoxSink::open_() {
     sample_spec_.channel_set().set_count(actual_chans);
 
     roc_log(LogInfo,
-            "sox sink:"
-            " opened: bits=%lu rate=%lu req_rate=%lu chans=%lu req_chans=%lu is_file=%d",
+            "sox sink: opened output:"
+            " bits=%lu rate=%lu req_rate=%lu chans=%lu req_chans=%lu is_file=%d",
             (unsigned long)output_->encoding.bits_per_sample, actual_rate, requested_rate,
             actual_chans, requested_chans, (int)(driver_type_ == DriverType_File));
 
@@ -329,16 +327,16 @@ status::StatusCode SoxSink::close_() {
         return status::StatusOK;
     }
 
-    roc_log(LogDebug, "sox sink: closing output");
+    roc_log(LogInfo, "sox sink: closing output");
 
     const int err = sox_close(output_);
+    output_ = NULL;
+
     if (err != SOX_SUCCESS) {
         roc_log(LogError, "sox sink: can't close output: %s", sox_strerror(err));
         return driver_type_ == DriverType_File ? status::StatusErrFile
                                                : status::StatusErrDevice;
     }
-
-    output_ = NULL;
 
     return status::StatusOK;
 }

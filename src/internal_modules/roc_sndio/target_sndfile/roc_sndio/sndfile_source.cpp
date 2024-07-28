@@ -47,10 +47,6 @@ SndfileSource::~SndfileSource() {
     }
 }
 
-status::StatusCode SndfileSource::close() {
-    return close_();
-}
-
 status::StatusCode SndfileSource::init_status() const {
     return init_status_;
 }
@@ -72,6 +68,10 @@ status::StatusCode SndfileSource::open(const char* driver, const char* path) {
     }
 
     return open_();
+}
+
+status::StatusCode SndfileSource::close() {
+    return close_();
 }
 
 DeviceType SndfileSource::type() const {
@@ -116,8 +116,6 @@ status::StatusCode SndfileSource::rewind() {
     if (file_) {
         const status::StatusCode close_code = close_();
         if (close_code != status::StatusOK) {
-            roc_log(LogError, "sndfile source: failed to close file during rewind: %s",
-                    status::code_to_str(close_code));
             return close_code;
         }
     }
@@ -204,7 +202,7 @@ status::StatusCode SndfileSource::open_() {
     sample_spec_.channel_set().set_order(audio::ChanOrder_Smpte);
     sample_spec_.channel_set().set_count((size_t)file_info_.channels);
 
-    roc_log(LogInfo, "sndfile source: opened: %s",
+    roc_log(LogInfo, "sndfile source: opened input file: %s",
             audio::sample_spec_to_str(sample_spec_).c_str());
 
     return status::StatusOK;
@@ -215,17 +213,16 @@ status::StatusCode SndfileSource::close_() {
         return status::StatusOK;
     }
 
-    roc_log(LogInfo, "sndfile source: closing input");
+    roc_log(LogInfo, "sndfile source: closing input file");
 
     const int err = sf_close(file_);
+    file_ = NULL;
+
     if (err != 0) {
-        roc_log(LogError,
-                "sndfile source: sf_close() failed, cannot properly close input: %s",
+        roc_log(LogError, "sndfile source: can't properly close input file: %s",
                 sf_error_number(err));
         return status::StatusErrFile;
     }
-
-    file_ = NULL;
 
     return status::StatusOK;
 }

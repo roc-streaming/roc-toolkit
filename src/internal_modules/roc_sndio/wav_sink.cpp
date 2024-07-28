@@ -53,16 +53,16 @@ WavSink::~WavSink() {
     }
 }
 
-status::StatusCode WavSink::close() {
-    return close_();
-}
-
 status::StatusCode WavSink::init_status() const {
     return init_status_;
 }
 
 status::StatusCode WavSink::open(const char* path) {
     return open_(path);
+}
+
+status::StatusCode WavSink::close() {
+    return close_();
 }
 
 DeviceType WavSink::type() const {
@@ -106,7 +106,7 @@ status::StatusCode WavSink::write(audio::Frame& frame) {
     size_t n_samples = frame.num_raw_samples();
 
     if (n_samples > 0) {
-        if (fseek(output_file_, 0, SEEK_SET)) {
+        if (fseek(output_file_, 0, SEEK_SET) != 0) {
             roc_log(LogError, "wav sink: failed to seek to the beginning of the file: %s",
                     core::errno_to_str(errno).c_str());
             return status::StatusErrFile;
@@ -120,7 +120,7 @@ status::StatusCode WavSink::write(audio::Frame& frame) {
             return status::StatusErrFile;
         }
 
-        if (fseek(output_file_, 0, SEEK_END)) {
+        if (fseek(output_file_, 0, SEEK_END) != 0) {
             roc_log(LogError,
                     "wav sink: failed to seek to append position of the file: %s",
                     core::errno_to_str(errno).c_str());
@@ -134,7 +134,7 @@ status::StatusCode WavSink::write(audio::Frame& frame) {
             return status::StatusErrFile;
         }
 
-        if (fflush(output_file_)) {
+        if (fflush(output_file_) != 0) {
             roc_log(LogError, "wav sink: failed to flush data to the file: %s",
                     core::errno_to_str(errno).c_str());
             return status::StatusErrFile;
@@ -174,13 +174,14 @@ status::StatusCode WavSink::close_() {
 
     roc_log(LogDebug, "wav sink: closing output file");
 
-    if (fclose(output_file_)) {
+    const int err = fclose(output_file_);
+    output_file_ = NULL;
+
+    if (err != 0) {
         roc_log(LogError, "wav sink: can't properly close output file: %s",
                 core::errno_to_str(errno).c_str());
         return status::StatusErrFile;
     }
-
-    output_file_ = NULL;
 
     return status::StatusOK;
 }

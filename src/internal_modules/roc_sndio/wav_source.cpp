@@ -41,16 +41,16 @@ WavSource::~WavSource() {
     }
 }
 
-status::StatusCode WavSource::close() {
-    return close_();
-}
-
 status::StatusCode WavSource::init_status() const {
     return init_status_;
 }
 
 status::StatusCode WavSource::open(const char* path) {
     return open_(path);
+}
+
+status::StatusCode WavSource::close() {
+    return close_();
 }
 
 DeviceType WavSource::type() const {
@@ -86,14 +86,14 @@ bool WavSource::has_clock() const {
 }
 
 status::StatusCode WavSource::rewind() {
+    roc_log(LogDebug, "wav source: rewinding");
+
     if (!file_opened_) {
         roc_panic("wav source: not opened");
     }
 
-    roc_log(LogDebug, "wav source: rewinding");
-
     if (!drwav_seek_to_pcm_frame(&wav_, 0)) {
-        roc_log(LogError, "wav source: seek failed when rewinding");
+        roc_log(LogError, "wav source: seek failed");
         return status::StatusErrFile;
     }
 
@@ -190,9 +190,17 @@ status::StatusCode WavSource::open_(const char* path) {
 }
 
 status::StatusCode WavSource::close_() {
-    if (file_opened_) {
-        file_opened_ = false;
-        drwav_uninit(&wav_);
+    if (!file_opened_) {
+        return status::StatusOK;
+    }
+
+    roc_log(LogInfo, "sndfile source: closing input file");
+
+    file_opened_ = false;
+
+    if (drwav_uninit(&wav_) != DRWAV_SUCCESS) {
+        roc_log(LogError, "wav source: can't properly close input file");
+        return status::StatusErrFile;
     }
 
     return status::StatusOK;

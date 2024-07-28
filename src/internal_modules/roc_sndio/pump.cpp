@@ -283,7 +283,7 @@ status::StatusCode Pump::close_all_devices_() {
         if (devices[i]) {
             status::StatusCode device_code = devices[i]->close();
             if (device_code != status::StatusOK) {
-                roc_log(LogError, "pump: failed to close device with error %s",
+                roc_log(LogError, "pump: failed to close device: status=%s",
                         status::code_to_str(device_code));
                 if (first_error == status::StatusOK) {
                     first_error = device_code;

@@ -80,10 +80,6 @@ SoxSource::~SoxSource() {
     }
 }
 
-status::StatusCode SoxSource::close() {
-    return close_();
-}
-
 status::StatusCode SoxSource::init_status() const {
     return init_status_;
 }
@@ -110,6 +106,10 @@ status::StatusCode SoxSource::open(const char* driver, const char* path) {
     }
 
     return status::StatusOK;
+}
+
+status::StatusCode SoxSource::close() {
+    return close_();
 }
 
 DeviceType SoxSource::type() const {
@@ -159,8 +159,6 @@ status::StatusCode SoxSource::pause() {
     if (driver_type_ == DriverType_Device) {
         const status::StatusCode close_code = close_();
         if (close_code != status::StatusOK) {
-            roc_log(LogError, "sox source: failed to close input during pause: %s",
-                    status::code_to_str(close_code));
             return close_code;
         }
     }
@@ -213,8 +211,6 @@ status::StatusCode SoxSource::rewind() {
         if (input_) {
             const status::StatusCode close_code = close_();
             if (close_code != status::StatusOK) {
-                roc_log(LogError, "sox source: failed to close input during rewind: %s",
-                        status::code_to_str(close_code));
                 return close_code;
             }
         }
@@ -382,8 +378,8 @@ status::StatusCode SoxSource::open_() {
     sample_spec_.channel_set().set_count(actual_chans);
 
     roc_log(LogInfo,
-            "sox source:"
-            " opened: bits=%lu rate=%lu req_rate=%lu chans=%lu req_chans=%lu is_file=%d",
+            "sox source: opened input:"
+            " bits=%lu rate=%lu req_rate=%lu chans=%lu req_chans=%lu is_file=%d",
             (unsigned long)input_->encoding.bits_per_sample, actual_rate, requested_rate,
             actual_chans, requested_chans, (int)(driver_type_ == DriverType_File));
 
@@ -411,12 +407,13 @@ status::StatusCode SoxSource::close_() {
     roc_log(LogInfo, "sox source: closing input");
 
     const int err = sox_close(input_);
+    input_ = NULL;
+
     if (err != SOX_SUCCESS) {
         roc_log(LogError, "sox source: can't close input: %s", sox_strerror(err));
-        return status::StatusErrFile;
+        return driver_type_ == DriverType_File ? status::StatusErrFile
+                                               : status::StatusErrDevice;
     }
-
-    input_ = NULL;
 
     return status::StatusOK;
 }

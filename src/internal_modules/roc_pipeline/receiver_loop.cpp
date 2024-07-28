@@ -196,6 +196,7 @@ bool ReceiverLoop::has_clock() const {
 
 status::StatusCode ReceiverLoop::close() {
     core::Mutex::Lock lock(source_mutex_);
+
     return source_.close();
 }
 

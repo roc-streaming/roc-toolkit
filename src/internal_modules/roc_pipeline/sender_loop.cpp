@@ -158,11 +158,6 @@ bool SenderLoop::has_state() const {
     return sink_.has_state();
 }
 
-status::StatusCode SenderLoop::close() {
-    core::Mutex::Lock lock(sink_mutex_);
-    return sink_.close();
-}
-
 sndio::DeviceState SenderLoop::state() const {
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -197,6 +192,12 @@ bool SenderLoop::has_clock() const {
     core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.has_clock();
+}
+
+status::StatusCode SenderLoop::close() {
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.close();
 }
 
 status::StatusCode SenderLoop::write(audio::Frame& frame) {

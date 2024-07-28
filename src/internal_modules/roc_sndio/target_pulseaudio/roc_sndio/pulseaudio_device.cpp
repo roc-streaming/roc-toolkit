@@ -182,15 +182,6 @@ PulseaudioDevice::~PulseaudioDevice() {
     }
 }
 
-status::StatusCode PulseaudioDevice::close() {
-    roc_log(LogDebug, "pulseaudio %s: closing device", device_type_to_str(device_type_));
-
-    close_();
-    stop_mainloop_();
-
-    return status::StatusOK;
-}
-
 status::StatusCode PulseaudioDevice::init_status() const {
     return init_status_;
 }
@@ -217,6 +208,15 @@ status::StatusCode PulseaudioDevice::open(const char* device) {
     if ((code = open_()) != status::StatusOK) {
         return code;
     }
+
+    return status::StatusOK;
+}
+
+status::StatusCode PulseaudioDevice::close() {
+    roc_log(LogDebug, "pulseaudio %s: closing device", device_type_to_str(device_type_));
+
+    close_();
+    stop_mainloop_();
 
     return status::StatusOK;
 }

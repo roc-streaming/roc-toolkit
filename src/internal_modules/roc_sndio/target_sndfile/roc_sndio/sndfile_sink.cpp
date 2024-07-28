@@ -175,10 +175,6 @@ SndfileSink::~SndfileSink() {
     }
 }
 
-status::StatusCode SndfileSink::close() {
-    return close_();
-}
-
 status::StatusCode SndfileSink::init_status() const {
     return init_status_;
 }
@@ -195,6 +191,10 @@ status::StatusCode SndfileSink::open(const char* driver, const char* path) {
     }
 
     return open_(driver, path);
+}
+
+status::StatusCode SndfileSink::close() {
+    return close_();
 }
 
 DeviceType SndfileSink::type() const {
@@ -273,7 +273,7 @@ status::StatusCode SndfileSink::open_(const char* driver, const char* path) {
 
     sample_spec_.set_sample_rate((size_t)file_info_.samplerate);
 
-    roc_log(LogInfo, "sndfile sink: opened: %s",
+    roc_log(LogInfo, "sndfile sink: opened output file: %s",
             audio::sample_spec_to_str(sample_spec_).c_str());
 
     return status::StatusOK;
@@ -284,17 +284,16 @@ status::StatusCode SndfileSink::close_() {
         return status::StatusOK;
     }
 
-    roc_log(LogDebug, "sndfile sink: closing output");
+    roc_log(LogInfo, "sndfile sink: closing output file");
 
     const int err = sf_close(file_);
+    file_ = NULL;
+
     if (err != 0) {
-        roc_log(LogError,
-                "sndfile sink: sf_close() failed, cannot properly close output: %s",
+        roc_log(LogError, "sndfile sink: can't properly close output file: %s",
                 sf_error_number(err));
         return status::StatusErrFile;
     }
-
-    file_ = NULL;
 
     return status::StatusOK;
 }
