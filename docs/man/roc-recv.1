@@ -78,14 +78,23 @@ IPv4 or IPv6 address of the network interface on which to join the multicast gro
 .B  \-\-reuseaddr
 enable SO_REUSEADDR when binding sockets
 .TP
-.BI \-\-target\-latency\fB= STRING
-Target latency, TIME units
-.TP
 .BI \-\-io\-latency\fB= STRING
 Playback target latency, TIME units
 .TP
+.BI \-\-target\-latency\fB= STRING
+Target latency, TIME units
+.TP
 .BI \-\-latency\-tolerance\fB= STRING
 Maximum deviation from target latency, TIME units
+.TP
+.BI \-\-start\-latency\fB= STRING
+Start latency, target\-latency must be \(aqauto\(aq or unset, TIME units
+.TP
+.BI \-\-min\-latency\fB= STRING
+Minimum allowed latency, target\-latency and latency\-tolerance must be 0 or unset, TIME units
+.TP
+.BI \-\-max\-latency\fB= STRING
+Maximum allowed latency, target\-latency and latency\-tolerance must be 0 or unset, TIME units
 .TP
 .BI \-\-no\-play\-timeout\fB= STRING
 No playback timeout, TIME units
@@ -123,8 +132,11 @@ Which PLC algorithm to use  (possible values=\(dqnone\(dq, \(dqbeep\(dq default=
 .B  \-1\fP,\fB  \-\-oneshot
 Exit when last connected client disconnects (default=off)
 .TP
-.B  \-\-profiling
+.B  \-\-profile
 Enable self\-profiling  (default=off)
+.TP
+.BI \-\-dump\fB= STRING
+Path for a CSV file where to dump run\-time metrics
 .TP
 .BI \-\-color\fB= ENUM
 Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)

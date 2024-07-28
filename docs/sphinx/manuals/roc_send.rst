@@ -24,8 +24,8 @@ Options
 -r, --repair=ENDPOINT_URI   Remote repair endpoint
 -c, --control=ENDPOINT_URI  Remote control endpoint
 --reuseaddr                 enable SO_REUSEADDR when binding sockets
---target-latency=STRING     Target latency, TIME units
 --io-latency=STRING         Recording target latency, TIME units
+--target-latency=STRING     Target latency, TIME units
 --latency-tolerance=STRING  Maximum deviation from target latency, TIME units
 --nbsrc=INT                 Number of source packets in FEC block
 --nbrpr=INT                 Number of repair packets in FEC block
@@ -38,8 +38,8 @@ Options
 --latency-profile=ENUM      Latency tuning profile  (possible values="responsive", "gradual", "intact" default=`intact')
 --resampler-backend=ENUM    Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
 --resampler-profile=ENUM    Resampler profile  (possible values="low", "medium", "high" default=`medium')
---interleaving              Enable packet interleaving  (default=off)
---profiling                 Enable self profiling  (default=off)
+--profile                   Enable self-profiling  (default=off)
+--dump=STRING               Path for a CSV file where to dump run-time metrics
 --color=ENUM                Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 
 Endpoint URI

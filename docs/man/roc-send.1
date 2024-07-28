@@ -69,11 +69,11 @@ Remote control endpoint
 .B  \-\-reuseaddr
 enable SO_REUSEADDR when binding sockets
 .TP
-.BI \-\-target\-latency\fB= STRING
-Target latency, TIME units
-.TP
 .BI \-\-io\-latency\fB= STRING
 Recording target latency, TIME units
+.TP
+.BI \-\-target\-latency\fB= STRING
+Target latency, TIME units
 .TP
 .BI \-\-latency\-tolerance\fB= STRING
 Maximum deviation from target latency, TIME units
@@ -111,11 +111,11 @@ Resampler backend  (possible values=\(dqdefault\(dq, \(dqbuiltin\(dq, \(dqspeex\
 .BI \-\-resampler\-profile\fB= ENUM
 Resampler profile  (possible values=\(dqlow\(dq, \(dqmedium\(dq, \(dqhigh\(dq default=\(gamedium\(aq)
 .TP
-.B  \-\-interleaving
-Enable packet interleaving  (default=off)
+.B  \-\-profile
+Enable self\-profiling  (default=off)
 .TP
-.B  \-\-profiling
-Enable self profiling  (default=off)
+.BI \-\-dump\fB= STRING
+Path for a CSV file where to dump run\-time metrics
 .TP
 .BI \-\-color\fB= ENUM
 Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)

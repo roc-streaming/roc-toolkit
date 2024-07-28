@@ -27,12 +27,12 @@ Options
 -c, --control=ENDPOINT_URI    Local control endpoint
 --miface=MIFACE               IPv4 or IPv6 address of the network interface on which to join the multicast group
 --reuseaddr                   enable SO_REUSEADDR when binding sockets
+--io-latency=STRING           Playback target latency, TIME units
 --target-latency=STRING       Target latency, TIME units
 --latency-tolerance=STRING    Maximum deviation from target latency, TIME units
---start-latency=STRING        Target latency, TIME units
---min-latency=STRING          Minimum allowed latency, TIME units
---max-latency=STRING          Maximum allowed latency, TIME units
---io-latency=STRING           Playback target latency, TIME units
+--start-latency=STRING        Start latency, target-latency must be 'auto' or unset, TIME units
+--min-latency=STRING          Minimum allowed latency, target-latency and latency-tolerance must be 0 or unset, TIME units
+--max-latency=STRING          Maximum allowed latency, target-latency and latency-tolerance must be 0 or unset, TIME units
 --no-play-timeout=STRING      No playback timeout, TIME units
 --choppy-play-timeout=STRING  Choppy playback timeout, TIME units
 --frame-len=TIME              Duration of the internal frames, TIME units
@@ -45,7 +45,8 @@ Options
 --resampler-profile=ENUM      Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --plc=ENUM                    Which PLC algorithm to use  (possible values="none", "beep" default=`none')
 -1, --oneshot                 Exit when last connected client disconnects (default=off)
---profiling                   Enable self-profiling  (default=off)
+--profile                     Enable self-profiling  (default=off)
+--dump=STRING                 Path for a CSV file where to dump run-time metrics
 --color=ENUM                  Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
 
 Endpoint URI
