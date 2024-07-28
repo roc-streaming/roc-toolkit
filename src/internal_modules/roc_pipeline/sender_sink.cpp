@@ -40,7 +40,7 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
                                            audio::Sample_RawFormat,
                                            sink_config_.input_sample_spec.channel_set());
 
-        fanout_.reset(new (fanout_) audio::Fanout(inout_spec));
+        fanout_.reset(new (fanout_) audio::Fanout(frame_factory_, arena_, inout_spec));
         if ((init_status_ = fanout_->init_status()) != status::StatusOK) {
             return;
         }
@@ -87,6 +87,11 @@ status::StatusCode SenderSink::init_status() const {
 SenderSlot* SenderSink::create_slot(const SenderSlotConfig& slot_config) {
     roc_panic_if(init_status_ != status::StatusOK);
 
+    if (state_tracker_.is_broken()) {
+        // TODO(gh-183): return StatusBadState (control ops)
+        return NULL;
+    }
+
     roc_log(LogInfo, "sender sink: adding slot");
 
     core::SharedPtr<SenderSlot> slot = new (arena_) SenderSlot(
@@ -115,6 +120,11 @@ SenderSlot* SenderSink::create_slot(const SenderSlotConfig& slot_config) {
 void SenderSink::delete_slot(SenderSlot* slot) {
     roc_panic_if(init_status_ != status::StatusOK);
 
+    if (state_tracker_.is_broken()) {
+        // TODO(gh-183): return StatusBadState (control ops)
+        return;
+    }
+
     roc_log(LogInfo, "sender sink: removing slot");
 
     slots_.remove(*slot);
@@ -130,6 +140,11 @@ status::StatusCode SenderSink::refresh(core::nanoseconds_t current_time,
                                        core::nanoseconds_t* next_deadline) {
     roc_panic_if(init_status_ != status::StatusOK);
 
+    if (state_tracker_.is_broken()) {
+        // Sender broken.
+        return status::StatusBadState;
+    }
+
     roc_panic_if_msg(current_time <= 0,
                      "sender sink: invalid timestamp:"
                      " expected positive value, got %lld",
@@ -143,6 +158,7 @@ status::StatusCode SenderSink::refresh(core::nanoseconds_t current_time,
         if (code != status::StatusOK) {
             roc_log(LogError, "sender sink: failed to refresh slot: status=%s",
                     status::code_to_str(code));
+            state_tracker_.set_broken();
             return code;
         }
 
@@ -181,10 +197,20 @@ sndio::DeviceState SenderSink::state() const {
 }
 
 status::StatusCode SenderSink::pause() {
+    if (state_tracker_.is_broken()) {
+        // Sender broken.
+        return status::StatusBadState;
+    }
+
     return status::StatusOK;
 }
 
 status::StatusCode SenderSink::resume() {
+    if (state_tracker_.is_broken()) {
+        // Sender broken.
+        return status::StatusBadState;
+    }
+
     return status::StatusOK;
 }
 
@@ -207,11 +233,17 @@ status::StatusCode SenderSink::close() {
 status::StatusCode SenderSink::write(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
+    if (state_tracker_.is_broken()) {
+        // Sender broken.
+        return status::StatusBadState;
+    }
+
     const status::StatusCode code = frame_writer_->write(frame);
 
     if (code != status::StatusOK) {
         roc_log(LogError, "sender sink: failed to write frame: status=%s",
                 status::code_to_str(code));
+        state_tracker_.set_broken();
     }
 
     return code;

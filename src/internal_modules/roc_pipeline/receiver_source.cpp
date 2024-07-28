@@ -98,6 +98,11 @@ status::StatusCode ReceiverSource::init_status() const {
 ReceiverSlot* ReceiverSource::create_slot(const ReceiverSlotConfig& slot_config) {
     roc_panic_if(init_status_ != status::StatusOK);
 
+    if (state_tracker_.is_broken()) {
+        // TODO(gh-183): return StatusBadState (control ops)
+        return NULL;
+    }
+
     roc_log(LogInfo, "receiver source: adding slot");
 
     core::SharedPtr<ReceiverSlot> slot = new (arena_) ReceiverSlot(
@@ -125,6 +130,11 @@ ReceiverSlot* ReceiverSource::create_slot(const ReceiverSlotConfig& slot_config)
 void ReceiverSource::delete_slot(ReceiverSlot* slot) {
     roc_panic_if(init_status_ != status::StatusOK);
 
+    if (state_tracker_.is_broken()) {
+        // TODO(gh-183): return StatusBadState (control ops)
+        return;
+    }
+
     roc_log(LogInfo, "receiver source: removing slot");
 
     slots_.remove(*slot);
@@ -137,6 +147,11 @@ size_t ReceiverSource::num_sessions() const {
 status::StatusCode ReceiverSource::refresh(core::nanoseconds_t current_time,
                                            core::nanoseconds_t* next_deadline) {
     roc_panic_if(init_status_ != status::StatusOK);
+
+    if (state_tracker_.is_broken()) {
+        // Receiver broken.
+        return status::StatusBadState;
+    }
 
     roc_panic_if_msg(current_time <= 0,
                      "receiver source: invalid timestamp:"
@@ -151,6 +166,7 @@ status::StatusCode ReceiverSource::refresh(core::nanoseconds_t current_time,
         if (code != status::StatusOK) {
             roc_log(LogError, "receiver source: failed to refresh slot: status=%s",
                     status::code_to_str(code));
+            state_tracker_.set_broken();
             return code;
         }
 
@@ -189,10 +205,20 @@ sndio::DeviceState ReceiverSource::state() const {
 }
 
 status::StatusCode ReceiverSource::pause() {
+    if (state_tracker_.is_broken()) {
+        // Receiver broken.
+        return status::StatusBadState;
+    }
+
     return status::StatusOK;
 }
 
 status::StatusCode ReceiverSource::resume() {
+    if (state_tracker_.is_broken()) {
+        // Receiver broken.
+        return status::StatusBadState;
+    }
+
     return status::StatusOK;
 }
 
@@ -213,6 +239,11 @@ status::StatusCode ReceiverSource::close() {
 }
 
 status::StatusCode ReceiverSource::rewind() {
+    if (state_tracker_.is_broken()) {
+        // Receiver broken.
+        return status::StatusBadState;
+    }
+
     return status::StatusOK;
 }
 
@@ -235,12 +266,18 @@ status::StatusCode ReceiverSource::read(audio::Frame& frame,
                                         audio::FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
+    if (state_tracker_.is_broken()) {
+        // Receiver broken.
+        return status::StatusBadState;
+    }
+
     const status::StatusCode code = frame_reader_->read(frame, duration, mode);
 
     if (code != status::StatusOK && code != status::StatusPart
         && code != status::StatusDrain) {
         roc_log(LogError, "receiver source: failed to read frame: status=%s",
                 status::code_to_str(code));
+        state_tracker_.set_broken();
     }
 
     return code;

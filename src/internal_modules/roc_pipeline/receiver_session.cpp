@@ -288,17 +288,12 @@ audio::IFrameReader& ReceiverSession::frame_reader() {
     return *this;
 }
 
-status::StatusCode ReceiverSession::route_packet(const packet::PacketPtr& packet) {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    return packet_router_->write(packet);
-}
-
 status::StatusCode ReceiverSession::refresh(core::nanoseconds_t current_time,
                                             core::nanoseconds_t& next_deadline) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (fail_status_ != status::NoStatus) {
+        // Report remembered error code.
         return fail_status_;
     }
 
@@ -308,7 +303,46 @@ status::StatusCode ReceiverSession::refresh(core::nanoseconds_t current_time,
 void ReceiverSession::reclock(core::nanoseconds_t playback_time) {
     roc_panic_if(init_status_ != status::StatusOK);
 
+    if (fail_status_ != status::NoStatus) {
+        // Session broken.
+        return;
+    }
+
     latency_monitor_->reclock(playback_time);
+}
+
+status::StatusCode ReceiverSession::route_packet(const packet::PacketPtr& packet) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (fail_status_ != status::NoStatus) {
+        // Session broken.
+        return status::StatusNoRoute;
+    }
+
+    return packet_router_->write(packet);
+}
+
+status::StatusCode ReceiverSession::read(audio::Frame& frame,
+                                         packet::stream_timestamp_t duration,
+                                         audio::FrameReadMode mode) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (fail_status_ != status::NoStatus) {
+        // Session broken.
+        return status::StatusFinish;
+    }
+
+    const status::StatusCode code = frame_reader_->read(frame, duration, mode);
+
+    // On failure, mark session broken and return StatusFinish to be excluded from mixer.
+    // Error will be reported later from refresh().
+    if (code != status::StatusOK && code != status::StatusPart
+        && code != status::StatusDrain) {
+        fail_status_ = code;
+        return status::StatusFinish;
+    }
+
+    return code;
 }
 
 size_t ReceiverSession::num_reports() const {
@@ -407,35 +441,6 @@ ReceiverParticipantMetrics ReceiverSession::get_metrics() const {
     metrics.depacketizer = depacketizer_->metrics();
 
     return metrics;
-}
-
-status::StatusCode ReceiverSession::read(audio::Frame& frame,
-                                         packet::stream_timestamp_t duration,
-                                         audio::FrameReadMode mode) {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    if (fail_status_ != status::NoStatus) {
-        // Failure happened, and session will be removed soon. Until that,
-        // always return StatusEnd to be excluded from mixing.
-        return status::StatusEnd;
-    }
-
-    const status::StatusCode code = frame_reader_->read(frame, duration, mode);
-
-    roc_panic_if_msg(code <= status::NoStatus || code >= status::MaxStatus,
-                     "receiver session: invalid status code %d", code);
-
-    // Failure happened. Remember error to return it from next refresh() call.
-    // Return StatusEnd to be excluded from mixing.
-    // We don't return error from read() because we don't want the whole
-    // receiver to fail, we just need to remove one session.
-    if (code != status::StatusOK && code != status::StatusPart
-        && code != status::StatusDrain) {
-        fail_status_ = code;
-        return status::StatusEnd;
-    }
-
-    return code;
 }
 
 } // namespace pipeline

@@ -14,9 +14,9 @@
 
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_writer.h"
-#include "roc_audio/sample.h"
 #include "roc_audio/sample_spec.h"
-#include "roc_core/list.h"
+#include "roc_core/array.h"
+#include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
@@ -26,24 +26,30 @@ namespace audio {
 //!
 //! Duplicates audio stream to multiple output writers.
 //!
-//! Since StatusPart and StatusDrain are not allowed for write operations
-//! Fanout does not need any special handling, unlike Mixer.
+//! Features:
+//!  - Since StatusPart and StatusDrain are not allowed for write operations,
+//!    fanout does not need any special handling for them.
+//!
+//!  - If pipeline element reports end-of-stream (StatusFinish), fanout skips this
+//!    element until it's removed.
 class Fanout : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    Fanout(const SampleSpec& sample_spec);
+    Fanout(FrameFactory& frame_factory,
+           core::IArena& arena,
+           const SampleSpec& sample_spec);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
 
     //! Check if writer is already added.
-    bool has_output(IFrameWriter&);
+    bool has_output(IFrameWriter& writer);
 
     //! Add output writer.
-    void add_output(IFrameWriter&);
+    ROC_ATTR_NODISCARD status::StatusCode add_output(IFrameWriter& writer);
 
     //! Remove output writer.
-    void remove_output(IFrameWriter&);
+    void remove_output(IFrameWriter& writer);
 
     //! Write audio frame.
     //! @remarks
@@ -51,8 +57,19 @@ public:
     virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame);
 
 private:
-    core::List<IFrameWriter, core::NoOwnership> frame_writers_;
+    struct Output {
+        // to where to write samples, typically sender session
+        IFrameWriter* writer;
+        // if true, output returned StatusFinish and should not be used
+        bool is_finished;
 
+        Output()
+            : writer(NULL)
+            , is_finished(false) {
+        }
+    };
+
+    core::Array<Output, 8> outputs_;
     const SampleSpec sample_spec_;
 
     status::StatusCode init_status_;

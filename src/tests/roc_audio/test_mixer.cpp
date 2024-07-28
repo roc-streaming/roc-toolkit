@@ -88,7 +88,7 @@ TEST(mixer, no_readers) {
     expect_output(status::StatusOK, mixer, BufSz, BufSz, 0);
 }
 
-TEST(mixer, one_reader) {
+TEST(mixer, one_input) {
     test::MockReader reader(frame_factory, sample_spec);
 
     Mixer mixer(frame_factory, arena, sample_spec, true);
@@ -103,7 +103,7 @@ TEST(mixer, one_reader) {
     LONGS_EQUAL(1, reader.total_reads());
 }
 
-TEST(mixer, one_reader_big_frame) {
+TEST(mixer, one_input_big_frame) {
     enum { Factor = 3 };
 
     test::MockReader reader(frame_factory, sample_spec);
@@ -120,7 +120,7 @@ TEST(mixer, one_reader_big_frame) {
     LONGS_EQUAL(Factor, reader.total_reads());
 }
 
-TEST(mixer, two_readers) {
+TEST(mixer, two_inputs) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
@@ -142,7 +142,7 @@ TEST(mixer, two_readers) {
     LONGS_EQUAL(1, reader2.total_reads());
 }
 
-TEST(mixer, remove_reader) {
+TEST(mixer, remove_input) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
@@ -172,8 +172,35 @@ TEST(mixer, remove_reader) {
     LONGS_EQUAL(BufSz * 2, reader2.num_unread());
 }
 
-// If reader returns StreamEnd, mixer skips it.
-TEST(mixer, end) {
+TEST(mixer, has_input) {
+    test::MockReader reader1(frame_factory, sample_spec);
+    test::MockReader reader2(frame_factory, sample_spec);
+
+    Mixer mixer(frame_factory, arena, sample_spec, true);
+    LONGS_EQUAL(status::StatusOK, mixer.init_status());
+
+    CHECK(!mixer.has_input(reader1));
+    CHECK(!mixer.has_input(reader2));
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
+    CHECK(mixer.has_input(reader1));
+    CHECK(!mixer.has_input(reader2));
+
+    LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
+    CHECK(mixer.has_input(reader1));
+    CHECK(mixer.has_input(reader2));
+
+    mixer.remove_input(reader1);
+    CHECK(!mixer.has_input(reader1));
+    CHECK(mixer.has_input(reader2));
+
+    mixer.remove_input(reader2);
+    CHECK(!mixer.has_input(reader1));
+    CHECK(!mixer.has_input(reader2));
+}
+
+// If reader returns StatusFinish, mixer skips it.
+TEST(mixer, finish) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
@@ -187,13 +214,13 @@ TEST(mixer, end) {
     reader2.add_samples(BufSz, 0.22f);
     expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.33f);
 
-    reader2.set_status(status::StatusEnd);
+    reader2.set_status(status::StatusFinish);
 
     reader1.add_samples(BufSz, 0.44f);
     reader2.add_samples(BufSz, 0.55f);
     expect_output(status::StatusOK, mixer, BufSz, BufSz, 0.44f);
 
-    reader1.set_status(status::StatusEnd);
+    reader1.set_status(status::StatusFinish);
 
     reader1.add_samples(BufSz, 0.77f);
     reader2.add_samples(BufSz, 0.88f);
@@ -243,7 +270,7 @@ TEST(mixer, partial) {
     LONGS_EQUAL(Factor1 + Factor2, reader2.total_reads());
 }
 
-// Reader returns StreamEnd in the middle of repeating partial.
+// Reader returns StatusFinish in the middle of repeating partial.
 TEST(mixer, partial_end) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
@@ -261,7 +288,7 @@ TEST(mixer, partial_end) {
     reader1.set_limit(BufSz);
     reader2.set_limit(BufSz);
 
-    reader1.set_no_samples_status(status::StatusEnd);
+    reader1.set_no_samples_status(status::StatusFinish);
 
     expect_output(status::StatusOK, mixer, BufSz * 4, BufSz * 4, 0.33f, 0, 0);
 
@@ -271,7 +298,7 @@ TEST(mixer, partial_end) {
     LONGS_EQUAL(3, reader1.total_reads());
     LONGS_EQUAL(4, reader2.total_reads());
 
-    LONGS_EQUAL(status::StatusEnd, reader1.last_status());
+    LONGS_EQUAL(status::StatusFinish, reader1.last_status());
     LONGS_EQUAL(status::StatusOK, reader2.last_status());
 }
 
@@ -671,7 +698,7 @@ TEST(mixer, soft_read_partial_drain_two_readers) {
     LONGS_EQUAL(status::StatusOK, reader2.last_status());
 }
 
-// One reader returns StreamEnd during soft read.
+// One reader returns StatusFinish during soft read.
 TEST(mixer, soft_read_partial_end_two_readers) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
@@ -683,12 +710,12 @@ TEST(mixer, soft_read_partial_end_two_readers) {
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader2));
 
     // reader1 returns StatusOK
-    // reader2 returns StatusPart, then StatusEnd
+    // reader2 returns StatusPart, then StatusFinish
     reader1.add_samples(BufSz, 0.11f);
     reader2.add_samples(BufSz, 0.22f);
     reader2.add_samples(BufSz, 0.33f);
 
-    reader1.set_no_samples_status(status::StatusEnd);
+    reader1.set_no_samples_status(status::StatusFinish);
 
     reader1.set_limit(BufSz / 2);
     reader2.set_limit(BufSz / 2);
@@ -701,7 +728,7 @@ TEST(mixer, soft_read_partial_end_two_readers) {
     LONGS_EQUAL(3, reader1.total_reads());
     LONGS_EQUAL(4, reader2.total_reads());
 
-    LONGS_EQUAL(status::StatusEnd, reader1.last_status());
+    LONGS_EQUAL(status::StatusFinish, reader1.last_status());
     LONGS_EQUAL(status::StatusOK, reader2.last_status());
 }
 

@@ -18,6 +18,10 @@ StateTracker::StateTracker()
 }
 
 sndio::DeviceState StateTracker::get_state() const {
+    if (is_broken_) {
+        return sndio::DeviceState_Broken;
+    }
+
     if (active_sessions_ != 0) {
         // We have sessions and they're producing some sound.
         return sndio::DeviceState_Active;
@@ -30,6 +34,14 @@ sndio::DeviceState StateTracker::get_state() const {
 
     // No sessions and packets; we can sleep until there are some.
     return sndio::DeviceState_Idle;
+}
+
+bool StateTracker::is_broken() const {
+    return is_broken_;
+}
+
+void StateTracker::set_broken() {
+    is_broken_ = true;
 }
 
 size_t StateTracker::num_sessions() const {

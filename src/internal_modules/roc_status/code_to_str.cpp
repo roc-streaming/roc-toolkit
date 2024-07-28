@@ -26,10 +26,8 @@ const char* code_to_str(StatusCode code) {
         return "Drain";
     case StatusAbort:
         return "Abort";
-    case StatusEnd:
-        return "End";
-    case StatusConflict:
-        return "Conflict";
+    case StatusFinish:
+        return "Finish";
     case StatusNoMem:
         return "NoMem";
     case StatusNoRoute:
@@ -64,6 +62,8 @@ const char* code_to_str(StatusCode code) {
         return "BadArg";
     case StatusBadOperation:
         return "BadOperation";
+    case StatusBadState:
+        return "BadState";
     }
 
     // Most likely someone forgot to initialize status to a proper

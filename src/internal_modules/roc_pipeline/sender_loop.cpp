@@ -212,12 +212,17 @@ status::StatusCode SenderLoop::write(audio::Frame& frame) {
 
     core::Mutex::Lock lock(sink_mutex_);
 
+    if (sink_.state() == sndio::DeviceState_Broken) {
+        // Don't go to sleep if we're broke.
+        return status::StatusBadState;
+    }
+
     if (ticker_) {
         ticker_->wait(ticker_ts_);
         ticker_ts_ += frame.duration();
     }
 
-    // invokes process_subframe_imp() and process_task_imp()
+    // Invokes process_subframe_imp() and process_task_imp().
     const status::StatusCode code =
         process_subframes_and_tasks(frame, frame.duration(), audio::ModeHard);
 

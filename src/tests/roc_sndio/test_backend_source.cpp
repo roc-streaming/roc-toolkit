@@ -217,7 +217,7 @@ TEST(backend_source, rewind_after_eof) {
         for (int i = 0; i < 10; i++) {
             expect_read(status::StatusOK, *backend_source, *frame, FrameSize);
             expect_read(status::StatusOK, *backend_source, *frame, FrameSize);
-            expect_read(status::StatusEnd, *backend_source, *frame, FrameSize);
+            expect_read(status::StatusFinish, *backend_source, *frame, FrameSize);
 
             // rewind
             LONGS_EQUAL(status::StatusOK, backend_source->rewind());

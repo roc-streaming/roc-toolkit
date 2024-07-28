@@ -14,12 +14,10 @@
 
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_reader.h"
-#include "roc_audio/sample.h"
 #include "roc_audio/sample_spec.h"
+#include "roc_core/array.h"
 #include "roc_core/iarena.h"
-#include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/time.h"
 
 namespace roc {
 namespace audio {
@@ -41,6 +39,9 @@ namespace audio {
 //!    (In other words, StatusPart and StatusDrain never leave mixer. Mixer
 //!    always returns as much samples as requested).
 //!
+//!  - If pipeline element reports end-of-stream (StatusFinish), mixer skips this
+//!    element until it's removed.
+//!
 //!  - If timestamps are enabled, mixer computes capture timestamp of output
 //!    frame as the average capture timestamps of all mixed input frames.
 //!
@@ -58,11 +59,14 @@ public:
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
 
+    //! Check if reader is already added.
+    bool has_input(IFrameReader& reader);
+
     //! Add input reader.
-    ROC_ATTR_NODISCARD status::StatusCode add_input(IFrameReader&);
+    ROC_ATTR_NODISCARD status::StatusCode add_input(IFrameReader& reader);
 
     //! Remove input reader.
-    void remove_input(IFrameReader&);
+    void remove_input(IFrameReader& reader);
 
     //! Read audio frame.
     //! @remarks
@@ -82,14 +86,14 @@ private:
         size_t n_mixed;
         // capture timestamp of first sample in mix_frame_
         core::nanoseconds_t cts;
-        // if true, input returned StatusEnd and should not be used
-        bool ended;
+        // if true, input returned StatusFinish and should not be used
+        bool is_finished;
 
         Input()
             : reader(NULL)
             , n_mixed(0)
             , cts(0)
-            , ended(false) {
+            , is_finished(false) {
         }
     };
 

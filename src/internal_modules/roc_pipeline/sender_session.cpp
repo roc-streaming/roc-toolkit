@@ -260,22 +260,12 @@ audio::IFrameWriter* SenderSession::frame_writer() {
     return this;
 }
 
-status::StatusCode SenderSession::route_packet(const packet::PacketPtr& packet,
-                                               core::nanoseconds_t current_time) {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    if (packet->has_flags(packet::Packet::FlagControl)) {
-        return route_control_packet_(packet, current_time);
-    }
-
-    roc_panic("sender session: unexpected non-control packet");
-}
-
 status::StatusCode SenderSession::refresh(core::nanoseconds_t current_time,
                                           core::nanoseconds_t& next_deadline) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (fail_status_ != status::NoStatus) {
+        // Report remembered error code.
         return fail_status_;
     }
 
@@ -291,6 +281,46 @@ status::StatusCode SenderSession::refresh(core::nanoseconds_t current_time,
     }
 
     return status::StatusOK;
+}
+
+status::StatusCode SenderSession::route_packet(const packet::PacketPtr& packet,
+                                               core::nanoseconds_t current_time) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (fail_status_ != status::NoStatus) {
+        // Session broken.
+        return status::StatusNoRoute;
+    }
+
+    if (!packet->has_flags(packet::Packet::FlagControl)) {
+        roc_panic("sender session: unexpected non-control packet");
+    }
+
+    return route_control_packet_(packet, current_time);
+}
+
+status::StatusCode SenderSession::write(audio::Frame& frame) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (fail_status_ != status::NoStatus) {
+        // Session broken.
+        return status::StatusFinish;
+    }
+
+    const status::StatusCode code = frame_writer_->write(frame);
+
+    // On failure, mark session broken and return StatusFinish to be excluded from fanout.
+    // Error will be reported later from refresh().
+    if (code != status::StatusOK) {
+        // These codes can't be returned from write().
+        roc_panic_if_msg(code == status::StatusPart || code == status::StatusDrain,
+                         "sender session: unexpected status code %s",
+                         status::code_to_str(code));
+        fail_status_ = code;
+        return status::StatusFinish;
+    }
+
+    return code;
 }
 
 void SenderSession::get_slot_metrics(SenderSlotMetrics& slot_metrics) const {
@@ -420,30 +450,6 @@ SenderSession::route_control_packet_(const packet::PacketPtr& packet,
 
     // This will invoke IParticipant methods implemented by us.
     return rtcp_communicator_->process_packet(packet, current_time);
-}
-
-status::StatusCode SenderSession::write(audio::Frame& frame) {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    if (fail_status_ != status::NoStatus) {
-        // Failure happened, and session will be removed soon. Until that,
-        // always return StatusOK and do nothing.
-        return status::StatusOK;
-    }
-
-    const status::StatusCode code = frame_writer_->write(frame);
-
-    roc_panic_if_msg(code <= status::NoStatus || code >= status::MaxStatus,
-                     "sender session: invalid status code %d", code);
-
-    // If error happens, save it to return later from refresh(), which allows
-    // SenderSlot to handle it.
-    if (code != status::StatusOK) {
-        fail_status_ = code;
-        return status::StatusOK;
-    }
-
-    return code;
 }
 
 } // namespace pipeline

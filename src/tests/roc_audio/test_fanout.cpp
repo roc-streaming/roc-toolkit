@@ -62,7 +62,8 @@ void expect_written(test::MockWriter& mock_writer, size_t sz, sample_t value) {
 TEST_GROUP(fanout) {};
 
 TEST(fanout, no_writers) {
-    Fanout fanout(sample_spec);
+    Fanout fanout(frame_factory, arena, sample_spec);
+    LONGS_EQUAL(status::StatusOK, fanout.init_status());
 
     write_frame(fanout, BufSz, 0.11f);
 }
@@ -70,8 +71,10 @@ TEST(fanout, no_writers) {
 TEST(fanout, one_output) {
     test::MockWriter writer;
 
-    Fanout fanout(sample_spec);
-    fanout.add_output(writer);
+    Fanout fanout(frame_factory, arena, sample_spec);
+    LONGS_EQUAL(status::StatusOK, fanout.init_status());
+
+    LONGS_EQUAL(status::StatusOK, fanout.add_output(writer));
 
     write_frame(fanout, BufSz, 0.11f);
 
@@ -85,9 +88,11 @@ TEST(fanout, two_outputs) {
     test::MockWriter writer1;
     test::MockWriter writer2;
 
-    Fanout fanout(sample_spec);
-    fanout.add_output(writer1);
-    fanout.add_output(writer2);
+    Fanout fanout(frame_factory, arena, sample_spec);
+    LONGS_EQUAL(status::StatusOK, fanout.init_status());
+
+    LONGS_EQUAL(status::StatusOK, fanout.add_output(writer1));
+    LONGS_EQUAL(status::StatusOK, fanout.add_output(writer2));
 
     write_frame(fanout, BufSz, 0.11f);
 
@@ -106,10 +111,12 @@ TEST(fanout, remove_output) {
     test::MockWriter writer2;
     test::MockWriter writer3;
 
-    Fanout fanout(sample_spec);
-    fanout.add_output(writer1);
-    fanout.add_output(writer2);
-    fanout.add_output(writer3);
+    Fanout fanout(frame_factory, arena, sample_spec);
+    LONGS_EQUAL(status::StatusOK, fanout.init_status());
+
+    LONGS_EQUAL(status::StatusOK, fanout.add_output(writer1));
+    LONGS_EQUAL(status::StatusOK, fanout.add_output(writer2));
+    LONGS_EQUAL(status::StatusOK, fanout.add_output(writer3));
 
     write_frame(fanout, BufSz, 0.11f);
 
@@ -127,25 +134,41 @@ TEST(fanout, remove_output) {
 }
 
 TEST(fanout, has_output) {
-    test::MockWriter writer;
-    Fanout fanout(sample_spec);
+    test::MockWriter writer1;
+    test::MockWriter writer2;
 
-    CHECK(!fanout.has_output(writer));
+    Fanout fanout(frame_factory, arena, sample_spec);
+    LONGS_EQUAL(status::StatusOK, fanout.init_status());
 
-    fanout.add_output(writer);
-    CHECK(fanout.has_output(writer));
+    CHECK(!fanout.has_output(writer1));
+    CHECK(!fanout.has_output(writer2));
 
-    fanout.remove_output(writer);
-    CHECK(!fanout.has_output(writer));
+    LONGS_EQUAL(status::StatusOK, fanout.add_output(writer1));
+    CHECK(fanout.has_output(writer1));
+    CHECK(!fanout.has_output(writer2));
+
+    LONGS_EQUAL(status::StatusOK, fanout.add_output(writer2));
+    CHECK(fanout.has_output(writer1));
+    CHECK(fanout.has_output(writer2));
+
+    fanout.remove_output(writer1);
+    CHECK(!fanout.has_output(writer1));
+    CHECK(fanout.has_output(writer2));
+
+    fanout.remove_output(writer2);
+    CHECK(!fanout.has_output(writer1));
+    CHECK(!fanout.has_output(writer2));
 }
 
 TEST(fanout, forward_error) {
     test::MockWriter writer1;
     test::MockWriter writer2;
 
-    Fanout fanout(sample_spec);
-    fanout.add_output(writer1);
-    fanout.add_output(writer2);
+    Fanout fanout(frame_factory, arena, sample_spec);
+    LONGS_EQUAL(status::StatusOK, fanout.init_status());
+
+    LONGS_EQUAL(status::StatusOK, fanout.add_output(writer1));
+    LONGS_EQUAL(status::StatusOK, fanout.add_output(writer2));
 
     FramePtr frame = new_frame(BufSz);
     CHECK(frame);

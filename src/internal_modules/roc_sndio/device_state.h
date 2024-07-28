@@ -27,7 +27,11 @@ enum DeviceState {
 
     //! Device is paused.
     //! It's not producing anything.
-    DeviceState_Paused = (1 << 2)
+    DeviceState_Paused = (1 << 2),
+
+    //! Device is broken.
+    //! The only thing can be done is to close device.
+    DeviceState_Broken = (1 << 3)
 };
 
 //! Convert device state to string.

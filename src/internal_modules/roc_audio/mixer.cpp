@@ -48,6 +48,18 @@ status::StatusCode Mixer::init_status() const {
     return init_status_;
 }
 
+bool Mixer::has_input(IFrameReader& reader) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    for (size_t ni = 0; ni < inputs_.size(); ni++) {
+        if (inputs_[ni].reader == &reader) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 ROC_ATTR_NODISCARD status::StatusCode Mixer::add_input(IFrameReader& reader) {
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -90,8 +102,8 @@ void Mixer::remove_input(IFrameReader& reader) {
     }
 
     // Remove from array.
-    for (size_t n = rm_idx + 1; n < inputs_.size(); n++) {
-        inputs_[n - 1] = inputs_[n];
+    for (size_t ni = rm_idx + 1; ni < inputs_.size(); ni++) {
+        inputs_[ni - 1] = inputs_[ni];
     }
 
     if (!inputs_.resize(inputs_.size() - 1)) {
@@ -306,8 +318,8 @@ Mixer::mix_one_(Input& input, sample_t* mix_data, size_t mix_size, FrameReadMode
     roc_panic_if(input.n_mixed % sample_spec_.num_channels() != 0);
     roc_panic_if(mix_size % sample_spec_.num_channels() != 0);
 
-    // If input returned StatusEnd, don't call it anymore.
-    if (input.ended && input.n_mixed < mix_size) {
+    // If input returned StatusFinish, don't call it anymore.
+    if (input.is_finished && input.n_mixed < mix_size) {
         input.n_mixed = mix_size;
     }
 
@@ -316,7 +328,7 @@ Mixer::mix_one_(Input& input, sample_t* mix_data, size_t mix_size, FrameReadMode
     // We stop when one of the following happens:
     //   - we have fully filled requested buffer
     //   - we got StatusDrain, which means that soft read stopped early
-    //   - we got StatusEnd, which means that reader is terminating
+    //   - we got StatusFinish, which means that reader is terminating
     //   - we got an error (any other status), which means that the whole mixer fails
     while (input.n_mixed < mix_size) {
         const packet::stream_timestamp_t remained_duration = packet::stream_timestamp_t(
@@ -334,10 +346,10 @@ Mixer::mix_one_(Input& input, sample_t* mix_data, size_t mix_size, FrameReadMode
         const status::StatusCode code =
             input.reader->read(*in_frame_, capped_duration, mode);
 
-        if (code == status::StatusEnd) {
+        if (code == status::StatusFinish) {
             // Stream ended and will be removed soon, pad it with zeros until that.
             input.n_mixed = mix_size;
-            input.ended = true;
+            input.is_finished = true;
             break;
         }
 

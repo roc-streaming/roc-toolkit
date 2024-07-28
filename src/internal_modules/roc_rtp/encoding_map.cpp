@@ -97,7 +97,7 @@ status::StatusCode EncodingMap::register_encoding(Encoding enc) {
                 "encoding map: failed to register encoding:"
                 " encoding id %u already exists",
                 enc.payload_type);
-        return status::StatusConflict;
+        return status::StatusBadArg;
     }
 
     core::SharedPtr<Node> node = new (node_pool_) Node(node_pool_, enc);

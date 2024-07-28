@@ -58,22 +58,14 @@ enum StatusCode {
     //!  Example: session terminated because of no_playback timeout.
     StatusAbort,
 
-    //! Stream is fully read.
+    //! Stream is fully read or written.
     //! @remarks
-    //!  Indicates that we've successfully read everything and there is no
-    //!  more data ever.
+    //!  Indicates that we've successfully read or write everything and there is
+    //!  no more data expected.
     //! @note
     //!  Example: we've got end of file when reading from file, or end of
     //!  stream when reading from network.
-    StatusEnd,
-
-    //! Conflicting identifier.
-    //! @remarks
-    //!  Operation can't be completed because of conflicting name or id.
-    //! @note
-    //!  Example: encoding can't be registered because another one already
-    //!  exists with the same numeric id.
-    StatusConflict,
+    StatusFinish,
 
     //! Insufficient memory.
     //! @remarks
@@ -191,7 +183,7 @@ enum StatusCode {
     //!  size is not multiple of sample size.
     StatusBadBuffer,
 
-    //! Bad argument.
+    //! Illegal argument.
     //! @remark
     //!  One of the provided function arguments has invalid value.
     //! @note
@@ -199,13 +191,20 @@ enum StatusCode {
     //!  invalid enum value.
     StatusBadArg,
 
-    //! Bad operation.
+    //! Illegal operation.
     //! @remark
     //!  Operation is not allowed or supported in this context.
     //! @note
     //!  Example: trying to push packet for an interface that does not support
     //!  it, trying to connect using a protocol that doesn't support it.
     StatusBadOperation,
+
+    //! Illegal object state.
+    //! @remark
+    //!  Object state is invalid and object can't be used anymore.
+    //! @note
+    //!  Example: trying to write frame after previous write failed.
+    StatusBadState,
 
     //! Maximum enum value.
     MaxStatus,

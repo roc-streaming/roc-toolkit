@@ -114,7 +114,7 @@ status::StatusCode WavSource::read(audio::Frame& frame,
     }
 
     if (eof_) {
-        return status::StatusEnd;
+        return status::StatusFinish;
     }
 
     if (!frame_factory_.reallocate_frame(
@@ -147,7 +147,7 @@ status::StatusCode WavSource::read(audio::Frame& frame,
     }
 
     if (frame_size == 0) {
-        return status::StatusEnd;
+        return status::StatusFinish;
     }
 
     frame.set_num_raw_samples(frame_size);

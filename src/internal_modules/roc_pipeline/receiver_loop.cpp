@@ -225,24 +225,27 @@ status::StatusCode ReceiverLoop::read(audio::Frame& frame,
 
     core::Mutex::Lock lock(source_mutex_);
 
+    if (source_.state() == sndio::DeviceState_Broken) {
+        // Don't go to sleep if we're broke.
+        return status::StatusBadState;
+    }
+
     if (ticker_) {
         ticker_->wait(ticker_ts_);
     }
 
-    // invokes process_subframe_imp() and process_task_imp()
+    // Invokes process_subframe_imp() and process_task_imp().
     const status::StatusCode code = process_subframes_and_tasks(frame, duration, mode);
 
     roc_panic_if_msg(code <= status::NoStatus || code >= status::MaxStatus,
                      "receiver loop: invalid status code %d", code);
 
-    if (code != status::StatusOK && code != status::StatusPart) {
-        return code;
-    }
+    if (code == status::StatusOK || code == status::StatusPart) {
+        ticker_ts_ += frame.duration();
 
-    ticker_ts_ += frame.duration();
-
-    if (auto_reclock_) {
-        source_.reclock(core::timestamp(core::ClockUnix));
+        if (auto_reclock_) {
+            source_.reclock(core::timestamp(core::ClockUnix));
+        }
     }
 
     return code;

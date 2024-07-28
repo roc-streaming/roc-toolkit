@@ -14,8 +14,11 @@
 namespace roc {
 namespace audio {
 
-Fanout::Fanout(const SampleSpec& sample_spec)
-    : sample_spec_(sample_spec)
+Fanout::Fanout(FrameFactory& frame_factory,
+               core::IArena& arena,
+               const SampleSpec& sample_spec)
+    : outputs_(arena)
+    , sample_spec_(sample_spec)
     , init_status_(status::NoStatus) {
     roc_panic_if_msg(!sample_spec_.is_valid(), "fanout: required valid sample spec: %s",
                      sample_spec_to_str(sample_spec_).c_str());
@@ -30,19 +33,53 @@ status::StatusCode Fanout::init_status() const {
 bool Fanout::has_output(IFrameWriter& writer) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    return frame_writers_.contains(writer);
+    for (size_t no = 0; no < outputs_.size(); no++) {
+        if (outputs_[no].writer == &writer) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
-void Fanout::add_output(IFrameWriter& writer) {
+status::StatusCode Fanout::add_output(IFrameWriter& writer) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    frame_writers_.push_back(writer);
+    Output output;
+    output.writer = &writer;
+
+    if (!outputs_.push_back(output)) {
+        roc_log(LogError, "fanout: can't add output: allocation failed");
+        return status::StatusNoMem;
+    }
+
+    return status::StatusOK;
 }
 
 void Fanout::remove_output(IFrameWriter& writer) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    frame_writers_.remove(writer);
+    size_t rm_idx = (size_t)-1;
+
+    for (size_t no = 0; no < outputs_.size(); no++) {
+        if (outputs_[no].writer == &writer) {
+            rm_idx = no;
+            break;
+        }
+    }
+
+    if (rm_idx == (size_t)-1) {
+        roc_panic("fanout: can't remove output: writer not found");
+    }
+
+    // Remove from array.
+    for (size_t no = rm_idx + 1; no < outputs_.size(); no++) {
+        outputs_[no - 1] = outputs_[no];
+    }
+
+    if (!outputs_.resize(outputs_.size() - 1)) {
+        roc_panic("fanout: can't remove output: resize failed");
+    }
 }
 
 status::StatusCode Fanout::write(Frame& in_frame) {
@@ -50,17 +87,26 @@ status::StatusCode Fanout::write(Frame& in_frame) {
 
     sample_spec_.validate_frame(in_frame);
 
-    for (IFrameWriter* writer = frame_writers_.front(); writer != NULL;
-         writer = frame_writers_.nextof(*writer)) {
-        const status::StatusCode code = writer->write(in_frame);
+    for (size_t no = 0; no < outputs_.size(); no++) {
+        Output& output = outputs_[no];
+
+        if (output.is_finished) {
+            continue;
+        }
+
+        const status::StatusCode code = output.writer->write(in_frame);
+
+        if (code == status::StatusFinish) {
+            // From now on, skip this writer until it's removed.
+            output.is_finished = true;
+            continue;
+        }
 
         if (code != status::StatusOK) {
             // These codes can be returned only from read().
-            roc_panic_if_msg(
-                code == status::StatusPart || code == status::StatusDrain,
-                "fanout loop: unexpected status from write operation: status=%s",
-                status::code_to_str(code));
-
+            roc_panic_if_msg(code == status::StatusPart || code == status::StatusDrain,
+                             "fanout: unexpected status from write operation: status=%s",
+                             status::code_to_str(code));
             return code;
         }
     }

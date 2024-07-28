@@ -75,11 +75,6 @@ struct DepacketizerMetrics {
 class Depacketizer : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialization.
-    //!
-    //! @b Parameters
-    //!  - @p packet_reader is used to read packets
-    //!  - @p payload_decoder is used to extract samples from packets
-    //!  - @p sample_spec describes output frames
     Depacketizer(packet::IReader& packet_reader,
                  IFrameDecoder& payload_decoder,
                  FrameFactory& frame_factory,

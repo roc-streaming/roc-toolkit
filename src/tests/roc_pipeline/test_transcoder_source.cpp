@@ -183,7 +183,7 @@ TEST(transcoder_source, eof) {
     mock_source.add(SamplesPerFrame, input_sample_spec);
 
     read_frame(status::StatusOK, transcoder, SamplesPerFrame);
-    read_frame(status::StatusEnd, transcoder, SamplesPerFrame);
+    read_frame(status::StatusFinish, transcoder, SamplesPerFrame);
 }
 
 TEST(transcoder_source, frame_size_small) {

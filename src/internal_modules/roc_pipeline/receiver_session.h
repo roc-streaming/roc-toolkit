@@ -83,13 +83,6 @@ public:
     //!  clock, happens during the read operation.
     audio::IFrameReader& frame_reader();
 
-    //! Route a packet to the session.
-    //! @remarks
-    //!  This way packets from sender reach receiver pipeline.
-    //!  Packets are stored inside internal pipeline queues, and then fetched
-    //!  when frame are requested from frame_reader().
-    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet);
-
     //! Refresh pipeline according to current time.
     //! @remarks
     //!  Should be invoked before reading each frame.
@@ -103,6 +96,13 @@ public:
     //!  @p playback_time specified absolute time when first sample of last frame
     //!  retrieved from pipeline will be actually played on sink
     void reclock(core::nanoseconds_t playback_time);
+
+    //! Route a packet to the session.
+    //! @remarks
+    //!  This way packets from sender reach receiver pipeline.
+    //!  Packets are stored inside internal pipeline queues, and then fetched
+    //!  when frame are requested from frame_reader().
+    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet);
 
     //! Get number of RTCP reports to be generated.
     size_t num_reports() const;

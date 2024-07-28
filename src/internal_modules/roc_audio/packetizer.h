@@ -50,16 +50,6 @@ struct PacketizerMetrics {
 class Packetizer : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialization.
-    //!
-    //! @b Parameters
-    //!  - @p writer is used to write generated packets
-    //!  - @p composer is used to initialize new packets
-    //!  - @p sequencer is used to put packets in sequence
-    //!  - @p payload_encoder is used to write samples to packets
-    //!  - @p packet_factory is used to allocate packets
-    //!  - @p buffer_factory is used to allocate buffers for packets
-    //!  - @p packet_length defines packet length in nanoseconds
-    //!  - @p sample_spec describes input frames
     Packetizer(packet::IWriter& writer,
                packet::IComposer& composer,
                packet::ISequencer& sequencer,

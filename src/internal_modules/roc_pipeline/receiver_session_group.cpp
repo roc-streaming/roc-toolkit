@@ -85,17 +85,6 @@ ReceiverSessionGroup::create_control_pipeline(ReceiverEndpoint* control_endpoint
     return status::StatusOK;
 }
 
-status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet,
-                                                      core::nanoseconds_t current_time) {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    if (packet->has_flags(packet::Packet::FlagControl)) {
-        return route_control_packet_(packet, current_time);
-    }
-
-    return route_transport_packet_(packet);
-}
-
 status::StatusCode
 ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time,
                                        core::nanoseconds_t& next_deadline) {
@@ -123,7 +112,7 @@ ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time,
         const status::StatusCode code = curr_sess->refresh(current_time, sess_deadline);
 
         // These errors break only session, but not the whole receiver.
-        if (code == status::StatusEnd || code == status::StatusAbort) {
+        if (code == status::StatusFinish || code == status::StatusAbort) {
             remove_session_(curr_sess, code);
             continue;
         }
@@ -151,6 +140,17 @@ void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t playback_time) {
 
         curr_sess->reclock(playback_time);
     }
+}
+
+status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet,
+                                                      core::nanoseconds_t current_time) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (packet->has_flags(packet::Packet::FlagControl)) {
+        return route_control_packet_(packet, current_time);
+    }
+
+    return route_transport_packet_(packet);
 }
 
 size_t ReceiverSessionGroup::num_sessions() const {

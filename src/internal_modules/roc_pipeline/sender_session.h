@@ -82,14 +82,6 @@ public:
     //!  etc, happens during the write operation.
     audio::IFrameWriter* frame_writer();
 
-    //! Route a packet to the session.
-    //! @remarks
-    //!  This way feedback packets from receiver reach sender pipeline.
-    //!  Packets are stored inside internal pipeline queues, and then fetched
-    //!  when frame are passed from frame_writer().
-    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
-                                                       core::nanoseconds_t current_time);
-
     //! Refresh pipeline according to current time.
     //! @remarks
     //!  Should be invoked before reading each frame.
@@ -97,6 +89,14 @@ public:
     //!  later than the deadline returned via @p next_deadline.
     ROC_ATTR_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
                                                   core::nanoseconds_t& next_deadline);
+
+    //! Route a packet to the session.
+    //! @remarks
+    //!  This way feedback packets from receiver reach sender pipeline.
+    //!  Packets are stored inside internal pipeline queues, and then fetched
+    //!  when frame are passed from frame_writer().
+    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
+                                                       core::nanoseconds_t current_time);
 
     //! Get slot metrics.
     //! @remarks

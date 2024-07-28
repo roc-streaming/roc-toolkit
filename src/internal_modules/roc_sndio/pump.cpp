@@ -68,7 +68,7 @@ status::StatusCode Pump::run() {
     roc_panic_if_msg(code <= status::NoStatus || code >= status::MaxStatus,
                      "pump: invalid status code %d", code);
 
-    if (code == status::StatusEnd) {
+    if (code == status::StatusFinish) {
         code = status::StatusOK; // EOF is fine
     }
 
@@ -99,7 +99,7 @@ status::StatusCode Pump::next_() {
         if (mode_ == ModeOneshot && was_active_) {
             roc_log(LogInfo,
                     "pump: main source became inactive in oneshot mode, exiting");
-            return status::StatusEnd;
+            return status::StatusFinish;
         }
 
         // User specified --backup, when main source becomes inactive, we
@@ -131,7 +131,7 @@ status::StatusCode Pump::next_() {
     // Transfer one frame.
     code = transfer_frame_(*current_source_, sink_);
 
-    if (code == status::StatusEnd) {
+    if (code == status::StatusFinish) {
         // EOF from main source causes exit.
         if (current_source_ == &main_source_) {
             roc_log(LogInfo, "pump: got eof from main source, exiting");

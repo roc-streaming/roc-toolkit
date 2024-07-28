@@ -109,7 +109,10 @@ SenderEndpoint* SenderSlot::add_endpoint(address::Interface iface,
         }
         if (session_.frame_writer()) {
             if (!fanout_.has_output(*session_.frame_writer())) {
-                fanout_.add_output(*session_.frame_writer());
+                if (fanout_.add_output(*session_.frame_writer()) != status::StatusOK) {
+                    // TODO(gh-183): forward status (control ops)
+                    return NULL;
+                }
                 state_tracker_.register_session();
             }
         }

@@ -98,7 +98,7 @@ public:
         LONGS_EQUAL(audio::ModeHard, mode);
 
         if (pos_ == size_) {
-            return status::StatusEnd;
+            return status::StatusFinish;
         }
 
         CHECK(frame_factory_.reallocate_frame(

@@ -129,7 +129,7 @@ template <class T> struct CountReader : IFrameReader {
         }
 
         if (duration == 0) {
-            return (last_status = status::StatusEnd);
+            return (last_status = status::StatusFinish);
         }
 
         CHECK(frame_factory.reallocate_frame(

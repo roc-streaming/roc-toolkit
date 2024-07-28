@@ -149,7 +149,7 @@ ProcessorMap::register_plc(int backend_id, void* backend_owner, PlcFunc ctor_fn)
                 "processor map: failed to register plc backend:"
                 " backend id %d already exists",
                 backend_id);
-        return status::StatusConflict;
+        return status::StatusBadArg;
     }
 
     if (!backend_owner) {

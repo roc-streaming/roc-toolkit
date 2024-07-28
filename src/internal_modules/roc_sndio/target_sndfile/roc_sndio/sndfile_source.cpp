@@ -152,7 +152,7 @@ status::StatusCode SndfileSource::read(audio::Frame& frame,
     }
 
     if (n_samples == 0) {
-        return status::StatusEnd;
+        return status::StatusFinish;
     }
 
     frame.set_num_raw_samples((size_t)n_samples);
