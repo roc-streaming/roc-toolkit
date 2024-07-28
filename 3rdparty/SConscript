@@ -18,6 +18,7 @@ thirdparty_versions = {
     'alsa':             '1.1.9',
     'json-c':           '0.12-20140410',
     'libatomic_ops':    '7.6.10',
+    'libogg':           '1.3.4',
     'libunwind':        '1.2.1',
     'libuv':            '1.35.0',
     'libvorbis':        '1.3.7',
@@ -48,6 +49,9 @@ external_dependencies.add('ragel')
 # ensures we don't build sndfile twice
 if 'pulseaudio' in external_dependencies:
     external_dependencies.add('sndfile')
+
+if 'libvorbis' in external_dependencies:
+    external_dependencies.add('libogg')
 
 # on Linux, PulseAudio needs ALSA
 if meta.platform in ['linux'] and 'pulseaudio' in external_dependencies:
@@ -252,6 +256,25 @@ elif 'sndfile' in system_dependencies:
     else:
         if not conf.CheckLibWithHeaderExt('sndfile', 'sndfile.h', 'C', run=False):
             env.Die("libsndfile not found (see 'config.log' for details)")
+
+    env = conf.Finish()
+
+# dep: libogg
+if 'libogg' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_versions, 'libogg')
+
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    env = conf.Finish()
+
+elif 'libogg' in system_dependencies:
+    conf = Configure(subenvs.libs, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('ogg', '--cflags --libs', exclude_from_pc=True):
+        conf.env.AddManualDependency(libs=['ogg'], exclude_from_pc=True)
+
+    if not conf.CheckLibWithHeader('ogg', 'ogg/ogg.h', 'C', run=False):
+        env.Die("libogg not found (see 'config.log' for details)")
 
     env = conf.Finish()
 

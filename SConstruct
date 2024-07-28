@@ -862,6 +862,9 @@ else:
             ])
         if not GetOption('disable_libvorbis'):
             env.Append(ROC_TARGETS=[
+                'target_libogg',
+            ])
+            env.Append(ROC_TARGETS=[
                 'target_libvorbis',
             ])
 
