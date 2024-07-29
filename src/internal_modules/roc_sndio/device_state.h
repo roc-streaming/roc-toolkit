@@ -31,7 +31,11 @@ enum DeviceState {
 
     //! Device is broken.
     //! The only thing can be done is to close device.
-    DeviceState_Broken = (1 << 3)
+    DeviceState_Broken = (1 << 3),
+
+    //! Device is closed.
+    //! Device can't be used after it enters this state.
+    DeviceState_Closed = (1 << 4)
 };
 
 //! Convert device state to string.

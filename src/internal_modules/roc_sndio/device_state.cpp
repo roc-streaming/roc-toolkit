@@ -25,6 +25,9 @@ const char* device_state_to_str(DeviceState state) {
     case DeviceState_Broken:
         return "broken";
 
+    case DeviceState_Closed:
+        return "closed";
+
     default:
         break;
     }

@@ -96,7 +96,7 @@ status::StatusCode ReceiverSource::init_status() const {
 ReceiverSlot* ReceiverSource::create_slot(const ReceiverSlotConfig& slot_config) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (state_tracker_.is_broken()) {
+    if (!state_tracker_.is_usable()) {
         // TODO(gh-183): return StatusBadState (control ops)
         return NULL;
     }
@@ -128,11 +128,6 @@ ReceiverSlot* ReceiverSource::create_slot(const ReceiverSlotConfig& slot_config)
 void ReceiverSource::delete_slot(ReceiverSlot* slot) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (state_tracker_.is_broken()) {
-        // TODO(gh-183): return StatusBadState (control ops)
-        return;
-    }
-
     roc_log(LogInfo, "receiver source: removing slot");
 
     slots_.remove(*slot);
@@ -146,8 +141,7 @@ status::StatusCode ReceiverSource::refresh(core::nanoseconds_t current_time,
                                            core::nanoseconds_t* next_deadline) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (state_tracker_.is_broken()) {
-        // Receiver broken.
+    if (!state_tracker_.is_usable()) {
         return status::StatusBadState;
     }
 
@@ -203,8 +197,9 @@ sndio::DeviceState ReceiverSource::state() const {
 }
 
 status::StatusCode ReceiverSource::pause() {
-    if (state_tracker_.is_broken()) {
-        // Receiver broken.
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (!state_tracker_.is_usable()) {
         return status::StatusBadState;
     }
 
@@ -212,8 +207,9 @@ status::StatusCode ReceiverSource::pause() {
 }
 
 status::StatusCode ReceiverSource::resume() {
-    if (state_tracker_.is_broken()) {
-        // Receiver broken.
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (!state_tracker_.is_usable()) {
         return status::StatusBadState;
     }
 
@@ -233,12 +229,21 @@ bool ReceiverSource::has_clock() const {
 }
 
 status::StatusCode ReceiverSource::close() {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (state_tracker_.is_closed()) {
+        return status::StatusBadState;
+    }
+
+    state_tracker_.set_closed();
+
     return status::StatusOK;
 }
 
 status::StatusCode ReceiverSource::rewind() {
-    if (state_tracker_.is_broken()) {
-        // Receiver broken.
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (!state_tracker_.is_usable()) {
         return status::StatusBadState;
     }
 
@@ -264,8 +269,7 @@ status::StatusCode ReceiverSource::read(audio::Frame& frame,
                                         audio::FrameReadMode mode) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (state_tracker_.is_broken()) {
-        // Receiver broken.
+    if (!state_tracker_.is_usable()) {
         return status::StatusBadState;
     }
 

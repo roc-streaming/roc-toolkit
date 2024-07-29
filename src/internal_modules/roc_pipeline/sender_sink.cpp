@@ -92,7 +92,7 @@ status::StatusCode SenderSink::init_status() const {
 SenderSlot* SenderSink::create_slot(const SenderSlotConfig& slot_config) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (state_tracker_.is_broken()) {
+    if (!state_tracker_.is_usable()) {
         // TODO(gh-183): return StatusBadState (control ops)
         return NULL;
     }
@@ -125,11 +125,6 @@ SenderSlot* SenderSink::create_slot(const SenderSlotConfig& slot_config) {
 void SenderSink::delete_slot(SenderSlot* slot) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (state_tracker_.is_broken()) {
-        // TODO(gh-183): return StatusBadState (control ops)
-        return;
-    }
-
     roc_log(LogInfo, "sender sink: removing slot");
 
     slots_.remove(*slot);
@@ -145,8 +140,7 @@ status::StatusCode SenderSink::refresh(core::nanoseconds_t current_time,
                                        core::nanoseconds_t* next_deadline) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (state_tracker_.is_broken()) {
-        // Sender broken.
+    if (!state_tracker_.is_usable()) {
         return status::StatusBadState;
     }
 
@@ -202,8 +196,9 @@ sndio::DeviceState SenderSink::state() const {
 }
 
 status::StatusCode SenderSink::pause() {
-    if (state_tracker_.is_broken()) {
-        // Sender broken.
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (!state_tracker_.is_usable()) {
         return status::StatusBadState;
     }
 
@@ -211,8 +206,9 @@ status::StatusCode SenderSink::pause() {
 }
 
 status::StatusCode SenderSink::resume() {
-    if (state_tracker_.is_broken()) {
-        // Sender broken.
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (!state_tracker_.is_usable()) {
         return status::StatusBadState;
     }
 
@@ -232,14 +228,21 @@ bool SenderSink::has_clock() const {
 }
 
 status::StatusCode SenderSink::close() {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (state_tracker_.is_closed()) {
+        return status::StatusBadState;
+    }
+
+    state_tracker_.set_closed();
+
     return status::StatusOK;
 }
 
 status::StatusCode SenderSink::write(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (state_tracker_.is_broken()) {
-        // Sender broken.
+    if (!state_tracker_.is_usable()) {
         return status::StatusBadState;
     }
 

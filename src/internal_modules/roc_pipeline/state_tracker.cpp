@@ -13,13 +13,16 @@ namespace roc {
 namespace pipeline {
 
 StateTracker::StateTracker()
-    : active_sessions_(0)
+    : halt_state_(-1)
+    , active_sessions_(0)
     , pending_packets_(0) {
 }
 
 sndio::DeviceState StateTracker::get_state() const {
-    if (is_broken_) {
-        return sndio::DeviceState_Broken;
+    const int halt_state = halt_state_;
+    if (halt_state != -1) {
+        // Happens if set_broken() or set_closed() was called.
+        return (sndio::DeviceState)halt_state;
     }
 
     if (active_sessions_ != 0) {
@@ -36,12 +39,25 @@ sndio::DeviceState StateTracker::get_state() const {
     return sndio::DeviceState_Idle;
 }
 
-bool StateTracker::is_broken() const {
-    return is_broken_;
+bool StateTracker::is_usable() const {
+    const int halt_state = halt_state_;
+
+    return halt_state != sndio::DeviceState_Broken
+        && halt_state != sndio::DeviceState_Closed;
+}
+
+bool StateTracker::is_closed() const {
+    const int halt_state = halt_state_;
+
+    return halt_state == sndio::DeviceState_Closed;
 }
 
 void StateTracker::set_broken() {
-    is_broken_ = true;
+    halt_state_ = sndio::DeviceState_Broken;
+}
+
+void StateTracker::set_closed() {
+    halt_state_ = sndio::DeviceState_Closed;
 }
 
 size_t StateTracker::num_sessions() const {

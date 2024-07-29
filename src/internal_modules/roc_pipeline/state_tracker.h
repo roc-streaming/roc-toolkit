@@ -35,11 +35,17 @@ public:
     //! Compute current state.
     sndio::DeviceState get_state() const;
 
-    //! Check if sender/receiver was marked as broken.
-    bool is_broken() const;
+    //! Returns true if device is not broken or closed.
+    bool is_usable() const;
 
-    //! Mark sender/receiver as permanently broken.
+    //! Returns true if device is closed.
+    bool is_closed() const;
+
+    //! Mark sender/receiver as broken.
     void set_broken();
+
+    //! Mark sender/receiver as closed.
+    void set_closed();
 
     //! Get active sessions counter.
     size_t num_sessions() const;
@@ -57,7 +63,7 @@ public:
     void unregister_packet();
 
 private:
-    core::Atomic<int> is_broken_;
+    core::Atomic<int> halt_state_;
     core::Atomic<int> active_sessions_;
     core::Atomic<int> pending_packets_;
 };
