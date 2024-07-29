@@ -34,7 +34,7 @@ bool StateTracker::wait_state(unsigned state_mask, core::nanoseconds_t deadline)
             return true;
         }
 
-        if (get_state() & state_mask) {
+        if (static_cast<unsigned>(get_state()) & state_mask) {
             waiting_mask_ = 0;
             return true;
         }
@@ -140,7 +140,7 @@ void StateTracker::unregister_packet() {
 }
 
 void StateTracker::signal_state_change() {
-    if (waiting_mask_ != 0 && (get_state() & waiting_mask_)) {
+    if (waiting_mask_ != 0 && (static_cast<unsigned>(get_state()) & waiting_mask_)) {
         sem_.post();
     }
 }
