@@ -81,7 +81,10 @@ public:
 
 private:
     void update_metrics_(const packet::Packet& packet);
+
+    void update_seqnums_(const packet::Packet& packet);
     void update_jitter_(const packet::Packet& packet);
+
     void dump_(const packet::Packet& packet, const long d_enq_ns, const long d_s_ns);
 
     const EncodingMap& encoding_map_;
@@ -90,7 +93,6 @@ private:
     packet::IWriter& writer_;
 
     bool first_packet_;
-    bool first_non_recovered_packet_;
 
     // Number of packets we use to calculate sliding statistics.
     const size_t win_len_;
@@ -105,6 +107,7 @@ private:
     int64_t processed_packets_;
     core::nanoseconds_t prev_queue_timestamp_;
     packet::stream_timestamp_t prev_stream_timestamp_;
+
     core::MovStats<core::nanoseconds_t> packet_jitter_stats_;
 
     dbgio::CsvDumper* dumper_;

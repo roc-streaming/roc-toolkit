@@ -22,7 +22,6 @@ LinkMeter::LinkMeter(packet::IWriter& writer,
     , encoding_(NULL)
     , writer_(writer)
     , first_packet_(true)
-    , first_non_recovered_packet_(true)
     , win_len_(latency_config.sliding_window_length)
     , has_metrics_(false)
     , first_seqnum_(0)
@@ -87,7 +86,23 @@ status::StatusCode LinkMeter::write(const packet::PacketPtr& packet) {
 }
 
 void LinkMeter::update_metrics_(const packet::Packet& packet) {
-    const bool recovered = packet.has_flags(packet::Packet::FlagRestored);
+    update_seqnums_(packet);
+
+    if (!first_packet_) {
+        update_jitter_(packet);
+    } else {
+        first_packet_ = false;
+    }
+
+    processed_packets_++;
+
+    prev_queue_timestamp_ = packet.udp()->queue_timestamp;
+    prev_stream_timestamp_ = packet.rtp()->stream_timestamp;
+
+    has_metrics_ = true;
+}
+
+void LinkMeter::update_seqnums_(const packet::Packet& packet) {
     const packet::seqnum_t pkt_seqnum = packet.rtp()->seqnum;
 
     // If packet seqnum is before first seqnum, and there was no wrap yet,
@@ -101,38 +116,26 @@ void LinkMeter::update_metrics_(const packet::Packet& packet) {
         last_seqnum_hi_ = 0;
         last_seqnum_lo_ = pkt_seqnum;
     } else if (packet::seqnum_diff(pkt_seqnum, last_seqnum_lo_) > 0) {
-        // If packet seqnum is after last seqnum, update last seqnum, and
-        // also counts possible wraps.
+        // If packet seqnum is after last seqnum, update last seqnum, and count
+        // possible wraps.
         if (pkt_seqnum < last_seqnum_lo_) {
             last_seqnum_hi_ += (uint32_t)1 << 16;
         }
         last_seqnum_lo_ = pkt_seqnum;
     }
 
-    if (!first_packet_) {
-        if (!first_non_recovered_packet_ && !recovered) {
-            update_jitter_(packet);
-        }
-    } else {
-        first_packet_ = false;
-    }
-
-    if (!recovered) {
-        prev_queue_timestamp_ = packet.udp()->queue_timestamp;
-        prev_stream_timestamp_ = packet.rtp()->stream_timestamp;
-        first_non_recovered_packet_ = false;
-    }
-    processed_packets_++;
-
     metrics_.ext_first_seqnum = first_seqnum_;
     metrics_.ext_last_seqnum = last_seqnum_hi_ + last_seqnum_lo_;
     metrics_.expected_packets = metrics_.ext_last_seqnum - first_seqnum_ + 1;
-    metrics_.lost_packets = (int64_t)metrics_.expected_packets - processed_packets_;
-
-    has_metrics_ = true;
+    metrics_.lost_packets = (int64_t)metrics_.expected_packets - processed_packets_ - 1;
 }
 
 void LinkMeter::update_jitter_(const packet::Packet& packet) {
+    // Link meter operates before FEC, so we should never see restored packets.
+    // Otherwise we'd need to exclude them from jitter calculations.
+    roc_panic_if_msg(packet.has_flags(packet::Packet::FlagRestored),
+                     "link meter: unexpected packet with restored flag");
+
     roc_panic_if(!encoding_);
     roc_panic_if(prev_queue_timestamp_ <= 0);
 
@@ -144,9 +147,9 @@ void LinkMeter::update_jitter_(const packet::Packet& packet) {
         encoding_->sample_spec.stream_timestamp_delta_2_ns(d_s_ts);
 
     packet_jitter_stats_.add(std::abs(d_enq_ns - d_s_ns));
+    metrics_.jitter = (core::nanoseconds_t)packet_jitter_stats_.mov_avg();
     metrics_.max_jitter = (core::nanoseconds_t)packet_jitter_stats_.mov_max();
     metrics_.min_jitter = (core::nanoseconds_t)packet_jitter_stats_.mov_min();
-    metrics_.jitter = mean_jitter();
 
     if (dumper_) {
         dump_(packet, d_enq_ns, d_s_ns);
