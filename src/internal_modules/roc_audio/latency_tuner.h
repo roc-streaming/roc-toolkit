@@ -78,7 +78,7 @@ public:
     //! If scaling has changed, returns updated value.
     //! Otherwise, returns zero.
     //! @remarks
-    //!  Latency tuner expects that this scaling will applied to the stream
+    //!  Latency tuner expects that this scaling will be applied to the stream
     //!  resampler, so that the latency will slowly achieve target value.
     //!  Returned value is close to 1.0.
     float fetch_scaling();

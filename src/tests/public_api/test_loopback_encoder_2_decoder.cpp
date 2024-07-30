@@ -92,8 +92,11 @@ TEST_GROUP(loopback_encoder_2_decoder) {
 
         size_t iface_packets[10] = {};
         size_t recv_expected_pkts = 0;
-        size_t sent_expected_pkts = 0;
-        int64_t recv_lost_pkts = 0;
+        uint64_t recv_lost_pkts = 0;
+        uint64_t recv_late_pkts = 0;
+        uint64_t recv_recovered_pkts = 0;
+        size_t send_expected_pkts = 0;
+        size_t send_lost_pkts = 0;
         size_t feedback_packets = 0;
         size_t zero_samples = 0, total_samples = 0;
         size_t n_pkt = 0;
@@ -232,9 +235,20 @@ TEST_GROUP(loopback_encoder_2_decoder) {
                 max_recv_e2e_latency =
                     std::max(max_recv_e2e_latency, conn_metrics.e2e_latency);
 
-                recv_expected_pkts =
-                    std::max(recv_expected_pkts, (size_t)conn_metrics.expected_packets);
-                recv_lost_pkts = (int64_t)conn_metrics.lost_packets;
+                CHECK(conn_metrics.expected_packets >= recv_expected_pkts);
+                recv_expected_pkts = conn_metrics.expected_packets;
+
+                CHECK(conn_metrics.lost_packets >= recv_lost_pkts);
+                CHECK(conn_metrics.lost_packets <= conn_metrics.expected_packets);
+                recv_lost_pkts = conn_metrics.lost_packets;
+
+                CHECK(conn_metrics.late_packets >= recv_late_pkts);
+                CHECK(conn_metrics.late_packets <= conn_metrics.expected_packets);
+                recv_late_pkts = conn_metrics.late_packets;
+
+                CHECK(conn_metrics.recovered_packets >= recv_recovered_pkts);
+                CHECK(conn_metrics.recovered_packets <= conn_metrics.expected_packets);
+                recv_recovered_pkts = conn_metrics.recovered_packets;
             }
             { // check sender metrics
                 roc_sender_metrics send_metrics;
@@ -251,55 +265,75 @@ TEST_GROUP(loopback_encoder_2_decoder) {
                     max_send_e2e_latency =
                         std::max(max_send_e2e_latency, conn_metrics.e2e_latency);
 
-                    sent_expected_pkts = std::max(sent_expected_pkts,
-                                                  (size_t)conn_metrics.expected_packets);
+                    CHECK(conn_metrics.expected_packets >= send_expected_pkts);
+                    send_expected_pkts = conn_metrics.expected_packets;
+
+                    CHECK(conn_metrics.lost_packets >= send_lost_pkts);
+                    CHECK(conn_metrics.lost_packets <= conn_metrics.expected_packets);
+                    send_lost_pkts = conn_metrics.lost_packets;
                 }
             }
 
             if (has_control) {
-                got_all_metrics = max_recv_e2e_latency > 0 && max_send_e2e_latency > 0;
+                got_all_metrics = max_recv_e2e_latency > 0 && max_send_e2e_latency > 0
+                    && recv_lost_pkts >= n_lost && send_lost_pkts >= n_lost;
             } else {
                 got_all_metrics = true;
             }
         }
 
-        // check we have received enough good samples
+        // ensure that we have received enough good samples
         CHECK(zero_samples < MaxLeadingZeros);
-
-        for (size_t n_if = 0; n_if < num_ifaces; n_if++) {
-            if (ifaces[n_if] == ROC_INTERFACE_AUDIO_SOURCE) {
-                UNSIGNED_LONGS_EQUAL(iface_packets[n_if], recv_expected_pkts);
-                if (has_control) {
-                    const size_t nlag = test::FrameSamples / test::PacketSamples;
-                    CHECK(recv_expected_pkts >= sent_expected_pkts
-                          && recv_expected_pkts <= sent_expected_pkts + nlag);
-                }
-            }
-        }
-        // check lost packets metrics
-        UNSIGNED_LONGS_EQUAL(n_lost, recv_lost_pkts);
 
         // check that there were packets on all active interfaces
         for (size_t n_if = 0; n_if < num_ifaces; n_if++) {
             CHECK(iface_packets[n_if] > 0);
         }
 
+        // check feedback packets
         if (has_control) {
             CHECK(feedback_packets > 0);
         } else {
             CHECK(feedback_packets == 0);
         }
 
+        // check packet counters: expected_packets
+        for (size_t n_if = 0; n_if < num_ifaces; n_if++) {
+            if (ifaces[n_if] == ROC_INTERFACE_AUDIO_SOURCE) {
+                UNSIGNED_LONGS_EQUAL(iface_packets[n_if], recv_expected_pkts);
+                if (has_control) {
+                    const size_t nlag = test::FrameSamples / test::PacketSamples;
+                    CHECK(recv_expected_pkts >= send_expected_pkts
+                          && recv_expected_pkts <= send_expected_pkts + nlag);
+                }
+            }
+        }
+
+        // check packet counters: late_packets, lost_packets, recovered_packets
+        UNSIGNED_LONGS_EQUAL(0, recv_late_pkts);
+        UNSIGNED_LONGS_EQUAL(n_lost, recv_lost_pkts);
+        if (has_control) {
+            UNSIGNED_LONGS_EQUAL(n_lost, send_lost_pkts);
+        } else {
+            UNSIGNED_LONGS_EQUAL(0, send_lost_pkts);
+        }
+        if (flags & FlagLosses) {
+            CHECK(n_lost > 0);
+            CHECK(n_lost < recv_expected_pkts);
+            CHECK(recv_recovered_pkts > 0);
+            CHECK(recv_recovered_pkts <= n_lost);
+        } else {
+            CHECK(n_lost == 0);
+            CHECK(recv_recovered_pkts == 0);
+        }
+
+        // check measured latency
         if (has_control) {
             CHECK(max_recv_e2e_latency > 0);
             CHECK(max_send_e2e_latency > 0);
         } else {
             CHECK(max_recv_e2e_latency == 0);
             CHECK(max_send_e2e_latency == 0);
-        }
-
-        if (flags & FlagLosses) {
-            CHECK(n_lost > 0);
         }
     }
 };

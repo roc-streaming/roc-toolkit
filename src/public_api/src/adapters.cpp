@@ -21,6 +21,8 @@
 namespace roc {
 namespace api {
 
+namespace {
+
 // Note: ROC_ATTR_NO_SANITIZE_UB is used from *_from_user() functions because we don't
 // want sanitizers to fail us when enums contain arbitrary values; we correctly handle
 // all these cases.
@@ -40,6 +42,14 @@ template <class T> ROC_ATTR_NO_SANITIZE_UB int enum_from_user(T t) {
     return t;
 }
 #endif
+
+template <class T> T clamp_counter(T value, T min_value, T max_value) {
+    value = std::min(value, max_value);
+    value = std::max(value, min_value);
+    return value;
+}
+
+} // namespace
 
 ROC_ATTR_NO_SANITIZE_UB
 bool context_config_from_user(node::ContextConfig& out, const roc_context_config& in) {
@@ -756,18 +766,16 @@ void receiver_participant_metrics_to_user(
 
     memset(&out, 0, sizeof(out));
 
-    if (party_metrics.latency.e2e_latency > 0) {
-        out.e2e_latency = (unsigned long long)party_metrics.latency.e2e_latency;
-    }
-
-    if (party_metrics.link.jitter > 0) {
-        out.mean_jitter = (unsigned long long)party_metrics.link.jitter;
-    }
+    latency_metrics_to_user(out, party_metrics.latency);
+    link_metrics_to_user(out, party_metrics.link);
 
     if (party_metrics.link.expected_packets > 0) {
-        out.expected_packets = (unsigned long long)party_metrics.link.expected_packets;
-        out.lost_packets =
-            (unsigned long long)std::max(party_metrics.link.lost_packets, (int64_t)0);
+        out.late_packets = (unsigned long long)clamp_counter(
+            party_metrics.depacketizer.late_packets, (uint64_t)0,
+            party_metrics.link.expected_packets);
+        out.recovered_packets = (unsigned long long)clamp_counter(
+            party_metrics.depacketizer.recovered_packets, (uint64_t)0,
+            party_metrics.link.expected_packets);
     }
 }
 
@@ -790,18 +798,30 @@ void sender_participant_metrics_to_user(
 
     memset(&out, 0, sizeof(out));
 
-    if (party_metrics.latency.e2e_latency > 0) {
-        out.e2e_latency = (unsigned long long)party_metrics.latency.e2e_latency;
+    latency_metrics_to_user(out, party_metrics.latency);
+    link_metrics_to_user(out, party_metrics.link);
+}
+
+void latency_metrics_to_user(roc_connection_metrics& out,
+                             const audio::LatencyMetrics& in) {
+    if (in.e2e_latency > 0) {
+        out.e2e_latency = (unsigned long long)in.e2e_latency;
+    }
+}
+
+void link_metrics_to_user(roc_connection_metrics& out, const packet::LinkMetrics& in) {
+    if (in.rtt > 0) {
+        out.rtt = (unsigned long long)in.rtt;
     }
 
-    if (party_metrics.link.jitter > 0) {
-        out.mean_jitter = (unsigned long long)party_metrics.link.jitter;
+    if (in.jitter > 0) {
+        out.jitter = (unsigned long long)in.jitter;
     }
 
-    if (party_metrics.link.expected_packets > 0) {
-        out.expected_packets = (unsigned long long)party_metrics.link.expected_packets;
-        out.lost_packets =
-            (unsigned long long)std::max(party_metrics.link.lost_packets, (int64_t)0);
+    if (in.expected_packets > 0) {
+        out.expected_packets = (unsigned long long)in.expected_packets;
+        out.lost_packets = (unsigned long long)clamp_counter(
+            in.lost_packets, (int64_t)0, (int64_t)in.expected_packets);
     }
 }
 

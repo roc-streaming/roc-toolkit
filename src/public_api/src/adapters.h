@@ -82,6 +82,10 @@ void sender_participant_metrics_to_user(
     size_t party_index,
     void* party_arg);
 
+void latency_metrics_to_user(roc_connection_metrics& out,
+                             const audio::LatencyMetrics& in);
+void link_metrics_to_user(roc_connection_metrics& out, const packet::LinkMetrics& in);
+
 LogLevel log_level_from_user(roc_log_level level);
 roc_log_level log_level_to_user(LogLevel level);
 

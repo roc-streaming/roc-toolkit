@@ -596,7 +596,8 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
         UNSIGNED_LONGS_EQUAL(1, receiver.conn_metrics_count());
 
         const roc_connection_metrics& recv_conn_metrics = receiver.conn_metrics(0);
-        if (recv_conn_metrics.e2e_latency == 0 || recv_conn_metrics.mean_jitter == 0) {
+        if (recv_conn_metrics.e2e_latency == 0 || recv_conn_metrics.rtt == 0
+            || recv_conn_metrics.jitter == 0) {
             continue;
         }
 
@@ -611,12 +612,19 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
         UNSIGNED_LONGS_EQUAL(1, sender.conn_metrics_count());
         const roc_connection_metrics& send_conn_metrics = sender.conn_metrics(0);
 
-        if (send_conn_metrics.e2e_latency == 0 || send_conn_metrics.mean_jitter == 0) {
+        if (send_conn_metrics.e2e_latency == 0 || send_conn_metrics.rtt == 0
+            || send_conn_metrics.jitter == 0) {
             continue;
         }
 
         CHECK(send_conn_metrics.e2e_latency > 0);
         CHECK(recv_conn_metrics.e2e_latency > 0);
+
+        CHECK(send_conn_metrics.rtt > 0);
+        CHECK(recv_conn_metrics.rtt > 0);
+
+        CHECK(send_conn_metrics.jitter > 0);
+        CHECK(recv_conn_metrics.jitter > 0);
 
         CHECK(send_conn_metrics.expected_packets > 0);
         CHECK(recv_conn_metrics.expected_packets > 0);
@@ -624,8 +632,11 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
         CHECK(send_conn_metrics.lost_packets == 0);
         CHECK(recv_conn_metrics.lost_packets == 0);
 
-        CHECK(send_conn_metrics.mean_jitter > 0);
-        CHECK(recv_conn_metrics.mean_jitter > 0);
+        CHECK(send_conn_metrics.late_packets == 0);
+        CHECK(recv_conn_metrics.late_packets == 0);
+
+        CHECK(send_conn_metrics.recovered_packets == 0);
+        CHECK(recv_conn_metrics.recovered_packets == 0);
 
         break;
     }
