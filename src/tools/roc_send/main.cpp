@@ -131,7 +131,8 @@ int main(int argc, char** argv) {
 
     if (args.nbsrc_given) {
         if (sender_config.fec_encoder.scheme == packet::FEC_None) {
-            roc_log(LogError, "--nbsrc can't be used when fec is disabled)");
+            roc_log(LogError,
+                    "--nbsrc can't be used when --source protocol doesn't support fec)");
             return 1;
         }
         if (args.nbsrc_arg <= 0) {
@@ -143,7 +144,8 @@ int main(int argc, char** argv) {
 
     if (args.nbrpr_given) {
         if (sender_config.fec_encoder.scheme == packet::FEC_None) {
-            roc_log(LogError, "--nbrpr can't be used when fec is disabled");
+            roc_log(LogError,
+                    "--nbrpr can't be used when --source protocol doesn't support fec");
             return 1;
         }
         if (args.nbrpr_arg <= 0) {
@@ -151,30 +153,6 @@ int main(int argc, char** argv) {
             return 1;
         }
         sender_config.fec_writer.n_repair_packets = (size_t)args.nbrpr_arg;
-    }
-
-    if (args.target_latency_given) {
-        if (!core::parse_duration(args.target_latency_arg,
-                                  sender_config.latency.target_latency)) {
-            roc_log(LogError, "invalid --target-latency: bad format");
-            return 1;
-        }
-        if (sender_config.latency.target_latency <= 0) {
-            roc_log(LogError, "invalid --target-latency: should be > 0");
-            return 1;
-        }
-    }
-
-    if (args.latency_tolerance_given) {
-        if (!core::parse_duration(args.latency_tolerance_arg,
-                                  sender_config.latency.latency_tolerance)) {
-            roc_log(LogError, "invalid --latency-tolerance: bad format");
-            return 1;
-        }
-        if (sender_config.latency.latency_tolerance <= 0) {
-            roc_log(LogError, "invalid --latency-tolerance: should be > 0");
-            return 1;
-        }
     }
 
     switch (args.latency_backend_arg) {
@@ -200,8 +178,8 @@ int main(int argc, char** argv) {
     }
 
     switch (args.resampler_backend_arg) {
-    case resampler_backend_arg_default:
-        sender_config.resampler.backend = audio::ResamplerBackend_Default;
+    case resampler_backend_arg_auto:
+        sender_config.resampler.backend = audio::ResamplerBackend_Auto;
         break;
     case resampler_backend_arg_builtin:
         sender_config.resampler.backend = audio::ResamplerBackend_Builtin;
@@ -228,6 +206,117 @@ int main(int argc, char** argv) {
         break;
     default:
         break;
+    }
+
+    if (args.target_latency_given) {
+        if (sender_config.latency.tuner_profile == audio::LatencyTunerProfile_Intact) {
+            roc_log(LogError,
+                    "--target-latency can be specified only"
+                    " when --latency-profile is not 'intact'");
+            return 1;
+        }
+        if (strcmp(args.target_latency_arg, "auto") == 0) {
+            sender_config.latency.target_latency = 0;
+        } else {
+            if (!core::parse_duration(args.target_latency_arg,
+                                      sender_config.latency.target_latency)) {
+                roc_log(LogError, "invalid --target-latency: bad format");
+                return 1;
+            }
+            if (sender_config.latency.target_latency <= 0) {
+                roc_log(LogError, "invalid --target-latency: should be > 0");
+                return 1;
+            }
+        }
+    }
+
+    if (args.latency_tolerance_given) {
+        if (sender_config.latency.tuner_profile == audio::LatencyTunerProfile_Intact) {
+            roc_log(LogError,
+                    "--latency-tolerance can be specified only"
+                    " when --latency-profile is not 'intact'");
+            return 1;
+        }
+        if (!core::parse_duration(args.latency_tolerance_arg,
+                                  sender_config.latency.latency_tolerance)) {
+            roc_log(LogError, "invalid --latency-tolerance: bad format");
+            return 1;
+        }
+        if (sender_config.latency.latency_tolerance <= 0) {
+            roc_log(LogError, "invalid --latency-tolerance: should be > 0");
+            return 1;
+        }
+    }
+
+    if (args.start_latency_given) {
+        if (sender_config.latency.tuner_profile == audio::LatencyTunerProfile_Intact) {
+            roc_log(LogError,
+                    "--start-latency can be specified only"
+                    " when --latency-profile is not 'intact'");
+            return 1;
+        }
+        if (sender_config.latency.target_latency != 0) {
+            roc_log(
+                LogError,
+                "--start-latency can be specified only in"
+                " adaptive latency mode (i.e. --target-latency is 'auto' or omitted)");
+            return 1;
+        }
+        if (!core::parse_duration(args.start_latency_arg,
+                                  sender_config.latency.start_target_latency)) {
+            roc_log(LogError, "invalid --start-latency: bad format");
+            return 1;
+        }
+        if (sender_config.latency.start_target_latency <= 0) {
+            roc_log(LogError, "invalid --start-latency: should be > 0");
+            return 1;
+        }
+    }
+
+    if (args.min_latency_given || args.max_latency_given) {
+        if (sender_config.latency.tuner_profile == audio::LatencyTunerProfile_Intact) {
+            roc_log(LogError,
+                    "--min-latency and --max-latency can be specified only"
+                    " when --latency-profile is not 'intact'");
+            return 1;
+        }
+        if (sender_config.latency.target_latency != 0) {
+            roc_log(
+                LogError,
+                "--min-latency and --max-latency can be specified only in"
+                " adaptive latency mode (i.e. --target-latency is 'auto' or omitted)");
+            return 1;
+        }
+        if (!args.min_latency_given || !args.max_latency_given) {
+            roc_log(LogError,
+                    "--min-latency and --max-latency should be specified together");
+            return 1;
+        }
+        if (!core::parse_duration(args.min_latency_arg,
+                                  sender_config.latency.min_target_latency)) {
+            roc_log(LogError, "invalid --min-latency: bad format");
+            return 1;
+        }
+        if (sender_config.latency.min_target_latency <= 0) {
+            roc_log(LogError, "invalid --min-latency: should be > 0");
+            return 1;
+        }
+        if (!core::parse_duration(args.max_latency_arg,
+                                  sender_config.latency.max_target_latency)) {
+            roc_log(LogError, "invalid --max-latency: bad format");
+            return 1;
+        }
+        if (sender_config.latency.max_target_latency <= 0) {
+            roc_log(LogError, "invalid --max-latency: should be > 0");
+            return 1;
+        }
+        if (sender_config.latency.min_target_latency
+            > sender_config.latency.max_target_latency) {
+            roc_log(
+                LogError,
+                "incorrect --max-latency: should be greater or equal to --min-latency");
+            return 1;
+        }
     }
 
     sender_config.enable_profiling = args.profile_flag;

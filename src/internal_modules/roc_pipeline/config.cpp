@@ -122,8 +122,8 @@ TranscoderConfig::TranscoderConfig()
 }
 
 bool TranscoderConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
-    if (!resampler.deduce_defaults(processor_map, audio::LatencyTunerBackend_Default,
-                                   audio::LatencyTunerProfile_Default)) {
+    if (!resampler.deduce_defaults(processor_map, audio::LatencyTunerBackend_Auto,
+                                   audio::LatencyTunerProfile_Auto)) {
         return false;
     }
 

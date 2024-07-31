@@ -375,7 +375,7 @@ TEST_GROUP(resampler) {
 
         for (int n = 0; n < ResamplerBackend_Max; n++) {
             const ResamplerBackend backend = (ResamplerBackend)n;
-            if (backend == ResamplerBackend_Default) {
+            if (backend == ResamplerBackend_Auto) {
                 continue;
             }
             if (!processor_map.has_resampler_backend(backend)) {

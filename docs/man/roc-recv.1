@@ -48,8 +48,11 @@ Print version and exit
 .B  \-v\fP,\fB  \-\-verbose
 Increase verbosity level (may be used multiple times)
 .TP
+.BI \-\-color\fB= ENUM
+Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)
+.TP
 .B  \-L\fP,\fB  \-\-list\-supported
-list supported schemes and formats
+List supported schemes and formats
 .TP
 .BI \-o\fP,\fB  \-\-output\fB= IO_URI
 Output file or device URI
@@ -62,6 +65,9 @@ Backup file or device URI (if set, used when there are no sessions)
 .TP
 .BI \-\-backup\-format\fB= FILE_FORMAT
 Force backup file format
+.TP
+.B  \-1\fP,\fB  \-\-oneshot
+Exit when last connected client disconnects (default=off)
 .TP
 .BI \-s\fP,\fB  \-\-source\fB= ENDPOINT_URI
 Local source endpoint
@@ -76,52 +82,40 @@ Local control endpoint
 IPv4 or IPv6 address of the network interface on which to join the multicast group
 .TP
 .B  \-\-reuseaddr
-enable SO_REUSEADDR when binding sockets
+Enable SO_REUSEADDR when binding sockets
 .TP
 .BI \-\-io\-latency\fB= STRING
-Playback target latency, TIME units
+Playback device latency, TIME units
 .TP
 .BI \-\-target\-latency\fB= STRING
-Target latency, TIME units
+Target latency, TIME units or \(aqauto\(aq for adaptive mode  (default=\(gaauto\(aq)
 .TP
 .BI \-\-latency\-tolerance\fB= STRING
 Maximum deviation from target latency, TIME units
 .TP
 .BI \-\-start\-latency\fB= STRING
-Start latency, target\-latency must be \(aqauto\(aq or unset, TIME units
+Starting target latency in adaptive mode, TIME units
 .TP
 .BI \-\-min\-latency\fB= STRING
-Minimum allowed latency, target\-latency and latency\-tolerance must be 0 or unset, TIME units
+Minimum target latency in adaptive mode, TIME units
 .TP
 .BI \-\-max\-latency\fB= STRING
-Maximum allowed latency, target\-latency and latency\-tolerance must be 0 or unset, TIME units
+Maximum target latency in adaptive mode, TIME units
 .TP
 .BI \-\-no\-play\-timeout\fB= STRING
-No playback timeout, TIME units
+No\-playback timeout, TIME units
 .TP
 .BI \-\-choppy\-play\-timeout\fB= STRING
 Choppy playback timeout, TIME units
-.TP
-.BI \-\-frame\-len\fB= TIME
-Duration of the internal frames, TIME units
-.TP
-.BI \-\-max\-packet\-size\fB= SIZE
-Maximum packet size, in SIZE units
-.TP
-.BI \-\-max\-frame\-size\fB= SIZE
-Maximum internal frame size, in SIZE units
-.TP
-.BI \-\-rate\fB= INT
-Override output sample rate, Hz
 .TP
 .BI \-\-latency\-backend\fB= ENUM
 Which latency to use in latency tuner (possible values=\(dqniq\(dq default=\(ganiq\(aq)
 .TP
 .BI \-\-latency\-profile\fB= ENUM
-Latency tuning profile  (possible values=\(dqdefault\(dq, \(dqresponsive\(dq, \(dqgradual\(dq, \(dqintact\(dq default=\(gadefault\(aq)
+Latency tuning profile  (possible values=\(dqauto\(dq, \(dqresponsive\(dq, \(dqgradual\(dq, \(dqintact\(dq default=\(gaauto\(aq)
 .TP
 .BI \-\-resampler\-backend\fB= ENUM
-Resampler backend  (possible values=\(dqdefault\(dq, \(dqbuiltin\(dq, \(dqspeex\(dq, \(dqspeexdec\(dq default=\(gadefault\(aq)
+Resampler backend  (possible values=\(dqauto\(dq, \(dqbuiltin\(dq, \(dqspeex\(dq, \(dqspeexdec\(dq default=\(gaauto\(aq)
 .TP
 .BI \-\-resampler\-profile\fB= ENUM
 Resampler profile  (possible values=\(dqlow\(dq, \(dqmedium\(dq, \(dqhigh\(dq default=\(gamedium\(aq)
@@ -129,17 +123,23 @@ Resampler profile  (possible values=\(dqlow\(dq, \(dqmedium\(dq, \(dqhigh\(dq de
 .BI \-\-plc\fB= ENUM
 Which PLC algorithm to use  (possible values=\(dqnone\(dq, \(dqbeep\(dq default=\(ganone\(aq)
 .TP
-.B  \-1\fP,\fB  \-\-oneshot
-Exit when last connected client disconnects (default=off)
+.BI \-\-rate\fB= INT
+Override output device sample rate, Hz
+.TP
+.BI \-\-frame\-len\fB= TIME
+Duration of the I/O frames, TIME units
+.TP
+.BI \-\-max\-packet\-size\fB= SIZE
+Maximum packet size, in SIZE units
+.TP
+.BI \-\-max\-frame\-size\fB= SIZE
+Maximum internal frame size, in SIZE units
 .TP
 .B  \-\-profile
 Enable self\-profiling  (default=off)
 .TP
-.BI \-\-dump\fB= STRING
+.BI \-\-dump\fB= PATH
 Path for a CSV file where to dump run\-time metrics
-.TP
-.BI \-\-color\fB= ENUM
-Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)
 .UNINDENT
 .SS Endpoint URI
 .sp
@@ -486,7 +486,7 @@ $ roc\-recv \-vv \-s rtp+ldpc://0.0.0.0:10001 \-r ldpc://0.0.0.0:10002 \e
 .UNINDENT
 .UNINDENT
 .sp
-Select lower session latency:
+Select fixed streaming latency instead of adaptive latency:
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -498,7 +498,7 @@ $ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-\-target\-latency=50ms
 .UNINDENT
 .UNINDENT
 .sp
-Select lower I/O latency and frame length:
+Select I/O latency and frame length:
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -511,28 +511,28 @@ $ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
 .UNINDENT
 .UNINDENT
 .sp
-Manually specify thresholds and timeouts:
+Manually specify thresholds for adaptive latency:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
 $ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
-    \-\-target\-latency=50ms \-\-min\-latency=40ms \-\-max\-latency 60ms \e
-    \-\-no\-play\-timeout=200ms \-\-choppy\-play\-timeout=500ms
+    \-\-target\-latency=auto \e
+    \-\-start\-latency=300ms \-\-min\-latency=100ms \-\-max\-latency 500ms
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-Manually specify resampling parameters:
+Manually specify timeouts:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
 $ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
-    \-\-resampler\-backend=speex \-\-resampler\-profile=high
+    \-\-no\-play\-timeout=200ms \-\-choppy\-play\-timeout=500ms
 .ft P
 .fi
 .UNINDENT
@@ -546,6 +546,19 @@ Manually specify latency tuning parameters:
 .ft C
 $ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
     \-\-latency\-backend=niq \-\-latency\-profile=gradual
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Manually specify resampling parameters:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
+    \-\-resampler\-backend=speex \-\-resampler\-profile=high
 .ft P
 .fi
 .UNINDENT

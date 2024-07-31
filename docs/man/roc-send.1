@@ -48,8 +48,11 @@ Print version and exit
 .B  \-v\fP,\fB  \-\-verbose
 Increase verbosity level (may be used multiple times)
 .TP
+.BI \-\-color\fB= ENUM
+Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)
+.TP
 .B  \-L\fP,\fB  \-\-list\-supported
-list supported schemes and formats
+List supported schemes and formats
 .TP
 .BI \-i\fP,\fB  \-\-input\fB= IO_URI
 Input file or device URI
@@ -67,16 +70,40 @@ Remote repair endpoint
 Remote control endpoint
 .TP
 .B  \-\-reuseaddr
-enable SO_REUSEADDR when binding sockets
+Enable SO_REUSEADDR when binding sockets
 .TP
 .BI \-\-io\-latency\fB= STRING
-Recording target latency, TIME units
+Recording device latency, TIME units
 .TP
 .BI \-\-target\-latency\fB= STRING
-Target latency, TIME units
+Target latency (only for sender\-side tuning), TIME units or \(aqauto\(aq for adaptive mode
 .TP
 .BI \-\-latency\-tolerance\fB= STRING
-Maximum deviation from target latency, TIME units
+Maximum deviation from target latency (only for sender\-side tuning), TIME units
+.TP
+.BI \-\-start\-latency\fB= STRING
+Starting target latency in adaptive mode (only for sender\-side tuning), TIME units
+.TP
+.BI \-\-min\-latency\fB= STRING
+Minimum target latency in adaptive mode (only for sender\-side tuning), TIME units
+.TP
+.BI \-\-max\-latency\fB= STRING
+Maximum target latency in adaptive mode (only for sender\-side tuning), TIME units
+.TP
+.BI \-\-latency\-backend\fB= ENUM
+Which latency to use in latency tuner (possible values=\(dqniq\(dq default=\(ganiq\(aq)
+.TP
+.BI \-\-latency\-profile\fB= ENUM
+Latency tuning profile  (possible values=\(dqresponsive\(dq, \(dqgradual\(dq, \(dqintact\(dq default=\(gaintact\(aq)
+.TP
+.BI \-\-resampler\-backend\fB= ENUM
+Resampler backend  (possible values=\(dqauto\(dq, \(dqbuiltin\(dq, \(dqspeex\(dq, \(dqspeexdec\(dq default=\(gaauto\(aq)
+.TP
+.BI \-\-resampler\-profile\fB= ENUM
+Resampler profile  (possible values=\(dqlow\(dq, \(dqmedium\(dq, \(dqhigh\(dq default=\(gamedium\(aq)
+.TP
+.BI \-\-rate\fB= INT
+Override input device sample rate, Hz
 .TP
 .BI \-\-nbsrc\fB= INT
 Number of source packets in FEC block
@@ -88,7 +115,7 @@ Number of repair packets in FEC block
 Outgoing packet length, TIME units
 .TP
 .BI \-\-frame\-len\fB= TIME
-Duration of the internal frames, TIME units
+Duration of the I/O frames, TIME units
 .TP
 .BI \-\-max\-packet\-size\fB= SIZE
 Maximum packet size, in SIZE units
@@ -96,29 +123,11 @@ Maximum packet size, in SIZE units
 .BI \-\-max\-frame\-size\fB= SIZE
 Maximum internal frame size, in SIZE units
 .TP
-.BI \-\-rate\fB= INT
-Override input sample rate, Hz
-.TP
-.BI \-\-latency\-backend\fB= ENUM
-Which latency to use in latency tuner (possible values=\(dqniq\(dq default=\(ganiq\(aq)
-.TP
-.BI \-\-latency\-profile\fB= ENUM
-Latency tuning profile  (possible values=\(dqresponsive\(dq, \(dqgradual\(dq, \(dqintact\(dq default=\(gaintact\(aq)
-.TP
-.BI \-\-resampler\-backend\fB= ENUM
-Resampler backend  (possible values=\(dqdefault\(dq, \(dqbuiltin\(dq, \(dqspeex\(dq, \(dqspeexdec\(dq default=\(gadefault\(aq)
-.TP
-.BI \-\-resampler\-profile\fB= ENUM
-Resampler profile  (possible values=\(dqlow\(dq, \(dqmedium\(dq, \(dqhigh\(dq default=\(gamedium\(aq)
-.TP
 .B  \-\-profile
 Enable self\-profiling  (default=off)
 .TP
-.BI \-\-dump\fB= STRING
+.BI \-\-dump\fB= PATH
 Path for a CSV file where to dump run\-time metrics
-.TP
-.BI \-\-color\fB= ENUM
-Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)
 .UNINDENT
 .SS Endpoint URI
 .sp
@@ -429,7 +438,7 @@ $ roc\-send \-vv \-i file:./input.wav \-s rtp+ldpc://192.168.0.3:10001 \e
 .UNINDENT
 .UNINDENT
 .sp
-Select lower I/O latency and frame length:
+Select I/O latency and frame length:
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -463,11 +472,11 @@ Perform latency tuning on sender instead of receiver:
 .ft C
 $ roc\-recv \-vv \-o pulse://default \-s rtp+rs8m://0.0.0.0:10001 \e
     \-r rs8m://0.0.0.0:10002 \-c rtcp://0.0.0.0:10003 \e
-    \-\-latency\-profile=intact \-\-target\-latency=200ms
+    \-\-latency\-profile=intact \-\-target\-latency=auto \-\-start\-latency=300ms
 
 $ roc\-send \-vv \-i file:./input.wav \-s rtp+rs8m://192.168.0.3:10001 \e
     \-r rs8m://192.168.0.3:10002 \-c rtcp://192.168.0.3:10003 \e
-    \-\-latency\-profile=gradual \-\-target\-latency=200ms
+    \-\-latency\-profile=gradual \-\-target\-latency=auto \-\-start\-latency=300ms
 .ft P
 .fi
 .UNINDENT

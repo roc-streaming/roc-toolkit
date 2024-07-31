@@ -17,37 +17,37 @@ Options
 -h, --help                    Print help and exit
 -V, --version                 Print version and exit
 -v, --verbose                 Increase verbosity level (may be used multiple times)
--L, --list-supported          list supported schemes and formats
+--color=ENUM                  Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
+-L, --list-supported          List supported schemes and formats
 -o, --output=IO_URI           Output file or device URI
 --output-format=FILE_FORMAT   Force output file format
 --backup=IO_URI               Backup file or device URI (if set, used when there are no sessions)
 --backup-format=FILE_FORMAT   Force backup file format
+-1, --oneshot                 Exit when last connected client disconnects (default=off)
 -s, --source=ENDPOINT_URI     Local source endpoint
 -r, --repair=ENDPOINT_URI     Local repair endpoint
 -c, --control=ENDPOINT_URI    Local control endpoint
 --miface=MIFACE               IPv4 or IPv6 address of the network interface on which to join the multicast group
---reuseaddr                   enable SO_REUSEADDR when binding sockets
---io-latency=STRING           Playback target latency, TIME units
---target-latency=STRING       Target latency, TIME units
+--reuseaddr                   Enable SO_REUSEADDR when binding sockets
+--io-latency=STRING           Playback device latency, TIME units
+--target-latency=STRING       Target latency, TIME units or 'auto' for adaptive mode  (default=`auto')
 --latency-tolerance=STRING    Maximum deviation from target latency, TIME units
---start-latency=STRING        Start latency, target-latency must be 'auto' or unset, TIME units
---min-latency=STRING          Minimum allowed latency, target-latency and latency-tolerance must be 0 or unset, TIME units
---max-latency=STRING          Maximum allowed latency, target-latency and latency-tolerance must be 0 or unset, TIME units
---no-play-timeout=STRING      No playback timeout, TIME units
+--start-latency=STRING        Starting target latency in adaptive mode, TIME units
+--min-latency=STRING          Minimum target latency in adaptive mode, TIME units
+--max-latency=STRING          Maximum target latency in adaptive mode, TIME units
+--no-play-timeout=STRING      No-playback timeout, TIME units
 --choppy-play-timeout=STRING  Choppy playback timeout, TIME units
---frame-len=TIME              Duration of the internal frames, TIME units
---max-packet-size=SIZE        Maximum packet size, in SIZE units
---max-frame-size=SIZE         Maximum internal frame size, in SIZE units
---rate=INT                    Override output sample rate, Hz
 --latency-backend=ENUM        Which latency to use in latency tuner (possible values="niq" default=`niq')
---latency-profile=ENUM        Latency tuning profile  (possible values="default", "responsive", "gradual", "intact" default=`default')
---resampler-backend=ENUM      Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
+--latency-profile=ENUM        Latency tuning profile  (possible values="auto", "responsive", "gradual", "intact" default=`auto')
+--resampler-backend=ENUM      Resampler backend  (possible values="auto", "builtin", "speex", "speexdec" default=`auto')
 --resampler-profile=ENUM      Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --plc=ENUM                    Which PLC algorithm to use  (possible values="none", "beep" default=`none')
--1, --oneshot                 Exit when last connected client disconnects (default=off)
+--rate=INT                    Override output device sample rate, Hz
+--frame-len=TIME              Duration of the I/O frames, TIME units
+--max-packet-size=SIZE        Maximum packet size, in SIZE units
+--max-frame-size=SIZE         Maximum internal frame size, in SIZE units
 --profile                     Enable self-profiling  (default=off)
---dump=STRING                 Path for a CSV file where to dump run-time metrics
---color=ENUM                  Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
+--dump=PATH                   Path for a CSV file where to dump run-time metrics
 
 Endpoint URI
 ------------
@@ -287,33 +287,33 @@ Select the LDPC-Staircase FEC scheme:
     $ roc-recv -vv -s rtp+ldpc://0.0.0.0:10001 -r ldpc://0.0.0.0:10002 \
         -c rtcp://0.0.0.0:10003
 
-Select lower session latency:
+Select fixed streaming latency instead of adaptive latency:
 
 .. code::
 
     $ roc-recv -vv -s rtp://0.0.0.0:10001 --target-latency=50ms
 
-Select lower I/O latency and frame length:
+Select I/O latency and frame length:
 
 .. code::
 
     $ roc-recv -vv -s rtp://0.0.0.0:10001 \
         --io-latency=20ms --frame-len 4ms
 
-Manually specify thresholds and timeouts:
+Manually specify thresholds for adaptive latency:
 
 .. code::
 
     $ roc-recv -vv -s rtp://0.0.0.0:10001 \
-        --target-latency=50ms --min-latency=40ms --max-latency 60ms \
+        --target-latency=auto \
+        --start-latency=300ms --min-latency=100ms --max-latency 500ms
+
+Manually specify timeouts:
+
+.. code::
+
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 \
         --no-play-timeout=200ms --choppy-play-timeout=500ms
-
-Manually specify resampling parameters:
-
-.. code::
-
-    $ roc-recv -vv -s rtp://0.0.0.0:10001 \
-        --resampler-backend=speex --resampler-profile=high
 
 Manually specify latency tuning parameters:
 
@@ -321,6 +321,13 @@ Manually specify latency tuning parameters:
 
     $ roc-recv -vv -s rtp://0.0.0.0:10001 \
         --latency-backend=niq --latency-profile=gradual
+
+Manually specify resampling parameters:
+
+.. code::
+
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 \
+        --resampler-backend=speex --resampler-profile=high
 
 ENVIRONMENT VARIABLES
 =====================

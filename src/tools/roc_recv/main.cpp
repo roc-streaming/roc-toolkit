@@ -104,6 +104,82 @@ int main(int argc, char** argv) {
     sndio::BackendMap::instance().set_frame_size(
         io_config.frame_length, receiver_config.common.output_sample_spec);
 
+    switch (args.latency_backend_arg) {
+    case latency_backend_arg_niq:
+        receiver_config.session_defaults.latency.tuner_backend =
+            audio::LatencyTunerBackend_Niq;
+        break;
+    default:
+        break;
+    }
+
+    switch (args.latency_profile_arg) {
+    case latency_profile_arg_auto:
+        receiver_config.session_defaults.latency.tuner_profile =
+            audio::LatencyTunerProfile_Auto;
+        break;
+    case latency_profile_arg_responsive:
+        receiver_config.session_defaults.latency.tuner_profile =
+            audio::LatencyTunerProfile_Responsive;
+        break;
+    case latency_profile_arg_gradual:
+        receiver_config.session_defaults.latency.tuner_profile =
+            audio::LatencyTunerProfile_Gradual;
+        break;
+    case latency_profile_arg_intact:
+        receiver_config.session_defaults.latency.tuner_profile =
+            audio::LatencyTunerProfile_Intact;
+        break;
+    default:
+        break;
+    }
+
+    switch (args.resampler_backend_arg) {
+    case resampler_backend_arg_auto:
+        receiver_config.session_defaults.resampler.backend = audio::ResamplerBackend_Auto;
+        break;
+    case resampler_backend_arg_builtin:
+        receiver_config.session_defaults.resampler.backend =
+            audio::ResamplerBackend_Builtin;
+        break;
+    case resampler_backend_arg_speex:
+        receiver_config.session_defaults.resampler.backend =
+            audio::ResamplerBackend_Speex;
+        break;
+    case resampler_backend_arg_speexdec:
+        receiver_config.session_defaults.resampler.backend =
+            audio::ResamplerBackend_SpeexDec;
+        break;
+    default:
+        break;
+    }
+
+    switch (args.resampler_profile_arg) {
+    case resampler_profile_arg_low:
+        receiver_config.session_defaults.resampler.profile = audio::ResamplerProfile_Low;
+        break;
+    case resampler_profile_arg_medium:
+        receiver_config.session_defaults.resampler.profile =
+            audio::ResamplerProfile_Medium;
+        break;
+    case resampler_profile_arg_high:
+        receiver_config.session_defaults.resampler.profile = audio::ResamplerProfile_High;
+        break;
+    default:
+        break;
+    }
+
+    switch (args.plc_arg) {
+    case plc_arg_none:
+        receiver_config.session_defaults.plc.backend = audio::PlcBackend_None;
+        break;
+    case plc_arg_beep:
+        receiver_config.session_defaults.plc.backend = audio::PlcBackend_Beep;
+        break;
+    default:
+        break;
+    }
+
     if (args.target_latency_given) {
         if (strcmp(args.target_latency_arg, "auto") == 0) {
             receiver_config.session_defaults.latency.target_latency = 0;
@@ -220,83 +296,6 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --choppy-play-timeout: should be > 0");
             return 1;
         }
-    }
-
-    switch (args.latency_backend_arg) {
-    case latency_backend_arg_niq:
-        receiver_config.session_defaults.latency.tuner_backend =
-            audio::LatencyTunerBackend_Niq;
-        break;
-    default:
-        break;
-    }
-
-    switch (args.latency_profile_arg) {
-    case latency_profile_arg_default:
-        receiver_config.session_defaults.latency.tuner_profile =
-            audio::LatencyTunerProfile_Default;
-        break;
-    case latency_profile_arg_responsive:
-        receiver_config.session_defaults.latency.tuner_profile =
-            audio::LatencyTunerProfile_Responsive;
-        break;
-    case latency_profile_arg_gradual:
-        receiver_config.session_defaults.latency.tuner_profile =
-            audio::LatencyTunerProfile_Gradual;
-        break;
-    case latency_profile_arg_intact:
-        receiver_config.session_defaults.latency.tuner_profile =
-            audio::LatencyTunerProfile_Intact;
-        break;
-    default:
-        break;
-    }
-
-    switch (args.resampler_backend_arg) {
-    case resampler_backend_arg_default:
-        receiver_config.session_defaults.resampler.backend =
-            audio::ResamplerBackend_Default;
-        break;
-    case resampler_backend_arg_builtin:
-        receiver_config.session_defaults.resampler.backend =
-            audio::ResamplerBackend_Builtin;
-        break;
-    case resampler_backend_arg_speex:
-        receiver_config.session_defaults.resampler.backend =
-            audio::ResamplerBackend_Speex;
-        break;
-    case resampler_backend_arg_speexdec:
-        receiver_config.session_defaults.resampler.backend =
-            audio::ResamplerBackend_SpeexDec;
-        break;
-    default:
-        break;
-    }
-
-    switch (args.resampler_profile_arg) {
-    case resampler_profile_arg_low:
-        receiver_config.session_defaults.resampler.profile = audio::ResamplerProfile_Low;
-        break;
-    case resampler_profile_arg_medium:
-        receiver_config.session_defaults.resampler.profile =
-            audio::ResamplerProfile_Medium;
-        break;
-    case resampler_profile_arg_high:
-        receiver_config.session_defaults.resampler.profile = audio::ResamplerProfile_High;
-        break;
-    default:
-        break;
-    }
-
-    switch (args.plc_arg) {
-    case plc_arg_none:
-        receiver_config.session_defaults.plc.backend = audio::PlcBackend_None;
-        break;
-    case plc_arg_beep:
-        receiver_config.session_defaults.plc.backend = audio::PlcBackend_Beep;
-        break;
-    default:
-        break;
     }
 
     receiver_config.common.enable_profiling = args.profile_flag;

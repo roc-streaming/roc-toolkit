@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
 
     switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
-        transcoder_config.resampler.backend = audio::ResamplerBackend_Default;
+        transcoder_config.resampler.backend = audio::ResamplerBackend_Auto;
         break;
     case resampler_backend_arg_builtin:
         transcoder_config.resampler.backend = audio::ResamplerBackend_Builtin;

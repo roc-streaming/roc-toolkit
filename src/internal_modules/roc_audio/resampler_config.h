@@ -20,10 +20,9 @@ namespace audio {
 
 //! Resampler backends.
 enum ResamplerBackend {
-    //! Default backend.
     //! Resolved to one of other backends, depending on what
     //! is enabled at build time.
-    ResamplerBackend_Default,
+    ResamplerBackend_Auto,
 
     //! Built-in resampler.
     //! High precision, high quality, slow.
@@ -64,7 +63,7 @@ struct ResamplerConfig {
     ResamplerProfile profile;
 
     ResamplerConfig()
-        : backend(ResamplerBackend_Default)
+        : backend(ResamplerBackend_Auto)
         , profile(ResamplerProfile_Medium) {
     }
 

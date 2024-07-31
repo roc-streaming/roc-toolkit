@@ -252,7 +252,7 @@ bool LatencyTuner::measure_actual_latency_(packet::stream_timestamp_diff_t& resu
         result = e2e_latency_;
         return true;
 
-    case LatencyTunerBackend_Default:
+    case LatencyTunerBackend_Auto:
         break;
     }
 

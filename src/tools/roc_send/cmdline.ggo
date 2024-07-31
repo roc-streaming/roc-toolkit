@@ -5,8 +5,10 @@ section "Options"
 
     option "verbose" v "Increase verbosity level (may be used multiple times)"
         multiple optional
+    option "color" - "Set colored logging mode for stderr output"
+        values="auto","always","never" default="auto" enum optional
 
-    option "list-supported" L "list supported schemes and formats" optional
+    option "list-supported" L "List supported schemes and formats" optional
 
     option "input" i "Input file or device URI" typestr="IO_URI" string optional
     option "input-format" - "Force input file format" typestr="FILE_FORMAT" string optional
@@ -18,57 +20,58 @@ section "Options"
     option "control" c "Remote control endpoint" typestr="ENDPOINT_URI"
         string multiple optional
 
-    option "reuseaddr" - "enable SO_REUSEADDR when binding sockets" optional
+    option "reuseaddr" - "Enable SO_REUSEADDR when binding sockets" optional
 
-    option "io-latency" - "Recording target latency, TIME units"
+    option "io-latency" - "Recording device latency, TIME units"
         string optional
 
-    option "target-latency" - "Target latency, TIME units"
+    option "target-latency" -
+      "Target latency (only for sender-side tuning), TIME units or 'auto' for adaptive mode"
+        string optional
+    option "latency-tolerance" -
+      "Maximum deviation from target latency (only for sender-side tuning), TIME units"
+        string optional
+    option "start-latency" -
+      "Starting target latency in adaptive mode (only for sender-side tuning), TIME units"
+        string optional
+    option "min-latency" -
+      "Minimum target latency in adaptive mode (only for sender-side tuning), TIME units"
+        string optional
+    option "max-latency" -
+      "Maximum target latency in adaptive mode (only for sender-side tuning), TIME units"
         string optional
 
-    option "latency-tolerance" - "Maximum deviation from target latency, TIME units"
-        string optional
+    option "latency-backend" - "Which latency to use in latency tuner"
+        values="niq" default="niq" enum optional
+    option "latency-profile" - "Latency tuning profile"
+        values="responsive","gradual","intact" default="intact" enum optional
+
+    option "resampler-backend" - "Resampler backend"
+        values="auto","builtin","speex","speexdec" default="auto" enum optional
+    option "resampler-profile" - "Resampler profile"
+        values="low","medium","high" default="medium" enum optional
+
+    option "rate" - "Override input device sample rate, Hz"
+        int optional
 
     option "nbsrc" - "Number of source packets in FEC block"
         int optional
-
     option "nbrpr" - "Number of repair packets in FEC block"
         int optional
 
     option "packet-len" - "Outgoing packet length, TIME units"
         string optional
-
-    option "frame-len" - "Duration of the internal frames, TIME units"
+    option "frame-len" - "Duration of the I/O frames, TIME units"
         typestr="TIME" string optional
 
     option "max-packet-size" - "Maximum packet size, in SIZE units"
         typestr="SIZE" string optional
-
     option "max-frame-size" - "Maximum internal frame size, in SIZE units"
         typestr="SIZE" string optional
 
-    option "rate" - "Override input sample rate, Hz"
-        int optional
-
-    option "latency-backend" - "Which latency to use in latency tuner"
-        values="niq" default="niq" enum optional
-
-    option "latency-profile" - "Latency tuning profile"
-        values="responsive","gradual","intact" default="intact" enum optional
-
-    option "resampler-backend" - "Resampler backend"
-        values="default","builtin","speex","speexdec" default="default" enum optional
-
-    option "resampler-profile" - "Resampler profile"
-        values="low","medium","high" default="medium" enum optional
-
     option "profile" - "Enable self-profiling" flag off
-
     option "dump" - "Path for a CSV file where to dump run-time metrics"
-        string optional
-
-    option "color" - "Set colored logging mode for stderr output"
-        values="auto","always","never" default="auto" enum optional
+        typestr="PATH" string optional
 
 text "
 ENDPOINT_URI is a network endpoint URI, e.g.:
@@ -87,7 +90,7 @@ TIME is an integer or floating-point number with a suffix, e.g.:
 SIZE is an integer or floating-point number with an optional suffix, e.g.:
   123; 1.23K; 1.23M; 1.23G;
 
-Use --list-supported option to print the list of the supported
+Use --list-supported (-L) option to print the list of the supported
 URI schemes and file formats.
 
 See further details in roc-send(1) manual page locally or online:

@@ -23,7 +23,7 @@ namespace audio {
 //! Defines which latency we monitor and tune to achieve target.
 enum LatencyTunerBackend {
     //! Deduce best default for given settings.
-    LatencyTunerBackend_Default,
+    LatencyTunerBackend_Auto,
 
     //! Latency is Network Incoming Queue length.
     //! Calculated on receiver without use of any signaling protocol.
@@ -41,7 +41,7 @@ enum LatencyTunerBackend {
 //! drift and jitter.
 enum LatencyTunerProfile {
     //! Deduce best default for given settings.
-    LatencyTunerProfile_Default,
+    LatencyTunerProfile_Auto,
 
     //! Do not adjust latency.
     LatencyTunerProfile_Intact,
@@ -172,8 +172,8 @@ struct LatencyConfig {
 
     //! Initialize.
     LatencyConfig()
-        : tuner_backend(LatencyTunerBackend_Default)
-        , tuner_profile(LatencyTunerProfile_Default)
+        : tuner_backend(LatencyTunerBackend_Auto)
+        , tuner_profile(LatencyTunerProfile_Auto)
         , target_latency(0)
         , latency_tolerance(0)
         , start_target_latency(0)

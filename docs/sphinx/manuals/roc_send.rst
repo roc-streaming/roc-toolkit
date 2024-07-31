@@ -17,30 +17,33 @@ Options
 -h, --help                  Print help and exit
 -V, --version               Print version and exit
 -v, --verbose               Increase verbosity level (may be used multiple times)
--L, --list-supported        list supported schemes and formats
+--color=ENUM                Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
+-L, --list-supported        List supported schemes and formats
 -i, --input=IO_URI          Input file or device URI
 --input-format=FILE_FORMAT  Force input file format
 -s, --source=ENDPOINT_URI   Remote source endpoint
 -r, --repair=ENDPOINT_URI   Remote repair endpoint
 -c, --control=ENDPOINT_URI  Remote control endpoint
---reuseaddr                 enable SO_REUSEADDR when binding sockets
---io-latency=STRING         Recording target latency, TIME units
---target-latency=STRING     Target latency, TIME units
---latency-tolerance=STRING  Maximum deviation from target latency, TIME units
+--reuseaddr                 Enable SO_REUSEADDR when binding sockets
+--io-latency=STRING         Recording device latency, TIME units
+--target-latency=STRING     Target latency (only for sender-side tuning), TIME units or 'auto' for adaptive mode
+--latency-tolerance=STRING  Maximum deviation from target latency (only for sender-side tuning), TIME units
+--start-latency=STRING      Starting target latency in adaptive mode (only for sender-side tuning), TIME units
+--min-latency=STRING        Minimum target latency in adaptive mode (only for sender-side tuning), TIME units
+--max-latency=STRING        Maximum target latency in adaptive mode (only for sender-side tuning), TIME units
+--latency-backend=ENUM      Which latency to use in latency tuner (possible values="niq" default=`niq')
+--latency-profile=ENUM      Latency tuning profile  (possible values="responsive", "gradual", "intact" default=`intact')
+--resampler-backend=ENUM    Resampler backend  (possible values="auto", "builtin", "speex", "speexdec" default=`auto')
+--resampler-profile=ENUM    Resampler profile  (possible values="low", "medium", "high" default=`medium')
+--rate=INT                  Override input device sample rate, Hz
 --nbsrc=INT                 Number of source packets in FEC block
 --nbrpr=INT                 Number of repair packets in FEC block
 --packet-len=STRING         Outgoing packet length, TIME units
---frame-len=TIME            Duration of the internal frames, TIME units
+--frame-len=TIME            Duration of the I/O frames, TIME units
 --max-packet-size=SIZE      Maximum packet size, in SIZE units
 --max-frame-size=SIZE       Maximum internal frame size, in SIZE units
---rate=INT                  Override input sample rate, Hz
---latency-backend=ENUM      Which latency to use in latency tuner (possible values="niq" default=`niq')
---latency-profile=ENUM      Latency tuning profile  (possible values="responsive", "gradual", "intact" default=`intact')
---resampler-backend=ENUM    Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
---resampler-profile=ENUM    Resampler profile  (possible values="low", "medium", "high" default=`medium')
 --profile                   Enable self-profiling  (default=off)
---dump=STRING               Path for a CSV file where to dump run-time metrics
---color=ENUM                Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
+--dump=PATH                 Path for a CSV file where to dump run-time metrics
 
 Endpoint URI
 ------------
@@ -252,7 +255,7 @@ Select smaller packet length:
     $ roc-send -vv -i file:./input.wav -s rtp+ldpc://192.168.0.3:10001 \
         --packet-len 2500us
 
-Select lower I/O latency and frame length:
+Select I/O latency and frame length:
 
 .. code::
 
@@ -272,11 +275,11 @@ Perform latency tuning on sender instead of receiver:
 
     $ roc-recv -vv -o pulse://default -s rtp+rs8m://0.0.0.0:10001 \
         -r rs8m://0.0.0.0:10002 -c rtcp://0.0.0.0:10003 \
-        --latency-profile=intact --target-latency=200ms
+        --latency-profile=intact --target-latency=auto --start-latency=300ms
 
     $ roc-send -vv -i file:./input.wav -s rtp+rs8m://192.168.0.3:10001 \
         -r rs8m://192.168.0.3:10002 -c rtcp://192.168.0.3:10003 \
-        --latency-profile=gradual --target-latency=200ms
+        --latency-profile=gradual --target-latency=auto --start-latency=300ms
 
 ENVIRONMENT VARIABLES
 =====================

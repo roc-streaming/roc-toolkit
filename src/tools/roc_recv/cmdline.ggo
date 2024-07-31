@@ -5,8 +5,10 @@ section "Options"
 
     option "verbose" v "Increase verbosity level (may be used multiple times)"
         multiple optional
+    option "color" - "Set colored logging mode for stderr output"
+        values="auto","always","never" default="auto" enum optional
 
-    option "list-supported" L "list supported schemes and formats" optional
+    option "list-supported" L "List supported schemes and formats" optional
 
     option "output" o "Output file or device URI" typestr="IO_URI" string optional
     option "output-format" - "Force output file format" typestr="FILE_FORMAT" string optional
@@ -15,6 +17,8 @@ section "Options"
         typestr="IO_URI" string optional
     option "backup-format" - "Force backup file format"
         typestr="FILE_FORMAT" string optional
+    option "oneshot" 1 "Exit when last connected client disconnects"
+        flag off
 
     option "source" s "Local source endpoint" typestr="ENDPOINT_URI"
         string multiple optional
@@ -26,70 +30,55 @@ section "Options"
     option "miface" -
       "IPv4 or IPv6 address of the network interface on which to join the multicast group"
       typestr="MIFACE" string multiple optional
+    option "reuseaddr" -
+      "Enable SO_REUSEADDR when binding sockets" optional
 
-    option "reuseaddr" - "enable SO_REUSEADDR when binding sockets" optional
-
-    option "io-latency" - "Playback target latency, TIME units"
+    option "io-latency" - "Playback device latency, TIME units"
         string optional
 
-    option "target-latency" - "Target latency, TIME units"
-        string optional
-
+    option "target-latency" - "Target latency, TIME units or 'auto' for adaptive mode"
+        string default="auto" optional
     option "latency-tolerance" - "Maximum deviation from target latency, TIME units"
         string optional
-
-    option "start-latency" - "Start latency, target-latency must be 'auto' or unset, TIME units"
+    option "start-latency" - "Starting target latency in adaptive mode, TIME units"
+        string optional
+    option "min-latency" - "Minimum target latency in adaptive mode, TIME units"
+        string optional
+    option "max-latency" - "Maximum target latency in adaptive mode, TIME units"
         string optional
 
-    option "min-latency" - "Minimum allowed latency, target-latency and latency-tolerance must be 0 or unset, TIME units"
+    option "no-play-timeout" - "No-playback timeout, TIME units"
         string optional
-
-    option "max-latency" - "Maximum allowed latency, target-latency and latency-tolerance must be 0 or unset, TIME units"
-        string optional
-
-    option "no-play-timeout" - "No playback timeout, TIME units"
-        string optional
-
     option "choppy-play-timeout" - "Choppy playback timeout, TIME units"
         string optional
 
-    option "frame-len" - "Duration of the internal frames, TIME units"
-        typestr="TIME" string optional
-
-    option "max-packet-size" - "Maximum packet size, in SIZE units"
-        typestr="SIZE" string optional
-
-    option "max-frame-size" - "Maximum internal frame size, in SIZE units"
-        typestr="SIZE" string optional
-
-    option "rate" - "Override output sample rate, Hz"
-        int optional
-
     option "latency-backend" - "Which latency to use in latency tuner"
         values="niq" default="niq" enum optional
-
     option "latency-profile" - "Latency tuning profile"
-        values="default","responsive","gradual","intact" default="default" enum optional
+        values="auto","responsive","gradual","intact" default="auto" enum optional
 
     option "resampler-backend" - "Resampler backend"
-        values="default","builtin","speex","speexdec" default="default" enum optional
-
+        values="auto","builtin","speex","speexdec" default="auto" enum optional
     option "resampler-profile" - "Resampler profile"
         values="low","medium","high" default="medium" enum optional
 
     option "plc" - "Which PLC algorithm to use"
         values="none","beep" default="none" enum optional
 
-    option "oneshot" 1 "Exit when last connected client disconnects"
-        flag off
+    option "rate" - "Override output device sample rate, Hz"
+        int optional
+
+    option "frame-len" - "Duration of the I/O frames, TIME units"
+        typestr="TIME" string optional
+
+    option "max-packet-size" - "Maximum packet size, in SIZE units"
+        typestr="SIZE" string optional
+    option "max-frame-size" - "Maximum internal frame size, in SIZE units"
+        typestr="SIZE" string optional
 
     option "profile" - "Enable self-profiling" flag off
-
     option "dump" - "Path for a CSV file where to dump run-time metrics"
-        string optional
-
-    option "color" - "Set colored logging mode for stderr output"
-        values="auto","always","never" default="auto" enum optional
+        typestr="PATH" string optional
 
 text "
 ENDPOINT_URI is a network endpoint URI, e.g.:
@@ -108,7 +97,7 @@ TIME is an integer or floating-point number with a suffix, e.g.:
 SIZE is an integer or floating-point number with an optional suffix, e.g.:
   123; 1.23K; 1.23M; 1.23G;
 
-Use --list-supported option to print the list of the supported
+Use --list-supported (-L) option to print the list of the supported
 URI schemes and file formats.
 
 See further details in roc-recv(1) manual page locally or online:

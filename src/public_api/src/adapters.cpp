@@ -505,7 +505,7 @@ bool latency_tuner_backend_from_user(audio::LatencyTunerBackend& out,
                                      roc_latency_tuner_backend in) {
     switch (enum_from_user(in)) {
     case ROC_LATENCY_TUNER_BACKEND_DEFAULT:
-        out = audio::LatencyTunerBackend_Default;
+        out = audio::LatencyTunerBackend_Auto;
         return true;
 
     case ROC_LATENCY_TUNER_BACKEND_NIQ:
@@ -521,7 +521,7 @@ bool latency_tuner_profile_from_user(audio::LatencyTunerProfile& out,
                                      roc_latency_tuner_profile in) {
     switch (enum_from_user(in)) {
     case ROC_LATENCY_TUNER_PROFILE_DEFAULT:
-        out = audio::LatencyTunerProfile_Default;
+        out = audio::LatencyTunerProfile_Auto;
         return true;
 
     case ROC_LATENCY_TUNER_PROFILE_INTACT:
@@ -544,7 +544,7 @@ ROC_ATTR_NO_SANITIZE_UB
 bool resampler_backend_from_user(audio::ResamplerBackend& out, roc_resampler_backend in) {
     switch (enum_from_user(in)) {
     case ROC_RESAMPLER_BACKEND_DEFAULT:
-        out = audio::ResamplerBackend_Default;
+        out = audio::ResamplerBackend_Auto;
         return true;
 
     case ROC_RESAMPLER_BACKEND_BUILTIN:

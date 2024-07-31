@@ -15,7 +15,7 @@ namespace audio {
 bool ResamplerConfig::deduce_defaults(ProcessorMap& processor_map,
                                       LatencyTunerBackend latency_backend,
                                       LatencyTunerProfile latency_profile) {
-    if (backend == ResamplerBackend_Default) {
+    if (backend == ResamplerBackend_Auto) {
         // If responsive profile is set, use builtin backend instead of speex,
         // since it has higher scaling precision.
         const bool need_builtin_backend =
@@ -37,6 +37,9 @@ bool ResamplerConfig::deduce_defaults(ProcessorMap& processor_map,
 
 const char* resampler_backend_to_str(ResamplerBackend backend) {
     switch (backend) {
+    case ResamplerBackend_Auto:
+        return "auto";
+
     case ResamplerBackend_Builtin:
         return "builtin";
 
@@ -45,9 +48,6 @@ const char* resampler_backend_to_str(ResamplerBackend backend) {
 
     case ResamplerBackend_SpeexDec:
         return "speexdec";
-
-    case ResamplerBackend_Default:
-        return "default";
 
     case ResamplerBackend_Max:
         break;

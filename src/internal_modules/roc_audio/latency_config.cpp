@@ -210,11 +210,11 @@ bool LatencyConfig::deduce_defaults(core::nanoseconds_t default_latency,
     // Whether we're using adaptive latency mode.
     const bool is_adaptive = target_latency == 0;
 
-    if (tuner_backend == LatencyTunerBackend_Default) {
+    if (tuner_backend == LatencyTunerBackend_Auto) {
         tuner_backend = LatencyTunerBackend_Niq;
     }
 
-    if (tuner_profile == LatencyTunerProfile_Default) {
+    if (tuner_profile == LatencyTunerProfile_Auto) {
         tuner_profile =
             deduce_tuner_profile(tuner_backend, target_latency, start_target_latency,
                                  is_adaptive, is_receiver);
@@ -276,8 +276,8 @@ bool LatencyConfig::deduce_defaults(core::nanoseconds_t default_latency,
 
 const char* latency_tuner_backend_to_str(LatencyTunerBackend backend) {
     switch (backend) {
-    case LatencyTunerBackend_Default:
-        return "default";
+    case LatencyTunerBackend_Auto:
+        return "auto";
 
     case LatencyTunerBackend_Niq:
         return "niq";
@@ -291,8 +291,8 @@ const char* latency_tuner_backend_to_str(LatencyTunerBackend backend) {
 
 const char* latency_tuner_profile_to_str(LatencyTunerProfile profile) {
     switch (profile) {
-    case LatencyTunerProfile_Default:
-        return "default";
+    case LatencyTunerProfile_Auto:
+        return "auto";
 
     case LatencyTunerProfile_Intact:
         return "intact";
