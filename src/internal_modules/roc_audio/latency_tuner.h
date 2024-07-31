@@ -86,7 +86,7 @@ public:
 private:
     bool measure_actual_latency_(packet::stream_timestamp_diff_t& result);
 
-    bool check_bounds_(packet::stream_timestamp_diff_t latency);
+    bool check_actual_latency_(packet::stream_timestamp_diff_t latency);
     void compute_scaling_(packet::stream_timestamp_diff_t latency);
 
     void update_target_latency_(core::nanoseconds_t max_jitter_ns,
@@ -119,9 +119,15 @@ private:
     const LatencyTunerBackend backend_;
     const LatencyTunerProfile profile_;
 
-    const bool enable_tuning_;
-    const bool enable_adaptive_tuning_;
-    const bool enable_bounds_checks_;
+    // True if we should actively adjust clock speed using resampler scaling.
+    // Either sender or receiver does it.
+    const bool enable_latency_adjustment_;
+    // True if we should check that deviation from target doesn't exceed limit.
+    // Receiver always does it, sender does it only if latency adjustment is on sender.
+    const bool enable_tolerance_checks_;
+    // True if adaptive latency mode is used (target latency is zero).
+    // This flag doesn't depend on who is doing latency adjustment.
+    const bool latency_is_adaptive_;
 
     bool has_niq_latency_;
     packet::stream_timestamp_diff_t niq_latency_;

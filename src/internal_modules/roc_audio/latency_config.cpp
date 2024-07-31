@@ -17,14 +17,13 @@ namespace {
 
 LatencyTunerProfile deduce_tuner_profile(const LatencyTunerBackend tuner_backend,
                                          const core::nanoseconds_t target_latency,
-                                         const core::nanoseconds_t start_latency,
+                                         const core::nanoseconds_t start_target_latency,
                                          const bool is_adaptive,
                                          const bool is_receiver) {
     if (is_receiver) {
         if (tuner_backend == LatencyTunerBackend_Niq) {
-            // Use start_latency in adaptive mode or target_latency in fixed mode.
             const core::nanoseconds_t configured_latency =
-                is_adaptive ? start_latency : target_latency;
+                is_adaptive ? start_target_latency : target_latency;
 
             // If latency is low, we assume network jitter is also low. In this
             // case we use responsive profile. Gradual profile could cause
@@ -48,38 +47,39 @@ LatencyTunerProfile deduce_tuner_profile(const LatencyTunerBackend tuner_backend
     }
 }
 
-core::nanoseconds_t deduce_start_latency(const core::nanoseconds_t min_latency,
-                                         const core::nanoseconds_t max_latency,
-                                         const core::nanoseconds_t default_latency) {
-    if (min_latency != 0 || max_latency != 0) {
+core::nanoseconds_t
+deduce_start_target_latency(const core::nanoseconds_t min_target_latency,
+                            const core::nanoseconds_t max_target_latency,
+                            const core::nanoseconds_t default_latency) {
+    if (min_target_latency != 0 || max_target_latency != 0) {
         // If min and max latency are provided explicitly, start in the middle.
-        return min_latency + (max_latency - min_latency) / 2;
+        return min_target_latency + (max_target_latency - min_target_latency) / 2;
     } else {
         // Otherwise start from default value.
         return default_latency;
     }
 }
 
-void deduce_min_max_latency(const core::nanoseconds_t start_latency,
-                            core::nanoseconds_t& min_latency,
-                            core::nanoseconds_t& max_latency) {
+void deduce_min_max_target_latency(const core::nanoseconds_t start_target_latency,
+                                   core::nanoseconds_t& min_target_latency,
+                                   core::nanoseconds_t& max_target_latency) {
     // By default, allow wide range for latency tuning.
-    min_latency = 0;
-    max_latency = start_latency * 5;
+    min_target_latency = std::min(core::Millisecond * 15, start_target_latency / 5);
+    max_target_latency = start_target_latency * 5;
 }
 
-core::nanoseconds_t deduce_latency_tolerance(const core::nanoseconds_t target_latency,
-                                             const core::nanoseconds_t start_latency,
-                                             const bool is_adaptive,
-                                             const bool is_receiver) {
+core::nanoseconds_t
+deduce_latency_tolerance(const core::nanoseconds_t target_latency,
+                         const core::nanoseconds_t start_target_latency,
+                         const bool is_adaptive,
+                         const bool is_receiver) {
     // On sender, apply multiplier to make default tolerance a bit higher than
     // on receiver. This way, if bounding is enabled on both sides, receiver
     // will always trigger first.
     const int multiplier = is_receiver ? 1 : 4;
 
-    // Use start_latency in adaptive mode or target_latency in fixed mode.
     const core::nanoseconds_t configured_latency =
-        is_adaptive ? start_latency : target_latency;
+        is_adaptive ? start_target_latency : target_latency;
 
     // Out formula doesn't work well on latencies close to zero.
     const core::nanoseconds_t floored_latency =
@@ -104,7 +104,7 @@ core::nanoseconds_t deduce_stale_tolerance(const core::nanoseconds_t latency_tol
     return std::max(latency_tolerance / 4, 10 * core::Millisecond);
 }
 
-size_t deduce_sliding_window(const LatencyTunerProfile tuner_profile) {
+size_t deduce_sliding_window_len(const LatencyTunerProfile tuner_profile) {
     if (tuner_profile == audio::LatencyTunerProfile_Responsive) {
         // Responsive profile requires faster reactions to changes
         // of link characteristics.
@@ -116,9 +116,9 @@ size_t deduce_sliding_window(const LatencyTunerProfile tuner_profile) {
 
 bool validate_adaptive_latency(const core::nanoseconds_t target_latency,
                                const core::nanoseconds_t latency_tolerance,
-                               const core::nanoseconds_t start_latency,
-                               const core::nanoseconds_t min_latency,
-                               const core::nanoseconds_t max_latency) {
+                               const core::nanoseconds_t start_target_latency,
+                               const core::nanoseconds_t min_target_latency,
+                               const core::nanoseconds_t max_target_latency) {
     roc_panic_if(target_latency != 0);
 
     if (latency_tolerance < 0) {
@@ -126,25 +126,29 @@ bool validate_adaptive_latency(const core::nanoseconds_t target_latency,
         return false;
     }
 
-    if (start_latency < 0) {
-        roc_log(LogError, "latency config: start_latency must be >= 0");
+    if (start_target_latency < 0) {
+        roc_log(LogError, "latency config: start_target_latency must be >= 0");
         return false;
     }
 
-    if (min_latency != 0 || max_latency != 0) {
-        if (min_latency < 0 || max_latency < 0) {
-            roc_log(LogError, "latency config: min_latency and max_latency must be >= 0");
-            return false;
-        }
-        if (min_latency > max_latency) {
-            roc_log(LogError, "latency config: min_latency must be <= max_latency");
-            return false;
-        }
-        if (start_latency != 0
-            && (start_latency < min_latency || start_latency > max_latency)) {
+    if (min_target_latency != 0 || max_target_latency != 0) {
+        if (min_target_latency < 0 || max_target_latency < 0) {
             roc_log(
                 LogError,
-                "latency config: start_latency must be in [min_latency; max_latency]");
+                "latency config: min_target_latency and max_target_latency must be >= 0");
+            return false;
+        }
+        if (min_target_latency > max_target_latency) {
+            roc_log(LogError,
+                    "latency config: min_target_latency must be <= max_target_latency");
+            return false;
+        }
+        if (start_target_latency != 0
+            && (start_target_latency < min_target_latency
+                || start_target_latency > max_target_latency)) {
+            roc_log(LogError,
+                    "latency config: start_target_latency must be in range"
+                    " [min_target_latency; max_target_latency]");
             return false;
         }
     }
@@ -154,9 +158,9 @@ bool validate_adaptive_latency(const core::nanoseconds_t target_latency,
 
 bool validate_fixed_latency(const core::nanoseconds_t target_latency,
                             const core::nanoseconds_t latency_tolerance,
-                            const core::nanoseconds_t start_latency,
-                            const core::nanoseconds_t min_latency,
-                            const core::nanoseconds_t max_latency) {
+                            const core::nanoseconds_t start_target_latency,
+                            const core::nanoseconds_t min_target_latency,
+                            const core::nanoseconds_t max_target_latency) {
     roc_panic_if(target_latency == 0);
 
     if (target_latency < 0) {
@@ -169,38 +173,30 @@ bool validate_fixed_latency(const core::nanoseconds_t target_latency,
         return false;
     }
 
-    if (start_latency != 0 || min_latency != 0 || max_latency != 0) {
-        roc_log(LogError,
-                "latency config: start_latency, min_latency, max_latency"
-                " may be used only when adaptive latency is enabled"
-                " (i.e. target_latency == 0)");
+    if (start_target_latency != 0 || min_target_latency != 0 || max_target_latency != 0) {
+        roc_log(
+            LogError,
+            "latency config: start_target_latency, min_target_latency, max_target_latency"
+            " may be used only when adaptive latency is enabled"
+            " (i.e. target_latency == 0)");
         return false;
     }
 
     return true;
 }
 
-bool validate_intact_latency(const core::nanoseconds_t target_latency,
-                             const core::nanoseconds_t latency_tolerance,
-                             const core::nanoseconds_t start_latency,
-                             const core::nanoseconds_t min_latency,
-                             const core::nanoseconds_t max_latency) {
-    if (target_latency < 0) {
-        roc_log(LogError, "latency config: target_latency must be >= 0");
-        return false;
-    }
-
-    if (latency_tolerance < 0) {
-        roc_log(LogError, "latency config: latency_tolerance must be >= 0");
-        return false;
-    }
-
-    if (start_latency != 0 || min_latency != 0 || max_latency != 0) {
+bool validate_no_latency(const core::nanoseconds_t target_latency,
+                         const core::nanoseconds_t latency_tolerance,
+                         const core::nanoseconds_t start_target_latency,
+                         const core::nanoseconds_t min_target_latency,
+                         const core::nanoseconds_t max_target_latency) {
+    if (target_latency != 0 || latency_tolerance != 0 || start_target_latency != 0
+        || min_target_latency != 0 || max_target_latency != 0) {
         roc_log(LogError,
                 "latency config:"
-                " start_latency, min_latency, max_latency"
-                " may be used only when latency tuning is enabled"
-                " (i.e. latency profile is not \"intact\")");
+                " on sender, target_latency, latency_tolerance,"
+                " start_target_latency, min_target_latency, max_target_latency"
+                " aren't used and must be zero if latency profile is \"intact\"");
         return false;
     }
 
@@ -211,7 +207,7 @@ bool validate_intact_latency(const core::nanoseconds_t target_latency,
 
 bool LatencyConfig::deduce_defaults(core::nanoseconds_t default_latency,
                                     bool is_receiver) {
-    // Adaptive latency mode.
+    // Whether we're using adaptive latency mode.
     const bool is_adaptive = target_latency == 0;
 
     if (tuner_backend == LatencyTunerBackend_Default) {
@@ -219,63 +215,60 @@ bool LatencyConfig::deduce_defaults(core::nanoseconds_t default_latency,
     }
 
     if (tuner_profile == LatencyTunerProfile_Default) {
-        tuner_profile = deduce_tuner_profile(tuner_backend, target_latency, start_latency,
-                                             is_adaptive, is_receiver);
+        tuner_profile =
+            deduce_tuner_profile(tuner_backend, target_latency, start_target_latency,
+                                 is_adaptive, is_receiver);
     }
 
-    if (tuner_profile != LatencyTunerProfile_Intact) {
-        // If latency tuning and bounds checking are enabled.
+    // On receiver, we always need to know latency parameters, no matter who is doing
+    // latency adjustment, receiver or sender.
+    // On sender, we need latency parameters only if sender is doing latency adjustment
+    // (latency profile is not "intact").
+    const bool want_latency_params =
+        is_receiver || tuner_profile != LatencyTunerProfile_Intact;
+
+    if (want_latency_params) {
         if (is_adaptive) {
             if (!validate_adaptive_latency(target_latency, latency_tolerance,
-                                           start_latency, min_latency, max_latency)) {
+                                           start_target_latency, min_target_latency,
+                                           max_target_latency)) {
                 return false;
             }
 
-            if (start_latency == 0) {
-                start_latency =
-                    deduce_start_latency(min_latency, max_latency, default_latency);
+            if (start_target_latency == 0) {
+                start_target_latency = deduce_start_target_latency(
+                    min_target_latency, max_target_latency, default_latency);
             }
 
-            if (min_latency == 0 && max_latency == 0) {
-                deduce_min_max_latency(start_latency, min_latency, max_latency);
+            if (min_target_latency == 0 && max_target_latency == 0) {
+                deduce_min_max_target_latency(start_target_latency, min_target_latency,
+                                              max_target_latency);
             }
         } else {
-            if (!validate_fixed_latency(target_latency, latency_tolerance, start_latency,
-                                        min_latency, max_latency)) {
+            if (!validate_fixed_latency(target_latency, latency_tolerance,
+                                        start_target_latency, min_target_latency,
+                                        max_target_latency)) {
                 return false;
             }
         }
 
         if (latency_tolerance == 0) {
-            latency_tolerance = deduce_latency_tolerance(target_latency, start_latency,
-                                                         is_adaptive, is_receiver);
+            latency_tolerance = deduce_latency_tolerance(
+                target_latency, start_target_latency, is_adaptive, is_receiver);
         }
 
         if (stale_tolerance == 0) {
             stale_tolerance = deduce_stale_tolerance(latency_tolerance);
         }
     } else {
-        // If latency tuning is disabled.
-        if (!validate_intact_latency(target_latency, latency_tolerance, start_latency,
-                                     min_latency, max_latency)) {
+        if (!validate_no_latency(target_latency, latency_tolerance, start_target_latency,
+                                 min_target_latency, max_target_latency)) {
             return false;
-        }
-
-        if (target_latency != 0) {
-            // If bounds checking is enabled.
-            if (latency_tolerance == 0) {
-                latency_tolerance = deduce_latency_tolerance(
-                    target_latency, start_latency, is_adaptive, is_receiver);
-            }
-
-            if (stale_tolerance == 0) {
-                stale_tolerance = deduce_stale_tolerance(latency_tolerance);
-            }
         }
     }
 
     if (sliding_window_length == 0) {
-        sliding_window_length = deduce_sliding_window(tuner_profile);
+        sliding_window_length = deduce_sliding_window_len(tuner_profile);
     }
 
     return true;

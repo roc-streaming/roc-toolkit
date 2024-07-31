@@ -46,9 +46,11 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config,
     , freq_coeff_max_delta_(config.scaling_tolerance)
     , backend_(config.tuner_backend)
     , profile_(config.tuner_profile)
-    , enable_tuning_(config.tuner_profile != LatencyTunerProfile_Intact)
-    , enable_adaptive_tuning_(enable_tuning_ && config.target_latency == 0)
-    , enable_bounds_checks_(enable_tuning_ || config.target_latency != 0)
+    , enable_latency_adjustment_(config.tuner_profile != LatencyTunerProfile_Intact)
+    , enable_tolerance_checks_(config.tuner_profile != LatencyTunerProfile_Intact
+                               || config.target_latency != 0
+                               || config.start_target_latency != 0)
+    , latency_is_adaptive_(config.target_latency == 0)
     , has_niq_latency_(false)
     , niq_latency_(0)
     , niq_stalling_(0)
@@ -87,21 +89,21 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config,
             // backend, profile, tuning
             latency_tuner_backend_to_str(backend_),
             latency_tuner_profile_to_str(profile_),
-            enable_tuning_ && enable_adaptive_tuning_ ? "adaptive"
-                : enable_tuning_                      ? "fixed"
-                                                      : "disabled",
+            enable_latency_adjustment_ && latency_is_adaptive_ ? "adaptive"
+                : enable_latency_adjustment_                   ? "fixed"
+                                                               : "disabled",
             // target_latency, latency_tolerance
             (long)sample_spec_.ns_2_stream_timestamp_delta(config.target_latency),
             (double)config.target_latency / core::Millisecond,
             (long)sample_spec_.ns_2_stream_timestamp_delta(config.latency_tolerance),
             (double)config.latency_tolerance / core::Millisecond,
             // start_latency, min_latency, max_latency
-            (long)sample_spec_.ns_2_stream_timestamp_delta(config.start_latency),
-            (double)config.start_latency / core::Millisecond,
-            (long)sample_spec_.ns_2_stream_timestamp_delta(config.min_latency),
-            (double)config.min_latency / core::Millisecond,
-            (long)sample_spec_.ns_2_stream_timestamp_delta(config.max_latency),
-            (double)config.max_latency / core::Millisecond,
+            (long)sample_spec_.ns_2_stream_timestamp_delta(config.start_target_latency),
+            (double)config.start_target_latency / core::Millisecond,
+            (long)sample_spec_.ns_2_stream_timestamp_delta(config.min_target_latency),
+            (double)config.min_target_latency / core::Millisecond,
+            (long)sample_spec_.ns_2_stream_timestamp_delta(config.max_target_latency),
+            (double)config.max_target_latency / core::Millisecond,
             // stale_tolerance
             (long)sample_spec_.ns_2_stream_timestamp_delta(config.stale_tolerance),
             (double)config.stale_tolerance / core::Millisecond,
@@ -110,24 +112,30 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config,
             (double)config.scaling_interval / core::Millisecond,
             (double)config.scaling_tolerance);
 
-    if (enable_tuning_ || enable_bounds_checks_) {
-        if (enable_adaptive_tuning_) {
-            roc_panic_if(config.target_latency != 0);
+    if (enable_latency_adjustment_ || enable_tolerance_checks_) {
+        if (latency_is_adaptive_) {
+            roc_panic_if_msg(
+                config.target_latency != 0 || config.start_target_latency <= 0
+                    || config.min_target_latency < 0 || config.max_target_latency <= 0,
+                "latency tuner: invalid configuration");
 
             cur_target_latency_ =
-                sample_spec_.ns_2_stream_timestamp_delta(config.start_latency);
+                sample_spec_.ns_2_stream_timestamp_delta(config.start_target_latency);
 
             min_target_latency_ =
-                sample_spec_.ns_2_stream_timestamp_delta(config.min_latency);
+                sample_spec_.ns_2_stream_timestamp_delta(config.min_target_latency);
             max_target_latency_ =
-                sample_spec_.ns_2_stream_timestamp_delta(config.max_latency);
+                sample_spec_.ns_2_stream_timestamp_delta(config.max_target_latency);
 
             min_actual_latency_ = sample_spec_.ns_2_stream_timestamp_delta(
-                config.min_latency - config.latency_tolerance);
+                config.min_target_latency - config.latency_tolerance);
             max_actual_latency_ = sample_spec_.ns_2_stream_timestamp_delta(
-                config.max_latency + config.latency_tolerance);
+                config.max_target_latency + config.latency_tolerance);
         } else {
-            roc_panic_if(config.target_latency == 0);
+            roc_panic_if_msg(
+                config.target_latency <= 0 || config.start_target_latency != 0
+                    || config.min_target_latency != 0 || config.max_target_latency != 0,
+                "latency tuner: invalid configuration");
 
             cur_target_latency_ =
                 sample_spec_.ns_2_stream_timestamp_delta(config.target_latency);
@@ -138,7 +146,7 @@ LatencyTuner::LatencyTuner(const LatencyConfig& config,
                 config.target_latency + config.latency_tolerance);
         }
 
-        if (enable_tuning_) {
+        if (enable_latency_adjustment_) {
             fe_.reset(new (fe_) FreqEstimator(
                 profile_ == LatencyTunerProfile_Responsive
                     ? FreqEstimatorProfile_Responsive
@@ -182,7 +190,7 @@ void LatencyTuner::write_metrics(const LatencyMetrics& latency_metrics,
 bool LatencyTuner::update_stream() {
     roc_panic_if(init_status_ != status::StatusOK);
 
-    if (enable_adaptive_tuning_ && has_metrics_) {
+    if (enable_latency_adjustment_ && latency_is_adaptive_ && has_metrics_) {
         update_target_latency_(link_metrics_.max_jitter, link_metrics_.jitter,
                                latency_metrics_.fec_block_duration);
     }
@@ -192,13 +200,13 @@ bool LatencyTuner::update_stream() {
         return true;
     }
 
-    if (enable_bounds_checks_) {
-        if (!check_bounds_(actual_latency)) {
+    if (enable_tolerance_checks_) {
+        if (!check_actual_latency_(actual_latency)) {
             return false;
         }
     }
 
-    if (enable_tuning_) {
+    if (enable_latency_adjustment_) {
         compute_scaling_(actual_latency);
     }
 
@@ -251,7 +259,8 @@ bool LatencyTuner::measure_actual_latency_(packet::stream_timestamp_diff_t& resu
     roc_panic("latency tuner: invalid backend: id=%d", (int)backend_);
 }
 
-bool LatencyTuner::check_bounds_(const packet::stream_timestamp_diff_t actual_latency) {
+bool LatencyTuner::check_actual_latency_(
+    const packet::stream_timestamp_diff_t actual_latency) {
     // Queue is considered "stalling" if there were no new packets for
     // some period of time.
     const bool is_stalling = backend_ == LatencyTunerBackend_Niq

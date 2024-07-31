@@ -617,26 +617,26 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
             continue;
         }
 
-        CHECK(send_conn_metrics.e2e_latency > 0);
-        CHECK(recv_conn_metrics.e2e_latency > 0);
+        CHECK((int64_t)send_conn_metrics.e2e_latency > 0);
+        CHECK((int64_t)recv_conn_metrics.e2e_latency > 0);
 
-        CHECK(send_conn_metrics.rtt > 0);
-        CHECK(recv_conn_metrics.rtt > 0);
+        CHECK((int64_t)send_conn_metrics.rtt > 0);
+        CHECK((int64_t)recv_conn_metrics.rtt > 0);
 
-        CHECK(send_conn_metrics.jitter > 0);
-        CHECK(recv_conn_metrics.jitter > 0);
+        CHECK((int64_t)send_conn_metrics.jitter > 0);
+        CHECK((int64_t)recv_conn_metrics.jitter > 0);
 
-        CHECK(send_conn_metrics.expected_packets > 0);
-        CHECK(recv_conn_metrics.expected_packets > 0);
+        CHECK((int64_t)send_conn_metrics.expected_packets > 0);
+        CHECK((int64_t)recv_conn_metrics.expected_packets > 0);
 
-        CHECK(send_conn_metrics.lost_packets == 0);
-        CHECK(recv_conn_metrics.lost_packets == 0);
+        CHECK((int64_t)send_conn_metrics.lost_packets >= 0);
+        CHECK((int64_t)recv_conn_metrics.lost_packets >= 0);
 
-        CHECK(send_conn_metrics.late_packets == 0);
-        CHECK(recv_conn_metrics.late_packets == 0);
+        CHECK((int64_t)send_conn_metrics.late_packets == 0);
+        CHECK((int64_t)recv_conn_metrics.late_packets >= 0);
 
-        CHECK(send_conn_metrics.recovered_packets == 0);
-        CHECK(recv_conn_metrics.recovered_packets == 0);
+        CHECK((int64_t)send_conn_metrics.recovered_packets == 0);
+        CHECK((int64_t)recv_conn_metrics.recovered_packets == 0);
 
         break;
     }

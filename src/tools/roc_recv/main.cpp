@@ -144,11 +144,11 @@ int main(int argc, char** argv) {
         }
         if (!core::parse_duration(
                 args.start_latency_arg,
-                receiver_config.session_defaults.latency.start_latency)) {
+                receiver_config.session_defaults.latency.start_target_latency)) {
             roc_log(LogError, "invalid --start-latency: bad format");
             return 1;
         }
-        if (receiver_config.session_defaults.latency.start_latency <= 0) {
+        if (receiver_config.session_defaults.latency.start_target_latency <= 0) {
             roc_log(LogError, "invalid --start-latency: should be > 0");
             return 1;
         }
@@ -167,26 +167,28 @@ int main(int argc, char** argv) {
                     "--min-latency and --max-latency should be specified together");
             return 1;
         }
-        if (!core::parse_duration(args.min_latency_arg,
-                                  receiver_config.session_defaults.latency.min_latency)) {
+        if (!core::parse_duration(
+                args.min_latency_arg,
+                receiver_config.session_defaults.latency.min_target_latency)) {
             roc_log(LogError, "invalid --min-latency: bad format");
             return 1;
         }
-        if (receiver_config.session_defaults.latency.min_latency <= 0) {
+        if (receiver_config.session_defaults.latency.min_target_latency <= 0) {
             roc_log(LogError, "invalid --min-latency: should be > 0");
             return 1;
         }
-        if (!core::parse_duration(args.max_latency_arg,
-                                  receiver_config.session_defaults.latency.max_latency)) {
+        if (!core::parse_duration(
+                args.max_latency_arg,
+                receiver_config.session_defaults.latency.max_target_latency)) {
             roc_log(LogError, "invalid --max-latency: bad format");
             return 1;
         }
-        if (receiver_config.session_defaults.latency.max_latency <= 0) {
+        if (receiver_config.session_defaults.latency.max_target_latency <= 0) {
             roc_log(LogError, "invalid --max-latency: should be > 0");
             return 1;
         }
-        if (receiver_config.session_defaults.latency.min_latency
-            > receiver_config.session_defaults.latency.max_latency) {
+        if (receiver_config.session_defaults.latency.min_target_latency
+            > receiver_config.session_defaults.latency.max_target_latency) {
             roc_log(
                 LogError,
                 "incorrect --max-latency: should be greater or equal to --min-latency");

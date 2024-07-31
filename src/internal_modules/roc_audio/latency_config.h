@@ -37,20 +37,20 @@ enum LatencyTunerBackend {
 };
 
 //! Latency tuner profile.
-//! Defines whether and how we tune latency on fly to compensate clock
+//! Defines whether and how we adjust latency on fly to compensate clock
 //! drift and jitter.
 enum LatencyTunerProfile {
     //! Deduce best default for given settings.
     LatencyTunerProfile_Default,
 
-    //! Do not tune latency.
+    //! Do not adjust latency.
     LatencyTunerProfile_Intact,
 
-    //! Fast and responsive tuning.
+    //! Fast and responsive adjustment.
     //! Good for lower network latency and jitter.
     LatencyTunerProfile_Responsive,
 
-    //! Slow and smooth tuning.
+    //! Slow and smooth adjustment.
     //! Good for higher network latency and jitter.
     LatencyTunerProfile_Gradual
 };
@@ -96,7 +96,7 @@ struct LatencyConfig {
     //! @note
     //!  If zero, default value is used.
     //!  Negative value is an error.
-    core::nanoseconds_t start_latency;
+    core::nanoseconds_t start_target_latency;
 
     //! Minimum latency for adaptive mode.
     //! @remarks
@@ -105,7 +105,7 @@ struct LatencyConfig {
     //!  Can be used only in adaptive latency mode.
     //! @note
     //!  If both min_latency and max_latency are zero, defaults are used.
-    core::nanoseconds_t min_latency;
+    core::nanoseconds_t min_target_latency;
 
     //! Maximum latency for adaptive mode.
     //! @remarks
@@ -114,7 +114,7 @@ struct LatencyConfig {
     //!  Can be used only in adaptive latency mode.
     //! @note
     //!  If both min_latency and max_latency are zero, defaults are used.
-    core::nanoseconds_t max_latency;
+    core::nanoseconds_t max_target_latency;
 
     //! Maximum delay since last packet before queue is considered stalling.
     //! @remarks
@@ -176,9 +176,9 @@ struct LatencyConfig {
         , tuner_profile(LatencyTunerProfile_Default)
         , target_latency(0)
         , latency_tolerance(0)
-        , start_latency(0)
-        , min_latency(0)
-        , max_latency(0)
+        , start_target_latency(0)
+        , min_target_latency(0)
+        , max_target_latency(0)
         , stale_tolerance(0)
         , scaling_interval(5 * core::Millisecond)
         , scaling_tolerance(0.005f)

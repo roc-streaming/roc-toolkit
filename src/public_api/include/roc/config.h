@@ -416,7 +416,7 @@ typedef enum roc_clock_source {
 } roc_clock_source;
 
 /** Latency tuner backend.
- * Defines which latency is monitored and tuned by latency tuner.
+ * Defines which latency is monitored and adjusted by latency tuner.
  */
 typedef enum roc_latency_tuner_backend {
     /** Default backend.
@@ -443,7 +443,7 @@ typedef enum roc_latency_tuner_backend {
      *
      * Cons:
      *  - synchronizes only clock speed, but not position; different receivers will
-     *    have different (constant) delays
+     *    have different (constant, on average) delays
      *  - affected by network jitter; spikes in packet delivery will cause slow
      *    oscillations in clock speed
      */
@@ -451,36 +451,36 @@ typedef enum roc_latency_tuner_backend {
 } roc_latency_tuner_backend;
 
 /** Latency tuner profile.
- * Defines whether latency tuning is enabled and which algorithm is used.
+ * Defines whether latency adjustment is enabled and which algorithm is used.
  */
 typedef enum roc_latency_tuner_profile {
     /** Default profile.
      *
-     * On receiver, when \ref ROC_LATENCY_TUNER_BACKEND_NIQ is used, selects \ref
-     * ROC_LATENCY_TUNER_PROFILE_RESPONSIVE if target latency is low, and \ref
-     * ROC_LATENCY_TUNER_PROFILE_GRADUAL if target latency is high.
+     * On receiver, when \c ROC_LATENCY_TUNER_BACKEND_NIQ is used, selects
+     * \c ROC_LATENCY_TUNER_PROFILE_RESPONSIVE if target latency is low, and
+     * \c ROC_LATENCY_TUNER_PROFILE_GRADUAL if target latency is high.
      *
-     * On sender, selects \ref ROC_LATENCY_TUNER_PROFILE_INTACT.
+     * On sender, selects \c ROC_LATENCY_TUNER_PROFILE_INTACT.
      */
     ROC_LATENCY_TUNER_PROFILE_DEFAULT = 0,
 
-    /** No latency tuning.
+    /** No latency adjustment.
      *
-     * In this mode, clock speed is not adjusted. Default on sender.
+     * In this mode, clock speed is not adjusted.
      *
      * You can set this mode on receiver, and set some other mode on sender, to
-     * do latency tuning on sender side instead of receiver side. It's useful
+     * do latency adjustment on sender side instead of receiver side. It's useful
      * when receiver is CPU-constrained and sender is not, because latency tuner
-     * relies on resampling, which is CPU-demanding.
+     * relies on resampling, which is increases CPU usage.
      *
      * You can also set this mode on both sender and receiver if you don't need
-     * latency tuning at all. However, if sender and receiver have independent
+     * latency adjustment at all. However, if sender and receiver have independent
      * clocks (which is typically the case), clock drift will lead to periodic
      * playback disruptions caused by underruns and overruns.
      */
     ROC_LATENCY_TUNER_PROFILE_INTACT = 1,
 
-    /** Responsive latency tuning.
+    /** Responsive latency adjustment.
      *
      * Clock speed is adjusted quickly and accurately.
      *
@@ -497,7 +497,7 @@ typedef enum roc_latency_tuner_profile {
      */
     ROC_LATENCY_TUNER_PROFILE_RESPONSIVE = 2,
 
-    /** Gradual latency tuning.
+    /** Gradual latency adjustment.
      *
      * Clock speed is adjusted slowly and smoothly.
      *
@@ -657,7 +657,7 @@ typedef struct roc_context_config {
 typedef struct roc_sender_config {
     /** The encoding used in frames passed to sender.
      *
-     * Frame encoding defines sample format, channel layout, and sample rate in local
+     * Frame encoding defines sample format, channel layout, and sample rate in **local**
      * frames created by user and passed to sender.
      *
      * Should be set explicitly (zero value is invalid).
@@ -735,32 +735,35 @@ typedef struct roc_sender_config {
     /** Clock source to use.
      * Defines whether write operation is blocking or non-blocking.
      *
+     * If write is non-blocking, the user is responsible to invoke it in appropriate
+     * time. Otherwise it will automatically wait for that time.
+     *
      * If zero, default value is used (\ref ROC_CLOCK_SOURCE_DEFAULT).
      */
     roc_clock_source clock_source;
 
     /** Latency tuner backend.
      * Defines which latency is monitored and controlled by latency tuner.
-     * Defines semantics of \c target_latency, \c min_latency, and \c max_latency fields.
+     * Defines semantics of \c target_latency and related fields.
      *
      * If zero, default backend is used (\ref ROC_LATENCY_TUNER_BACKEND_DEFAULT).
      */
     roc_latency_tuner_backend latency_tuner_backend;
 
     /** Latency tuner profile.
-     * Defines whether latency tuning is enabled and which algorithm is used.
+     * Defines whether latency adjustment is enabled and which algorithm is used.
      *
      * If zero, default profile is used (\ref ROC_LATENCY_TUNER_PROFILE_DEFAULT).
      *
-     * By default, latency tuning is **disabled** on sender. If you enable it on sender,
-     * you need to disable it on receiver. You also need to set \c target_latency to
-     * the exact same value on both sides.
+     * By default, latency adjustment is **disabled** on sender (\c latency_tuner_profile
+     * is \ref ROC_LATENCY_TUNER_PROFILE_INTACT). If you enable it on sender, you
+     * need to disable it on receiver.
      */
     roc_latency_tuner_profile latency_tuner_profile;
 
     /** Resampler backend.
      * Affects CPU usage, quality, and clock synchronization precision
-     * (if latency tuning is enabled).
+     * (if latency adjustment is enabled).
      *
      * If zero, default backend is used (\ref ROC_RESAMPLER_BACKEND_DEFAULT).
      */
@@ -775,77 +778,58 @@ typedef struct roc_sender_config {
 
     /** Target latency, in nanoseconds.
      *
-     * How latency is calculated depends on \c latency_tuner_backend field.
+     * By default, latency adjustment is enabled on receiver and disabled on sender
+     * (see \c latency_tuner_profile). In this case, \c target_latency,
+     * \c latency_tolerance, \c start_target_latency, \c min_target_latency, and
+     * \c max_target_latency should be configured only on receiver, and should be set
+     * to zeros on sender.
      *
-     * If latency tuning is enabled on sender (if \c latency_tuner_profile is not
-     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT), sender adjusts its clock to keep
-     * actual latency as close as possible to the target.
+     * You can enable latency adjustment on sender and disable it on receiver
+     * (again, see \c latency_tuner_profile). In this case, \c target_latency,
+     * \c latency_tolerance, \c start_target_latency, \c min_target_latency, and
+     * \c max_target_latency should be configured on both sender and receiver and
+     * should match each other.
      *
-     * By default, latency tuning is **disabled** on sender. If you enable it on sender,
-     * you need to disable it on receiver. You also need to set \c target_latency to
-     * the exact same value on both sides.
-     *
-     * If latency tuning is enabled, \c target_latency should be non-zero.
+     * Semantics of the fields on sender is the same as on receiver. Refer to comments
+     * in \ref roc_receiver_config for details on each field.
      */
     unsigned long long target_latency;
 
-    /** Minimum allowed latency, in nanoseconds.
-     *
-     * How latency is calculated depends on \c latency_tuner_backend field.
-     *
-     * If latency bounding is enabled on sender (if \c latency_tuner_profile is not
-     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT, or if any of \c min_latency and
-     * \c max_latency fields is non-zero), then if latency goes below \c min_latency or
-     * above \c max_latency, sender restarts connection to receiver.
-     *
-     * By default, latency bounding is **disabled** on sender. If you enable it on sender,
-     * you likely want to disable it on receiver.
-     *
-     * You should either set both \c min_latency and \c max_latency to meaningful values,
-     * or keep both zero. If both fields are zero, and if latency bounding is enabled,
-     * then default values are used.
-     *
-     * Negative value is allowed. For \ref ROC_LATENCY_TUNER_BACKEND_NIQ, latency
-     * can temporary become negative during burst packet losses, and negative
-     * \c min_latency may be used to tolerate this to some extent.
-     */
-    long long min_latency;
-
-    /** Maximum allowed latency, in nanoseconds.
-     *
-     * How latency is calculated depends on \c latency_tuner_backend field.
-     *
-     * If latency bounding is enabled on sender (if \c latency_tuner_profile is not
-     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT, or if any of \c min_latency and
-     * \c max_latency fields is non-zero), then if latency goes below \c min_latency or
-     * above \c max_latency, sender restarts connection to receiver.
-     *
-     * By default, latency bounding is **disabled** on sender. If you enable it on sender,
-     * you likely want to disable it on receiver.
-     *
-     * You should either set both \c min_latency and \c max_latency to meaningful values,
-     * or keep both zero. If both fields are zero, and if latency bounding is enabled,
-     * then default values are used.
-     *
-     * Negative value doesn't make practical sense.
-     */
-    long long max_latency;
-
     /** Maximum allowed delta between current and target latency, in nanoseconds.
      *
-     * How latency is calculated depends on \c latency_tuner_backend field.
+     * By default, latency adjustment is enabled on receiver and disabled on sender
+     * (see \c latency_tuner_profile), and this field isn't used and should be zero.
      *
-     * If latency tuning is enabled on sender (if \c latency_tuner_profile is not
-     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT), sender monitors current latency, and
-     * if it differs from \c target_latency more than by \c latency_tolerance, sender
-     * restarts connection to receiver.
-     *
-     * By default, latency bounding is **disabled** on sender. If you enable it on sender,
-     * you likely want to disable it on receiver.
-     *
-     * If zero, default value is used (if latency tuning is enabled on sender).
+     * If you want to enable it, refer to the comment for \c target_latency.
      */
     unsigned long long latency_tolerance;
+
+    /** Starting latency for adaptive mode, in nanoseconds.
+     *
+     * By default, latency adjustment is enabled on receiver and disabled on sender
+     * (see \c latency_tuner_profile), and this field isn't used and should be zero.
+     *
+     * If you want to enable it, refer to the comment for \c target_latency.
+     */
+    unsigned long long start_target_latency;
+
+    /** Minimum latency for adaptive mode, in nanoseconds.
+     *
+     * By default, latency adjustment is enabled on receiver and disabled on sender
+     * (see \c latency_tuner_profile), and this field isn't used and should be zero.
+     *
+     * If you want to enable it, refer to the comment for \c target_latency.
+     */
+    unsigned long long min_target_latency;
+
+    /** Maximum latency for adaptive mode, in nanoseconds.
+     *
+     * By default, latency adjustment is enabled on receiver and disabled on sender
+     * (see \c latency_tuner_profile), and this field isn't used and should be zero.
+     *
+     * If you want to enable it, refer to the comment for \c target_latency.
+     */
+    unsigned long long max_target_latency;
 } roc_sender_config;
 
 /** Receiver configuration.
@@ -859,7 +843,7 @@ typedef struct roc_sender_config {
 typedef struct roc_receiver_config {
     /** The encoding used in frames returned by receiver.
      *
-     * Frame encoding defines sample format, channel layout, and sample rate in local
+     * Frame encoding defines sample format, channel layout, and sample rate in **local**
      * frames returned by receiver to user.
      *
      * Should be set (zero value is invalid).
@@ -869,32 +853,35 @@ typedef struct roc_receiver_config {
     /** Clock source.
      * Defines whether read operation is blocking or non-blocking.
      *
+     * If read is non-blocking, the user is responsible to invoke it in appropriate
+     * time. Otherwise it will automatically wait for that time.
+     *
      * If zero, default value is used (\ref ROC_CLOCK_SOURCE_DEFAULT).
      */
     roc_clock_source clock_source;
 
     /** Latency tuner backend.
      * Defines which latency is monitored and controlled by latency tuner.
-     * Defines semantics of \c target_latency, \c min_latency, and \c max_latency fields.
+     * Defines semantics of \c target_latency and related fields.
      *
      * If zero, default backend is used (\ref ROC_LATENCY_TUNER_BACKEND_DEFAULT).
      */
     roc_latency_tuner_backend latency_tuner_backend;
 
     /** Latency tuner profile.
-     * Defines whether latency tuning is enabled and which algorithm is used.
+     * Defines whether latency adjustment is enabled and which algorithm is used.
      *
      * If zero, default profile is used (\ref ROC_LATENCY_TUNER_PROFILE_DEFAULT).
      *
-     * By default, latency tuning is **enabled** on receiver. If you disable it on
-     * receiver, you usually need to enable it on sender. In that case you also need to
-     * set \c target_latency to the same value on both sides.
+     * By default, latency adjustment is **enabled** on receiver (\c latency_tuner_profile
+     * is not \ref ROC_LATENCY_TUNER_PROFILE_INTACT). If you disable it on receiver,
+     * you usually need to enable it on sender.
      */
     roc_latency_tuner_profile latency_tuner_profile;
 
     /** Resampler backend.
      * Affects CPU usage, quality, and clock synchronization precision
-     * (if latency tuning is enabled).
+     * (if latency adjustment is enabled).
      *
      * If zero, default backend is used (\ref ROC_RESAMPLER_BACKEND_DEFAULT).
      */
@@ -919,90 +906,79 @@ typedef struct roc_receiver_config {
 
     /** Target latency, in nanoseconds.
      *
-     * How latency is calculated depends on \c latency_tuner_backend field.
+     * Defines the latency value to maintain, as measured by the latency backend
+     * (see \c latency_tuner_backend):
+     *   - Non-zero value activates **fixed latency** mode: the latency starts from
+     *     \c target_latency and is kept close to that value.
+     *   - Zero value activates **adaptive latency** mode: the latency is chosen
+     *     dynamically. Initial latency is \c start_target_latency, and the allowed
+     *     range is \c min_target_latency to \c max_target_latency.
+     *     Latency tuner consistently reassesses network conditions and changes target
+     *     to achieve the lowest latency that doesn't cause disruptions.
      *
-     * If latency tuning is enabled on receiver (if \c latency_tuner_profile is not
-     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT), receiver adjusts its clock to keep
-     * actual latency as close as possible to the target.
+     * If latency adjustment is enabled on receiver (default setting, see
+     * \c latency_tuner_profile), receiver starts with the initial latency and
+     * continuously modulates clock speed to keep actual latency close to the target.
+     * It also validates that the latency deviation never exceeds the limit (see
+     * \c latency_tolerance).
      *
-     * By default, latency tuning is **enabled** on receiver. If you disable it on
-     * receiver, you likely want to enable it on sender. In this case you also need to
-     * set \c target_latency to the exact same value on both sides.
+     * If latency adjustment is disabled on receiver, it is should be enabled on sender.
+     * In this case, receiver starts with the initial latency, but afterwards does not
+     * try to adjust clock speed, assuming that sender will do it. However, receiver
+     * still validates that the latency deviation doesn't exceed the limit.
      *
-     * If zero, default value is used.
+     * When latency adjustment is enabled on sender instead of receiver,
+     * \c target_latency, \c start_target_latency, \c min_target_latency and
+     * \c max_target_latency should match on sender and receiver.
+     * This ensures both sides know the initial latency and the allowed range.
      */
     unsigned long long target_latency;
 
-    /** Start latency, in nanoseconds.
-     *
-     * If target latency is set to zero, and latency tuning is enabled, this value
-     * sets initial value of latency.
-     */
-    unsigned long long start_latency;
-
     /** Maximum allowed delta between current and target latency, in nanoseconds.
      *
-     * How latency is calculated depends on \c latency_tuner_backend field.
+     * Latency tuner continuously monitors deviation of actual latency from target.
+     * If deviation becomes bigger than \c latency_tolerance, connection to sender
+     * is terminated (but sender may reconnect).
      *
-     * If latency tuning is enabled on receiver (if \c latency_tuner_profile is not
-     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT), receiver monitors current latency, and
-     * if it differs from \c target_latency more than by \c latency_tolerance, receiver
-     * terminates connection to sender (but it then restarts if sender continues
-     * streaming).
-     *
-     * By default, latency bounding is **enabled** on receiver. If you disable it on
-     * receiver, you likely want to enable it on sender.
-     *
-     * If zero, default value is used (if latency tuning is enabled on receiver).
+     * If zero, default value is used.
      */
     unsigned long long latency_tolerance;
 
-    /** Minimum allowed latency, in nanoseconds.
+    /** Starting latency for adaptive mode, in nanoseconds.
      *
-     * How latency is calculated depends on \c latency_tuner_backend field.
+     * If adaptive latency mode is used (default setting, see \c target_latency), this
+     * field defines initial value for the target latency.
      *
-     * If latency bounding is enabled on receiver (if \c latency_tuner_profile is not
-     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT, or if any of \c min_latency and
-     * \c max_latency fields is non-zero), then if latency goes below \c min_latency
-     * or above \c max_latency, receiver terminates connection to sender (but it then
-     * restarts if sender continues streaming).
-     *
-     * By default, latency bounding is **enabled** on receiver. If you disable it on
-     * receiver, you likely want to enable it on sender.
-     *
-     * You should either set both \c min_latency and \c max_latency to meaningful values,
-     * or keep both zero. If both fields are zero, and if latency bounding is enabled,
-     * then default values are used.
-     *
-     * Negative value is allowed. For \ref ROC_LATENCY_TUNER_BACKEND_NIQ, latency
-     * can temporary become negative during burst packet losses, and negative
-     * \c min_latency may be used to tolerate this to some extent.
+     * If zero, default value is used.
      */
-    long long min_latency;
+    unsigned long long start_target_latency;
 
-    /** Maximum allowed latency, in nanoseconds.
+    /** Minimum latency for adaptive mode, in nanoseconds.
      *
-     * If latency bounding is enabled on receiver (if \c latency_tuner_profile is not
-     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT, or if any of \c min_latency and
-     * \c max_latency fields is non-zero), then if latency goes below \c min_latency
-     * or above \c max_latency, receiver terminates connection to sender (but it then
-     * restarts if sender continues streaming).
+     * If adaptive latency mode is used (default setting, see \c target_latency),
+     * \c min_target_latency and \c max_target_latency define the allowed range
+     * for the target latency.
      *
-     * By default, latency bounding is **enabled** on receiver. If you disable it on
-     * receiver, you likely want to enable it on sender.
-     *
-     * You should either set both \c min_latency and \c max_latency to meaningful values,
-     * or keep both zero. If both fields are zero, and if latency bounding is enabled,
-     * then default values are used.
-     *
-     * Negative value doesn't make practical sense.
+     * You should either set both \c min_target_latency and \c max_target_latency,
+     * or keep both zero to use default values.
      */
-    long long max_latency;
+    unsigned long long min_target_latency;
+
+    /** Maximum latency for adaptive mode, in nanoseconds.
+     *
+     * If adaptive latency mode is used (default setting, see \c target_latency),
+     * \c min_target_latency and \c max_target_latency define the allowed range
+     * for the target latency.
+     *
+     * You should either set both \c min_target_latency and \c max_target_latency,
+     * or keep both zero to use default values.
+     */
+    unsigned long long max_target_latency;
 
     /** Timeout for the lack of playback, in nanoseconds.
      *
      * If there is no playback during this period, receiver terminates connection to
-     * to sender (but it then restarts if sender continues streaming).
+     * to sender (but sender may reconnect).
      *
      * This mechanism allows to detect dead, hanging, or incompatible clients that
      * generate unparseable packets.
@@ -1014,7 +990,7 @@ typedef struct roc_receiver_config {
     /** Timeout for choppy playback, in nanoseconds.
      *
      * If there is constant stuttering during this period, receiver terminates connection
-     * to sender (but it then restarts if sender continues streaming).
+     * to sender (but sender may reconnect).
      *
      * This mechanism allows to detect situations when playback continues but there
      * are frequent glitches, for example because there is a high ratio of late packets.

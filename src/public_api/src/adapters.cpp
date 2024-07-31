@@ -107,25 +107,6 @@ bool sender_config_from_user(node::Context& context,
         out.packet_length = (core::nanoseconds_t)in.packet_length;
     }
 
-    if (in.target_latency != 0) {
-        out.latency.target_latency = (core::nanoseconds_t)in.target_latency;
-    }
-
-    if (in.latency_tolerance != 0) {
-        out.latency.latency_tolerance = (core::nanoseconds_t)in.latency_tolerance;
-    }
-
-    if (in.min_latency != 0) {
-        out.latency.min_latency = (core::nanoseconds_t)in.min_latency;
-    }
-
-    if (in.max_latency != 0) {
-        out.latency.max_latency = (core::nanoseconds_t)in.max_latency;
-    }
-
-    out.enable_cpu_clock = false;
-    out.enable_auto_cts = true;
-
     if (!fec_encoding_from_user(out.fec_encoder.scheme, in.fec_encoding)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_sender_config.fec_encoding:"
@@ -175,6 +156,25 @@ bool sender_config_from_user(node::Context& context,
         return false;
     }
 
+    if (in.target_latency != 0) {
+        out.latency.target_latency = (core::nanoseconds_t)in.target_latency;
+    }
+
+    if (in.latency_tolerance != 0) {
+        out.latency.latency_tolerance = (core::nanoseconds_t)in.latency_tolerance;
+    }
+
+    if (in.start_target_latency != 0) {
+        out.latency.start_target_latency = (core::nanoseconds_t)in.start_target_latency;
+    }
+
+    if (in.min_target_latency != 0 || in.max_target_latency != 0) {
+        out.latency.min_target_latency = (core::nanoseconds_t)in.min_target_latency;
+        out.latency.max_target_latency = (core::nanoseconds_t)in.max_target_latency;
+    }
+
+    out.enable_auto_cts = true;
+
     return true;
 }
 
@@ -182,48 +182,6 @@ ROC_ATTR_NO_SANITIZE_UB
 bool receiver_config_from_user(node::Context&,
                                pipeline::ReceiverSourceConfig& out,
                                const roc_receiver_config& in) {
-    if (in.target_latency != 0) {
-        out.session_defaults.latency.target_latency =
-            (core::nanoseconds_t)in.target_latency;
-    }
-
-    if (in.latency_tolerance != 0) {
-        out.session_defaults.latency.latency_tolerance =
-            (core::nanoseconds_t)in.latency_tolerance;
-    }
-
-    if (in.start_latency != 0) {
-        if (in.target_latency != 0) {
-            roc_log(LogError,
-                    "bad configuration:"
-                    " start latency must be 0 if latency tuning is disabled"
-                    " (target_latency != 0)");
-            return false;
-        }
-        out.session_defaults.latency.start_latency =
-            (core::nanoseconds_t)in.start_latency;
-    }
-
-    if (in.min_latency != 0) {
-        out.session_defaults.latency.min_latency = (core::nanoseconds_t)in.min_latency;
-    }
-
-    if (in.max_latency != 0) {
-        out.session_defaults.latency.max_latency = (core::nanoseconds_t)in.max_latency;
-    }
-
-    if (in.no_playback_timeout != 0) {
-        out.session_defaults.watchdog.no_playback_timeout = in.no_playback_timeout;
-    }
-
-    if (in.choppy_playback_timeout != 0) {
-        out.session_defaults.watchdog.choppy_playback_timeout =
-            in.choppy_playback_timeout;
-    }
-
-    out.common.enable_cpu_clock = false;
-    out.common.enable_auto_reclock = true;
-
     if (!sample_spec_from_user(out.common.output_sample_spec, in.frame_encoding, false)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.frame_encoding");
@@ -276,6 +234,39 @@ bool receiver_config_from_user(node::Context&,
                 " or belong to the range [ROC_PLUGIN_ID_MIN; ROC_PLUGIN_ID_MAX]");
         return false;
     }
+
+    if (in.target_latency != 0) {
+        out.session_defaults.latency.target_latency =
+            (core::nanoseconds_t)in.target_latency;
+    }
+
+    if (in.latency_tolerance != 0) {
+        out.session_defaults.latency.latency_tolerance =
+            (core::nanoseconds_t)in.latency_tolerance;
+    }
+
+    if (in.start_target_latency != 0) {
+        out.session_defaults.latency.start_target_latency =
+            (core::nanoseconds_t)in.start_target_latency;
+    }
+
+    if (in.min_target_latency != 0 || in.max_target_latency != 0) {
+        out.session_defaults.latency.min_target_latency =
+            (core::nanoseconds_t)in.min_target_latency;
+        out.session_defaults.latency.max_target_latency =
+            (core::nanoseconds_t)in.max_target_latency;
+    }
+
+    if (in.no_playback_timeout != 0) {
+        out.session_defaults.watchdog.no_playback_timeout = in.no_playback_timeout;
+    }
+
+    if (in.choppy_playback_timeout != 0) {
+        out.session_defaults.watchdog.choppy_playback_timeout =
+            in.choppy_playback_timeout;
+    }
+
+    out.common.enable_auto_reclock = true;
 
     return true;
 }
