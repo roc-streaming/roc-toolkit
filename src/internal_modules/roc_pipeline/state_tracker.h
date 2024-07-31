@@ -34,6 +34,7 @@ public:
     //! Initialize all counters to zero.
     StateTracker();
 
+    //! Block until state becomes any of the ones specified by state_mask.
     bool wait_state(unsigned state_mask, core::nanoseconds_t deadline);
 
     //! Compute current state.
