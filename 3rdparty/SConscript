@@ -273,11 +273,13 @@ if 'pulseaudio' in autobuild_dependencies:
     pa_deps = [
         'ltdl',
         'json-c',
-        'sndfile',
         ]
 
     if 'alsa' in autobuild_dependencies:
         pa_deps += ['alsa']
+
+    if 'sndfile' in autobuild_dependencies:
+        pa_deps += ['sndfile']
 
     env.BuildThirdParty(thirdparty_versions, 'ltdl')
     env.BuildThirdParty(thirdparty_versions, 'json-c')
