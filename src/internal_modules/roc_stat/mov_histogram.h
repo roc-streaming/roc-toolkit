@@ -86,6 +86,26 @@ public:
         return bins_[bin_index];
     }
 
+    //! Get approximated moving quantile.
+    //! @note
+    //!  Has O(num_bins) complexity.
+    T mov_quantile(const double quantile) const {
+        T cap;
+        size_t count = 0;
+
+        for (size_t bin_index = 0; bin_index < num_bins_; bin_index++) {
+            cap = value_range_min_ + bin_width_ * (bin_index + 1);
+            count += bins_[bin_index];
+
+            const double ratio = (double)count / ring_buffer_.size();
+            if (ratio >= quantile) {
+                break;
+            }
+        }
+
+        return cap;
+    }
+
     //! Add a value to the histogram.
     //! @note
     //!  Has O(1) complexity.

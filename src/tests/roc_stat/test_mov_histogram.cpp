@@ -213,5 +213,50 @@ TEST(mov_histogram, clamping_values) {
     LONGS_EQUAL(3, hist.mov_counter(9));
 }
 
+TEST(mov_histogram, quantile) {
+    const size_t value_range_min = 0;
+    const size_t value_range_max = 100;
+    const size_t num_bins = 10;
+    const size_t win_length = 10;
+
+    MovHistogram<size_t> hist(arena, value_range_min, value_range_max, num_bins,
+                              win_length);
+    CHECK(hist.is_valid());
+
+    hist.add(5);
+    hist.add(15);
+    hist.add(25);
+    hist.add(35);
+    hist.add(45);
+    hist.add(55);
+    hist.add(65);
+    hist.add(75);
+    hist.add(85);
+    hist.add(95);
+
+    //   0   1   2   3   4   5   6   7   8   9
+    // +---+---+---+---+---+---+---+---+---+---+
+    // | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
+    // +---+---+---+---+---+---+---+---+---+---+
+
+    LONGS_EQUAL(100, hist.mov_quantile(1.0));
+    LONGS_EQUAL(40, hist.mov_quantile(0.4));
+    LONGS_EQUAL(10, hist.mov_quantile(0.1));
+
+    hist.add(75);
+    hist.add(75);
+    hist.add(85);
+
+    //   0   1   2   3   4   5   6   7   8   9
+    // +---+---+---+---+---+---+---+---+---+---+
+    // | 0 | 0 | 0 | 1 | 1 | 1 | 1 | 3 | 2 | 1 |
+    // +---+---+---+---+---+---+---+---+---+---+
+
+    LONGS_EQUAL(100, hist.mov_quantile(1.0));
+    LONGS_EQUAL(80, hist.mov_quantile(0.7));
+    LONGS_EQUAL(70, hist.mov_quantile(0.4));
+    LONGS_EQUAL(40, hist.mov_quantile(0.1));
+}
+
 } // namespace stat
 } // namespace roc
