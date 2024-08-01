@@ -15,7 +15,6 @@
 #include "roc_audio/latency_config.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/iarena.h"
-#include "roc_core/mov_stats.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 #include "roc_dbgio/csv_dumper.h"
@@ -24,6 +23,7 @@
 #include "roc_rtcp/reports.h"
 #include "roc_rtp/encoding.h"
 #include "roc_rtp/encoding_map.h"
+#include "roc_stat/mov_aggregate.h"
 
 namespace roc {
 namespace rtp {
@@ -108,7 +108,7 @@ private:
     core::nanoseconds_t prev_queue_timestamp_;
     packet::stream_timestamp_t prev_stream_timestamp_;
 
-    core::MovStats<core::nanoseconds_t> packet_jitter_stats_;
+    stat::MovAggregate<core::nanoseconds_t> packet_jitter_stats_;
 
     dbgio::CsvDumper* dumper_;
 };

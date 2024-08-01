@@ -6,29 +6,30 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/mov_quantile.h
+//! @file roc_stat/mov_quantile.h
 //! @brief Rolling window moving quantile.
 
-#ifndef ROC_CORE_MOV_QUANTILE_H_
-#define ROC_CORE_MOV_QUANTILE_H_
+#ifndef ROC_STAT_MOV_QUANTILE_H_
+#define ROC_STAT_MOV_QUANTILE_H_
 
 #include "roc_core/array.h"
 #include "roc_core/iarena.h"
 #include "roc_core/panic.h"
 
 namespace roc {
-namespace core {
+namespace stat {
 
 //! Rolling window moving quantile.
+//!
+//! Efficiently implements moving quantile using partition heap based on approach
+//! described in https://aakinshin.net/posts/partitioning-heaps-quantile-estimator/.
+//! It follows the quantile estimator strategy mentioned in the document.
+//!
 //! @tparam T defines a sample type.
-//! @remarks
-//!  Efficiently implements moving quantile using partition heap based on approach
-//!  described in https://aakinshin.net/posts/partitioning-heaps-quantile-estimator/.
-//!  It follows the quantile estimator strategy mentioned in the document
 template <typename T> class MovQuantile {
 public:
     //! Initialize
-    MovQuantile(IArena& arena, const size_t win_len, const double quantile)
+    MovQuantile(core::IArena& arena, const size_t win_len, const double quantile)
         : win_len_(win_len)
         , quantile_(quantile)
         , old_heap_root_index_(0)
@@ -69,17 +70,22 @@ public:
         return valid_;
     }
 
-    //! Returns the moving quantile
+    //! Returns the moving quantile.
+    //! @note
+    //!  Has O(1) complexity.
     T mov_quantile() const {
         return heap_[heap_root_];
     }
 
-    //! Insert or swaps elements in the partition heap
+    //! Inserts or swaps elements in the partition heap.
     //! @remarks
-    //! Case 1: The window is filled. The element in heap is changed whose
-    //! element_index%window_length is equal to arrived element. heapify_() is called post
-    //! that Case 2: The window in not filled. In this case we insert element in max_heap,
-    //! min_heap or root based on the current percentile index
+    //!  Case 1: The window is filled. The element in heap is changed whose
+    //!    element_index%window_length is equal to arrived element. heapify_() is
+    //!    called post that.
+    //!  Case 2: The window in not filled. In this case we insert element in max_heap,
+    //!    min_heap or root based on the current percentile index.
+    //! @note
+    //!  Has O(win_len) complexity.
     void add(const T& x) {
         if (elem_index_ == win_len_) {
             win_filled_ = true;
@@ -264,14 +270,14 @@ private:
     bool valid_;
 
     //! Maintains the partition heap
-    Array<T> heap_;
+    core::Array<T> heap_;
     //! Maintains the element index to heap index mapping
-    Array<size_t> elem_index_2_heap_index_;
+    core::Array<size_t> elem_index_2_heap_index_;
     //! Maintains the heap index to element index mapping
-    Array<size_t> heap_index_2_elem_index_;
+    core::Array<size_t> heap_index_2_elem_index_;
 };
 
-} // namespace core
+} // namespace stat
 } // namespace roc
 
-#endif // ROC_CORE_MOV_QUANTILE_H_
+#endif // ROC_STAT_MOV_QUANTILE_H_

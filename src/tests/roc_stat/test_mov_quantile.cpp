@@ -10,13 +10,13 @@
 
 #include "roc_core/fast_random.h"
 #include "roc_core/heap_arena.h"
-#include "roc_core/mov_quantile.h"
+#include "roc_stat/mov_quantile.h"
 
 namespace roc {
-namespace core {
+namespace stat {
 
 TEST_GROUP(mov_quantile) {
-    HeapArena arena;
+    core::HeapArena arena;
 };
 
 TEST(mov_quantile, testing_minimum) {
@@ -137,8 +137,8 @@ TEST(mov_quantile, stress_test) {
     enum { NumIterations = 10, NumElems = 1000, MinWindow = 1, MaxWindow = 100 };
 
     for (size_t i = 0; i < NumIterations; i++) {
-        const size_t q_win_sz = fast_random_range(MinWindow, MaxWindow);
-        const double q = (double)fast_random() / (double)UINT32_MAX;
+        const size_t q_win_sz = core::fast_random_range(MinWindow, MaxWindow);
+        const double q = (double)core::fast_random() / (double)UINT32_MAX;
 
         MovQuantile<double> quant(arena, q_win_sz, q);
         CHECK(quant.is_valid());
@@ -146,7 +146,7 @@ TEST(mov_quantile, stress_test) {
         double elems[NumElems] = {};
 
         for (size_t n = 0; n < NumElems; n++) {
-            elems[n] = (double)fast_random() / (double)UINT32_MAX;
+            elems[n] = (double)core::fast_random() / (double)UINT32_MAX;
             quant.add(elems[n]);
 
             const size_t n_elems = n + 1;
@@ -166,5 +166,5 @@ TEST(mov_quantile, stress_test) {
     }
 }
 
-} // namespace core
+} // namespace stat
 } // namespace roc

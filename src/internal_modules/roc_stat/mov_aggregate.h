@@ -1,16 +1,16 @@
 /*
- * Copyright (c) 2023 Roc Streaming authors
+ * Copyright (c) 2024 Roc Streaming authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/mov_stats.h
-//! @brief Rolling window moving average and variance.
+//! @file roc_stat/mov_aggregate.h
+//! @brief Rolling window moving average, variance, minimum, and maximum.
 
-#ifndef ROC_CORE_MOV_STATS_H_
-#define ROC_CORE_MOV_STATS_H_
+#ifndef ROC_STAT_MOV_AGGREGATE_H_
+#define ROC_STAT_MOV_AGGREGATE_H_
 
 #include "roc_core/array.h"
 #include "roc_core/iarena.h"
@@ -18,17 +18,20 @@
 #include "roc_core/ring_queue.h"
 
 namespace roc {
-namespace core {
+namespace stat {
 
-//! Rolling window moving average and variance.
+//! Rolling window moving average, variance, minimum, and maximum.
+//!
+//! Efficiently implements moving average and variance based on approach
+//! described in https://www.dsprelated.com/showthread/comp.dsp/97276-1.php,
+//! and moving minimum/maximum based on "sorted deque" algorithm from
+//! https://www.geeksforgeeks.org/sliding-window-maximum-maximum-of-all-subarrays-of-size-k/.
+//!
 //! @tparam T defines a sample type.
-//! @remarks
-//!  Efficiently implements moving average and variance based on approach
-//!  described in https://www.dsprelated.com/showthread/comp.dsp/97276-1.php
-template <typename T> class MovStats {
+template <typename T> class MovAggregate {
 public:
     //! Initialize.
-    MovStats(IArena& arena, const size_t win_len)
+    MovAggregate(core::IArena& arena, const size_t win_len)
         : buffer_(arena)
         , buffer2_(arena)
         , win_len_(win_len)
@@ -67,7 +70,53 @@ public:
         return valid_;
     }
 
+    //! Get moving average value.
+    //! @note
+    //!  Has O(1) complexity.
+    T mov_avg() const {
+        T n = 0;
+        if (full_) {
+            n = T(win_len_);
+        } else if (buffer_i_ == 0) {
+            return T(0);
+        } else {
+            n = T(buffer_i_);
+        }
+        return movsum_ / n;
+    }
+
+    //! Get variance.
+    //! @note
+    //!  Has O(1) complexity.
+    T mov_var() const {
+        T n = 0;
+        if (full_) {
+            n = T(win_len_);
+        } else if (buffer_i_ == 0) {
+            return T(0);
+        } else {
+            n = T(buffer_i_);
+        }
+        return (T)sqrt((n * movsum2_ - movsum_ * movsum_) / (n * n));
+    }
+
+    //! Min value in sliding window.
+    //! @note
+    //!  Has O(1) complexity.
+    T mov_min() const {
+        return curr_min_;
+    }
+
+    //! Max value in sliding window.
+    //! @note
+    //!  Has O(1) complexity.
+    T mov_max() const {
+        return curr_max_;
+    }
+
     //! Shift rolling window by one sample x.
+    //! @note
+    //!  Has O(win_len) complexity.
     void add(const T& x) {
         const T x2 = x * x;
         const T x_old = buffer_[buffer_i_];
@@ -86,42 +135,6 @@ public:
 
         slide_max_(x, x_old);
         slide_min_(x, x_old);
-    }
-
-    //! Get moving average value.
-    T mov_avg() const {
-        T n = 0;
-        if (full_) {
-            n = T(win_len_);
-        } else if (buffer_i_ == 0) {
-            return T(0);
-        } else {
-            n = T(buffer_i_);
-        }
-        return movsum_ / n;
-    }
-
-    //! Get variance.
-    T mov_var() const {
-        T n = 0;
-        if (full_) {
-            n = T(win_len_);
-        } else if (buffer_i_ == 0) {
-            return T(0);
-        } else {
-            n = T(buffer_i_);
-        }
-        return (T)sqrt((n * movsum2_ - movsum_ * movsum_) / (n * n));
-    }
-
-    //! Max value in sliding window.
-    T mov_max() const {
-        return curr_max_;
-    }
-
-    //! Min value in sliding window.
-    T mov_min() const {
-        return curr_min_;
     }
 
     //! Extend rolling window length.
@@ -158,9 +171,8 @@ public:
 private:
     //! Keeping a sliding max by using a sorted deque.
     //! @remarks
-    //! The wedge is always sorted in descending order.
-    //! The current max is always at the front of the wedge.
-    //! https://www.geeksforgeeks.org/sliding-window-maximum-maximum-of-all-subarrays-of-size-k/
+    //!  The wedge is always sorted in descending order.
+    //!  The current max is always at the front of the wedge.
     void slide_max_(const T& x, const T x_old) {
         if (queue_max_.is_empty()) {
             queue_max_.push_back(x);
@@ -182,9 +194,8 @@ private:
 
     //! Keeping a sliding min by using a sorted deque.
     //! @remarks
-    //! The wedge is always sorted in ascending order.
-    //! The current min is always at the front of the wedge.
-    //! https://www.geeksforgeeks.org/sliding-window-maximum-maximum-of-all-subarrays-of-size-k/
+    //!  The wedge is always sorted in ascending order.
+    //!  The current min is always at the front of the wedge.
     void slide_min_(const T& x, const T x_old) {
         if (queue_min_.is_empty()) {
             queue_min_.push_back(x);
@@ -204,8 +215,8 @@ private:
         }
     }
 
-    Array<T> buffer_;
-    Array<T> buffer2_;
+    core::Array<T> buffer_;
+    core::Array<T> buffer2_;
 
     const size_t win_len_;
     size_t buffer_i_;
@@ -218,15 +229,15 @@ private:
     bool full_;
     bool first_;
 
-    RingQueue<T> queue_max_;
+    core::RingQueue<T> queue_max_;
     T curr_max_;
-    RingQueue<T> queue_min_;
+    core::RingQueue<T> queue_min_;
     T curr_min_;
 
     bool valid_;
 };
 
-} // namespace core
+} // namespace stat
 } // namespace roc
 
-#endif // ROC_CORE_MOV_STATS_H_
+#endif // ROC_STAT_MOV_AGGREGATE_H_

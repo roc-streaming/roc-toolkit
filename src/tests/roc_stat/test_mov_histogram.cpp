@@ -9,13 +9,13 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_arena.h"
-#include "roc_core/mov_histogram.h"
+#include "roc_stat/mov_histogram.h"
 
 namespace roc {
-namespace core {
+namespace stat {
 
 TEST_GROUP(mov_histogram) {
-    HeapArena arena;
+    core::HeapArena arena;
 };
 
 TEST(mov_histogram, single_pass) {
@@ -213,5 +213,5 @@ TEST(mov_histogram, clamping_values) {
     LONGS_EQUAL(3, hist.mov_counter(9));
 }
 
-} // namespace core
+} // namespace stat
 } // namespace roc

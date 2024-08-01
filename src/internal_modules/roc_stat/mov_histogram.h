@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/mov_histogram.h
+//! @file roc_stat/mov_histogram.h
 //! @brief Rolling window moving histogram.
 
-#ifndef ROC_CORE_MOV_HISTOGRAM_H_
-#define ROC_CORE_MOV_HISTOGRAM_H_
+#ifndef ROC_STAT_MOV_HISTOGRAM_H_
+#define ROC_STAT_MOV_HISTOGRAM_H_
 
 #include "roc_core/array.h"
 #include "roc_core/iarena.h"
@@ -18,13 +18,22 @@
 #include "roc_core/ring_queue.h"
 
 namespace roc {
-namespace core {
+namespace stat {
 
 //! Rolling window histogram.
 //!
 //! The MovHistogram class maintains a histogram of values within a specified window
 //! length. It divides the range of values into a specified number of bins and updates the
 //! histogram as new values are added and old values are removed from the window.
+//!
+//! Similar to MovQuantile, this class also is capable of computing moving quantiles.
+//! MovHistogram is generally faster than MovQuantile, but has several restrictions:
+//!  - value range should be limited and relatively small compared to the bin size;
+//!    you need either small range or large bins
+//!  - calculated quantile is only an approximation, and error depends on bin size;
+//!    you need small bins for better precision
+//!  - calculation of quantile has O(N) complexity based on the number of bins;
+//!    you need lesser bins to keep it fast
 //!
 //! @tparam T The type of values to be histogrammed.
 template <typename T> class MovHistogram {
@@ -38,7 +47,7 @@ public:
     //! subrange of the value range.
     //! @param window_length The length of the moving window. Only values within this
     //! window are considered in the histogram.
-    MovHistogram(IArena& arena,
+    MovHistogram(core::IArena& arena,
                  T value_range_min,
                  T value_range_max,
                  size_t num_bins,
@@ -71,11 +80,15 @@ public:
     }
 
     //! Get the number of values in the given bin.
+    //! @note
+    //!  Has O(1) complexity.
     size_t mov_counter(size_t bin_index) const {
         return bins_[bin_index];
     }
 
     //! Add a value to the histogram.
+    //! @note
+    //!  Has O(1) complexity.
     void add(const T& value) {
         T clamped_value = value;
 
@@ -86,14 +99,14 @@ public:
         }
 
         if (ring_buffer_.size() == window_length_) {
-            T oldest_value = ring_buffer_.front();
+            const T oldest_value = ring_buffer_.front();
             ring_buffer_.pop_front();
-            size_t oldest_bin_index = get_bin_index_(oldest_value);
+            const size_t oldest_bin_index = get_bin_index_(oldest_value);
             bins_[oldest_bin_index]--;
         }
 
         ring_buffer_.push_back(clamped_value);
-        size_t new_bin_index = get_bin_index_(clamped_value);
+        const size_t new_bin_index = get_bin_index_(clamped_value);
         if (new_bin_index < num_bins_) {
             bins_[new_bin_index]++;
         }
@@ -109,17 +122,19 @@ private:
         return size_t((value - value_range_min_) / bin_width_);
     }
 
-    T value_range_min_;
-    T value_range_max_;
-    size_t num_bins_;
-    size_t window_length_;
+    const T value_range_min_;
+    const T value_range_max_;
+    const size_t num_bins_;
+    const size_t window_length_;
     T bin_width_;
-    RingQueue<T> ring_buffer_;
-    Array<size_t> bins_;
+
+    core::RingQueue<T> ring_buffer_;
+    core::Array<size_t> bins_;
+
     bool valid_;
 };
 
-} // namespace core
+} // namespace stat
 } // namespace roc
 
-#endif // ROC_CORE_MOV_HISTOGRAM_H_
+#endif // ROC_STAT_MOV_HISTOGRAM_H_

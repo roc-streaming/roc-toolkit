@@ -14,6 +14,12 @@ namespace roc {
 }
 
 namespace roc {
+  //! @namespace roc::stat
+  //! Statistical functions.
+  namepsace stat {}
+}
+
+namespace roc {
   //! @namespace roc::status
   //! Status codes.
   namepsace status {}

@@ -71,6 +71,7 @@ Here is the full list of available modules:
 module            description
 ================= =================================
 `roc_core`_       General-purpose building blocks (containers, memory management, multithreading, etc)
+`roc_stat`_       Statistical functions
 `roc_status`_     Status codes
 `roc_address`_    Network URIs and addresses
 `roc_packet`_     Network packets and packet processing
@@ -88,6 +89,7 @@ module            description
 ================= =================================
 
 .. _roc_core: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1core.html
+.. _roc_stat: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1stat.html
 .. _roc_status: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1status.html
 .. _roc_address: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1address.html
 .. _roc_packet: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1packet.html
