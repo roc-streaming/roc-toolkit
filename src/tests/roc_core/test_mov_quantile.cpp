@@ -8,6 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_core/fast_random.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/mov_quantile.h"
 
@@ -130,6 +131,39 @@ TEST(mov_quantile, test_maximum) {
     quant.add(56);
     quant.add(20);
     LONGS_EQUAL((int64_t)102, quant.mov_quantile()); // test complete window
+}
+
+TEST(mov_quantile, stress_test) {
+    enum { NumIterations = 10, NumElems = 1000, MinWindow = 1, MaxWindow = 100 };
+
+    for (size_t i = 0; i < NumIterations; i++) {
+        const size_t q_win_sz = fast_random_range(MinWindow, MaxWindow);
+        const double q = (double)fast_random() / (double)UINT32_MAX;
+
+        MovQuantile<double> quant(arena, q_win_sz, q);
+        CHECK(quant.is_valid());
+
+        double elems[NumElems] = {};
+
+        for (size_t n = 0; n < NumElems; n++) {
+            elems[n] = (double)fast_random() / (double)UINT32_MAX;
+            quant.add(elems[n]);
+
+            const size_t n_elems = n + 1;
+
+            // slow and simple quantile calculation
+            double cur_win[NumElems] = {};
+            const size_t cur_win_sz = std::min(q_win_sz, n_elems);
+            memcpy(cur_win, elems + n_elems - cur_win_sz, cur_win_sz * sizeof(double));
+            std::sort(cur_win, cur_win + cur_win_sz);
+            const size_t cur_win_mid = (size_t)std::floor((cur_win_sz - 1) * q);
+
+            const double expected = cur_win[cur_win_mid];
+            const double actual = quant.mov_quantile();
+
+            DOUBLES_EQUAL(expected, actual, 0.00001);
+        }
+    }
 }
 
 } // namespace core
