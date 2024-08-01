@@ -589,6 +589,11 @@ def squash_pr_commits(org, repo, pr_number, title, no_issue):
     if len(commit_message) > 72:
         error("commit message too long, use --title to overwrite")
 
+    # merge target into PR's branch
+    run_cmd([
+        'git', 'merge', '--no-edit', pr_info['target_sha'],
+        ])
+
     # find where PR's branch forked from target branch
     fork_point = find_pr_fork_point(org, repo, pr_number)
 
