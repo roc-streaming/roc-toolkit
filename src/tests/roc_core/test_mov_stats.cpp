@@ -42,11 +42,11 @@ long Object::n_objects = 0;
 
 } // namespace
 
-TEST_GROUP(movstats) {
+TEST_GROUP(mov_stats) {
     HeapArena arena;
 };
 
-TEST(movstats, single_pass) {
+TEST(mov_stats, single_pass) {
     const size_t n = 10;
     int64_t x[n];
     MovStats<int64_t> stats(arena, n);
@@ -69,7 +69,7 @@ TEST(movstats, single_pass) {
     }
 }
 
-TEST(movstats, one_n_half_pass) {
+TEST(mov_stats, one_n_half_pass) {
     const size_t n = 10;
     MovStats<int64_t> stats(arena, n);
     for (size_t i = 0; i < (n * 10 + n / 2); i++) {
@@ -93,7 +93,7 @@ TEST(movstats, one_n_half_pass) {
     LONGS_EQUAL(target_var, stats.mov_var());
 }
 
-TEST(movstats, one_n_half_extend) {
+TEST(mov_stats, one_n_half_extend) {
     const size_t n = 10;
     MovStats<int64_t> stats(arena, n);
     const int64_t target_avg = n;

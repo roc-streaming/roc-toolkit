@@ -21,11 +21,10 @@ namespace roc {
 namespace core {
 
 //! Rolling window moving average and variance.
-//! @remarks
-//! Efficiently implements moving average and variance based on approach
-//! described in https://www.dsprelated.com/showthread/comp.dsp/97276-1.php
-//!
 //! @tparam T defines a sample type.
+//! @remarks
+//!  Efficiently implements moving average and variance based on approach
+//!  described in https://www.dsprelated.com/showthread/comp.dsp/97276-1.php
 template <typename T> class MovStats {
 public:
     //! Initialize.
