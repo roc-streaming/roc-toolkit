@@ -54,7 +54,6 @@ public:
         if (!queue_max_.is_valid() || !queue_min_.is_valid()) {
             return;
         }
-
         if (!buffer_.resize(win_len)) {
             return;
         }
@@ -74,6 +73,8 @@ public:
     //! @note
     //!  Has O(1) complexity.
     T mov_avg() const {
+        roc_panic_if(!valid_);
+
         T n = 0;
         if (full_) {
             n = T(win_len_);
@@ -89,6 +90,8 @@ public:
     //! @note
     //!  Has O(1) complexity.
     T mov_var() const {
+        roc_panic_if(!valid_);
+
         T n = 0;
         if (full_) {
             n = T(win_len_);
@@ -104,6 +107,8 @@ public:
     //! @note
     //!  Has O(1) complexity.
     T mov_min() const {
+        roc_panic_if(!valid_);
+
         return curr_min_;
     }
 
@@ -111,6 +116,8 @@ public:
     //! @note
     //!  Has O(1) complexity.
     T mov_max() const {
+        roc_panic_if(!valid_);
+
         return curr_max_;
     }
 
@@ -118,6 +125,8 @@ public:
     //! @note
     //!  Has O(win_len) complexity.
     void add(const T& x) {
+        roc_panic_if(!valid_);
+
         const T x2 = x * x;
         const T x_old = buffer_[buffer_i_];
         buffer_[buffer_i_] = x;
@@ -148,6 +157,8 @@ public:
     //!             ↑         ↑          ↑
     //!                Dropped samples.
     ROC_ATTR_NODISCARD bool extend_win(const size_t new_win) {
+        roc_panic_if(!valid_);
+
         if (new_win <= win_len_) {
             roc_panic("mov stats: the window length can only grow");
         }

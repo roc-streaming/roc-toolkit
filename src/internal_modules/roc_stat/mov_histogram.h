@@ -83,6 +83,8 @@ public:
     //! @note
     //!  Has O(1) complexity.
     size_t mov_counter(size_t bin_index) const {
+        roc_panic_if(!valid_);
+
         return bins_[bin_index];
     }
 
@@ -90,6 +92,8 @@ public:
     //! @note
     //!  Has O(num_bins) complexity.
     T mov_quantile(const double quantile) const {
+        roc_panic_if(!valid_);
+
         T cap;
         size_t count = 0;
 
@@ -110,6 +114,8 @@ public:
     //! @note
     //!  Has O(1) complexity.
     void add(const T& value) {
+        roc_panic_if(!valid_);
+
         T clamped_value = value;
 
         if (clamped_value < value_range_min_) {

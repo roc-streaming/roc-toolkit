@@ -38,17 +38,17 @@ public:
         , max_heap_index_(0)
         , min_heap_index_(0)
         , elem_index_(0)
-        , win_filled_(false)
-        , valid_(false)
         , heap_(arena)
         , elem_index_2_heap_index_(arena)
-        , heap_index_2_elem_index_(arena) {
+        , heap_index_2_elem_index_(arena)
+        , valid_(false) {
         if (win_len == 0) {
             roc_panic("mov quantile: window length must be greater than 0");
         }
-        if (quantile < 0 && quantile > 1) {
+        if (quantile < 0 || quantile > 1) {
             roc_panic("mov quantile: quantile should be between 0 and 1");
         }
+
         if (!heap_.resize(win_len)) {
             return;
         }
@@ -58,10 +58,11 @@ public:
         if (!heap_index_2_elem_index_.resize(win_len)) {
             return;
         }
-        const double index = (quantile * double(win_len - 1));
-        heap_root_ = size_t(index);
+
+        heap_root_ = size_t(quantile * double(win_len - 1));
         max_heap_index_ = heap_root_;
         min_heap_index_ = heap_root_;
+
         valid_ = true;
     }
 
@@ -74,6 +75,8 @@ public:
     //! @note
     //!  Has O(1) complexity.
     T mov_quantile() const {
+        roc_panic_if(!valid_);
+
         return heap_[heap_root_];
     }
 
@@ -85,30 +88,28 @@ public:
     //!  Case 2: The window in not filled. In this case we insert element in max_heap,
     //!    min_heap or root based on the current percentile index.
     //! @note
-    //!  Has O(win_len) complexity.
+    //!  Has O(log(win_len)) complexity.
     void add(const T& x) {
-        if (elem_index_ == win_len_) {
-            win_filled_ = true;
+        roc_panic_if(!valid_);
+
+        const bool win_filled = (heap_size_ == win_len_);
+        if (heap_size_ < win_len_) {
+            heap_size_++;
         }
-        heap_size_ = elem_index_ + 1;
-        elem_index_ = (elem_index_) % win_len_;
-        if (win_filled_) {
-            heap_size_ = win_len_;
-            min_heap_index_ = win_len_ - 1;
-            max_heap_index_ = 0;
+
+        if (win_filled) {
             const size_t heap_index = elem_index_2_heap_index_[elem_index_];
             heap_[heap_index] = x;
             heapify_(heap_index);
         } else {
-            const double index = quantile_ * double(heap_size_ - 1);
-            const size_t k = size_t(index);
-            size_t heap_index;
+            const size_t k = size_t(quantile_ * double(heap_size_ - 1));
             if (elem_index_ == 0) {
-                heap_index = heap_root_;
+                const size_t heap_index = heap_root_;
                 elem_index_2_heap_index_[elem_index_] = heap_index;
                 heap_[heap_index] = x;
                 heap_index_2_elem_index_[heap_index] = elem_index_;
             } else {
+                size_t heap_index;
                 if (old_heap_root_index_ == k) {
                     min_heap_index_ += 1;
                     heap_index = min_heap_index_;
@@ -124,7 +125,7 @@ public:
             }
         }
 
-        elem_index_ = elem_index_ + 1;
+        elem_index_ = (elem_index_ + 1) % win_len_;
     }
 
 private:
@@ -264,17 +265,14 @@ private:
     //! Maintains current element index
     size_t elem_index_;
 
-    //! Window filled check
-    bool win_filled_;
-    //! Maintains initialization success
-    bool valid_;
-
     //! Maintains the partition heap
     core::Array<T> heap_;
     //! Maintains the element index to heap index mapping
     core::Array<size_t> elem_index_2_heap_index_;
     //! Maintains the heap index to element index mapping
     core::Array<size_t> heap_index_2_elem_index_;
+
+    bool valid_;
 };
 
 } // namespace stat
