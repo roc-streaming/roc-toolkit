@@ -61,11 +61,10 @@ packet::PacketPtr new_packet(packet::seqnum_t sn,
     return packet;
 }
 
-audio::LatencyConfig make_config() {
-    audio::LatencyConfig latency_config;
-    latency_config.tuner_profile = audio::LatencyTunerProfile_Responsive;
-    CHECK(latency_config.deduce_defaults(pipeline::DefaultLatency, true));
-    return latency_config;
+LinkMeterConfig make_config() {
+    LinkMeterConfig config;
+    config.sliding_window_length = 10000;
+    return config;
 }
 
 } // namespace

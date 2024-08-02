@@ -67,7 +67,8 @@ public:
                    const packet::ILinkMeter& link_meter,
                    const fec::BlockReader* fec_reader,
                    ResamplerReader* resampler,
-                   const LatencyConfig& config,
+                   const LatencyConfig& latency_config,
+                   const FreqEstimatorConfig& fe_config,
                    const SampleSpec& packet_sample_spec,
                    const SampleSpec& frame_sample_spec,
                    dbgio::CsvDumper* dumper);

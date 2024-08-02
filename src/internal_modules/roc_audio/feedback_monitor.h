@@ -69,6 +69,7 @@ public:
                     ResamplerWriter* resampler,
                     const FeedbackConfig& feedback_config,
                     const LatencyConfig& latency_config,
+                    const FreqEstimatorConfig& fe_config,
                     const SampleSpec& sample_spec,
                     dbgio::CsvDumper* dumper);
 

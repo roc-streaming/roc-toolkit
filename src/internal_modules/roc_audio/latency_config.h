@@ -136,11 +136,6 @@ struct LatencyConfig {
     //!  For example, 0.01 allows freq_coeff values in range [0.99; 1.01].
     float scaling_tolerance;
 
-    //! Number of packets we use to calculate sliding statistics.
-    //! @remarks
-    //!  We calculate jitter statistics based on this last delivered packets.
-    size_t sliding_window_length;
-
     //! Latency tuner decides to adjust target latency if
     //! the current value >= estimated optimal latency *
     //! latency_decrease_relative_threshold_.
@@ -182,7 +177,6 @@ struct LatencyConfig {
         , stale_tolerance(0)
         , scaling_interval(5 * core::Millisecond)
         , scaling_tolerance(0.005f)
-        , sliding_window_length(0)
         , latency_decrease_relative_threshold(1.7f)
         , starting_timeout(5 * core::Second)
         , cooldown_dec_timeout(5 * core::Second)
@@ -207,11 +201,11 @@ struct LatencyMetrics {
     core::nanoseconds_t niq_stalling;
 
     //! Estimated end-to-end latency.
-    //! An estimate of the time from recording a frame on sender to playing it
-    //! on receiver.
+    //! An estimate of time from recording a frame on sender to playing it on receiver.
     core::nanoseconds_t e2e_latency;
 
     //! Estimated FEC block duration.
+    //! Total duration of packets within one FEC block.
     core::nanoseconds_t fec_block_duration;
 
     LatencyMetrics()

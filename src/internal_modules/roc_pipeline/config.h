@@ -31,6 +31,7 @@
 #include "roc_pipeline/pipeline_loop.h"
 #include "roc_rtcp/config.h"
 #include "roc_rtp/filter.h"
+#include "roc_rtp/link_meter.h"
 
 namespace roc {
 namespace pipeline {
@@ -77,11 +78,17 @@ struct SenderSinkConfig {
     //! FEC encoder parameters.
     fec::CodecConfig fec_encoder;
 
+    //! Feedback parameters.
+    audio::FeedbackConfig feedback;
+
     //! Latency parameters.
     audio::LatencyConfig latency;
 
-    //! Feedback parameters.
-    audio::FeedbackConfig feedback;
+    //! Link meter parameters.
+    rtp::LinkMeterConfig link_meter;
+
+    //! Freq estimator parameters.
+    audio::FreqEstimatorConfig freq_est;
 
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
@@ -173,11 +180,17 @@ struct ReceiverSessionConfig {
     //! Latency parameters.
     audio::LatencyConfig latency;
 
-    //! Watchdog parameters.
-    audio::WatchdogConfig watchdog;
+    //! Link meter parameters.
+    rtp::LinkMeterConfig link_meter;
+
+    //! Freq estimator parameters.
+    audio::FreqEstimatorConfig freq_est;
 
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
+
+    //! Watchdog parameters.
+    audio::WatchdogConfig watchdog;
 
     //! Initialize config.
     ReceiverSessionConfig();

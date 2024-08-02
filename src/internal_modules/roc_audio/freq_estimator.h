@@ -13,7 +13,9 @@
 #define ROC_AUDIO_FREQ_ESTIMATOR_H_
 
 #include "roc_audio/freq_estimator_decim.h"
+#include "roc_audio/latency_config.h"
 #include "roc_audio/sample.h"
+#include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 #include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/units.h"
@@ -21,21 +23,13 @@
 namespace roc {
 namespace audio {
 
-//! FreqEstimator parameters preset.
-enum FreqEstimatorProfile {
-    //! Fast and responsive tuning.
-    //! Good for lower network latency and jitter.
-    FreqEstimatorProfile_Responsive,
-
-    //! Slow and smooth tuning.
-    //! Good for higher network latency and jitter.
-    FreqEstimatorProfile_Gradual
-};
-
 //! FreqEstimator tunable parameters.
 struct FreqEstimatorConfig {
-    double P; //!< Proportional gain of PI-controller.
-    double I; //!< Integral gain of PI-controller.
+    //! Proportional gain of PI-controller.
+    double P;
+
+    //! Integral gain of PI-controller.
+    double I;
 
     //! How much downsample input value (latency buffer size) on the first stage.
     //! Must be less or equal to fe_decim_factor_max and must be greater than zero.
@@ -62,10 +56,13 @@ struct FreqEstimatorConfig {
         , I(0)
         , decimation_factor1(0)
         , decimation_factor2(0)
-        , stable_criteria(0.1)
-        , stability_duration_criteria(0)
-        , control_action_saturation_cap(0) {
+        , stable_criteria(0)
+        , stability_duration_criteria(15 * core::Second)
+        , control_action_saturation_cap(1e-2) {
     }
+
+    //! Automatically fill missing settings.
+    ROC_ATTR_NODISCARD bool deduce_defaults(LatencyTunerProfile latency_profile);
 };
 
 //! Evaluates sender's frequency to receiver's frequency ratio.
@@ -82,7 +79,7 @@ public:
     //! @b Parameters
     //!  - @p profile defines configuration preset.
     //!  - @p target_latency defines latency we want to archive.
-    FreqEstimator(FreqEstimatorProfile profile,
+    FreqEstimator(const FreqEstimatorConfig& config,
                   packet::stream_timestamp_t target_latency,
                   dbgio::CsvDumper* dumper);
 

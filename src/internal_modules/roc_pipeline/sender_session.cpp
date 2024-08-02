@@ -213,7 +213,7 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
         feedback_monitor_.reset(new (feedback_monitor_) audio::FeedbackMonitor(
             *frm_writer, *packetizer_, resampler_writer_.get(), sink_config_.feedback,
-            sink_config_.latency, inout_spec, dumper_));
+            sink_config_.latency, sink_config_.freq_est, inout_spec, dumper_));
         if ((status = feedback_monitor_->init_status()) != status::StatusOK) {
             return status;
         }

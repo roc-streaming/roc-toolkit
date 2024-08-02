@@ -21,18 +21,19 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
                                const packet::ILinkMeter& link_meter,
                                const fec::BlockReader* fec_reader,
                                ResamplerReader* resampler,
-                               const LatencyConfig& config,
+                               const LatencyConfig& latency_config,
+                               const FreqEstimatorConfig& fe_config,
                                const SampleSpec& packet_sample_spec,
                                const SampleSpec& frame_sample_spec,
                                dbgio::CsvDumper* dumper)
-    : tuner_(config, frame_sample_spec, dumper)
+    : tuner_(latency_config, fe_config, frame_sample_spec, dumper)
     , frame_reader_(frame_reader)
     , incoming_queue_(incoming_queue)
     , depacketizer_(depacketizer)
     , link_meter_(link_meter)
     , fec_reader_(fec_reader)
     , resampler_(resampler)
-    , enable_scaling_(config.tuner_profile != audio::LatencyTunerProfile_Intact)
+    , enable_scaling_(latency_config.tuner_profile != audio::LatencyTunerProfile_Intact)
     , capture_ts_(0)
     , packet_sample_spec_(packet_sample_spec)
     , frame_sample_spec_(frame_sample_spec)

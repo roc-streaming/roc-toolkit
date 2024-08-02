@@ -16,33 +16,6 @@ namespace audio {
 
 namespace {
 
-// Make config from profile.
-FreqEstimatorConfig make_config(FreqEstimatorProfile profile) {
-    FreqEstimatorConfig config;
-
-    switch (profile) {
-    case FreqEstimatorProfile_Responsive:
-        config.P = 1e-6;
-        config.I = 1e-10;
-        config.decimation_factor1 = fe_decim_factor_max;
-        config.decimation_factor2 = 0;
-        config.stable_criteria = 0.1;
-        break;
-
-    case FreqEstimatorProfile_Gradual:
-        config.P = 1e-6;
-        config.I = 5e-9;
-        config.decimation_factor1 = fe_decim_factor_max;
-        config.decimation_factor2 = fe_decim_factor_max;
-        config.stable_criteria = 0.05;
-        break;
-    }
-    config.stability_duration_criteria = 15 * core::Second;
-    config.control_action_saturation_cap = 1e-2;
-
-    return config;
-}
-
 // Calculate dot product of arrays IR of filter (coeff) and input array (samples).
 //
 // - coeff: Filter impulse response.
@@ -66,10 +39,52 @@ double dot_prod(const double* coeff,
 
 } // namespace
 
-FreqEstimator::FreqEstimator(FreqEstimatorProfile profile,
+bool FreqEstimatorConfig::deduce_defaults(LatencyTunerProfile latency_profile) {
+    switch (latency_profile) {
+    case LatencyTunerProfile_Gradual:
+        if (P == 0 && I == 0) {
+            P = 1e-6;
+            I = 5e-9;
+        }
+        if (decimation_factor1 == 0 && decimation_factor2 == 0) {
+            decimation_factor1 = fe_decim_factor_max;
+            decimation_factor2 = fe_decim_factor_max;
+        }
+        if (stable_criteria == 0) {
+            stable_criteria = 0.05;
+        }
+        break;
+
+    case LatencyTunerProfile_Responsive:
+        if (P == 0 && I == 0) {
+            P = 1e-6;
+            I = 1e-10;
+        }
+        if (decimation_factor1 == 0 && decimation_factor2 == 0) {
+            decimation_factor1 = fe_decim_factor_max;
+            decimation_factor2 = 0;
+        }
+        if (stable_criteria == 0) {
+            stable_criteria = 0.1;
+        }
+        break;
+
+    case LatencyTunerProfile_Intact:
+        break;
+
+    default:
+        roc_log(LogError, "freq estimator: unexpected latency tuner profile %s",
+                latency_tuner_profile_to_str(latency_profile));
+        return false;
+    }
+
+    return true;
+}
+
+FreqEstimator::FreqEstimator(const FreqEstimatorConfig& config,
                              packet::stream_timestamp_t target_latency,
                              dbgio::CsvDumper* dumper)
-    : config_(make_config(profile))
+    : config_(config)
     , target_(target_latency)
     , dec1_ind_(0)
     , dec2_ind_(0)
@@ -219,18 +234,6 @@ void FreqEstimator::update_target_latency(packet::stream_timestamp_t target_late
 
 bool FreqEstimator::is_stable() const {
     return stable_;
-}
-
-static const char* fe_profile_to_str(FreqEstimatorProfile profile) {
-    switch (profile) {
-    case FreqEstimatorProfile_Responsive:
-        return "responsive";
-
-    case FreqEstimatorProfile_Gradual:
-        return "gradual";
-    }
-
-    return "<invalid>";
 }
 
 } // namespace audio

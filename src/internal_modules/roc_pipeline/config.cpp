@@ -29,6 +29,14 @@ bool SenderSinkConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
         return false;
     }
 
+    if (!link_meter.deduce_defaults(latency.tuner_profile)) {
+        return false;
+    }
+
+    if (!freq_est.deduce_defaults(latency.tuner_profile)) {
+        return false;
+    }
+
     if (!resampler.deduce_defaults(processor_map, latency.tuner_backend,
                                    latency.tuner_profile)) {
         return false;
@@ -74,12 +82,20 @@ bool ReceiverSessionConfig::deduce_defaults(audio::ProcessorMap& processor_map) 
         return false;
     }
 
-    if (!watchdog.deduce_defaults(DefaultLatency, latency.target_latency)) {
+    if (!link_meter.deduce_defaults(latency.tuner_profile)) {
+        return false;
+    }
+
+    if (!freq_est.deduce_defaults(latency.tuner_profile)) {
         return false;
     }
 
     if (!resampler.deduce_defaults(processor_map, latency.tuner_backend,
                                    latency.tuner_profile)) {
+        return false;
+    }
+
+    if (!watchdog.deduce_defaults(DefaultLatency, latency.target_latency)) {
         return false;
     }
 

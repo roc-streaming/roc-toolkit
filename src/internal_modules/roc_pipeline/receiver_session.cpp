@@ -54,7 +54,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     pkt_writer = source_queue_.get();
 
     source_meter_.reset(new (source_meter_) rtp::LinkMeter(
-        *pkt_writer, session_config.latency, encoding_map, arena, dumper_));
+        *pkt_writer, session_config.link_meter, encoding_map, arena, dumper_));
     if ((init_status_ = source_meter_->init_status()) != status::StatusOK) {
         return;
     }
@@ -110,7 +110,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         repair_pkt_writer = repair_queue_.get();
 
         repair_meter_.reset(new (repair_meter_) rtp::LinkMeter(
-            *repair_pkt_writer, session_config.latency, encoding_map, arena, dumper_));
+            *repair_pkt_writer, session_config.link_meter, encoding_map, arena, dumper_));
         if ((init_status_ = repair_meter_->init_status()) != status::StatusOK) {
             return;
         }
@@ -267,7 +267,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
             *frm_reader, *source_queue_, *depacketizer_, *source_meter_,
             fec_reader_.get(), resampler_reader_.get(), session_config.latency,
-            pkt_encoding->sample_spec, inout_spec, dumper_));
+            session_config.freq_est, pkt_encoding->sample_spec, inout_spec, dumper_));
         if ((init_status_ = latency_monitor_->init_status()) != status::StatusOK) {
             return;
         }

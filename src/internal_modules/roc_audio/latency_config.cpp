@@ -104,16 +104,6 @@ core::nanoseconds_t deduce_stale_tolerance(const core::nanoseconds_t latency_tol
     return std::max(latency_tolerance / 4, 10 * core::Millisecond);
 }
 
-size_t deduce_sliding_window_len(const LatencyTunerProfile tuner_profile) {
-    if (tuner_profile == audio::LatencyTunerProfile_Responsive) {
-        // Responsive profile requires faster reactions to changes
-        // of link characteristics.
-        return 10000;
-    } else {
-        return 30000;
-    }
-}
-
 bool validate_adaptive_latency(const core::nanoseconds_t target_latency,
                                const core::nanoseconds_t latency_tolerance,
                                const core::nanoseconds_t start_target_latency,
@@ -265,10 +255,6 @@ bool LatencyConfig::deduce_defaults(core::nanoseconds_t default_latency,
                                  min_target_latency, max_target_latency)) {
             return false;
         }
-    }
-
-    if (sliding_window_length == 0) {
-        sliding_window_length = deduce_sliding_window_len(tuner_profile);
     }
 
     return true;

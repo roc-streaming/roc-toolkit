@@ -28,6 +28,21 @@
 namespace roc {
 namespace rtp {
 
+//! RTP link meter parameters.
+struct LinkMeterConfig {
+    //! Number of packets we use to calculate sliding statistics.
+    //! @remarks
+    //!  We calculate jitter statistics based on this last delivered packets.
+    size_t sliding_window_length;
+
+    LinkMeterConfig()
+        : sliding_window_length(0) {
+    }
+
+    //! Automatically fill missing settings.
+    ROC_ATTR_NODISCARD bool deduce_defaults(audio::LatencyTunerProfile latency_profile);
+};
+
 //! RTP link meter.
 //!
 //! Computes various link metrics based on sequence of RTP packets.
@@ -41,7 +56,7 @@ class LinkMeter : public packet::ILinkMeter,
 public:
     //! Initialize.
     LinkMeter(packet::IWriter& writer,
-              const audio::LatencyConfig& latency_config,
+              const LinkMeterConfig& config,
               const EncodingMap& encoding_map,
               core::IArena& arena,
               dbgio::CsvDumper* dumper);

@@ -18,28 +18,32 @@ namespace {
 
 enum { Target = 10000 };
 
-const FreqEstimatorProfile Profiles[] = { FreqEstimatorProfile_Responsive,
-                                          FreqEstimatorProfile_Gradual };
+const LatencyTunerProfile profile_list[] = { LatencyTunerProfile_Responsive,
+                                             LatencyTunerProfile_Gradual };
 
 const double Epsilon = 0.0001;
 
 } // namespace
 
-TEST_GROUP(freq_estimator) {
-    FreqEstimatorConfig fe_config;
-};
+TEST_GROUP(freq_estimator) {};
 
 TEST(freq_estimator, initial) {
-    for (size_t p = 0; p < ROC_ARRAY_SIZE(Profiles); p++) {
-        FreqEstimator fe(Profiles[p], Target, NULL);
+    for (size_t p = 0; p < ROC_ARRAY_SIZE(profile_list); p++) {
+        FreqEstimatorConfig config;
+        CHECK(config.deduce_defaults(profile_list[p]));
+
+        FreqEstimator fe(config, Target, NULL);
 
         DOUBLES_EQUAL(1.0, (double)fe.freq_coeff(), Epsilon);
     }
 }
 
 TEST(freq_estimator, aim_queue_size) {
-    for (size_t p = 0; p < ROC_ARRAY_SIZE(Profiles); p++) {
-        FreqEstimator fe(Profiles[p], Target, NULL);
+    for (size_t p = 0; p < ROC_ARRAY_SIZE(profile_list); p++) {
+        FreqEstimatorConfig config;
+        CHECK(config.deduce_defaults(profile_list[p]));
+
+        FreqEstimator fe(config, Target, NULL);
 
         for (size_t n = 0; n < 1000; n++) {
             fe.update_current_latency(Target);
@@ -50,8 +54,11 @@ TEST(freq_estimator, aim_queue_size) {
 }
 
 TEST(freq_estimator, large_queue_size) {
-    for (size_t p = 0; p < ROC_ARRAY_SIZE(Profiles); p++) {
-        FreqEstimator fe(Profiles[p], Target, NULL);
+    for (size_t p = 0; p < ROC_ARRAY_SIZE(profile_list); p++) {
+        FreqEstimatorConfig config;
+        CHECK(config.deduce_defaults(profile_list[p]));
+
+        FreqEstimator fe(config, Target, NULL);
 
         do {
             fe.update_current_latency(Target * 2);
@@ -60,8 +67,11 @@ TEST(freq_estimator, large_queue_size) {
 }
 
 TEST(freq_estimator, small_queue_size) {
-    for (size_t p = 0; p < ROC_ARRAY_SIZE(Profiles); p++) {
-        FreqEstimator fe(Profiles[p], Target, NULL);
+    for (size_t p = 0; p < ROC_ARRAY_SIZE(profile_list); p++) {
+        FreqEstimatorConfig config;
+        CHECK(config.deduce_defaults(profile_list[p]));
+
+        FreqEstimator fe(config, Target, NULL);
 
         do {
             fe.update_current_latency(Target / 2);

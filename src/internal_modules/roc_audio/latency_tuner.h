@@ -48,7 +48,8 @@ namespace audio {
 class LatencyTuner : public core::NonCopyable<> {
 public:
     //! Initialize.
-    LatencyTuner(const LatencyConfig& config,
+    LatencyTuner(const LatencyConfig& latency_config,
+                 const FreqEstimatorConfig& fe_config,
                  const SampleSpec& sample_spec,
                  dbgio::CsvDumper* dumper);
 

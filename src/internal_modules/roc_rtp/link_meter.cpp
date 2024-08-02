@@ -13,8 +13,21 @@
 namespace roc {
 namespace rtp {
 
+bool LinkMeterConfig::deduce_defaults(audio::LatencyTunerProfile latency_profile) {
+    if (sliding_window_length == 0) {
+        if (latency_profile == audio::LatencyTunerProfile_Responsive) {
+            // Responsive profile requires faster reactions to network changes.
+            sliding_window_length = 10000;
+        } else {
+            sliding_window_length = 30000;
+        }
+    }
+
+    return true;
+}
+
 LinkMeter::LinkMeter(packet::IWriter& writer,
-                     const audio::LatencyConfig& latency_config,
+                     const LinkMeterConfig& config,
                      const EncodingMap& encoding_map,
                      core::IArena& arena,
                      dbgio::CsvDumper* dumper)
@@ -22,7 +35,7 @@ LinkMeter::LinkMeter(packet::IWriter& writer,
     , encoding_(NULL)
     , writer_(writer)
     , first_packet_(true)
-    , win_len_(latency_config.sliding_window_length)
+    , win_len_(config.sliding_window_length)
     , has_metrics_(false)
     , first_seqnum_(0)
     , last_seqnum_hi_(0)
