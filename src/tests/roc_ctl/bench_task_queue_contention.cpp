@@ -80,7 +80,7 @@ BENCHMARK_DEFINE_F(BM_QueueContention, ScheduleAt)(benchmark::State& state) {
 
     core::nanoseconds_t* delays = new core::nanoseconds_t[NumScheduleAfterIterations];
     for (int n = 0; n < NumScheduleAfterIterations; n++) {
-        delays[n] = core::fast_random_range(0, MaxDelay);
+        delays[n] = (core::nanoseconds_t)core::fast_random_range(0, MaxDelay);
     }
 
     while (state.KeepRunningBatch(BatchSize)) {

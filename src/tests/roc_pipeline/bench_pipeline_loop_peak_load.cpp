@@ -351,8 +351,8 @@ private:
     virtual bool process_task_imp(PipelineTask& basic_task) {
         Task& task = (Task&)basic_task;
         stats_.task_processing_started(task.elapsed_time());
-        busy_wait(core::fast_random_range(MinTaskProcessingDuration,
-                                          MaxTaskProcessingDuration));
+        busy_wait((core::nanoseconds_t)core::fast_random_range(
+            MinTaskProcessingDuration, MaxTaskProcessingDuration));
         return true;
     }
 
@@ -389,8 +389,9 @@ public:
 private:
     virtual void run() {
         while (!stop_) {
-            core::sleep_for(core::ClockMonotonic,
-                            core::fast_random_range(MinTaskDelay, MaxTaskDelay));
+            core::sleep_for(
+                core::ClockMonotonic,
+                (core::nanoseconds_t)core::fast_random_range(MinTaskDelay, MaxTaskDelay));
 
             const size_t n_tasks = core::fast_random_range(MinTaskBurst, MaxTaskBurst);
 

@@ -18,24 +18,36 @@ namespace core {
 
 TEST_GROUP(fast_random) {};
 
-TEST(fast_random, min_min) {
-    uint32_t lo_hi = 0;
-    uint32_t res = fast_random_range(lo_hi, lo_hi);
+TEST(fast_random, range_min_min) {
+    uint64_t lo_hi = 0;
+    uint64_t res = fast_random_range(lo_hi, lo_hi);
 
     LONGS_EQUAL(res, lo_hi);
 }
 
-TEST(fast_random, max_max) {
-    uint32_t lo_hi = UINT32_MAX;
-    uint32_t res = fast_random_range(lo_hi, lo_hi);
+TEST(fast_random, range_max_max) {
+    uint64_t lo_hi = UINT64_MAX;
+    uint64_t res = fast_random_range(lo_hi, lo_hi);
 
     LONGS_EQUAL(res, lo_hi);
 }
 
-TEST(fast_random, limits) {
-    uint32_t res = fast_random_range(1, 100);
+TEST(fast_random, range_loop) {
+    for (int i = 0; i < 10000; i++) {
+        uint64_t res = fast_random_range(300, 400);
 
-    CHECK(1 <= res && res <= 100);
+        CHECK(res >= 300);
+        CHECK(res <= 400);
+    }
+}
+
+TEST(fast_random, float_loop) {
+    for (int i = 0; i < 10000; i++) {
+        double res = fast_random_float();
+
+        CHECK(res >= 0);
+        CHECK(res <= 1);
+    }
 }
 
 } // namespace core

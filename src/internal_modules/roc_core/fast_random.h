@@ -7,7 +7,7 @@
  */
 
 //! @file roc_core/fast_random.h
-//! @brief Helpers to work with random numbers.
+//! @brief Fast lock-free PRNG.
 
 #ifndef ROC_CORE_FAST_RANDOM_H_
 #define ROC_CORE_FAST_RANDOM_H_
@@ -17,19 +17,34 @@
 namespace roc {
 namespace core {
 
-//! Get a random integer from a non cryptographically secure, but fast PRNG.
+//! Get random 32-bit integer in range [0; UINT32_MAX].
 //! Thread-safe and lock-free.
-//! @returns random value between 0 and UINT32_MAX.
-uint32_t fast_random();
+//! Uniformly distributed.
+//! Not cryptographically secure.
+uint32_t fast_random_32();
 
-//! Get a random integer from a non cryptographically secure, but fast PRNG.
+//! Get random 64-bit integer in range [0; UINT64_MAX].
 //! Thread-safe and lock-free.
-//! @returns random value in inclusive range [from; to].
-uint32_t fast_random_range(uint32_t from, uint32_t to);
+//! Uniformly distributed.
+//! Not cryptographically secure.
+uint64_t fast_random_64();
 
-//! Get a random double from a non cryptographically secure, but fast PRNG.
+//! Get random 64-bit float in range [0; 1].
 //! Thread-safe and lock-free.
-//! @returns normally distributed random value with 1 variance.
+//! Uniformly distributed.
+//! Not cryptographically secure.
+double fast_random_float();
+
+//! Get random 64-bit integer in range [from; to].
+//! Thread-safe and lock-free.
+//! Uniformly distributed.
+//! Not cryptographically secure.
+uint64_t fast_random_range(uint64_t from, uint64_t to);
+
+//! Get random 64-bit float with standard normal distribution.
+//! Thread-safe and lock-free.
+//! Gaussian distribution N(0,1).
+//! Not cryptographically secure.
 double fast_random_gaussian();
 
 } // namespace core
