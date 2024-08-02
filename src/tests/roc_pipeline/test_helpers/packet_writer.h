@@ -14,6 +14,7 @@
 #include "test_helpers/utils.h"
 
 #include "roc_audio/iframe_encoder.h"
+#include "roc_core/fast_random.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_fec/block_writer.h"
@@ -56,6 +57,9 @@ public:
         , timestamp_(0)
         , pt_(pt)
         , sample_offset_(0)
+        , qts_(core::Minute * 10000)
+        , qts_jitter_lo_(0)
+        , qts_jitter_hi_(0)
         , corrupt_flag_(false) {
         construct_(arena, packet_factory, encoding_map, pt, packet::FEC_None,
                    fec::BlockWriterConfig());
@@ -85,6 +89,9 @@ public:
         , timestamp_(0)
         , pt_(pt)
         , sample_offset_(0)
+        , qts_(core::Minute * 10000)
+        , qts_jitter_lo_(0)
+        , qts_jitter_hi_(0)
         , corrupt_flag_(false) {
         construct_(arena, packet_factory, encoding_map, pt, fec_scheme, fec_config);
     }
@@ -97,7 +104,7 @@ public:
         for (size_t np = 0; np < num_packets; np++) {
             packet::PacketPtr pp = create_packet_(samples_per_packet, sample_spec);
             CHECK(pp);
-            deliver_packet_(pp);
+            deliver_packet_(pp, sample_spec);
         }
     }
 
@@ -112,7 +119,7 @@ public:
         }
     }
 
-    void shift_to(size_t num_packets, size_t samples_per_packet) {
+    void jump_to(size_t num_packets, size_t samples_per_packet) {
         seqnum_ = packet::seqnum_t(num_packets);
         timestamp_ = packet::stream_timestamp_t(num_packets * samples_per_packet);
         sample_offset_ = uint8_t(num_packets * samples_per_packet);
@@ -148,6 +155,11 @@ public:
 
     void set_timestamp(packet::stream_timestamp_t timestamp) {
         timestamp_ = timestamp;
+    }
+
+    void set_jitter(core::nanoseconds_t jitter_lo, core::nanoseconds_t jitter_hi) {
+        qts_jitter_lo_ = jitter_lo;
+        qts_jitter_hi_ = jitter_hi;
     }
 
     void corrupt_packets(bool corrupt) {
@@ -246,6 +258,7 @@ private:
         pp->rtp()->seqnum = seqnum_;
         pp->rtp()->stream_timestamp = timestamp_;
         pp->rtp()->payload_type = pt_;
+        pp->rtp()->duration = samples_per_packet;
 
         seqnum_++;
         timestamp_ += samples_per_packet;
@@ -271,7 +284,8 @@ private:
         return pp;
     }
 
-    void deliver_packet_(const packet::PacketPtr& pp) {
+    void deliver_packet_(const packet::PacketPtr& pp,
+                         const audio::SampleSpec& sample_spec) {
         if (fec_writer_) {
             // fec_writer will produce source and repair packets and store in fec_queue
             // note that we're calling copy_packet_() only after fec_writer, because
@@ -284,18 +298,21 @@ private:
             while (fec_queue_.read(fp, packet::ModeFetch) == status::StatusOK) {
                 if (fp->has_flags(packet::Packet::FlagAudio)) {
                     CHECK(source_composer_->compose(*fp));
-                    LONGS_EQUAL(status::StatusOK,
-                                source_writer_->write(copy_packet_(fp)));
+                    LONGS_EQUAL(
+                        status::StatusOK,
+                        source_writer_->write(prepare_for_delivery_(fp, sample_spec)));
                 } else {
                     CHECK(repair_composer_->compose(*fp));
-                    LONGS_EQUAL(status::StatusOK,
-                                repair_writer_->write(copy_packet_(fp)));
+                    LONGS_EQUAL(
+                        status::StatusOK,
+                        repair_writer_->write(prepare_for_delivery_(fp, sample_spec)));
                 }
             }
         } else {
             // compose and "deliver" packet
             CHECK(source_composer_->compose(*pp));
-            LONGS_EQUAL(status::StatusOK, source_writer_->write(copy_packet_(pp)));
+            LONGS_EQUAL(status::StatusOK,
+                        source_writer_->write(prepare_for_delivery_(pp, sample_spec)));
         }
     }
 
@@ -303,13 +320,24 @@ private:
     // like flags, parsed fields, etc; this way we simulate that packet was "delivered"
     // over network - packets enters receiver's pipeline without any meta-information,
     // and receiver fills that meta-information using packet parsers
-    packet::PacketPtr copy_packet_(const packet::PacketPtr& pa) {
+    packet::PacketPtr prepare_for_delivery_(const packet::PacketPtr& pa,
+                                            const audio::SampleSpec& sample_spec) {
         packet::PacketPtr pb = packet_factory_.new_packet();
         CHECK(pb);
 
         pb->add_flags(packet::Packet::FlagUDP);
         pb->udp()->src_addr = src_addr_;
         pb->udp()->dst_addr = source_dst_addr_;
+
+        // timestamp when the packet was "received"
+        pb->udp()->queue_timestamp = qts_;
+        if (pa->duration() > 0) {
+            qts_ += sample_spec.stream_timestamp_2_ns(pa->duration());
+            if (qts_jitter_hi_ > 0) {
+                qts_ += (core::nanoseconds_t)core::fast_random_range(
+                    (uint64_t)qts_jitter_lo_, (uint64_t)qts_jitter_hi_);
+            }
+        }
 
         pb->set_buffer(pa->buffer());
 
@@ -344,8 +372,11 @@ private:
     packet::stream_timestamp_t timestamp_;
 
     rtp::PayloadType pt_;
-
     uint8_t sample_offset_;
+
+    core::nanoseconds_t qts_;
+    core::nanoseconds_t qts_jitter_lo_;
+    core::nanoseconds_t qts_jitter_hi_;
 
     bool corrupt_flag_;
 };
