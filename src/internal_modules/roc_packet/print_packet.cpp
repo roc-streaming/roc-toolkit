@@ -23,14 +23,14 @@ void print_packet(const Packet& pkt, int flags) {
     p.writef("@ packet [%p] %s\n", (const void*)&pkt,
              packet_flags_to_str(pkt.flags()).c_str());
 
-    if (pkt.udp()) {
+    if (pkt.has_flags(packet::Packet::FlagUDP)) {
         p.writef(" udp: src=%s dst=%s rts=%lld\n",
                  address::socket_addr_to_str(pkt.udp()->src_addr).c_str(),
                  address::socket_addr_to_str(pkt.udp()->dst_addr).c_str(),
                  (long long)pkt.udp()->receive_timestamp);
     }
 
-    if (pkt.rtp()) {
+    if (pkt.has_flags(packet::Packet::FlagRTP)) {
         p.writef(
             " rtp: src=%lu m=%d sn=%lu sts=%lu dur=%lu cts=%lld pt=%u payload_sz=%lu\n",
             (unsigned long)pkt.rtp()->source_id, (int)pkt.rtp()->marker,
@@ -44,7 +44,7 @@ void print_packet(const Packet& pkt, int flags) {
         }
     }
 
-    if (pkt.fec()) {
+    if (pkt.has_flags(packet::Packet::FlagFEC)) {
         p.writef(" fec: %s esi=%lu sbn=%lu sblen=%lu blen=%lu payload_sz=%lu\n",
                  fec_scheme_to_str(pkt.fec()->fec_scheme),
                  (unsigned long)pkt.fec()->encoding_symbol_id,
@@ -58,7 +58,7 @@ void print_packet(const Packet& pkt, int flags) {
         }
     }
 
-    if (pkt.rtcp()) {
+    if (pkt.has_flags(packet::Packet::FlagRTCP)) {
         p.writef(" rtcp: size=%lu\n", (unsigned long)pkt.rtcp()->payload.size());
     }
 }

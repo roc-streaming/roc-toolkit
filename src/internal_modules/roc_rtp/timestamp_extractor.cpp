@@ -38,7 +38,7 @@ status::StatusCode TimestampExtractor::write(const packet::PacketPtr& pkt) {
         roc_panic("timestamp extractor: unexpected null packet");
     }
 
-    if (!pkt->rtp()) {
+    if (!pkt->has_flags(packet::Packet::FlagRTP)) {
         roc_panic("timestamp extractor: unexpected non-rtp packet");
     }
 

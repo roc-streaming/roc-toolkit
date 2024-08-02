@@ -366,13 +366,13 @@ bool ReceiverSessionGroup::can_create_session_(const packet::PacketPtr& packet) 
 
 status::StatusCode
 ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
-    if (!packet->rtp()) {
+    if (!packet->has_flags(packet::Packet::FlagRTP)) {
         roc_log(LogError,
                 "session group: can't create session, unexpected non-rtp packet");
         return status::StatusNoRoute;
     }
 
-    if (!packet->udp()) {
+    if (!packet->has_flags(packet::Packet::FlagUDP)) {
         roc_log(LogError,
                 "session group: can't create session, unexpected non-udp packet");
         return status::StatusNoRoute;

@@ -60,7 +60,7 @@ packet::PacketPtr new_packet(PayloadType pt,
 
     packet->add_flags(flags);
 
-    if (packet->rtp()) {
+    if (packet->has_flags(packet::Packet::FlagRTP)) {
         packet->rtp()->payload_type = pt;
         packet->rtp()->source_id = src;
         packet->rtp()->seqnum = sn;

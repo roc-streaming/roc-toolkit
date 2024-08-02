@@ -42,7 +42,7 @@ status::StatusCode TimestampInjector::read(packet::PacketPtr& pkt,
         return code;
     }
 
-    if (!pkt->rtp()) {
+    if (!pkt->has_flags(packet::Packet::FlagRTP)) {
         roc_panic("timestamp injector: unexpected non-rtp packet");
     }
 
