@@ -173,14 +173,14 @@ double FreqEstimator::run_controller_(double current) {
         accum_ = 0;
         last_unstable_time_ = now;
         roc_log(LogDebug,
-                "freq estimator: "
+                "freq estimator:"
                 " unstable, %0.f > %.0f / %0.f",
                 config_.stable_criteria, error, target_);
     } else if (std::abs(error) < target_ * config_.stable_criteria && !stable_
                && now - last_unstable_time_ > config_.stability_duration_criteria) {
         stable_ = true;
         roc_log(LogDebug,
-                "freq estimator: "
+                "freq estimator:"
                 " stabilized");
     }
 

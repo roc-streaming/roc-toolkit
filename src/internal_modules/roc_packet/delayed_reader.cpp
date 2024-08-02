@@ -101,7 +101,7 @@ status::StatusCode DelayedReader::load_queue_() {
         n_dropped++;
     }
 
-    roc_log(LogDebug,
+    roc_log(LogNote,
             "delayed reader: starting:"
             " delay=%lu(%.3fms) init_qs=%lu(%.3fms) trim_qs=%lu(%.3fms)"
             " n_drop=%lu n_keep=%lu",

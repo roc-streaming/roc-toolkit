@@ -79,7 +79,7 @@ void Logger::set_level(LogLevel level) {
         level = LogTrace;
     }
 
-    if ((int)level >= LogDebug) {
+    if ((int)level >= LogTrace) {
         location_mode_ = LocationEnabled;
     } else {
         location_mode_ = LocationDisabled;

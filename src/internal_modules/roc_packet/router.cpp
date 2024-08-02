@@ -106,7 +106,7 @@ bool Router::allow_route_(Route& route, const Packet& packet) {
             route.has_source = true;
             route.is_started = true;
 
-            roc_log(LogDebug,
+            roc_log(LogNote,
                     "router: detected new stream:"
                     " source_id=%lu route_flags=%s packet_flags=%s",
                     (unsigned long)route.source, packet_flags_to_str(route.flags).c_str(),
@@ -124,7 +124,7 @@ bool Router::allow_route_(Route& route, const Packet& packet) {
             route.has_source = false;
             route.is_started = true;
 
-            roc_log(LogDebug,
+            roc_log(LogNote,
                     "router: detected new stream:"
                     " source_id=none route_flags=%s packet_flags=%s",
                     packet_flags_to_str(route.flags).c_str(),

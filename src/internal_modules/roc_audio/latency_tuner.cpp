@@ -513,7 +513,7 @@ void LatencyTuner::periodic_report_() {
             (double)link_metrics_.max_jitter / core::Millisecond,
             // fec_blk
             (double)latency_metrics_.fec_block_duration / core::Millisecond,
-            // fe, eff_fe, fe_stable
+            // fe, eff_fe, fe_stbl
             (double)(fe_ ? fe_->freq_coeff() : 0), (double)freq_coeff_,
             fe_ && fe_->is_stable() ? "true" : "false");
 }
