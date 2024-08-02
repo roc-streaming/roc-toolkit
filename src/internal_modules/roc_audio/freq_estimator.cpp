@@ -83,16 +83,20 @@ bool FreqEstimatorConfig::deduce_defaults(LatencyTunerProfile latency_profile) {
 
 FreqEstimator::FreqEstimator(const FreqEstimatorConfig& config,
                              packet::stream_timestamp_t target_latency,
+                             const SampleSpec& sample_spec,
                              dbgio::CsvDumper* dumper)
     : config_(config)
-    , target_(target_latency)
     , dec1_ind_(0)
     , dec2_ind_(0)
     , samples_counter_(0)
     , accum_(0)
+    , target_(target_latency)
     , coeff_(1)
     , stable_(false)
-    , last_unstable_time_(core::timestamp(core::ClockMonotonic))
+    , last_unstable_time_(0)
+    , stability_duration_criteria_(
+          sample_spec.ns_2_stream_timestamp_delta(config.stability_duration_criteria))
+    , current_stream_pos_(0)
     , dumper_(dumper) {
     roc_log(LogDebug, "freq estimator: initializing: P=%e I=%e dc1=%lu dc2=%lu",
             config_.P, config_.I, (unsigned long)config_.decimation_factor1,
@@ -125,8 +129,12 @@ float FreqEstimator::freq_coeff() const {
     return (float)coeff_;
 }
 
+bool FreqEstimator::is_stable() const {
+    return stable_;
+}
+
 void FreqEstimator::update_current_latency(packet::stream_timestamp_t current_latency) {
-    double filtered;
+    double filtered = 0;
 
     if (run_decimators_(current_latency, filtered)) {
         if (dumper_) {
@@ -134,6 +142,17 @@ void FreqEstimator::update_current_latency(packet::stream_timestamp_t current_la
         }
         coeff_ = run_controller_(filtered);
     }
+}
+
+void FreqEstimator::update_target_latency(packet::stream_timestamp_t target_latency) {
+    target_ = (double)target_latency;
+}
+
+void FreqEstimator::update_stream_position(packet::stream_timestamp_t stream_position) {
+    roc_panic_if_msg(!packet::stream_timestamp_ge(stream_position, current_stream_pos_),
+                     "freq estimator: expected monotonic stream position");
+
+    current_stream_pos_ = stream_position;
 }
 
 bool FreqEstimator::run_decimators_(packet::stream_timestamp_t current,
@@ -181,18 +200,17 @@ double FreqEstimator::run_controller_(double current) {
             " current latency error: %.0f",
             error);
 
-    const core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
-
     if (std::abs(error) > target_ * config_.stable_criteria && stable_) {
         stable_ = false;
         accum_ = 0;
-        last_unstable_time_ = now;
+        last_unstable_time_ = current_stream_pos_;
         roc_log(LogDebug,
                 "freq estimator:"
                 " unstable, %0.f > %.0f / %0.f",
                 config_.stable_criteria, error, target_);
     } else if (std::abs(error) < target_ * config_.stable_criteria && !stable_
-               && now - last_unstable_time_ > config_.stability_duration_criteria) {
+               && packet::stream_timestamp_diff(current_stream_pos_, last_unstable_time_)
+                   > stability_duration_criteria_) {
         stable_ = true;
         roc_log(LogDebug,
                 "freq estimator:"
@@ -226,14 +244,6 @@ void FreqEstimator::dump_(double filtered) {
     e.fields[3] = (filtered - target_) * config_.P;
     e.fields[4] = accum_ * config_.I;
     dumper_->write(e);
-}
-
-void FreqEstimator::update_target_latency(packet::stream_timestamp_t target_latency) {
-    target_ = (double)target_latency;
-}
-
-bool FreqEstimator::is_stable() const {
-    return stable_;
 }
 
 } // namespace audio

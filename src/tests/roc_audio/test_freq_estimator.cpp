@@ -18,10 +18,16 @@ namespace {
 
 enum { Target = 10000 };
 
+const double Epsilon = 0.0001;
+
 const LatencyTunerProfile profile_list[] = { LatencyTunerProfile_Responsive,
                                              LatencyTunerProfile_Gradual };
 
-const double Epsilon = 0.0001;
+const SampleSpec sample_spec(44100,
+                             Sample_RawFormat,
+                             ChanLayout_Surround,
+                             ChanOrder_Smpte,
+                             ChanMask_Surround_Mono);
 
 } // namespace
 
@@ -32,7 +38,7 @@ TEST(freq_estimator, initial) {
         FreqEstimatorConfig config;
         CHECK(config.deduce_defaults(profile_list[p]));
 
-        FreqEstimator fe(config, Target, NULL);
+        FreqEstimator fe(config, Target, sample_spec, NULL);
 
         DOUBLES_EQUAL(1.0, (double)fe.freq_coeff(), Epsilon);
     }
@@ -43,7 +49,7 @@ TEST(freq_estimator, aim_queue_size) {
         FreqEstimatorConfig config;
         CHECK(config.deduce_defaults(profile_list[p]));
 
-        FreqEstimator fe(config, Target, NULL);
+        FreqEstimator fe(config, Target, sample_spec, NULL);
 
         for (size_t n = 0; n < 1000; n++) {
             fe.update_current_latency(Target);
@@ -58,7 +64,7 @@ TEST(freq_estimator, large_queue_size) {
         FreqEstimatorConfig config;
         CHECK(config.deduce_defaults(profile_list[p]));
 
-        FreqEstimator fe(config, Target, NULL);
+        FreqEstimator fe(config, Target, sample_spec, NULL);
 
         do {
             fe.update_current_latency(Target * 2);
@@ -71,7 +77,7 @@ TEST(freq_estimator, small_queue_size) {
         FreqEstimatorConfig config;
         CHECK(config.deduce_defaults(profile_list[p]));
 
-        FreqEstimator fe(config, Target, NULL);
+        FreqEstimator fe(config, Target, sample_spec, NULL);
 
         do {
             fe.update_current_latency(Target / 2);

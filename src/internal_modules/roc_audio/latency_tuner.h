@@ -94,10 +94,8 @@ private:
                                 core::nanoseconds_t mean_jitter_ns,
                                 core::nanoseconds_t fec_block_ns);
     void try_decrease_latency_(core::nanoseconds_t estimate,
-                               core::nanoseconds_t now,
                                core::nanoseconds_t cur_tl_ns);
     void try_increase_latency_(core::nanoseconds_t estimate,
-                               core::nanoseconds_t now,
                                core::nanoseconds_t cur_tl_ns);
 
     void periodic_report_();
@@ -107,10 +105,10 @@ private:
 
     packet::stream_timestamp_t stream_pos_;
 
-    packet::stream_timestamp_diff_t scale_interval_;
+    packet::stream_timestamp_t scale_interval_;
     packet::stream_timestamp_t scale_pos_;
 
-    packet::stream_timestamp_diff_t report_interval_;
+    packet::stream_timestamp_t report_interval_;
     packet::stream_timestamp_t report_pos_;
 
     bool has_new_freq_coeff_;
@@ -157,20 +155,20 @@ private:
     const SampleSpec sample_spec_;
 
     enum TargetLatencyState {
-        TL_NONE,
+        TL_IDLE,
         TL_STARTING,
         TL_COOLDOWN_AFTER_INC,
         TL_COOLDOWN_AFTER_DEC
     } target_latency_state_;
 
-    const core::nanoseconds_t starting_timeout_;
-    const core::nanoseconds_t cooldown_dec_timeout_;
-    const core::nanoseconds_t cooldown_inc_timeout_;
+    const packet::stream_timestamp_diff_t starting_timeout_;
+    const packet::stream_timestamp_diff_t cooldown_dec_timeout_;
+    const packet::stream_timestamp_diff_t cooldown_inc_timeout_;
 
     const float max_jitter_overhead_;
     const float mean_jitter_overhead_;
 
-    core::nanoseconds_t last_target_latency_update_;
+    packet::stream_timestamp_t last_target_latency_update_;
     const float lat_update_upper_thrsh_;
     const float lat_update_dec_step_;
     const float lat_update_inc_step_;

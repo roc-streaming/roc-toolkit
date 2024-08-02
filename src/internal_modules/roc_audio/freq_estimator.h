@@ -15,6 +15,7 @@
 #include "roc_audio/freq_estimator_decim.h"
 #include "roc_audio/latency_config.h"
 #include "roc_audio/sample.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 #include "roc_dbgio/csv_dumper.h"
@@ -81,16 +82,11 @@ public:
     //!  - @p target_latency defines latency we want to archive.
     FreqEstimator(const FreqEstimatorConfig& config,
                   packet::stream_timestamp_t target_latency,
+                  const SampleSpec& sample_spec,
                   dbgio::CsvDumper* dumper);
 
-    //! Get current frequency coefficient.
+    //! Get current frequency coefficient to be passed to resampler.
     float freq_coeff() const;
-
-    //! Compute new value of frequency coefficient.
-    void update_current_latency(packet::stream_timestamp_t current_latency);
-
-    //! Update target latency.
-    void update_target_latency(packet::stream_timestamp_t target_latency);
 
     //! Is FreqEstimator in stable state.
     //! @remarks
@@ -99,13 +95,21 @@ public:
     //!  The state affects internal regulator strategy and it effectiveness.
     bool is_stable() const;
 
+    //! Tell FreqEstimator what is the new target.
+    void update_target_latency(packet::stream_timestamp_t target_latency);
+
+    //! Tell FreqEstimator what is the actual measured latency.
+    void update_current_latency(packet::stream_timestamp_t current_latency);
+
+    //! Tell FreqEstimator what is the current stream offset.
+    void update_stream_position(packet::stream_timestamp_t stream_position);
+
 private:
     bool run_decimators_(packet::stream_timestamp_t current, double& filtered);
     double run_controller_(double current);
     void dump_(double filtered);
 
     const FreqEstimatorConfig config_;
-    double target_; // Target latency.
 
     double dec1_casc_buff_[fe_decim_len];
     size_t dec1_ind_;
@@ -116,11 +120,17 @@ private:
     size_t samples_counter_; // Input samples counter.
     double accum_;           // Integrator value.
 
-    double coeff_; // Current frequency coefficient value.
+    double target_; // Target latency.
+    double coeff_;  // Current frequency coefficient value.
 
-    bool stable_; // True if FreqEstimator has stabilized.
+    // True if FreqEstimator has stabilized.
+    bool stable_;
     // Last time when FreqEstimator was out of range.
-    core::nanoseconds_t last_unstable_time_;
+    packet::stream_timestamp_t last_unstable_time_;
+    // How long stabilization takes.
+    const packet::stream_timestamp_diff_t stability_duration_criteria_;
+    // Current time.
+    packet::stream_timestamp_t current_stream_pos_;
 
     dbgio::CsvDumper* dumper_;
 };
