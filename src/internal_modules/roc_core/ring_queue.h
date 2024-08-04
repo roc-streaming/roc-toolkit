@@ -170,6 +170,29 @@ public:
         end_ = (end_ - 1 + buff_len_) % buff_len_;
     }
 
+    //! Set ring queue size
+    //! @remarks
+    //! Calls grow() to ensure that there is enough space in ring queue
+    //! @returns
+    //! false if the allocation failed
+    ROC_ATTR_NODISCARD bool resize(size_t new_size) {
+        if (!grow(new_size)) {
+            return false;
+        }
+
+        for (size_t n = size(); n < new_size; ++n) {
+            new (&buff_[end_]) T();
+            end_ = (end_ + 1) % buff_len_;
+        }
+
+        for (size_t n = size(); n > new_size; n--) {
+            end_ = (end_ - 1 + buff_len_) % buff_len_;
+            buff_[end_].~T();
+        }
+
+        return true;
+    }
+
 private:
     T* allocate_(size_t n_buff_elems) {
         T* data = NULL;
@@ -198,6 +221,41 @@ private:
         if ((void*)data != (void*)embedded_data_.memory()) {
             arena_.deallocate(data);
         }
+    }
+
+    bool grow(size_t min_len) {
+        if (min_len <= capacity()) {
+            return true;
+        }
+
+        T* new_buff = allocate_(min_len + 1);
+        if (!new_buff) {
+            return false;
+        }
+
+        if (new_buff != buff_) {
+            // Copy old objects to the beginning of the new memory.
+            size_t end_index = (end_ - 1 + buff_len_) % buff_len_;
+            for (size_t i = begin_, j = 0; i != end_index; i = (i + 1) % buff_len_, ++j) {
+                new (new_buff + j) T(buff_[i]);
+            }
+
+            for (size_t i = end_index; i != begin_; i = (i - 1 + buff_len_) % buff_len_) {
+                buff_[i].~T();
+            }
+
+            // Free old memory
+            if (buff_) {
+                deallocate_(buff_);
+            }
+
+            buff_ = new_buff;
+            end_ = size();
+            begin_ = 0;
+        }
+
+        buff_len_ = min_len + 1;
+        return true;
     }
 
     T* buff_;
