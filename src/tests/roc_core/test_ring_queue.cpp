@@ -307,5 +307,31 @@ TEST(ring_queue, constructor_destructor) {
     LONGS_EQUAL(0, Object::n_objects);
 }
 
+TEST(ring_queue, resize) {
+    size_t half_NumObjects = NumObjects >> 1;
+    RingQueue<Object, EmbeddedCap> queue(arena, half_NumObjects);
+    for (size_t n = 0; n < half_NumObjects; ++n) {
+        queue.push_back(Object(42));
+    }
+    queue.pop_front();
+    queue.push_back(Object(42));
+
+    LONGS_EQUAL(half_NumObjects, queue.capacity());
+    LONGS_EQUAL(half_NumObjects, queue.size());
+
+    CHECK(queue.resize(NumObjects));
+
+    LONGS_EQUAL(1, arena.num_allocations());
+    LONGS_EQUAL(NumObjects, queue.capacity());
+    LONGS_EQUAL(NumObjects, queue.size());
+    LONGS_EQUAL(NumObjects, Object::n_objects);
+
+    CHECK(queue.resize(half_NumObjects - 2));
+
+    LONGS_EQUAL(NumObjects, queue.capacity());
+    LONGS_EQUAL(half_NumObjects - 2, queue.size());
+    LONGS_EQUAL(half_NumObjects - 2, Object::n_objects);
+}
+
 } // namespace core
 } // namespace roc
