@@ -19,19 +19,28 @@
 namespace roc {
 namespace audio {
 
+//! Vorbis Encoder.
 class VorbisEncoder : public IFrameEncoder {
 public:
+    //! Initialize.
     VorbisEncoder(const SampleSpec& sample_spec);
+
+    //! End.
     ~VorbisEncoder();
 
+    //! Check if the object was successfully constructed.
     virtual status::StatusCode init_status() const;
 
-    virtual size_t encoded_byte_count(size_t n_samples) const;
+    //! Get encoded frame size in bytes for given number of samples per channel.
+    virtual size_t encoded_byte_count(size_t num_samples) const;
 
-    virtual void begin_frame(void* frame_data, size_t frame_size);
+    //! Start encoding a new frame.
+    virtual void begin_frame(void* frame, size_t frame_size);
 
+    //! Encode samples.
     virtual size_t write_samples(const sample_t* samples, size_t n_samples);
 
+    //! Finish encoding frame.
     virtual void end_frame();
 
 private:
