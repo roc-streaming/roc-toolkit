@@ -1456,7 +1456,6 @@ elif ctx.pkg_name == 'libogg':
             '--enable-static',
            ])))
     execute_make(ctx)
-    execute(ctx, 'make install')
     install_tree(ctx, 'include', ctx.pkg_inc_dir, include=['*.h'])
     install_files(ctx, 'src/.libs/libogg.a', ctx.pkg_lib_dir)
     install_files(ctx, 'ogg.pc', ctx.pkg_rpath_dir)

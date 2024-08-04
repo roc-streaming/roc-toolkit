@@ -280,11 +280,13 @@ elif 'libogg' in system_dependencies:
 
 # dep: libvorbis
 if 'libvorbis' in autobuild_dependencies:
-    env.BuildThirdParty(thirdparty_versions, 'libvorbis')
+    pa_deps = [
+        'libogg',
+    ]
 
-    conf = Configure(env, custom_tests=env.CustomTests)
-
-    env = conf.Finish()
+    env.BuildThirdParty(thirdparty_versions, 'libogg')
+    env.BuildThirdParty(thirdparty_versions, 'libvorbis',
+                        deps=pa_deps)
 
 elif 'libvorbis' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
