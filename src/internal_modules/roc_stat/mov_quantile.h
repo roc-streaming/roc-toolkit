@@ -71,6 +71,11 @@ public:
         return valid_;
     }
 
+    //! Check if the window is fully filled.
+    size_t is_full() const {
+        return heap_size_ == win_len_;
+    }
+
     //! Returns the moving quantile.
     //! @note
     //!  Has O(1) complexity.
@@ -129,9 +134,8 @@ public:
     }
 
 private:
-    //! Maintains property of the partition heap when an element in inserted or swapped.
-    //! @remarks
-    //! The element could be inserted or changed in min_heap, max_heap or the root.
+    // Maintains property of the partition heap when an element in inserted or swapped.
+    // The element could be inserted or changed in min_heap, max_heap or the root.
     void heapify_(const size_t heap_index) {
         if (heap_index < heap_root_) {
             const size_t parent = heap_root_ - ((heap_root_ - heap_index - 1) / 2);
@@ -155,8 +159,8 @@ private:
         }
     }
 
-    //! Recursively swaps parent and element in min heap partition until the parent is
-    //! smaller or element reaches root index.
+    // Recursively swaps parent and element in min heap partition until the parent is
+    // smaller or element reaches root index.
     void min_heapify_up_(const size_t heap_index) {
         if (heap_index == heap_root_) {
             return;
@@ -168,11 +172,10 @@ private:
         }
     }
 
-    //! Recursively swaps parent and element in max heap partition until the parent is
-    //! larger or element reaches root index.
-    //! @remarks
-    //! The root index in max heap partition is larger than all its child index so parent
-    //! index formulae has been adjusted accordingly
+    // Recursively swaps parent and element in max heap partition until the parent is
+    // larger or element reaches root index.
+    // The root index in max heap partition is larger than all its child index so parent
+    // index formulae has been adjusted accordingly
     void max_heapify_up_(const size_t heap_index) {
         // sift up
         if (heap_index == heap_root_) {
@@ -185,8 +188,8 @@ private:
         }
     }
 
-    //! Recursively swaps children and element in min heap partition until the children
-    //! are smaller or there are no children
+    // Recursively swaps children and element in min heap partition until the children
+    // are smaller or there are no children
     void min_heapify_down_(const size_t heap_index) {
         size_t largest = heap_index;
 
@@ -205,10 +208,9 @@ private:
         }
     }
 
-    //! Recursively swaps children and element in max heap partition until the children
-    //! are larger or there are no children.
-    //! @remarks
-    //! Similar adjustment to child index calculation like in max_heapify_up
+    // Recursively swaps children and element in max heap partition until the children
+    // are larger or there are no children.
+    // Similar adjustment to child index calculation like in max_heapify_up
     void max_heapify_down_(const size_t heap_index) {
         size_t largest = heap_index;
 
@@ -228,8 +230,8 @@ private:
         }
     }
 
-    //! Swaps 2 heap elements along with their mapping in element to heap index and heap
-    //! to element index
+    // Swaps 2 heap elements along with their mapping in element to heap index and heap
+    // to element index
     void swap_(const size_t index_1, const size_t index_2) {
         const size_t elem_index_1 = heap_index_2_elem_index_[index_1];
         const size_t elem_index_2 = heap_index_2_elem_index_[index_2];
@@ -245,31 +247,31 @@ private:
         elem_index_2_heap_index_[elem_index_2] = index_1;
     }
 
-    //! Length of the sliding window
+    // Length of the sliding window
     const size_t win_len_;
-    //! Quantile of the window elements
+    // Quantile of the window elements
     const double quantile_;
 
-    //! Used to check the window filling logic
+    // Used to check the window filling logic
     size_t old_heap_root_index_;
-    //! Index which separates max and min heap and also act as their root
+    // Index which separates max and min heap and also act as their root
     size_t heap_root_;
 
-    //! Maintains current heap size
+    // Maintains current heap size
     size_t heap_size_;
-    //! Maintains the index to which max_heap extends
+    // Maintains the index to which max_heap extends
     size_t max_heap_index_;
-    //! Maintains the index to which min_heap extends
+    // Maintains the index to which min_heap extends
     size_t min_heap_index_;
 
-    //! Maintains current element index
+    // Maintains current element index
     size_t elem_index_;
 
-    //! Maintains the partition heap
+    // Maintains the partition heap
     core::Array<T> heap_;
-    //! Maintains the element index to heap index mapping
+    // Maintains the element index to heap index mapping
     core::Array<size_t> elem_index_2_heap_index_;
-    //! Maintains the heap index to element index mapping
+    // Maintains the heap index to element index mapping
     core::Array<size_t> heap_index_2_elem_index_;
 
     bool valid_;

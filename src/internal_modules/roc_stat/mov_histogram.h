@@ -79,6 +79,11 @@ public:
         return valid_;
     }
 
+    //! Check if the window is fully filled.
+    size_t is_full() const {
+        return ring_buffer_.is_full();
+    }
+
     //! Get the number of values in the given bin.
     //! @note
     //!  Has O(1) complexity.

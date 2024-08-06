@@ -69,6 +69,11 @@ public:
         return valid_;
     }
 
+    //! Check if the window is fully filled.
+    size_t is_full() const {
+        return full_;
+    }
+
     //! Get moving average value.
     //! @note
     //!  Has O(1) complexity.
