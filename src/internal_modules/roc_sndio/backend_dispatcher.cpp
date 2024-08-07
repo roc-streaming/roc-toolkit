@@ -225,10 +225,12 @@ status::StatusCode BackendDispatcher::open_default_device_(DeviceType device_typ
             return code;
         }
 
-        roc_log(LogDebug,
-                "backend dispatcher: got error from driver:"
-                " driver=%s status=%s",
-                driver_info.name, status::code_to_str(code));
+        if (code != status::StatusNoDriver) {
+            roc_log(LogDebug,
+                    "backend dispatcher: got error from driver:"
+                    " driver=%s status=%s",
+                    driver_info.name, status::code_to_str(code));
+        }
     }
 
     roc_log(LogError, "backend dispatcher: failed to open default %s: status=%s",
@@ -265,10 +267,12 @@ status::StatusCode BackendDispatcher::open_device_(DeviceType device_type,
                 return code;
             }
 
-            roc_log(LogDebug,
-                    "backend dispatcher: got error from driver:"
-                    " driver=%s status=%s",
-                    driver_info.name, status::code_to_str(code));
+            if (code != status::StatusNoDriver) {
+                roc_log(LogDebug,
+                        "backend dispatcher: got error from driver:"
+                        " driver=%s status=%s",
+                        driver_info.name, status::code_to_str(code));
+            }
         }
     } else {
         for (size_t n = 0; n < BackendMap::instance().num_backends(); n++) {
@@ -281,10 +285,12 @@ status::StatusCode BackendDispatcher::open_device_(DeviceType device_type,
                 return code;
             }
 
-            roc_log(LogDebug,
-                    "backend dispatcher: got error from backend:"
-                    " backend=%s status=%s",
-                    backend.name(), status::code_to_str(code));
+            if (code != status::StatusNoDriver) {
+                roc_log(LogDebug,
+                        "backend dispatcher: got error from backend:"
+                        " backend=%s status=%s",
+                        backend.name(), status::code_to_str(code));
+            }
         }
     }
 

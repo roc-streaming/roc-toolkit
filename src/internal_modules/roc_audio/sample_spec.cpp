@@ -147,6 +147,10 @@ bool SampleSpec::is_empty() const {
         && sample_rate_ == 0 && channel_set_.num_channels() == 0;
 }
 
+bool SampleSpec::is_pcm() const {
+    return sample_fmt_ == SampleFormat_Pcm && pcm_fmt_ != PcmFormat_Invalid;
+}
+
 bool SampleSpec::is_raw() const {
     return sample_fmt_ == SampleFormat_Pcm
         && get_pcm_portable_format(pcm_fmt_) == get_pcm_portable_format(Sample_RawFormat);

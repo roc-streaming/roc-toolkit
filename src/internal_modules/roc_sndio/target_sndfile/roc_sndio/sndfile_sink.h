@@ -80,6 +80,7 @@ private:
     SF_INFO file_info_;
 
     audio::SampleSpec sample_spec_;
+    int requested_subformat_;
 
     status::StatusCode init_status_;
 };

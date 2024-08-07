@@ -9,9 +9,9 @@
 #include "roc_sndio/sndfile_backend.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_sndio/sndfile_extension_table.h"
 #include "roc_sndio/sndfile_sink.h"
 #include "roc_sndio/sndfile_source.h"
+#include "roc_sndio/sndfile_tables.h"
 #include "roc_status/code_to_str.h"
 
 namespace roc {
@@ -45,10 +45,11 @@ void SndfileBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& drive
 
         const char* driver = format_info.extension;
 
-        for (size_t map_index = 0; map_index < ROC_ARRAY_SIZE(file_type_map);
+        for (size_t map_index = 0; map_index < ROC_ARRAY_SIZE(sndfile_driver_remap);
              map_index++) {
-            if (file_type_map[map_index].format_id == format_info.format) {
-                driver = file_type_map[map_index].driver_name;
+            if ((sndfile_driver_remap[map_index].format_mask & SF_FORMAT_TYPEMASK)
+                == format_info.format) {
+                driver = sndfile_driver_remap[map_index].driver_name;
             }
         }
 

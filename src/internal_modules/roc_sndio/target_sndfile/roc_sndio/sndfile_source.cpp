@@ -24,14 +24,13 @@ SndfileSource::SndfileSource(audio::FrameFactory& frame_factory,
     , path_(arena)
     , init_status_(status::NoStatus) {
     if (config.latency != 0) {
-        roc_log(LogError,
-                "sndfile source: setting io latency not supported by sndfile backend");
+        roc_log(LogError, "sndfile source: setting io latency not supported by backend");
         init_status_ = status::StatusBadConfig;
         return;
     }
 
     if (!config.sample_spec.is_empty()) {
-        roc_log(LogError, "sndfile source: setting io encoding not supported");
+        roc_log(LogError, "sndfile source: setting io encoding not supported by backend");
         init_status_ = status::StatusBadConfig;
         return;
     }

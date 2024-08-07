@@ -71,6 +71,12 @@ public:
     //! Check if sample spec has a zero rate, empty channel set, and invalid_format.
     bool is_empty() const;
 
+    //! Check if samples are in PCM format.
+    //! @returns
+    //!  true if sample_format() is SampleFormat_Pcm and pcm_format()
+    //!  is anything except PcmFormat_Invalid.
+    bool is_pcm() const;
+
     //! Check if samples are in raw format.
     //! @returns
     //!  true if sample_format() is SampleFormat_Pcm and pcm_format()

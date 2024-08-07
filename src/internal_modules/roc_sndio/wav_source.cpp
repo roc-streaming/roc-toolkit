@@ -21,13 +21,13 @@ WavSource::WavSource(audio::FrameFactory& frame_factory,
     , eof_(false)
     , init_status_(status::NoStatus) {
     if (config.latency != 0) {
-        roc_log(LogError, "wav source: setting io latency not supported");
+        roc_log(LogError, "wav source: setting io latency not supported by backend");
         init_status_ = status::StatusBadConfig;
         return;
     }
 
     if (!config.sample_spec.is_empty()) {
-        roc_log(LogError, "wav source: setting io encoding not supported");
+        roc_log(LogError, "wav source: setting io encoding not supported by backend");
         init_status_ = status::StatusBadConfig;
         return;
     }

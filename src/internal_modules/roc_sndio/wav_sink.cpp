@@ -22,7 +22,7 @@ WavSink::WavSink(audio::FrameFactory& frame_factory,
     : output_file_(NULL)
     , init_status_(status::NoStatus) {
     if (config.latency != 0) {
-        roc_log(LogError, "wav sink: setting io latency not supported");
+        roc_log(LogError, "wav sink: setting io latency not supported by backend");
         init_status_ = status::StatusBadConfig;
         return;
     }
