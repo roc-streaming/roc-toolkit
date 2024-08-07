@@ -8,7 +8,9 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_core/fast_random.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/macro_helpers.h"
 #include "roc_stat/mov_aggregate.h"
 
 namespace roc {
@@ -22,22 +24,23 @@ TEST(mov_aggregate, single_pass) {
     const size_t n = 10;
     int64_t x[n];
     MovAggregate<int64_t> agg(arena, n);
-    double target_avg = 0;
-    double target_var = 0;
     for (size_t i = 0; i < n; i++) {
         x[i] = int64_t(i * n);
         agg.add(x[i]);
-        target_avg = target_var = 0;
+        double target_avg = 0;
         for (size_t j = 0; j <= i; ++j) {
             target_avg += double(x[j]);
         }
         target_avg /= double(i + 1);
+        double target_var = 0;
         for (size_t j = 0; j <= i; ++j) {
             target_var += (double)(x[j] - target_avg) * (double)(x[j] - target_avg);
         }
-        target_var = sqrt(target_var / double(i + 1));
-        LONGS_EQUAL((int64_t)target_avg, agg.mov_avg());
-        LONGS_EQUAL((int64_t)target_var, agg.mov_var());
+        target_var = target_var / double(i + 1);
+        double target_std = sqrt(target_var);
+        LONGS_EQUAL((int64_t)round(target_avg), agg.mov_avg());
+        LONGS_EQUAL((int64_t)round(target_var), agg.mov_var());
+        LONGS_EQUAL((int64_t)round(target_std), agg.mov_std());
     }
 }
 
@@ -52,43 +55,66 @@ TEST(mov_aggregate, one_n_half_pass) {
     LONGS_EQUAL(0, agg.mov_avg());
     LONGS_EQUAL(1, agg.mov_var());
 
-    const int64_t target_avg = (n - 1) * n / 2;
-    int64_t target_var = 0;
+    double target_avg = double(n - 1) * n / 2;
+    double target_var = 0;
     for (size_t i = 0; i < n; i++) {
         const int64_t x = int64_t(i * n);
         agg.add(x);
         target_var += (x - target_avg) * (x - target_avg);
     }
-    target_var = (int64_t)sqrt((double)target_var / n);
+    target_var /= double(n);
+    double target_std = sqrt(target_var);
 
-    LONGS_EQUAL(target_avg, agg.mov_avg());
-    LONGS_EQUAL(target_var, agg.mov_var());
+    LONGS_EQUAL((int64_t)round(target_avg), agg.mov_avg());
+    LONGS_EQUAL((int64_t)round(target_var), agg.mov_var());
+    LONGS_EQUAL((int64_t)round(target_std), agg.mov_std());
 }
 
-TEST(mov_aggregate, one_n_half_extend) {
-    const size_t n = 10;
-    MovAggregate<int64_t> agg(arena, n);
-    const int64_t target_avg = n;
-    int64_t target_var = 0;
-    size_t i = 0;
-    for (; i < n / 2; i++) {
-        const int64_t x = (int64_t)i + 1;
-        agg.add(x);
+TEST(mov_aggregate, stress_test) {
+    enum { NumIterations = 10, NumElems = 1000, MinWindow = 1, MaxWindow = 100 };
+
+    const int64_t ranges[][2] = {
+        { 100000000, 200000000 },
+        { -200000000, -100000000 },
+        { -100000000, 100000000 },
+    };
+
+    for (size_t r = 0; r < ROC_ARRAY_SIZE(ranges); r++) {
+        for (size_t i = 0; i < NumIterations; i++) {
+            const size_t win_sz = core::fast_random_range(MinWindow, MaxWindow);
+
+            MovAggregate<int64_t> agg(arena, win_sz);
+            CHECK(agg.is_valid());
+
+            int64_t elems[NumElems] = {};
+
+            for (size_t n = 0; n < NumElems; n++) {
+                elems[n] = ranges[r][0]
+                    + (int64_t)core::fast_random_range(
+                               0, (uint64_t)(ranges[r][1] - ranges[r][0]));
+                agg.add(elems[n]);
+
+                const size_t n_elems = n + 1;
+
+                const size_t cur_win_sz = std::min(win_sz, n_elems);
+                const int64_t* cur_win = elems + n_elems - cur_win_sz;
+
+                double target_avg = 0;
+                for (size_t n = 0; n < cur_win_sz; ++n) {
+                    target_avg += double(cur_win[n]) / cur_win_sz;
+                }
+                double target_var = 0;
+                for (size_t n = 0; n < cur_win_sz; ++n) {
+                    target_var += pow(cur_win[n] - target_avg, 2) / cur_win_sz;
+                }
+                double target_std = sqrt(target_var);
+
+                DOUBLES_EQUAL(target_avg, agg.mov_avg(), 1);
+                DOUBLES_EQUAL(target_var, agg.mov_var(), 100);
+                DOUBLES_EQUAL(target_std, agg.mov_std(), 100);
+            }
+        }
     }
-    for (; i < (n + n / 2); i++) {
-        const int64_t x = (int64_t)i + 1;
-        agg.add(x);
-        target_var += (x - target_avg) * (x - target_avg);
-    }
-    target_var = (int64_t)sqrt((double)target_var / n);
-
-    LONGS_EQUAL(target_avg, agg.mov_avg());
-    LONGS_EQUAL(target_var, agg.mov_var());
-
-    CHECK(agg.extend_win(n * 10));
-
-    LONGS_EQUAL((int64_t)ceil(n * 1.25), agg.mov_avg()); // [n; n + n/2]
-    LONGS_EQUAL(target_var / 2, agg.mov_var());
 }
 
 } // namespace stat
