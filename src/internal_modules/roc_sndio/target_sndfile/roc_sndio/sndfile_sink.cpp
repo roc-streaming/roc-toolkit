@@ -251,6 +251,10 @@ status::StatusCode SndfileSink::write(audio::Frame& frame) {
 }
 
 status::StatusCode SndfileSink::flush() {
+    if (!file_) {
+        roc_panic("sndfile sink: not opened");
+    }
+
     return status::StatusOK;
 }
 

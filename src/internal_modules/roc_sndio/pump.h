@@ -70,6 +70,7 @@ private:
     status::StatusCode next_();
     status::StatusCode switch_source_(ISource* new_source);
     status::StatusCode transfer_frame_(ISource& source, ISink& sink);
+    status::StatusCode flush_sink_();
     status::StatusCode close_all_devices_();
 
     audio::FrameFactory frame_factory_;

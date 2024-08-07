@@ -65,25 +65,25 @@ status::StatusCode Pump::run() {
         }
     }
 
-    roc_panic_if_msg(code <= status::NoStatus || code >= status::MaxStatus,
-                     "pump: invalid status code %d", code);
-
     if (code == status::StatusFinish) {
         code = status::StatusOK; // EOF is fine
     }
+
     if (code == status::StatusOK) {
-        code = sink_.flush();
-        if (code != status::StatusOK) {
-            roc_log(LogError, "pump: got error when flushing sink: status=%s",
-                    status::code_to_str(code));
-        }
+        code = flush_sink_();
     }
 
-    status::StatusCode close_code = close_all_devices_();
+    const status::StatusCode close_code = close_all_devices_();
+    if (code == status::StatusOK) {
+        code = close_code;
+    }
 
     roc_log(LogDebug, "pump: exiting main loop");
 
-    return (code != status::StatusOK) ? code : close_code;
+    roc_panic_if_msg(code <= status::NoStatus || code >= status::MaxStatus,
+                     "pump: invalid status code %d", code);
+
+    return code;
 }
 
 void Pump::stop() {
@@ -280,6 +280,17 @@ status::StatusCode Pump::transfer_frame_(ISource& source, ISink& sink) {
     }
 
     return status::StatusOK;
+}
+
+status::StatusCode Pump::flush_sink_() {
+    const status::StatusCode code = sink_.flush();
+
+    if (code != status::StatusOK) {
+        roc_log(LogError, "pump: got error when flushing sink: status=%s",
+                status::code_to_str(code));
+    }
+
+    return code;
 }
 
 status::StatusCode Pump::close_all_devices_() {
