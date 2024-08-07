@@ -641,7 +641,7 @@ def reword_pr_commits(org, repo, pr_number, title, no_issue):
     else:
         sed = f"sed -r"+\
             f" -e '1s,^(gh-[0-9]+:? +|{org}/[^ ]+ +|[Ii]ssue *[0-9]+:? +)?,{commit_prefix},'"+\
-            f" -e '1s,\s*\(?#[0-9]+\)?$,,'",
+            f" -e '1s,\s*\(?#[0-9]+\)?$,,'"
 
     run_cmd([
         'git', 'filter-branch', '-f', '--msg-filter', sed,
