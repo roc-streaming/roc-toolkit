@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_audio/vorbis_encoder.h
+//! @file roc_audio/target_libvorbis/roc_audio/vorbis_encoder.h
 //! @brief TODO.
 
 #ifndef ROC_AUDIO_VORBIS_ENCODER_H_
