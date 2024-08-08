@@ -263,21 +263,6 @@ elif 'sndfile' in system_dependencies:
 if 'libogg' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_versions, 'libogg')
 
-    conf = Configure(env, custom_tests=env.CustomTests)
-
-    env = conf.Finish()
-
-elif 'libogg' in system_dependencies:
-    conf = Configure(env, custom_tests=env.CustomTests)
-
-    if not conf.AddPkgConfigDependency('ogg', '--cflags --libs', exclude_from_pc=True):
-        conf.env.AddManualDependency(libs=['ogg'], exclude_from_pc=True)
-
-    if not conf.CheckLibWithHeaderExt('ogg', 'ogg/ogg.h', 'C', run=False):
-        env.Die("libogg not found (see 'config.log' for details)")
-
-    env = conf.Finish()
-
 # dep: libvorbis
 if 'libvorbis' in autobuild_dependencies:
     pa_deps = [
@@ -292,7 +277,7 @@ elif 'libvorbis' in system_dependencies:
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('vorbis', '--cflags --libs', exclude_from_pc=True):
-        conf.env.AddManualDependency(libs=['vorbis'], exclude_from_pc=True)
+        conf.env.AddManualDependency(libs=['vorbis', 'vorbisenc', 'vorbisfile'], exclude_from_pc=True)
 
     if not conf.CheckLibWithHeaderExt('vorbis', 'vorbis/vorbisenc.h', 'C', run=False):
         env.Die("libvorbis not found (see 'config.log' for details)")

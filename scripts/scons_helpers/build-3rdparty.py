@@ -1479,6 +1479,8 @@ elif ctx.pkg_name == 'libvorbis':
     execute_make(ctx)
     install_tree(ctx, 'include', ctx.pkg_inc_dir, include=['*.h'])
     install_files(ctx, 'lib/.libs/libvorbis.a', ctx.pkg_lib_dir)
+    install_files(ctx, 'lib/.libs/libvorbisenc.a', ctx.pkg_lib_dir)
+    install_files(ctx, 'lib/.libs/libvorbisfile.a', ctx.pkg_lib_dir)
 elif ctx.pkg_name == 'ltdl':
     download(
         ctx,
