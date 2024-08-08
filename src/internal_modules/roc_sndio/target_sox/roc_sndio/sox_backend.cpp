@@ -36,10 +36,7 @@ const char* driver_renames[][2] = {
 };
 
 const char* hidden_drivers[] = {
-    // this format doesn't specify the encoding explicitly
-    // use its explicit variants like f32, s32, etc
-    "raw",
-    // deprecated aliases
+    // redundant aliases
     "f4",
     "f8",
     "s1",
@@ -55,6 +52,22 @@ const char* hidden_drivers[] = {
     "sl",
     "ub",
     "uw",
+    "aif",
+    "aifc",
+    // formats handled by libsndfile
+    "f32",
+    "f64",
+    "s8",
+    "s16",
+    "s24",
+    "s32",
+    "u8",
+    "u16",
+    "u24",
+    "u32",
+    "raw",
+    "mat",
+    "vorbis",
     // pseudo-formats
     "sndfile",
     "null",
