@@ -1458,7 +1458,7 @@ elif ctx.pkg_name == 'libogg':
     execute_make(ctx)
     install_tree(ctx, 'include', ctx.pkg_inc_dir, include=['*.h'])
     install_files(ctx, 'src/.libs/libogg.a', ctx.pkg_lib_dir)
-    install_files(ctx, 'ogg.pc', ctx.pkg_rpath_dir)
+    install_files(ctx, 'ogg.pc', ctx.pkg_lib_dir)
 elif ctx.pkg_name == 'libvorbis':
     download(
         ctx,
