@@ -7,7 +7,7 @@
  */
 
 //! @file roc_audio/target_libvorbis/roc_audio/vorbis_encoder.h
-//! @brief TODO.
+//! @brief Vorbis audio decoder.
 
 #ifndef ROC_AUDIO_VORBIS_ENCODER_H_
 #define ROC_AUDIO_VORBIS_ENCODER_H_
