@@ -18,14 +18,15 @@ namespace audio {
 
 namespace {
 
-const core::nanoseconds_t LogInterval = 20 * core::Second;
+const core::nanoseconds_t LogInterval = 30 * core::Second;
 
 } // namespace
 
 Depacketizer::Depacketizer(packet::IReader& packet_reader,
                            IFrameDecoder& payload_decoder,
                            FrameFactory& frame_factory,
-                           const SampleSpec& sample_spec)
+                           const SampleSpec& sample_spec,
+                           dbgio::CsvDumper* dumper)
     : frame_factory_(frame_factory)
     , packet_reader_(packet_reader)
     , payload_decoder_(payload_decoder)
@@ -33,13 +34,13 @@ Depacketizer::Depacketizer(packet::IReader& packet_reader,
     , stream_ts_(0)
     , next_capture_ts_(0)
     , valid_capture_ts_(false)
-    , padding_samples_(0)
     , decoded_samples_(0)
     , missing_samples_(0)
-    , fetched_packets_(0)
-    , dropped_packets_(0)
+    , late_samples_(0)
+    , recovered_samples_(0)
     , is_started_(false)
     , rate_limiter_(LogInterval)
+    , dumper_(dumper)
     , init_status_(status::NoStatus) {
     roc_panic_if_msg(!sample_spec_.is_valid() || !sample_spec_.is_raw(),
                      "depacketizer: required valid sample spec with raw format: %s",
@@ -128,7 +129,11 @@ status::StatusCode Depacketizer::read(Frame& frame,
     }
 
     commit_frame_(frame, frame_samples, frame_stats);
+
     periodic_report_();
+    if (dumper_) {
+        dump_();
+    }
 
     return frame.duration() == requested_duration ? status::StatusOK : status::StatusPart;
 }
@@ -255,7 +260,13 @@ sample_t* Depacketizer::read_decoded_samples_(sample_t* buff_ptr, sample_t* buff
         payload_decoder_.read_samples(buff_ptr, requested_samples);
 
     stream_ts_ += (packet::stream_timestamp_t)decoded_samples;
-    decoded_samples_ += (packet::stream_timestamp_t)decoded_samples;
+    decoded_samples_ += decoded_samples;
+    metrics_.decoded_samples += decoded_samples;
+
+    if (packet_->has_flags(packet::Packet::FlagRestored)) {
+        recovered_samples_ += decoded_samples;
+        metrics_.recovered_samples += decoded_samples;
+    }
 
     if (decoded_samples < requested_samples) {
         payload_decoder_.end_frame();
@@ -272,11 +283,9 @@ sample_t* Depacketizer::read_missing_samples_(sample_t* buff_ptr, sample_t* buff
     memset(buff_ptr, 0, missing_samples * sample_spec_.num_channels() * sizeof(sample_t));
 
     stream_ts_ += (packet::stream_timestamp_t)missing_samples;
-
-    if (!is_started_) {
-        padding_samples_ += (packet::stream_timestamp_t)missing_samples;
-    } else {
-        missing_samples_ += (packet::stream_timestamp_t)missing_samples;
+    missing_samples_ += missing_samples;
+    if (is_started_) {
+        metrics_.missing_samples += missing_samples;
     }
 
     return (buff_ptr + missing_samples * sample_spec_.num_channels());
@@ -371,7 +380,6 @@ status::StatusCode Depacketizer::fetch_packet_(size_t requested_samples,
 
     roc_panic_if(!pkt);
     packet_ = pkt;
-    fetched_packets_++;
 
     return code;
 }
@@ -397,7 +405,8 @@ status::StatusCode Depacketizer::start_packet_() {
         roc_log(LogTrace, "depacketizer: dropping late packet: stream_ts=%lu pkt_ts=%lu",
                 (unsigned long)stream_ts_, (unsigned long)pkt_begin);
 
-        dropped_packets_++;
+        late_samples_ += pkt_end - pkt_begin;
+        metrics_.late_samples += pkt_end - pkt_begin;
         metrics_.late_packets++;
 
         payload_decoder_.end_frame();
@@ -412,10 +421,12 @@ status::StatusCode Depacketizer::start_packet_() {
     }
 
     if (!is_started_) {
-        roc_log(LogDebug, "depacketizer: got first packet: pkt_ts=%lu zeros_before=%lu",
-                (unsigned long)pkt_begin, (unsigned long)padding_samples_);
+        roc_log(LogDebug,
+                "depacketizer: got first packet: start_ts=%lu start_latency=%lu",
+                (unsigned long)pkt_begin, (unsigned long)missing_samples_);
 
         stream_ts_ = pkt_begin;
+        missing_samples_ = 0;
         is_started_ = true;
     }
 
@@ -436,6 +447,10 @@ status::StatusCode Depacketizer::start_packet_() {
                 "depacketizer: dropping samples: stream_ts=%lu pkt_ts=%lu diff=%lu",
                 (unsigned long)stream_ts_, (unsigned long)pkt_begin,
                 (unsigned long)diff_samples);
+
+        late_samples_ += diff_samples;
+        metrics_.late_samples += diff_samples;
+        metrics_.late_packets++;
 
         if (valid_capture_ts_) {
             next_capture_ts_ += sample_spec_.samples_per_chan_2_ns(diff_samples);
@@ -498,25 +513,40 @@ void Depacketizer::commit_frame_(Frame& frame,
 }
 
 void Depacketizer::periodic_report_() {
-    if (!rate_limiter_.allow()) {
+    if (!rate_limiter_.allow() || !is_started_) {
         return;
     }
 
-    const double loss_ratio = (missing_samples_ + decoded_samples_) != 0
-        ? (double)missing_samples_ / (missing_samples_ + decoded_samples_)
-        : 0.;
-
-    const double drop_ratio =
-        fetched_packets_ != 0 ? (double)dropped_packets_ / fetched_packets_ : 0.;
+    const size_t total_samples = decoded_samples_ + missing_samples_;
 
     roc_log(LogDebug,
             "depacketizer:"
-            " fetched_pkts=%lu dropped_pkts=%lu loss_ratio=%.5lf late_ratio=%.5lf",
-            (unsigned long)fetched_packets_, (unsigned long)dropped_packets_, loss_ratio,
-            drop_ratio);
+            " period=%.2fms missing=%.2fms(%.3f%%)"
+            " late=%.2fms(%.3f%%) recovered=%.2fms(%.3f%%)",
+            sample_spec_.stream_timestamp_2_ms(total_samples),
+            sample_spec_.stream_timestamp_2_ms(missing_samples_),
+            (double)missing_samples_ / total_samples * 100,
+            sample_spec_.stream_timestamp_2_ms(late_samples_),
+            (double)late_samples_ / total_samples * 100,
+            sample_spec_.stream_timestamp_2_ms(recovered_samples_),
+            (double)recovered_samples_ / total_samples * 100);
 
-    missing_samples_ = decoded_samples_ = 0;
-    fetched_packets_ = dropped_packets_ = 0;
+    decoded_samples_ = 0;
+    missing_samples_ = 0;
+    late_samples_ = 0;
+    recovered_samples_ = 0;
+}
+
+void Depacketizer::dump_() {
+    dbgio::CsvEntry e;
+    e.type = 'd';
+    e.n_fields = 4;
+    e.fields[0] = core::timestamp(core::ClockUnix);
+    e.fields[1] = metrics_.missing_samples;
+    e.fields[2] = metrics_.late_samples;
+    e.fields[3] = metrics_.recovered_samples;
+
+    dumper_->write(e);
 }
 
 } // namespace audio

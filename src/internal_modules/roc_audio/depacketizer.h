@@ -19,6 +19,7 @@
 #include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/ireader.h"
 
 namespace roc {
@@ -27,22 +28,38 @@ namespace audio {
 //! Metrics of depacketizer.
 struct DepacketizerMetrics {
     //! Cumulative count of packets from which we decoded samples.
-    //! Incremented each time depacketizer starts decoding a packet.
     uint64_t decoded_packets;
 
+    //! Cumulative count of decoded samples.
+    uint64_t decoded_samples;
+
+    //! Cumulative count of samples missing due to losses or delays.
+    uint64_t missing_samples;
+
     //! Cumulative count of packets dropped because they were late.
-    //! Incremented each time depacketizer drops a packet.
+    //! @note
+    //!  This metric includes packets that were only partially late.
     uint64_t late_packets;
 
+    //! Cumulative count of samples in late packets.
+    uint64_t late_samples;
+
     //! Cumulative count of packets repaired by FEC.
-    //! Incremented each time depacketizer reads a packet with FlagRestored.
-    //! This metric excludes late packets that were repaired but then dropped.
+    //! @note
+    //!  This metric excludes late packets that were repaired but then dropped.
     uint64_t recovered_packets;
+
+    //! Cumulative count of samples in recovered packets.
+    uint64_t recovered_samples;
 
     DepacketizerMetrics()
         : decoded_packets(0)
+        , decoded_samples(0)
+        , missing_samples(0)
         , late_packets(0)
-        , recovered_packets(0) {
+        , late_samples(0)
+        , recovered_packets(0)
+        , recovered_samples(0) {
     }
 };
 
@@ -78,7 +95,8 @@ public:
     Depacketizer(packet::IReader& packet_reader,
                  IFrameDecoder& payload_decoder,
                  FrameFactory& frame_factory,
-                 const SampleSpec& sample_spec);
+                 const SampleSpec& sample_spec,
+                 dbgio::CsvDumper* dumper);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
@@ -141,6 +159,7 @@ private:
     void commit_frame_(Frame& frame, size_t frame_samples, const FrameStats& stats);
 
     void periodic_report_();
+    void dump_();
 
     FrameFactory& frame_factory_;
     packet::IReader& packet_reader_;
@@ -154,18 +173,17 @@ private:
     core::nanoseconds_t next_capture_ts_;
     bool valid_capture_ts_;
 
-    size_t padding_samples_;
     size_t decoded_samples_;
     size_t missing_samples_;
-
-    size_t fetched_packets_;
-    size_t dropped_packets_;
+    size_t late_samples_;
+    size_t recovered_samples_;
 
     DepacketizerMetrics metrics_;
 
     bool is_started_;
 
     core::RateLimiter rate_limiter_;
+    dbgio::CsvDumper* dumper_;
 
     status::StatusCode init_status_;
 };

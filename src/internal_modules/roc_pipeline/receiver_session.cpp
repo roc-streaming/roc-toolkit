@@ -174,7 +174,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                          pkt_encoding->sample_spec.channel_set());
 
         depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
-            *pkt_reader, *payload_decoder_, frame_factory, out_spec));
+            *pkt_reader, *payload_decoder_, frame_factory, out_spec, dumper_));
         if ((init_status_ = depacketizer_->init_status()) != status::StatusOK) {
             return;
         }
