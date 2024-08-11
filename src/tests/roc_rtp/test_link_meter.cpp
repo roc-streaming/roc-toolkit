@@ -27,7 +27,13 @@ namespace rtp {
 
 namespace {
 
-enum { ChMask = 3, PacketSz = 100, SampleRate = 44100, Duration = 44 };
+enum {
+    ChMask = 3,
+    PacketSz = 100,
+    SampleRate = 44100,
+    Duration = 44,
+    RunningWindowLen = 1000
+};
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, PacketSz);
@@ -62,9 +68,11 @@ packet::PacketPtr new_packet(packet::seqnum_t sn,
     return packet;
 }
 
-LinkMeterConfig make_config() {
-    LinkMeterConfig config;
-    config.sliding_window_length = 10000;
+audio::JitterMeterConfig make_config() {
+    audio::JitterMeterConfig config;
+    config.jitter_window = RunningWindowLen;
+    config.peak_quantile_window = RunningWindowLen / 5;
+    config.envelope_resistance_coeff = 0.1;
     return config;
 }
 
@@ -161,7 +169,6 @@ TEST(link_meter, jitter_test) {
     packet::FifoQueue queue;
     LinkMeter meter(queue, make_config(), encoding_map, arena, NULL);
 
-    const ssize_t running_win_len = (ssize_t)meter.running_window_len();
     const size_t num_packets = Duration * 100;
     core::nanoseconds_t ts_store[num_packets];
 
@@ -177,36 +184,34 @@ TEST(link_meter, jitter_test) {
         qts += qts_step + jitter_ns;
         sts += sts_step;
 
-        if (i > (size_t)running_win_len) {
+        if (i > RunningWindowLen) {
             // Check meter metrics running max in min jitter in last Duration number
             // of packets in ts_store.
-            core::nanoseconds_t min_jitter = core::Second;
-            core::nanoseconds_t max_jitter = 0;
-            for (size_t j = 0; j < (size_t)running_win_len; j++) {
+            core::nanoseconds_t peak_jitter = 0;
+            for (size_t j = 0; j < RunningWindowLen; j++) {
                 core::nanoseconds_t jitter =
                     std::abs(ts_store[i - j] - ts_store[i - j - 1] - qts_step);
-                min_jitter = std::min(min_jitter, jitter);
-                max_jitter = std::max(max_jitter, jitter);
+                peak_jitter = std::max(peak_jitter, jitter);
             }
-            UNSIGNED_LONGS_EQUAL(min_jitter, meter.metrics().min_jitter);
-            UNSIGNED_LONGS_EQUAL(max_jitter, meter.metrics().max_jitter);
+            DOUBLES_EQUAL(peak_jitter, meter.metrics().peak_jitter,
+                          core::Millisecond * 3);
 
             // Reference average  and variance of jitter from ts_store values.
             core::nanoseconds_t sum = 0;
-            for (size_t j = 0; j < (size_t)running_win_len; j++) {
+            for (size_t j = 0; j < RunningWindowLen; j++) {
                 sum += std::abs(ts_store[i - j] - ts_store[i - j - 1] - qts_step);
             }
-            const core::nanoseconds_t mean = sum / running_win_len;
+            const core::nanoseconds_t mean = sum / RunningWindowLen;
 
             sum = 0;
-            for (size_t j = 0; j < (size_t)running_win_len; j++) {
+            for (size_t j = 0; j < RunningWindowLen; j++) {
                 core::nanoseconds_t jitter =
                     std::abs(ts_store[i - j] - ts_store[i - j - 1] - qts_step);
                 sum += (jitter - mean) * (jitter - mean);
             }
 
             // Check the jitter value
-            DOUBLES_EQUAL(mean, meter.mean_jitter(), core::Microsecond * 1);
+            DOUBLES_EQUAL(mean, meter.metrics().mean_jitter, core::Microsecond * 1);
         }
     }
 }
@@ -214,7 +219,6 @@ TEST(link_meter, jitter_test) {
 TEST(link_meter, ascending_test) {
     packet::FifoQueue queue;
     LinkMeter meter(queue, make_config(), encoding_map, arena, NULL);
-    const ssize_t running_win_len = (ssize_t)meter.running_window_len();
 
     const size_t num_packets = Duration * 100;
     core::nanoseconds_t ts_store[num_packets];
@@ -231,19 +235,17 @@ TEST(link_meter, ascending_test) {
         qts += qts_step + (core::nanoseconds_t)i * core::Microsecond;
         sts += sts_step;
 
-        if (i > (size_t)running_win_len) {
+        if (i > RunningWindowLen) {
             // Check meter metrics running max in min jitter in last Duration number
             // of packets in ts_store.
-            core::nanoseconds_t min_jitter = core::Second;
-            core::nanoseconds_t max_jitter = 0;
-            for (size_t j = 0; j < (size_t)running_win_len; j++) {
+            core::nanoseconds_t peak_jitter = 0;
+            for (size_t j = 0; j < RunningWindowLen; j++) {
                 core::nanoseconds_t jitter =
                     std::abs(ts_store[i - j] - ts_store[i - j - 1] - qts_step);
-                min_jitter = std::min(min_jitter, jitter);
-                max_jitter = std::max(max_jitter, jitter);
+                peak_jitter = std::max(peak_jitter, jitter);
             }
-            UNSIGNED_LONGS_EQUAL(min_jitter, meter.metrics().min_jitter);
-            UNSIGNED_LONGS_EQUAL(max_jitter, meter.metrics().max_jitter);
+            DOUBLES_EQUAL(peak_jitter, meter.metrics().peak_jitter,
+                          core::Millisecond * 3);
         }
     }
 }
@@ -251,7 +253,6 @@ TEST(link_meter, ascending_test) {
 TEST(link_meter, descending_test) {
     packet::FifoQueue queue;
     LinkMeter meter(queue, make_config(), encoding_map, arena, NULL);
-    const ssize_t RunningWinLen = (ssize_t)meter.running_window_len();
 
     const size_t num_packets = Duration * 100;
     core::nanoseconds_t ts_store[num_packets];
@@ -268,19 +269,17 @@ TEST(link_meter, descending_test) {
         qts += qts_step - (core::nanoseconds_t)i * core::Nanosecond * 10;
         sts += sts_step;
 
-        if (i > (size_t)RunningWinLen) {
+        if (i > RunningWindowLen) {
             // Check meter metrics running max in min jitter in last Duration number
             // of packets in ts_store.
-            core::nanoseconds_t min_jitter = core::Second;
-            core::nanoseconds_t max_jitter = 0;
-            for (size_t j = 0; j < (size_t)RunningWinLen; j++) {
+            core::nanoseconds_t peak_jitter = 0;
+            for (size_t j = 0; j < RunningWindowLen; j++) {
                 core::nanoseconds_t jitter =
                     std::abs(ts_store[i - j] - ts_store[i - j - 1] - qts_step);
-                min_jitter = std::min(min_jitter, jitter);
-                max_jitter = std::max(max_jitter, jitter);
+                peak_jitter = std::max(peak_jitter, jitter);
             }
-            UNSIGNED_LONGS_EQUAL(min_jitter, meter.metrics().min_jitter);
-            UNSIGNED_LONGS_EQUAL(max_jitter, meter.metrics().max_jitter);
+            DOUBLES_EQUAL(peak_jitter, meter.metrics().peak_jitter,
+                          core::Millisecond * 3);
         }
     }
 }
@@ -288,7 +287,6 @@ TEST(link_meter, descending_test) {
 TEST(link_meter, saw_test) {
     packet::FifoQueue queue;
     LinkMeter meter(queue, make_config(), encoding_map, arena, NULL);
-    const ssize_t running_win_len = (ssize_t)meter.running_window_len();
 
     const size_t num_packets = Duration * 100;
     core::nanoseconds_t ts_store[num_packets];
@@ -305,23 +303,21 @@ TEST(link_meter, saw_test) {
         qts += step_ts_;
         sts += sts_step;
         step_ts_ += step_ts_inc;
-        if (i > 0 && i % (size_t)running_win_len == 0) {
+        if (i > 0 && i % RunningWindowLen == 0) {
             step_ts_inc = -step_ts_inc;
         }
 
-        if (i > (size_t)running_win_len) {
+        if (i > RunningWindowLen) {
             // Check meter metrics running max in min jitter in last Duration number
             // of packets in ts_store.
-            core::nanoseconds_t min_jitter = core::Second;
-            core::nanoseconds_t max_jitter = 0;
-            for (size_t j = 0; j < (size_t)running_win_len; j++) {
+            core::nanoseconds_t peak_jitter = 0;
+            for (size_t j = 0; j < RunningWindowLen; j++) {
                 core::nanoseconds_t jitter =
                     std::abs(ts_store[i - j] - ts_store[i - j - 1] - qts_step);
-                min_jitter = std::min(min_jitter, jitter);
-                max_jitter = std::max(max_jitter, jitter);
+                peak_jitter = std::max(peak_jitter, jitter);
             }
-            UNSIGNED_LONGS_EQUAL(min_jitter, meter.metrics().min_jitter);
-            UNSIGNED_LONGS_EQUAL(max_jitter, meter.metrics().max_jitter);
+            DOUBLES_EQUAL(peak_jitter, meter.metrics().peak_jitter,
+                          core::Millisecond * 3);
         }
     }
 }

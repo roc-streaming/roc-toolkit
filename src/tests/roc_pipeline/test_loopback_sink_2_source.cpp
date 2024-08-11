@@ -414,7 +414,7 @@ void check_metrics(ReceiverSlot& receiver,
     } else {
         CHECK(recv_party_metrics.link.lost_packets == 0);
     }
-    CHECK(recv_party_metrics.link.jitter > 0);
+    CHECK(recv_party_metrics.link.mean_jitter > 0);
 
     CHECK(recv_party_metrics.latency.niq_latency > 0);
     CHECK(recv_party_metrics.latency.niq_stalling >= 0);
@@ -450,7 +450,8 @@ void check_metrics(ReceiverSlot& receiver,
 
         UNSIGNED_LONGS_EQUAL(recv_party_metrics.link.lost_packets,
                              send_party_metrics.link.lost_packets);
-        CHECK(std::abs(recv_party_metrics.link.jitter - send_party_metrics.link.jitter)
+        CHECK(std::abs(recv_party_metrics.link.mean_jitter
+                       - send_party_metrics.link.mean_jitter)
               < 1 * core::Millisecond);
 
         DOUBLES_EQUAL(recv_party_metrics.latency.niq_latency,

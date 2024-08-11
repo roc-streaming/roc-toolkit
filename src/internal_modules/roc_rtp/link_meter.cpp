@@ -13,21 +13,8 @@
 namespace roc {
 namespace rtp {
 
-bool LinkMeterConfig::deduce_defaults(audio::LatencyTunerProfile latency_profile) {
-    if (sliding_window_length == 0) {
-        if (latency_profile == audio::LatencyTunerProfile_Responsive) {
-            // Responsive profile requires faster reactions to network changes.
-            sliding_window_length = 10000;
-        } else {
-            sliding_window_length = 30000;
-        }
-    }
-
-    return true;
-}
-
 LinkMeter::LinkMeter(packet::IWriter& writer,
-                     const LinkMeterConfig& config,
+                     const audio::JitterMeterConfig& jitter_config,
                      const EncodingMap& encoding_map,
                      core::IArena& arena,
                      dbgio::CsvDumper* dumper)
@@ -35,7 +22,6 @@ LinkMeter::LinkMeter(packet::IWriter& writer,
     , encoding_(NULL)
     , writer_(writer)
     , first_packet_(true)
-    , win_len_(config.sliding_window_length)
     , has_metrics_(false)
     , first_seqnum_(0)
     , last_seqnum_hi_(0)
@@ -43,7 +29,7 @@ LinkMeter::LinkMeter(packet::IWriter& writer,
     , processed_packets_(0)
     , prev_queue_timestamp_(-1)
     , prev_stream_timestamp_(0)
-    , packet_jitter_stats_(arena, win_len_)
+    , jitter_meter_(jitter_config, arena)
     , dumper_(dumper) {
 }
 
@@ -103,16 +89,23 @@ void LinkMeter::update_metrics_(const packet::Packet& packet) {
 
     if (!first_packet_) {
         update_jitter_(packet);
-    } else {
-        first_packet_ = false;
     }
 
     processed_packets_++;
 
-    prev_queue_timestamp_ = packet.udp()->queue_timestamp;
-    prev_stream_timestamp_ = packet.rtp()->stream_timestamp;
+    if (first_packet_
+        || packet::stream_timestamp_gt(packet.rtp()->stream_timestamp,
+                                       prev_stream_timestamp_)) {
+        prev_queue_timestamp_ = packet.udp()->queue_timestamp;
+        prev_stream_timestamp_ = packet.rtp()->stream_timestamp;
+    }
 
+    first_packet_ = false;
     has_metrics_ = true;
+
+    if (dumper_) {
+        dump_(packet);
+    }
 }
 
 void LinkMeter::update_seqnums_(const packet::Packet& packet) {
@@ -159,35 +152,26 @@ void LinkMeter::update_jitter_(const packet::Packet& packet) {
     const core::nanoseconds_t d_s_ns =
         encoding_->sample_spec.stream_timestamp_delta_2_ns(d_s_ts);
 
-    packet_jitter_stats_.add(std::abs(d_enq_ns - d_s_ns));
-    metrics_.jitter = (core::nanoseconds_t)packet_jitter_stats_.mov_avg();
-    metrics_.max_jitter = (core::nanoseconds_t)packet_jitter_stats_.mov_max();
-    metrics_.min_jitter = (core::nanoseconds_t)packet_jitter_stats_.mov_min();
+    const core::nanoseconds_t jitter = std::abs(d_enq_ns - d_s_ns);
+    jitter_meter_.update_jitter(jitter);
 
-    if (dumper_) {
-        dump_(packet, d_enq_ns, d_s_ns);
-    }
+    const audio::JitterMetrics& jit_metrics = jitter_meter_.metrics();
+    metrics_.mean_jitter = jit_metrics.mean_jitter;
+    metrics_.peak_jitter = jit_metrics.peak_jitter;
 }
 
-core::nanoseconds_t rtp::LinkMeter::mean_jitter() const {
-    return (core::nanoseconds_t)packet_jitter_stats_.mov_avg();
-}
+void LinkMeter::dump_(const packet::Packet& packet) {
+    const audio::JitterMetrics& jit_metrics = jitter_meter_.metrics();
 
-size_t LinkMeter::running_window_len() const {
-    return win_len_;
-}
-
-void LinkMeter::dump_(const packet::Packet& packet,
-                      const long d_enq_ns,
-                      const long d_s_ns) {
     dbgio::CsvEntry e;
     e.type = 'm';
     e.n_fields = 5;
     e.fields[0] = packet.udp()->queue_timestamp;
     e.fields[1] = packet.rtp()->stream_timestamp;
-    e.fields[2] = (double)std::abs(d_enq_ns - d_s_ns) / core::Millisecond;
-    e.fields[3] = packet_jitter_stats_.mov_max();
-    e.fields[4] = packet_jitter_stats_.mov_min();
+    e.fields[2] = (double)jit_metrics.curr_jitter / core::Millisecond;
+    e.fields[3] = jit_metrics.peak_jitter;
+    e.fields[4] = jit_metrics.curr_envelope;
+
     dumper_->write(e);
 }
 

@@ -54,7 +54,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     pkt_writer = source_queue_.get();
 
     source_meter_.reset(new (source_meter_) rtp::LinkMeter(
-        *pkt_writer, session_config.link_meter, encoding_map, arena, dumper_));
+        *pkt_writer, session_config.jitter_meter, encoding_map, arena, dumper_));
     if ((init_status_ = source_meter_->init_status()) != status::StatusOK) {
         return;
     }
@@ -109,7 +109,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         repair_pkt_writer = repair_queue_.get();
 
         repair_meter_.reset(new (repair_meter_) rtp::LinkMeter(
-            *repair_pkt_writer, session_config.link_meter, encoding_map, arena, dumper_));
+            *repair_pkt_writer, session_config.jitter_meter, encoding_map, arena,
+            dumper_));
         if ((init_status_ = repair_meter_->init_status()) != status::StatusOK) {
             return;
         }
@@ -385,7 +386,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
         report.packet_count = link_metrics.expected_packets;
         report.cum_loss = link_metrics.lost_packets;
-        report.jitter = link_metrics.jitter;
+        report.jitter = link_metrics.mean_jitter;
         report.niq_latency = latency_metrics.niq_latency;
         report.niq_stalling = latency_metrics.niq_stalling;
         report.e2e_latency = latency_metrics.e2e_latency;
@@ -410,7 +411,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
         report.packet_count = link_metrics.expected_packets;
         report.cum_loss = link_metrics.lost_packets;
-        report.jitter = link_metrics.jitter;
+        report.jitter = link_metrics.mean_jitter;
 
         reports++;
         n_reports--;

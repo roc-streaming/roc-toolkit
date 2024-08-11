@@ -90,7 +90,7 @@ private:
     bool check_actual_latency_(packet::stream_timestamp_diff_t latency);
     void compute_scaling_(packet::stream_timestamp_diff_t latency);
 
-    void update_target_latency_(core::nanoseconds_t max_jitter_ns,
+    void update_target_latency_(core::nanoseconds_t peak_jitter_ns,
                                 core::nanoseconds_t mean_jitter_ns,
                                 core::nanoseconds_t fec_block_ns);
     void try_decrease_latency_(core::nanoseconds_t estimate,

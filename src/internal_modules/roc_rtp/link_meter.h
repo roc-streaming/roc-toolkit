@@ -12,7 +12,7 @@
 #ifndef ROC_RTP_LINK_METER_H_
 #define ROC_RTP_LINK_METER_H_
 
-#include "roc_audio/latency_config.h"
+#include "roc_audio/jitter_meter.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
@@ -23,25 +23,9 @@
 #include "roc_rtcp/reports.h"
 #include "roc_rtp/encoding.h"
 #include "roc_rtp/encoding_map.h"
-#include "roc_stat/mov_aggregate.h"
 
 namespace roc {
 namespace rtp {
-
-//! RTP link meter parameters.
-struct LinkMeterConfig {
-    //! Number of packets we use to calculate sliding statistics.
-    //! @remarks
-    //!  We calculate jitter statistics based on this last delivered packets.
-    size_t sliding_window_length;
-
-    LinkMeterConfig()
-        : sliding_window_length(0) {
-    }
-
-    //! Automatically fill missing settings.
-    ROC_ATTR_NODISCARD bool deduce_defaults(audio::LatencyTunerProfile latency_profile);
-};
 
 //! RTP link meter.
 //!
@@ -49,14 +33,14 @@ struct LinkMeterConfig {
 //!
 //! Inserted into pipeline as a writer, right after receiving packet, before storing
 //! packet in incoming queue, which allows to update metrics as soon as new packets
-//! arrives, without waiting until it's read by depacketizer.
+//! arrive, without waiting until it's requested by depacketizer.
 class LinkMeter : public packet::ILinkMeter,
                   public packet::IWriter,
                   public core::NonCopyable<> {
 public:
     //! Initialize.
     LinkMeter(packet::IWriter& writer,
-              const LinkMeterConfig& config,
+              const audio::JitterMeterConfig& jitter_config,
               const EncodingMap& encoding_map,
               core::IArena& arena,
               dbgio::CsvDumper* dumper);
@@ -88,19 +72,13 @@ public:
     //!  Invoked early in pipeline right after the packet is received.
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
 
-    //! Get recent average jitter over a running window.
-    core::nanoseconds_t mean_jitter() const;
-
-    //! Window length to which metrics relate.
-    size_t running_window_len() const;
-
 private:
     void update_metrics_(const packet::Packet& packet);
 
     void update_seqnums_(const packet::Packet& packet);
     void update_jitter_(const packet::Packet& packet);
 
-    void dump_(const packet::Packet& packet, const long d_enq_ns, const long d_s_ns);
+    void dump_(const packet::Packet& packet);
 
     const EncodingMap& encoding_map_;
     const Encoding* encoding_;
@@ -108,9 +86,6 @@ private:
     packet::IWriter& writer_;
 
     bool first_packet_;
-
-    // Number of packets we use to calculate sliding statistics.
-    const size_t win_len_;
 
     bool has_metrics_;
     packet::LinkMetrics metrics_;
@@ -123,7 +98,7 @@ private:
     core::nanoseconds_t prev_queue_timestamp_;
     packet::stream_timestamp_t prev_stream_timestamp_;
 
-    stat::MovAggregate<core::nanoseconds_t> packet_jitter_stats_;
+    audio::JitterMeter jitter_meter_;
 
     dbgio::CsvDumper* dumper_;
 };

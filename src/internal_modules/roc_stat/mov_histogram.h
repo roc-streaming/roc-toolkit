@@ -7,7 +7,7 @@
  */
 
 //! @file roc_stat/mov_histogram.h
-//! @brief Rolling window moving histogram.
+//! @brief Rolling window histogram.
 
 #ifndef ROC_STAT_MOV_HISTOGRAM_H_
 #define ROC_STAT_MOV_HISTOGRAM_H_
@@ -99,11 +99,11 @@ public:
     T mov_quantile(const double quantile) const {
         roc_panic_if(!valid_);
 
-        T cap;
+        T cap = T(0);
         size_t count = 0;
 
         for (size_t bin_index = 0; bin_index < num_bins_; bin_index++) {
-            cap = value_range_min_ + bin_width_ * (bin_index + 1);
+            cap = value_range_min_ + T(bin_width_) * T(bin_index + 1);
             count += bins_[bin_index];
 
             const double ratio = (double)count / ring_buffer_.size();

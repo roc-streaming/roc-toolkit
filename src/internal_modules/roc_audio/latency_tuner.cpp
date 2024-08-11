@@ -198,7 +198,7 @@ bool LatencyTuner::update_stream() {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (enable_latency_adjustment_ && latency_is_adaptive_ && has_metrics_) {
-        update_target_latency_(link_metrics_.max_jitter, link_metrics_.jitter,
+        update_target_latency_(link_metrics_.peak_jitter, link_metrics_.mean_jitter,
                                latency_metrics_.fec_block_duration);
     }
 
@@ -350,7 +350,7 @@ void LatencyTuner::compute_scaling_(packet::stream_timestamp_diff_t actual_laten
 //    NB: After the increasement the new latency target value must not be greater than
 //        upper threshold in any circumstances.
 //
-void LatencyTuner::update_target_latency_(const core::nanoseconds_t max_jitter_ns,
+void LatencyTuner::update_target_latency_(const core::nanoseconds_t peak_jitter_ns,
                                           const core::nanoseconds_t mean_jitter_ns,
                                           const core::nanoseconds_t fec_block_ns) {
     // If there is no active timeout, check if evaluated target latency is
@@ -360,7 +360,7 @@ void LatencyTuner::update_target_latency_(const core::nanoseconds_t max_jitter_n
         // jitter statistics. Later we'll use this value only for decision making if it
         // worth changing or we rather keep the current latency target untouched.
         const core::nanoseconds_t estimate = std::max(
-            std::max(core::nanoseconds_t(max_jitter_ns * max_jitter_overhead_),
+            std::max(core::nanoseconds_t(peak_jitter_ns * max_jitter_overhead_),
                      core::nanoseconds_t(mean_jitter_ns * mean_jitter_overhead_)),
             fec_block_ns);
 
@@ -527,7 +527,7 @@ void LatencyTuner::periodic_report_() {
             "latency tuner:"
             " e2e_latency=%ld(%.3fms) niq_latency=%ld(%.3fms) target_latency=%ld(%.3fms)"
             " stale=%ld(%.3fms)"
-            " packets(lost/exp)=%ld/%ld jitter(avg/min/max)=%.3fms/%.3fms/%.3fms"
+            " packets(lost/exp)=%ld/%ld jitter(mean/peak)=%.3fms/%.3fms"
             " fec_blk=%.3fms"
             " fe=%.6f eff_fe=%.6f fe_stbl=%s",
             // e2e_latency, niq_latency, target_latency
@@ -540,9 +540,8 @@ void LatencyTuner::periodic_report_() {
             // packets
             (long)link_metrics_.lost_packets, (long)link_metrics_.expected_packets,
             // jitter
-            (double)link_metrics_.jitter / core::Millisecond,
-            (double)link_metrics_.min_jitter / core::Millisecond,
-            (double)link_metrics_.max_jitter / core::Millisecond,
+            (double)link_metrics_.mean_jitter / core::Millisecond,
+            (double)link_metrics_.peak_jitter / core::Millisecond,
             // fec_blk
             (double)latency_metrics_.fec_block_duration / core::Millisecond,
             // fe, eff_fe, fe_stbl
