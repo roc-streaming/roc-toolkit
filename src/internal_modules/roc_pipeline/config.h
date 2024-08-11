@@ -14,6 +14,7 @@
 
 #include "roc_address/protocol.h"
 #include "roc_audio/feedback_monitor.h"
+#include "roc_audio/jitter_meter.h"
 #include "roc_audio/latency_config.h"
 #include "roc_audio/plc_config.h"
 #include "roc_audio/profiler.h"
@@ -31,7 +32,6 @@
 #include "roc_pipeline/pipeline_loop.h"
 #include "roc_rtcp/config.h"
 #include "roc_rtp/filter.h"
-#include "roc_rtp/link_meter.h"
 
 namespace roc {
 namespace pipeline {
@@ -83,9 +83,6 @@ struct SenderSinkConfig {
 
     //! Latency parameters.
     audio::LatencyConfig latency;
-
-    //! Link meter parameters.
-    rtp::LinkMeterConfig link_meter;
 
     //! Freq estimator parameters.
     audio::FreqEstimatorConfig freq_est;
@@ -180,8 +177,8 @@ struct ReceiverSessionConfig {
     //! Latency parameters.
     audio::LatencyConfig latency;
 
-    //! Link meter parameters.
-    rtp::LinkMeterConfig link_meter;
+    //! Jitter meter parameters.
+    audio::JitterMeterConfig jitter_meter;
 
     //! Freq estimator parameters.
     audio::FreqEstimatorConfig freq_est;

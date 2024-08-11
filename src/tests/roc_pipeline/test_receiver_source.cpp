@@ -79,7 +79,7 @@ enum {
     ManyPackets = Latency / SamplesPerPacket * 10,
     ManyReports = 20,
 
-    LinkMeterWindow = ManyPackets * 10,
+    JitterMeterWindow = ManyPackets * 10,
 
     MaxSnJump = ManyPackets * 5,
     MaxTsJump = ManyPackets * 7 * SamplesPerPacket
@@ -257,7 +257,7 @@ TEST_GROUP(receiver_source) {
 
         config.session_defaults.plc.backend = plc_backend;
 
-        config.session_defaults.link_meter.sliding_window_length = LinkMeterWindow;
+        config.session_defaults.jitter_meter.jitter_window = JitterMeterWindow;
 
         config.common.rtcp.report_interval = ReportInterval * core::Second / SampleRate;
         config.common.rtcp.inactivity_timeout = ReportTimeout * core::Second / SampleRate;
@@ -3402,7 +3402,7 @@ TEST(receiver_source, timestamp_mapping_remixing) {
 
 // Set high jitter, wait until latency increases and stabilizes.
 TEST(receiver_source, adaptive_latency_increase) {
-    const size_t stabilization_window = LinkMeterWindow * 5;
+    const size_t stabilization_window = JitterMeterWindow * 5;
 
     const core::nanoseconds_t tolerance = core::Millisecond * 5;
     const core::nanoseconds_t reaction = core::Second;
@@ -3480,7 +3480,7 @@ TEST(receiver_source, adaptive_latency_increase) {
 
 // Set low jitter, wait until latency decreases and stabilizes.
 TEST(receiver_source, adaptive_latency_decrease) {
-    const size_t stabilization_window = LinkMeterWindow * 5;
+    const size_t stabilization_window = JitterMeterWindow * 5;
 
     const core::nanoseconds_t tolerance = core::Millisecond * 5;
     const core::nanoseconds_t reaction = core::Second;
@@ -3558,7 +3558,7 @@ TEST(receiver_source, adaptive_latency_decrease) {
 
 // Adaptive latency should be bounded by max_target_latency
 TEST(receiver_source, adaptive_latency_upper_bound) {
-    const size_t stabilization_window = LinkMeterWindow * 5;
+    const size_t stabilization_window = JitterMeterWindow * 5;
 
     const core::nanoseconds_t tolerance = core::Millisecond * 5;
     const core::nanoseconds_t reaction = core::Second;
@@ -3616,7 +3616,7 @@ TEST(receiver_source, adaptive_latency_upper_bound) {
 
 // Adaptive latency should be bounded by min_target_latency
 TEST(receiver_source, adaptive_latency_lower_bound) {
-    const size_t stabilization_window = LinkMeterWindow * 5;
+    const size_t stabilization_window = JitterMeterWindow * 5;
 
     const core::nanoseconds_t tolerance = core::Millisecond * 5;
     const core::nanoseconds_t reaction = core::Second;
@@ -4009,7 +4009,7 @@ TEST(receiver_source, metrics_jitter) {
     // jitter 1
     packet_writer.set_jitter(jitter1 - precision, jitter1 + precision);
 
-    for (size_t np = 0; np < LinkMeterWindow * 2; np++) {
+    for (size_t np = 0; np < JitterMeterWindow * 2; np++) {
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
 
         refresh_source(receiver, frame_reader.refresh_ts());
@@ -4027,7 +4027,7 @@ TEST(receiver_source, metrics_jitter) {
             UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
 
             if (np > Latency / SamplesPerPacket) {
-                DOUBLES_EQUAL(jitter1, party_metrics.link.jitter, precision);
+                DOUBLES_EQUAL(jitter1, party_metrics.link.mean_jitter, precision);
             }
         }
     }
@@ -4035,7 +4035,7 @@ TEST(receiver_source, metrics_jitter) {
     // jitter 2
     packet_writer.set_jitter(jitter2 - precision, jitter2 + precision);
 
-    for (size_t np = 0; np < LinkMeterWindow * 2; np++) {
+    for (size_t np = 0; np < JitterMeterWindow * 2; np++) {
         packet_writer.write_packets(1, SamplesPerPacket, packet_sample_spec);
 
         refresh_source(receiver, frame_reader.refresh_ts());
@@ -4052,8 +4052,8 @@ TEST(receiver_source, metrics_jitter) {
             UNSIGNED_LONGS_EQUAL(1, slot_metrics.num_participants);
             UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
 
-            if (np > LinkMeterWindow) {
-                DOUBLES_EQUAL(jitter2, party_metrics.link.jitter, precision);
+            if (np > JitterMeterWindow) {
+                DOUBLES_EQUAL(jitter2, party_metrics.link.mean_jitter, precision);
             }
         }
     }

@@ -650,7 +650,7 @@ TEST(sender_sink, metrics_feedback) {
         link_metrics.ext_last_seqnum = seed * 200;
         link_metrics.expected_packets = (seed * 200) - (seed * 100) + 1;
         link_metrics.lost_packets = (int)seed * 40;
-        link_metrics.jitter = (int)seed * core::Millisecond * 50;
+        link_metrics.mean_jitter = (int)seed * core::Millisecond * 50;
 
         audio::LatencyMetrics latency_metrics;
         latency_metrics.niq_latency = (int)seed * core::Millisecond * 50;
@@ -688,8 +688,8 @@ TEST(sender_sink, metrics_feedback) {
                                  party_metrics[0].link.expected_packets);
             UNSIGNED_LONGS_EQUAL(link_metrics.lost_packets,
                                  party_metrics[0].link.lost_packets);
-            DOUBLES_EQUAL((double)link_metrics.jitter,
-                          (double)party_metrics[0].link.jitter, core::Nanosecond);
+            DOUBLES_EQUAL((double)link_metrics.mean_jitter,
+                          (double)party_metrics[0].link.mean_jitter, core::Nanosecond);
 
             DOUBLES_EQUAL((double)latency_metrics.niq_latency,
                           (double)party_metrics[0].latency.niq_latency,

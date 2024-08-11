@@ -7,7 +7,7 @@
  */
 
 //! @file roc_stat/mov_aggregate.h
-//! @brief Rolling window moving average, variance, minimum, and maximum.
+//! @brief Rolling window average, variance, minimum, maximum.
 
 #ifndef ROC_STAT_MOV_AGGREGATE_H_
 #define ROC_STAT_MOV_AGGREGATE_H_
@@ -20,7 +20,7 @@
 namespace roc {
 namespace stat {
 
-//! Rolling window moving average, variance, minimum, and maximum.
+//! Rolling window average, variance, minimum, maximum.
 //!
 //! Efficiently implements moving average and variance based on Welford's method:
 //!  - https://www.johndcook.com/blog/standard_deviation (incremental)

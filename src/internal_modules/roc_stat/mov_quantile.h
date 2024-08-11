@@ -7,7 +7,7 @@
  */
 
 //! @file roc_stat/mov_quantile.h
-//! @brief Rolling window moving quantile.
+//! @brief Rolling window quantile.
 
 #ifndef ROC_STAT_MOV_QUANTILE_H_
 #define ROC_STAT_MOV_QUANTILE_H_
@@ -19,7 +19,7 @@
 namespace roc {
 namespace stat {
 
-//! Rolling window moving quantile.
+//! Rolling window quantile.
 //!
 //! Efficiently implements moving quantile using partition heap based on approach
 //! described in https://aakinshin.net/posts/partitioning-heaps-quantile-estimator/.

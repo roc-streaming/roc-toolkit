@@ -57,27 +57,21 @@ struct LinkMetrics {
     //!  Calculated by rtp::LinkMeter on receiver, reported via RTCP to sender.
     int64_t lost_packets;
 
-    //! Estimated interarrival jitter.
+    //! Average interarrival jitter.
     //! An estimate of the statistical variance of the RTP data packet interarrival time.
     //! Calculated based on a sliding window.
     //! @note
     //!  This value is calculated on sliding window on a receiver side and sender
     //!  side gets this value via RTCP.
-    core::nanoseconds_t jitter;
+    core::nanoseconds_t mean_jitter;
 
-    //! Running max of jitter.
+    //! Peak interarrival jitter.
+    //! An estimate of the maximum jitter, excluding short small spikes.
     //! Calculated based on a sliding window.
     //! @note
     //!  Available only on receiver.
     //!  Calculated by rtp::LinkMeter.
-    core::nanoseconds_t max_jitter;
-
-    //! Running min of jitter.
-    //! Calculated based on a sliding window.
-    //! @note
-    //!  Available only on receiver.
-    //!  Calculated by rtp::LinkMeter.
-    core::nanoseconds_t min_jitter;
+    core::nanoseconds_t peak_jitter;
 
     //! Estimated round-trip time between sender and receiver.
     //! Calculated based on NTP-like timestamp exchange implemented by RTCP protocol.
@@ -91,9 +85,8 @@ struct LinkMetrics {
         , ext_last_seqnum(0)
         , expected_packets(0)
         , lost_packets(0)
-        , jitter(0)
-        , max_jitter(0)
-        , min_jitter(0)
+        , mean_jitter(0)
+        , peak_jitter(0)
         , rtt(0) {
     }
 };
