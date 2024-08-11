@@ -43,7 +43,7 @@ TEST(fast_random, range_loop) {
 
 TEST(fast_random, float_loop) {
     for (int i = 0; i < 10000; i++) {
-        double res = fast_random_float();
+        float res = fast_random_float();
 
         CHECK(res >= 0);
         CHECK(res <= 1);

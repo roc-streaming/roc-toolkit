@@ -29,11 +29,11 @@ uint32_t fast_random_32();
 //! Not cryptographically secure.
 uint64_t fast_random_64();
 
-//! Get random 64-bit float in range [0; 1].
+//! Get random 32-bit float in range [0; 1].
 //! Thread-safe and lock-free.
 //! Uniformly distributed.
 //! Not cryptographically secure.
-double fast_random_float();
+float fast_random_float();
 
 //! Get random 64-bit integer in range [from; to].
 //! Thread-safe and lock-free.
@@ -41,11 +41,11 @@ double fast_random_float();
 //! Not cryptographically secure.
 uint64_t fast_random_range(uint64_t from, uint64_t to);
 
-//! Get random 64-bit float with standard normal distribution.
+//! Get random 32-bit float with standard normal distribution.
 //! Thread-safe and lock-free.
 //! Gaussian distribution N(0,1).
 //! Not cryptographically secure.
-double fast_random_gaussian();
+float fast_random_gaussian();
 
 } // namespace core
 } // namespace roc

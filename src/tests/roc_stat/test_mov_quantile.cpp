@@ -138,7 +138,7 @@ TEST(mov_quantile, stress_test) {
 
     for (size_t i = 0; i < NumIterations; i++) {
         const size_t q_win_sz = core::fast_random_range(MinWindow, MaxWindow);
-        const double q = core::fast_random_float();
+        const double q = (double)core::fast_random_float();
 
         MovQuantile<double> quant(arena, q_win_sz, q);
         CHECK(quant.is_valid());
@@ -146,7 +146,7 @@ TEST(mov_quantile, stress_test) {
         double elems[NumElems] = {};
 
         for (size_t n = 0; n < NumElems; n++) {
-            elems[n] = core::fast_random_float();
+            elems[n] = (double)core::fast_random_float();
             quant.add(elems[n]);
 
             const size_t n_elems = n + 1;

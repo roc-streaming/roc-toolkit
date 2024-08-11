@@ -51,10 +51,9 @@ uint64_t fast_random_64() {
     return (hi << 32) | lo;
 }
 
-// Doubles in [0; 1] have 47-bit precision, so we use 64-bit PRNG
-// instead of 32-bit.
-double fast_random_float() {
-    return (double)fast_random_64() / (double)UINT64_MAX;
+// Floats in [0; 1] have 24-bit precision, so 32-bit PRNG is enough.
+float fast_random_float() {
+    return (float)fast_random_32() / (float)UINT32_MAX;
 }
 
 // Bounded PRNG adaptation of "Bitmask with Rejection (Unbiased) — Apple's Method"
@@ -77,7 +76,7 @@ uint64_t fast_random_range(uint64_t from, uint64_t to) {
     //  0001.......
     //  00011......
     //  0001111....
-    // Thanks to @rnovatorov for the hint
+    // Thanks to @rnovatorov for the hint.
     uint64_t mask = range;
     mask |= mask >> 1;
     mask |= mask >> 2;
@@ -101,14 +100,14 @@ uint64_t fast_random_range(uint64_t from, uint64_t to) {
 
 // Gaussian PRNG implementation is based on Box-Muller transform:
 // https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
-double fast_random_gaussian() {
+float fast_random_gaussian() {
     // Generate two uniform random numbers
-    const double u1 = fast_random_float();
-    const double u2 = fast_random_float();
+    const float u1 = fast_random_float();
+    const float u2 = fast_random_float();
 
     // Use Box-Muller transform to convert uniform random numbers to normal random numbers
-    const double r = std::sqrt(-2.0 * std::log(u1));
-    const double theta = 2.0 * M_PI * u2;
+    const float r = std::sqrt(-2.0f * std::log(u1));
+    const float theta = 2.0f * float(M_PI) * u2;
 
     // Return one of the normal random numbers
     return r * std::cos(theta);
