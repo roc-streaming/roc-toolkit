@@ -44,7 +44,6 @@ public:
     virtual void end_frame();
 
 private:
-    SampleSpec sample_spec_;
     bool initialized_;
     void* frame_data_;
     size_t frame_size_;
