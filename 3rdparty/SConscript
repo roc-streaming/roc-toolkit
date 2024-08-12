@@ -21,7 +21,7 @@ thirdparty_versions = {
     'libunwind':        '1.2.1',
     'libuv':            '1.35.0',
     'ltdl':             '2.4.6',
-    'openfec':          '1.4.2.10',
+    'openfec':          '1.4.2.11',
     'openssl':          '3.0.8',
     'pulseaudio':       '12.2',
     'sndfile':          '1.0.26',

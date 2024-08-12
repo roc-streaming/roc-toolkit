@@ -9,6 +9,7 @@
 #include "roc_fec/openfec_encoder.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_packet/fec_scheme_to_str.h"
 
 namespace roc {
 namespace fec {
@@ -23,7 +24,9 @@ OpenfecEncoder::OpenfecEncoder(const CodecConfig& config,
     , buff_tab_(arena)
     , data_tab_(arena)
     , init_status_(status::NoStatus) {
-    if (config.scheme == packet::FEC_ReedSolomon_M8) {
+    switch (config.scheme) {
+#ifdef OF_USE_REED_SOLOMON_2_M_CODEC
+    case packet::FEC_ReedSolomon_M8: {
         roc_log(LogDebug, "openfec encoder: initializing: codec=rs m=%u",
                 (unsigned)config.rs_m);
 
@@ -33,7 +36,11 @@ OpenfecEncoder::OpenfecEncoder(const CodecConfig& config,
         of_sess_params_ = (of_parameters_t*)&codec_params_.rs_params_;
 
         max_block_length_ = OF_REED_SOLOMON_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
-    } else if (config.scheme == packet::FEC_LDPC_Staircase) {
+    } break;
+#endif // OF_USE_REED_SOLOMON_2_M_CODEC
+
+#ifdef OF_USE_LDPC_STAIRCASE_CODEC
+    case packet::FEC_LDPC_Staircase: {
         roc_log(LogDebug, "openfec encoder: initializing: codec=ldpc prng_seed=%ld n1=%d",
                 (long)config.ldpc_prng_seed, (int)config.ldpc_N1);
 
@@ -44,12 +51,17 @@ OpenfecEncoder::OpenfecEncoder(const CodecConfig& config,
         of_sess_params_ = (of_parameters_t*)&codec_params_.ldpc_params_;
 
         max_block_length_ = OF_LDPC_STAIRCASE_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
-    } else {
-        roc_panic("openfec encoder: unexpected fec scheme");
+    } break;
+#endif // OF_USE_LDPC_STAIRCASE_CODEC
+
+    default:
+        roc_log(LogError, "openfec encoder: unsupported fec scheme: scheme=%s",
+                packet::fec_scheme_to_str(config.scheme));
+        init_status_ = status::StatusBadConfig;
+        return;
     }
 
     of_verbosity = 0;
-
     init_status_ = status::StatusOK;
 }
 

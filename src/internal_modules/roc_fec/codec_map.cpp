@@ -35,7 +35,7 @@ ROC_ATTR_UNUSED I* ctor_func(const CodecConfig& config,
 // clang-format off
 CodecMap::CodecMap()
     : n_codecs_(0) {
-#ifdef ROC_TARGET_OPENFEC
+#if defined(ROC_TARGET_OPENFEC) && defined(OF_USE_REED_SOLOMON_2_M_CODEC)
     {
         Codec codec;
         codec.scheme = packet::FEC_ReedSolomon_M8;
@@ -43,6 +43,8 @@ CodecMap::CodecMap()
         codec.decoder_ctor = ctor_func<IBlockDecoder, OpenfecDecoder>;
         add_codec_(codec);
     }
+#endif
+#if defined(ROC_TARGET_OPENFEC) && defined(OF_USE_LDPC_STAIRCASE_CODEC)
     {
         Codec codec;
         codec.scheme = packet::FEC_LDPC_Staircase;
@@ -50,7 +52,7 @@ CodecMap::CodecMap()
         codec.decoder_ctor = ctor_func<IBlockDecoder, OpenfecDecoder>;
         add_codec_(codec);
     }
-#endif // ROC_TARGET_OPENFEC
+#endif
 }
 // clang-format on
 

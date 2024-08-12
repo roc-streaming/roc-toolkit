@@ -25,14 +25,6 @@ extern "C" {
 #include <of_openfec_api.h>
 }
 
-#ifndef OF_USE_ENCODER
-#error "OF_USE_ENCODER undefined"
-#endif
-
-#ifndef OF_USE_LDPC_STAIRCASE_CODEC
-#error "OF_USE_LDPC_STAIRCASE_CODEC undefined"
-#endif
-
 namespace roc {
 namespace fec {
 
@@ -85,8 +77,12 @@ private:
 
     of_codec_id_t codec_id_;
     union {
-        of_ldpc_parameters ldpc_params_;
+#ifdef OF_USE_REED_SOLOMON_2_M_CODEC
         of_rs_2_m_parameters_t rs_params_;
+#endif
+#ifdef OF_USE_LDPC_STAIRCASE_CODEC
+        of_ldpc_parameters ldpc_params_;
+#endif
     } codec_params_;
 
     core::Array<core::Slice<uint8_t> > buff_tab_;
