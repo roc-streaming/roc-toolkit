@@ -20,8 +20,8 @@
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/string_buffer.h"
-#include "roc_sndio/config.h"
 #include "roc_sndio/driver.h"
+#include "roc_sndio/io_config.h"
 #include "roc_sndio/isource.h"
 
 namespace roc {
@@ -36,7 +36,7 @@ public:
     //! Initialize.
     SoxSource(audio::FrameFactory& frame_factory,
               core::IArena& arena,
-              const Config& config,
+              const IoConfig& io_config,
               DriverType driver_type);
     ~SoxSource();
 

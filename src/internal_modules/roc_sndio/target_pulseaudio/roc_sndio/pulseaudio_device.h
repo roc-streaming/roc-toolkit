@@ -22,7 +22,7 @@
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
-#include "roc_sndio/config.h"
+#include "roc_sndio/io_config.h"
 #include "roc_sndio/isink.h"
 #include "roc_sndio/isource.h"
 
@@ -36,7 +36,7 @@ public:
     //! Initialize.
     PulseaudioDevice(audio::FrameFactory& frame_factory,
                      core::IArena& arena,
-                     const Config& config,
+                     const IoConfig& io_config,
                      DeviceType device_type);
     ~PulseaudioDevice();
 

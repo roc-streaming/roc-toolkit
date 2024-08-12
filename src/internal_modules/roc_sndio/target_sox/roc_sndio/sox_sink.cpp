@@ -17,7 +17,7 @@ namespace sndio {
 
 SoxSink::SoxSink(audio::FrameFactory& frame_factory,
                  core::IArena& arena,
-                 const Config& config,
+                 const IoConfig& io_config,
                  DriverType driver_type)
     : driver_type_(driver_type)
     , driver_name_(arena)
@@ -29,13 +29,13 @@ SoxSink::SoxSink(audio::FrameFactory& frame_factory,
     , init_status_(status::NoStatus) {
     BackendMap::instance();
 
-    if (config.latency != 0) {
+    if (io_config.latency != 0) {
         roc_log(LogError, "sox sink: setting io latency not supported by sox backend");
         init_status_ = status::StatusBadConfig;
         return;
     }
 
-    sample_spec_ = config.sample_spec;
+    sample_spec_ = io_config.sample_spec;
 
     if (driver_type_ == DriverType_File) {
         sample_spec_.use_defaults(audio::Sample_RawFormat, audio::ChanLayout_Surround,
@@ -54,7 +54,7 @@ SoxSink::SoxSink(audio::FrameFactory& frame_factory,
         return;
     }
 
-    frame_length_ = config.frame_length;
+    frame_length_ = io_config.frame_length;
 
     if (frame_length_ == 0) {
         roc_log(LogError, "sox sink: frame length is zero");

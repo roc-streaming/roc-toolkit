@@ -17,8 +17,8 @@
 #include "roc_core/stddefs.h"
 #include "roc_dbgio/temp_file.h"
 #include "roc_sndio/backend_map.h"
-#include "roc_sndio/config.h"
-#include "roc_sndio/pump.h"
+#include "roc_sndio/io_config.h"
+#include "roc_sndio/io_pump.h"
 
 namespace roc {
 namespace sndio {
@@ -48,9 +48,9 @@ audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
 } // namespace
 
-TEST_GROUP(pump) {
-    Config source_config;
-    Config sink_config;
+TEST_GROUP(io_pump) {
+    IoConfig source_config;
+    IoConfig sink_config;
 
     void setup() {
         source_config.sample_spec = audio::SampleSpec();
@@ -61,7 +61,7 @@ TEST_GROUP(pump) {
     }
 };
 
-TEST(pump, write_read) {
+TEST(io_pump, write_read) {
     enum { NumSamples = FrameSize * 10 };
 
     for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
@@ -84,8 +84,8 @@ TEST(pump, write_read) {
                                    backend_sink);
 
             // copy from mock source to sink
-            Pump pump(frame_pool, frame_buffer_pool, mock_source, NULL, *backend_sink,
-                      sink_config, Pump::ModeOneshot);
+            IoPump pump(frame_pool, frame_buffer_pool, mock_source, NULL, *backend_sink,
+                        sink_config, IoPump::ModeOneshot);
             LONGS_EQUAL(status::StatusOK, pump.init_status());
             LONGS_EQUAL(status::StatusOK, pump.run());
 
@@ -100,8 +100,8 @@ TEST(pump, write_read) {
 
         // copy from source to mock sink
         test::MockSink mock_sink;
-        Pump pump(frame_pool, frame_buffer_pool, *backend_source, NULL, mock_sink,
-                  sink_config, Pump::ModePermanent);
+        IoPump pump(frame_pool, frame_buffer_pool, *backend_source, NULL, mock_sink,
+                    sink_config, IoPump::ModePermanent);
         LONGS_EQUAL(status::StatusOK, pump.init_status());
         LONGS_EQUAL(status::StatusOK, pump.run());
 
@@ -110,7 +110,7 @@ TEST(pump, write_read) {
     }
 }
 
-TEST(pump, write_overwrite_read) {
+TEST(io_pump, write_overwrite_read) {
     enum { NumSamples = FrameSize * 10 };
 
     for (size_t n_backend = 0; n_backend < BackendMap::instance().num_backends();
@@ -133,8 +133,8 @@ TEST(pump, write_overwrite_read) {
                                    backend_sink);
 
             // copy from mock source to sink
-            Pump pump(frame_pool, frame_buffer_pool, mock_source, NULL, *backend_sink,
-                      sink_config, Pump::ModeOneshot);
+            IoPump pump(frame_pool, frame_buffer_pool, mock_source, NULL, *backend_sink,
+                        sink_config, IoPump::ModeOneshot);
             LONGS_EQUAL(status::StatusOK, pump.init_status());
             LONGS_EQUAL(status::StatusOK, pump.run());
         }
@@ -153,8 +153,8 @@ TEST(pump, write_overwrite_read) {
                                    backend_sink);
 
             // copy next samples from mock source to sink, overwriting file
-            Pump pump(frame_pool, frame_buffer_pool, mock_source, NULL, *backend_sink,
-                      sink_config, Pump::ModeOneshot);
+            IoPump pump(frame_pool, frame_buffer_pool, mock_source, NULL, *backend_sink,
+                        sink_config, IoPump::ModeOneshot);
             LONGS_EQUAL(status::StatusOK, pump.init_status());
             LONGS_EQUAL(status::StatusOK, pump.run());
         }
@@ -170,8 +170,8 @@ TEST(pump, write_overwrite_read) {
 
         // copy from source to mock sink
         test::MockSink mock_sink;
-        Pump pump(frame_pool, frame_buffer_pool, *backend_source, NULL, mock_sink,
-                  sink_config, Pump::ModePermanent);
+        IoPump pump(frame_pool, frame_buffer_pool, *backend_source, NULL, mock_sink,
+                    sink_config, IoPump::ModePermanent);
         LONGS_EQUAL(status::StatusOK, pump.init_status());
         LONGS_EQUAL(status::StatusOK, pump.run());
 

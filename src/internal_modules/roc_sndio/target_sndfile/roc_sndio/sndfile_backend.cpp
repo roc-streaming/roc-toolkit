@@ -65,7 +65,7 @@ status::StatusCode SndfileBackend::open_device(DeviceType device_type,
                                                DriverType driver_type,
                                                const char* driver,
                                                const char* path,
-                                               const Config& config,
+                                               const IoConfig& io_config,
                                                audio::FrameFactory& frame_factory,
                                                core::IArena& arena,
                                                IDevice** result) {
@@ -76,7 +76,7 @@ status::StatusCode SndfileBackend::open_device(DeviceType device_type,
     switch (device_type) {
     case DeviceType_Sink: {
         core::ScopedPtr<SndfileSink> sink(
-            new (arena) SndfileSink(frame_factory, arena, config), arena);
+            new (arena) SndfileSink(frame_factory, arena, io_config), arena);
 
         if (!sink) {
             roc_log(LogDebug, "sndfile backend: can't allocate sink: driver=%s path=%s",
@@ -105,7 +105,7 @@ status::StatusCode SndfileBackend::open_device(DeviceType device_type,
 
     case DeviceType_Source: {
         core::ScopedPtr<SndfileSource> source(
-            new (arena) SndfileSource(frame_factory, arena, config), arena);
+            new (arena) SndfileSource(frame_factory, arena, io_config), arena);
 
         if (!source) {
             roc_log(LogDebug, "sndfile backend: can't allocate source: driver=%s path=%s",

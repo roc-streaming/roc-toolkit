@@ -15,9 +15,9 @@
 #include "roc_pipeline/transcoder_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/backend_map.h"
-#include "roc_sndio/config.h"
+#include "roc_sndio/io_config.h"
+#include "roc_sndio/io_pump.h"
 #include "roc_sndio/print_supported.h"
-#include "roc_sndio/pump.h"
 #include "roc_status/code_to_str.h"
 
 #include "roc_copy/cmdline.h"
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
 
     pipeline::TranscoderConfig transcoder_config;
 
-    sndio::Config source_config;
+    sndio::IoConfig source_config;
     source_config.sample_spec.set_channel_set(
         transcoder_config.input_sample_spec.channel_set());
     source_config.sample_spec.set_sample_rate(0);
@@ -177,7 +177,7 @@ int main(int argc, char** argv) {
 
     audio::IFrameWriter* output_writer = NULL;
 
-    sndio::Config sink_config;
+    sndio::IoConfig sink_config;
     sink_config.sample_spec = transcoder_config.output_sample_spec;
     sink_config.frame_length = source_config.frame_length;
 
@@ -233,12 +233,12 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::Config pump_config;
+    sndio::IoConfig pump_config;
     pump_config.sample_spec = input_source->sample_spec();
     pump_config.frame_length = source_config.frame_length;
 
-    sndio::Pump pump(frame_pool, frame_buffer_pool, *input_source, NULL, transcoder,
-                     pump_config, sndio::Pump::ModePermanent);
+    sndio::IoPump pump(frame_pool, frame_buffer_pool, *input_source, NULL, transcoder,
+                       pump_config, sndio::IoPump::ModePermanent);
     if (pump.init_status() != status::StatusOK) {
         roc_log(LogError, "can't create audio pump: status=%s",
                 status::code_to_str(pump.init_status()));

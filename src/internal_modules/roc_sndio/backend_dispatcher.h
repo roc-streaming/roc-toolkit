@@ -39,22 +39,22 @@ public:
 
     //! Create and open default sink.
     ROC_ATTR_NODISCARD status::StatusCode
-    open_default_sink(const Config& config, core::ScopedPtr<ISink>& result);
+    open_default_sink(const IoConfig& io_config, core::ScopedPtr<ISink>& result);
 
     //! Create and open default source.
     ROC_ATTR_NODISCARD status::StatusCode
-    open_default_source(const Config& config, core::ScopedPtr<ISource>& result);
+    open_default_source(const IoConfig& io_config, core::ScopedPtr<ISource>& result);
 
     //! Create and open a sink.
     ROC_ATTR_NODISCARD status::StatusCode open_sink(const address::IoUri& uri,
                                                     const char* force_format,
-                                                    const Config& config,
+                                                    const IoConfig& io_config,
                                                     core::ScopedPtr<ISink>& result);
 
     //! Create and open a source.
     ROC_ATTR_NODISCARD status::StatusCode open_source(const address::IoUri& uri,
                                                       const char* force_format,
-                                                      const Config& config,
+                                                      const IoConfig& io_config,
                                                       core::ScopedPtr<ISource>& result);
 
     //! Get all supported URI schemes.
@@ -64,14 +64,15 @@ public:
     ROC_ATTR_NODISCARD bool get_supported_formats(core::StringList& result);
 
 private:
-    status::StatusCode
-    open_default_device_(DeviceType device_type, const Config& config, IDevice** result);
+    status::StatusCode open_default_device_(DeviceType device_type,
+                                            const IoConfig& io_config,
+                                            IDevice** result);
 
     status::StatusCode open_device_(DeviceType device_type,
                                     DriverType driver_type,
                                     const char* driver_name,
                                     const char* path,
-                                    const Config& config,
+                                    const IoConfig& io_config,
                                     IDevice** result);
 
     audio::FrameFactory frame_factory_;

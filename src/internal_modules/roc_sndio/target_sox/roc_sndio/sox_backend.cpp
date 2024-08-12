@@ -244,7 +244,7 @@ status::StatusCode SoxBackend::open_device(DeviceType device_type,
                                            DriverType driver_type,
                                            const char* driver,
                                            const char* path,
-                                           const Config& config,
+                                           const IoConfig& io_config,
                                            audio::FrameFactory& frame_factory,
                                            core::IArena& arena,
                                            IDevice** result) {
@@ -274,7 +274,7 @@ status::StatusCode SoxBackend::open_device(DeviceType device_type,
     switch (device_type) {
     case DeviceType_Sink: {
         core::ScopedPtr<SoxSink> sink(
-            new (arena) SoxSink(frame_factory, arena, config, driver_type), arena);
+            new (arena) SoxSink(frame_factory, arena, io_config, driver_type), arena);
 
         if (!sink) {
             roc_log(LogDebug, "sox backend: can't allocate sink: path=%s", path);
@@ -300,7 +300,7 @@ status::StatusCode SoxBackend::open_device(DeviceType device_type,
 
     case DeviceType_Source: {
         core::ScopedPtr<SoxSource> source(
-            new (arena) SoxSource(frame_factory, arena, config, driver_type), arena);
+            new (arena) SoxSource(frame_factory, arena, io_config, driver_type), arena);
 
         if (!source) {
             roc_log(LogDebug, "sox backend: can't allocate source: path=%s", path);

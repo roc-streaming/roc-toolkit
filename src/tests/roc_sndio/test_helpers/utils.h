@@ -39,7 +39,7 @@ void expect_open_sink(status::StatusCode expected_code,
                       DriverType driver_type,
                       const char* driver,
                       const char* path,
-                      const Config& config,
+                      const IoConfig& config,
                       core::ScopedPtr<ISink>& result) {
     IDevice* device = NULL;
     const status::StatusCode code =
@@ -73,7 +73,7 @@ void expect_open_source(status::StatusCode expected_code,
                         DriverType driver_type,
                         const char* driver,
                         const char* path,
-                        const Config& config,
+                        const IoConfig& config,
                         core::ScopedPtr<ISource>& result) {
     IDevice* device = NULL;
     const status::StatusCode code =

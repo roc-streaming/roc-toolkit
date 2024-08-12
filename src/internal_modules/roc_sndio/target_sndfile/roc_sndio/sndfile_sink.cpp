@@ -210,37 +210,37 @@ bool select_sub_format(SF_INFO& file_info,
 
 SndfileSink::SndfileSink(audio::FrameFactory& frame_factory,
                          core::IArena& arena,
-                         const Config& config)
+                         const IoConfig& io_config)
     : file_(NULL)
     , requested_subformat_(0)
     , init_status_(status::NoStatus) {
-    if (config.latency != 0) {
+    if (io_config.latency != 0) {
         roc_log(LogError, "sndfile sink: setting io latency not supported by backend");
         init_status_ = status::StatusBadConfig;
         return;
     }
 
-    if (config.sample_spec.sample_format() != audio::SampleFormat_Invalid
-        && config.sample_spec.sample_format() != audio::SampleFormat_Pcm) {
+    if (io_config.sample_spec.sample_format() != audio::SampleFormat_Invalid
+        && io_config.sample_spec.sample_format() != audio::SampleFormat_Pcm) {
         roc_log(LogError, "sndfile sink: requested format not supported by backend: %s",
                 audio::sample_spec_to_str(sample_spec_).c_str());
         init_status_ = status::StatusBadConfig;
         return;
     }
 
-    if (config.sample_spec.is_pcm()) {
+    if (io_config.sample_spec.is_pcm()) {
         // Remember which format to use for file, if requested explicitly.
-        requested_subformat_ = pcm_2_sf(config.sample_spec.pcm_format());
+        requested_subformat_ = pcm_2_sf(io_config.sample_spec.pcm_format());
         if (requested_subformat_ == 0) {
             roc_log(LogError,
                     "sndfile sink: requested format not supported by backend: %s",
-                    audio::sample_spec_to_str(config.sample_spec).c_str());
+                    audio::sample_spec_to_str(io_config.sample_spec).c_str());
             init_status_ = status::StatusBadConfig;
             return;
         }
     }
 
-    sample_spec_ = config.sample_spec;
+    sample_spec_ = io_config.sample_spec;
 
     // Always request raw samples from pipeline.
     // If the user requested different format, we've remembered it above and will

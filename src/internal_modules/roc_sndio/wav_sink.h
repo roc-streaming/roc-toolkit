@@ -15,7 +15,7 @@
 #include "roc_audio/frame_factory.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
-#include "roc_sndio/config.h"
+#include "roc_sndio/io_config.h"
 #include "roc_sndio/isink.h"
 #include "roc_sndio/wav_header.h"
 
@@ -30,7 +30,7 @@ public:
     //! Initialize.
     WavSink(audio::FrameFactory& frame_factory,
             core::IArena& arena,
-            const Config& config);
+            const IoConfig& io_config);
     ~WavSink();
 
     //! Check if the object was successfully constructed.

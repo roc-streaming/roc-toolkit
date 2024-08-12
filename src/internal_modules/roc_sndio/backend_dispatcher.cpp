@@ -67,12 +67,12 @@ BackendDispatcher::BackendDispatcher(core::IPool& frame_pool,
     , arena_(arena) {
 }
 
-status::StatusCode BackendDispatcher::open_default_sink(const Config& config,
+status::StatusCode BackendDispatcher::open_default_sink(const IoConfig& io_config,
                                                         core::ScopedPtr<ISink>& result) {
     IDevice* device = NULL;
 
     const status::StatusCode code =
-        open_default_device_(DeviceType_Sink, config, &device);
+        open_default_device_(DeviceType_Sink, io_config, &device);
     if (code != status::StatusOK) {
         return code;
     }
@@ -85,12 +85,12 @@ status::StatusCode BackendDispatcher::open_default_sink(const Config& config,
 }
 
 status::StatusCode
-BackendDispatcher::open_default_source(const Config& config,
+BackendDispatcher::open_default_source(const IoConfig& io_config,
                                        core::ScopedPtr<ISource>& result) {
     IDevice* device = NULL;
 
     const status::StatusCode code =
-        open_default_device_(DeviceType_Source, config, &device);
+        open_default_device_(DeviceType_Source, io_config, &device);
     if (code != status::StatusOK) {
         return code;
     }
@@ -105,7 +105,7 @@ BackendDispatcher::open_default_source(const Config& config,
 
 status::StatusCode BackendDispatcher::open_sink(const address::IoUri& uri,
                                                 const char* force_format,
-                                                const Config& config,
+                                                const IoConfig& io_config,
                                                 core::ScopedPtr<ISink>& result) {
     if (!uri.is_valid()) {
         roc_panic("backend dispatcher: invalid uri");
@@ -117,7 +117,7 @@ status::StatusCode BackendDispatcher::open_sink(const address::IoUri& uri,
     IDevice* device = NULL;
 
     const status::StatusCode code = open_device_(
-        DeviceType_Sink, driver_type, driver_name, uri.path(), config, &device);
+        DeviceType_Sink, driver_type, driver_name, uri.path(), io_config, &device);
     if (code != status::StatusOK) {
         return code;
     }
@@ -131,7 +131,7 @@ status::StatusCode BackendDispatcher::open_sink(const address::IoUri& uri,
 
 status::StatusCode BackendDispatcher::open_source(const address::IoUri& uri,
                                                   const char* force_format,
-                                                  const Config& config,
+                                                  const IoConfig& io_config,
                                                   core::ScopedPtr<ISource>& result) {
     if (!uri.is_valid()) {
         roc_panic("backend dispatcher: invalid uri");
@@ -143,7 +143,7 @@ status::StatusCode BackendDispatcher::open_source(const address::IoUri& uri,
     IDevice* device = NULL;
 
     const status::StatusCode code = open_device_(
-        DeviceType_Source, driver_type, driver_name, uri.path(), config, &device);
+        DeviceType_Source, driver_type, driver_name, uri.path(), io_config, &device);
     if (code != status::StatusOK) {
         return code;
     }
@@ -201,7 +201,7 @@ bool BackendDispatcher::get_supported_formats(core::StringList& result) {
 }
 
 status::StatusCode BackendDispatcher::open_default_device_(DeviceType device_type,
-                                                           const Config& config,
+                                                           const IoConfig& io_config,
                                                            IDevice** result) {
     const unsigned driver_flags =
         unsigned(DriverFlag_IsDefault
@@ -218,7 +218,7 @@ status::StatusCode BackendDispatcher::open_default_device_(DeviceType device_typ
         }
 
         code = driver_info.backend->open_device(device_type, DriverType_Device,
-                                                driver_info.name, "default", config,
+                                                driver_info.name, "default", io_config,
                                                 frame_factory_, arena_, result);
 
         if (code == status::StatusOK) {
@@ -243,7 +243,7 @@ status::StatusCode BackendDispatcher::open_device_(DeviceType device_type,
                                                    DriverType driver_type,
                                                    const char* driver_name,
                                                    const char* path,
-                                                   const Config& config,
+                                                   const IoConfig& io_config,
                                                    IDevice** result) {
     const unsigned driver_flags =
         (device_type == DeviceType_Sink ? DriverFlag_SupportsSink
@@ -260,7 +260,7 @@ status::StatusCode BackendDispatcher::open_device_(DeviceType device_type,
             }
 
             code = driver_info.backend->open_device(device_type, driver_type,
-                                                    driver_info.name, path, config,
+                                                    driver_info.name, path, io_config,
                                                     frame_factory_, arena_, result);
 
             if (code == status::StatusOK) {
@@ -278,7 +278,7 @@ status::StatusCode BackendDispatcher::open_device_(DeviceType device_type,
         for (size_t n = 0; n < BackendMap::instance().num_backends(); n++) {
             IBackend& backend = BackendMap::instance().nth_backend(n);
 
-            code = backend.open_device(device_type, driver_type, NULL, path, config,
+            code = backend.open_device(device_type, driver_type, NULL, path, io_config,
                                        frame_factory_, arena_, result);
 
             if (code == status::StatusOK) {

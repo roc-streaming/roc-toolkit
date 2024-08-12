@@ -16,7 +16,7 @@
 #include "roc_core/slab_pool.h"
 #include "roc_dbgio/temp_file.h"
 #include "roc_sndio/backend_map.h"
-#include "roc_sndio/pump.h"
+#include "roc_sndio/io_pump.h"
 
 namespace roc {
 namespace sndio {
@@ -45,7 +45,7 @@ core::SlabPool<core::Buffer>
 audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
 void write_wav(IBackend& backend,
-               const Config& config,
+               const IoConfig& config,
                const char* path,
                size_t num_samples) {
     test::MockSource mock_source(frame_factory, config.sample_spec);
@@ -59,8 +59,8 @@ void write_wav(IBackend& backend,
     core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
     CHECK(backend_sink != NULL);
 
-    Pump pump(frame_pool, frame_buffer_pool, mock_source, NULL, *backend_sink, config,
-              Pump::ModeOneshot);
+    IoPump pump(frame_pool, frame_buffer_pool, mock_source, NULL, *backend_sink, config,
+                IoPump::ModeOneshot);
     LONGS_EQUAL(status::StatusOK, pump.init_status());
     LONGS_EQUAL(status::StatusOK, pump.run());
 }
@@ -78,8 +78,8 @@ void expect_read(status::StatusCode expected_code,
 } // namespace
 
 TEST_GROUP(backend_source) {
-    Config sink_config;
-    Config source_config;
+    IoConfig sink_config;
+    IoConfig source_config;
 
     void setup() {
         sink_config.sample_spec = sample_spec;
@@ -144,7 +144,7 @@ TEST(backend_source, open_bad_config) {
         dbgio::TempFile file("test.wav");
         write_wav(backend, sink_config, file.path(), MaxBufSize * 10);
 
-        Config bad_config = source_config;
+        IoConfig bad_config = source_config;
         bad_config.sample_spec.set_sample_rate(SampleRate);
 
         core::ScopedPtr<ISource> backend_source;

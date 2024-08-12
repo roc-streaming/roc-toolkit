@@ -18,16 +18,16 @@ namespace sndio {
 
 WavSink::WavSink(audio::FrameFactory& frame_factory,
                  core::IArena& arena,
-                 const Config& config)
+                 const IoConfig& io_config)
     : output_file_(NULL)
     , init_status_(status::NoStatus) {
-    if (config.latency != 0) {
+    if (io_config.latency != 0) {
         roc_log(LogError, "wav sink: setting io latency not supported by backend");
         init_status_ = status::StatusBadConfig;
         return;
     }
 
-    sample_spec_ = config.sample_spec;
+    sample_spec_ = io_config.sample_spec;
 
     sample_spec_.use_defaults(audio::Sample_RawFormat, audio::ChanLayout_Surround,
                               audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo,

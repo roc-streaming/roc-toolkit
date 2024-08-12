@@ -38,7 +38,7 @@ status::StatusCode PulseaudioBackend::open_device(DeviceType device_type,
                                                   DriverType driver_type,
                                                   const char* driver,
                                                   const char* path,
-                                                  const Config& config,
+                                                  const IoConfig& io_config,
                                                   audio::FrameFactory& frame_factory,
                                                   core::IArena& arena,
                                                   IDevice** result) {
@@ -51,7 +51,8 @@ status::StatusCode PulseaudioBackend::open_device(DeviceType device_type,
     }
 
     core::ScopedPtr<PulseaudioDevice> device(
-        new (arena) PulseaudioDevice(frame_factory, arena, config, device_type), arena);
+        new (arena) PulseaudioDevice(frame_factory, arena, io_config, device_type),
+        arena);
 
     if (!device) {
         roc_log(LogDebug, "pulseaudio backend: can't allocate device: path=%s", path);

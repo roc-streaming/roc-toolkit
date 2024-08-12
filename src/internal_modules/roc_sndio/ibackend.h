@@ -16,10 +16,10 @@
 #include "roc_core/array.h"
 #include "roc_core/attributes.h"
 #include "roc_core/iarena.h"
-#include "roc_sndio/config.h"
 #include "roc_sndio/device_type.h"
 #include "roc_sndio/driver.h"
 #include "roc_sndio/idevice.h"
+#include "roc_sndio/io_config.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -45,7 +45,7 @@ public:
                 DriverType driver_type,
                 const char* driver,
                 const char* path,
-                const Config& config,
+                const IoConfig& io_config,
                 audio::FrameFactory& frame_factory,
                 core::IArena& arena,
                 IDevice** result) = 0;

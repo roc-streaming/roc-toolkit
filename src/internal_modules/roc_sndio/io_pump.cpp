@@ -6,35 +6,35 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_sndio/pump.h"
+#include "roc_sndio/io_pump.h"
 #include "roc_core/log.h"
 #include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace sndio {
 
-Pump::Pump(core::IPool& frame_pool,
-           core::IPool& frame_buffer_pool,
-           ISource& source,
-           ISource* backup_source,
-           ISink& sink,
-           const Config& config,
-           const Mode mode)
+IoPump::IoPump(core::IPool& frame_pool,
+               core::IPool& frame_buffer_pool,
+               ISource& source,
+               ISource* backup_source,
+               ISink& sink,
+               const IoConfig& io_config,
+               const Mode mode)
     : frame_factory_(frame_pool, frame_buffer_pool)
     , main_source_(source)
     , backup_source_(backup_source)
     , current_source_(&source)
     , sink_(sink)
-    , sample_spec_(config.sample_spec)
-    , frame_size_(config.sample_spec.ns_2_bytes(config.frame_length))
-    , frame_duration_(config.sample_spec.ns_2_stream_timestamp(config.frame_length))
+    , sample_spec_(io_config.sample_spec)
+    , frame_size_(io_config.sample_spec.ns_2_bytes(io_config.frame_length))
+    , frame_duration_(io_config.sample_spec.ns_2_stream_timestamp(io_config.frame_length))
     , mode_(mode)
     , was_active_(false)
     , stop_(0)
     , init_status_(status::NoStatus) {
     if (frame_size_ == 0 || frame_duration_ == 0) {
         roc_log(LogError, "pump: invalid frame length %lld",
-                (long long)config.frame_length);
+                (long long)io_config.frame_length);
         init_status_ = status::StatusBadConfig;
         return;
     }
@@ -49,11 +49,11 @@ Pump::Pump(core::IPool& frame_pool,
     init_status_ = status::StatusOK;
 }
 
-status::StatusCode Pump::init_status() const {
+status::StatusCode IoPump::init_status() const {
     return init_status_;
 }
 
-status::StatusCode Pump::run() {
+status::StatusCode IoPump::run() {
     roc_log(LogDebug, "pump: starting main loop");
 
     status::StatusCode code = status::NoStatus;
@@ -86,11 +86,11 @@ status::StatusCode Pump::run() {
     return code;
 }
 
-void Pump::stop() {
+void IoPump::stop() {
     stop_ = 1;
 }
 
-status::StatusCode Pump::next_() {
+status::StatusCode IoPump::next_() {
     status::StatusCode code = status::NoStatus;
 
     // User called stop().
@@ -171,7 +171,7 @@ status::StatusCode Pump::next_() {
     return status::StatusOK;
 }
 
-status::StatusCode Pump::switch_source_(ISource* new_source) {
+status::StatusCode IoPump::switch_source_(ISource* new_source) {
     status::StatusCode code = status::NoStatus;
 
     // Switch from backup to main.
@@ -225,7 +225,7 @@ status::StatusCode Pump::switch_source_(ISource* new_source) {
     return status::StatusOK;
 }
 
-status::StatusCode Pump::transfer_frame_(ISource& source, ISink& sink) {
+status::StatusCode IoPump::transfer_frame_(ISource& source, ISink& sink) {
     // If writer stole frame's buffer, allocate it again.
     if (!frame_factory_.reallocate_frame(*frame_, frame_size_)) {
         return status::StatusNoMem;
@@ -282,7 +282,7 @@ status::StatusCode Pump::transfer_frame_(ISource& source, ISink& sink) {
     return status::StatusOK;
 }
 
-status::StatusCode Pump::flush_sink_() {
+status::StatusCode IoPump::flush_sink_() {
     const status::StatusCode code = sink_.flush();
 
     if (code != status::StatusOK) {
@@ -293,7 +293,7 @@ status::StatusCode Pump::flush_sink_() {
     return code;
 }
 
-status::StatusCode Pump::close_all_devices_() {
+status::StatusCode IoPump::close_all_devices_() {
     IDevice* devices[] = { &main_source_, &sink_, backup_source_ };
     status::StatusCode first_error = status::StatusOK;
 

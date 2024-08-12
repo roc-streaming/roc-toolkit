@@ -120,15 +120,15 @@ pa_sample_format to_pulse_format(audio::PcmFormat fmt) {
 
 PulseaudioDevice::PulseaudioDevice(audio::FrameFactory& frame_factory,
                                    core::IArena& arena,
-                                   const Config& config,
+                                   const IoConfig& io_config,
                                    DeviceType device_type)
     : device_type_(device_type)
     , device_(NULL)
     , frame_factory_(frame_factory)
-    , sample_spec_(config.sample_spec)
-    , frame_len_ns_(config.frame_length)
+    , sample_spec_(io_config.sample_spec)
+    , frame_len_ns_(io_config.frame_length)
     , frame_len_samples_(0)
-    , target_latency_ns_(config.latency)
+    , target_latency_ns_(io_config.latency)
     , target_latency_samples_(0)
     , timeout_ns_(0)
     , timeout_samples_(0)

@@ -15,18 +15,18 @@ namespace sndio {
 
 WavSource::WavSource(audio::FrameFactory& frame_factory,
                      core::IArena& arena,
-                     const Config& config)
+                     const IoConfig& io_config)
     : frame_factory_(frame_factory)
     , file_opened_(false)
     , eof_(false)
     , init_status_(status::NoStatus) {
-    if (config.latency != 0) {
+    if (io_config.latency != 0) {
         roc_log(LogError, "wav source: setting io latency not supported by backend");
         init_status_ = status::StatusBadConfig;
         return;
     }
 
-    if (!config.sample_spec.is_empty()) {
+    if (!io_config.sample_spec.is_empty()) {
         roc_log(LogError, "wav source: setting io encoding not supported by backend");
         init_status_ = status::StatusBadConfig;
         return;

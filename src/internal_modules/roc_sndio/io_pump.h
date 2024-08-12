@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_sndio/pump.h
+//! @file roc_sndio/io_pump.h
 //! @brief Pump.
 
-#ifndef ROC_SNDIO_PUMP_H_
-#define ROC_SNDIO_PUMP_H_
+#ifndef ROC_SNDIO_IO_PUMP_H_
+#define ROC_SNDIO_IO_PUMP_H_
 
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/sample.h"
@@ -22,7 +22,7 @@
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/units.h"
-#include "roc_sndio/config.h"
+#include "roc_sndio/io_config.h"
 #include "roc_sndio/isink.h"
 #include "roc_sndio/isource.h"
 
@@ -32,7 +32,7 @@ namespace sndio {
 //! Audio pump.
 //! @remarks
 //!  Reads frames from source and writes them to sink.
-class Pump : public core::NonCopyable<> {
+class IoPump : public core::NonCopyable<> {
 public:
     //! Pump mode.
     enum Mode {
@@ -44,13 +44,13 @@ public:
     };
 
     //! Initialize.
-    Pump(core::IPool& frame_pool,
-         core::IPool& frame_buffer_pool,
-         ISource& source,
-         ISource* backup_source,
-         ISink& sink,
-         const Config& config,
-         Mode mode);
+    IoPump(core::IPool& frame_pool,
+           core::IPool& frame_buffer_pool,
+           ISource& source,
+           ISource* backup_source,
+           ISink& sink,
+           const IoConfig& io_config,
+           Mode mode);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
@@ -96,4 +96,4 @@ private:
 } // namespace sndio
 } // namespace roc
 
-#endif // ROC_SNDIO_PUMP_H_
+#endif // ROC_SNDIO_IO_PUMP_H_

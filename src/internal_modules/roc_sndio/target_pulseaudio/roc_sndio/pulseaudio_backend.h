@@ -35,7 +35,7 @@ public:
                 DriverType driver_type,
                 const char* driver,
                 const char* path,
-                const Config& config,
+                const IoConfig& io_config,
                 audio::FrameFactory& frame_factory,
                 core::IArena& arena,
                 IDevice** result);

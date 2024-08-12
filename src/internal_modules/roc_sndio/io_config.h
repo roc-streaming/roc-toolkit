@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_sndio/config.h
+//! @file roc_sndio/io_config.h
 //! @brief Sink and source config.
 
-#ifndef ROC_SNDIO_CONFIG_H_
-#define ROC_SNDIO_CONFIG_H_
+#ifndef ROC_SNDIO_IO_CONFIG_H_
+#define ROC_SNDIO_IO_CONFIG_H_
 
 #include "roc_audio/sample_spec.h"
 #include "roc_core/stddefs.h"
@@ -26,7 +26,7 @@ namespace sndio {
 const core::nanoseconds_t DefaultFrameLength = 10 * core::Millisecond;
 
 //! Sink and source config.
-struct Config {
+struct IoConfig {
     //! Sample spec
     audio::SampleSpec sample_spec;
 
@@ -37,7 +37,7 @@ struct Config {
     core::nanoseconds_t latency;
 
     //! Initialize.
-    Config()
+    IoConfig()
         : frame_length(DefaultFrameLength)
         , latency(0) {
     }
@@ -46,4 +46,4 @@ struct Config {
 } // namespace sndio
 } // namespace roc
 
-#endif // ROC_SNDIO_CONFIG_H_
+#endif // ROC_SNDIO_IO_CONFIG_H_

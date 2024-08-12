@@ -18,18 +18,18 @@ namespace sndio {
 
 SndfileSource::SndfileSource(audio::FrameFactory& frame_factory,
                              core::IArena& arena,
-                             const Config& config)
+                             const IoConfig& io_config)
     : frame_factory_(frame_factory)
     , file_(NULL)
     , path_(arena)
     , init_status_(status::NoStatus) {
-    if (config.latency != 0) {
+    if (io_config.latency != 0) {
         roc_log(LogError, "sndfile source: setting io latency not supported by backend");
         init_status_ = status::StatusBadConfig;
         return;
     }
 
-    if (!config.sample_spec.is_empty()) {
+    if (!io_config.sample_spec.is_empty()) {
         roc_log(LogError, "sndfile source: setting io encoding not supported by backend");
         init_status_ = status::StatusBadConfig;
         return;

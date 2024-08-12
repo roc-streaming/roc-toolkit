@@ -14,7 +14,7 @@
 #include "roc_core/scoped_ptr.h"
 #include "roc_dbgio/temp_file.h"
 #include "roc_sndio/backend_map.h"
-#include "roc_sndio/pump.h"
+#include "roc_sndio/io_pump.h"
 
 namespace roc {
 namespace sndio {
@@ -38,7 +38,7 @@ audio::FrameFactory frame_factory(arena, FrameSize * sizeof(audio::sample_t));
 } // namespace
 
 TEST_GROUP(backend_sink) {
-    Config sink_config;
+    IoConfig sink_config;
 
     void setup() {
         sink_config.sample_spec = sample_spec;
@@ -98,7 +98,7 @@ TEST(backend_sink, open_bad_config) {
 
         dbgio::TempFile file("test.wav");
 
-        Config bad_config = sink_config;
+        IoConfig bad_config = sink_config;
         bad_config.sample_spec.set_pcm_format(audio::PcmFormat_SInt18_3_Be);
 
         core::ScopedPtr<ISink> backend_sink;
@@ -119,7 +119,7 @@ TEST(backend_sink, open_default_config) {
 
         dbgio::TempFile file("test.wav");
 
-        Config default_config = sink_config;
+        IoConfig default_config = sink_config;
         default_config.sample_spec.clear();
 
         core::ScopedPtr<ISink> backend_sink;

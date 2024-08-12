@@ -51,7 +51,7 @@ status::StatusCode WavBackend::open_device(DeviceType device_type,
                                            DriverType driver_type,
                                            const char* driver,
                                            const char* path,
-                                           const Config& config,
+                                           const IoConfig& io_config,
                                            audio::FrameFactory& frame_factory,
                                            core::IArena& arena,
                                            IDevice** result) {
@@ -71,8 +71,8 @@ status::StatusCode WavBackend::open_device(DeviceType device_type,
 
     switch (device_type) {
     case DeviceType_Sink: {
-        core::ScopedPtr<WavSink> sink(new (arena) WavSink(frame_factory, arena, config),
-                                      arena);
+        core::ScopedPtr<WavSink> sink(
+            new (arena) WavSink(frame_factory, arena, io_config), arena);
 
         if (!sink) {
             roc_log(LogDebug, "wav backend: can't allocate sink: path=%s", path);
@@ -98,7 +98,7 @@ status::StatusCode WavBackend::open_device(DeviceType device_type,
 
     case DeviceType_Source: {
         core::ScopedPtr<WavSource> source(
-            new (arena) WavSource(frame_factory, arena, config), arena);
+            new (arena) WavSource(frame_factory, arena, io_config), arena);
 
         if (!source) {
             roc_log(LogDebug, "wav backend: can't allocate source: path=%s", path);

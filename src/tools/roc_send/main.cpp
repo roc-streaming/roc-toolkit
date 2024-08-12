@@ -22,8 +22,8 @@
 #include "roc_pipeline/sender_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/backend_map.h"
+#include "roc_sndio/io_pump.h"
 #include "roc_sndio/print_supported.h"
-#include "roc_sndio/pump.h"
 #include "roc_status/code_to_str.h"
 
 #include "roc_send/cmdline.h"
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 
     pipeline::SenderSinkConfig sender_config;
 
-    sndio::Config io_config;
+    sndio::IoConfig io_config;
 
     if (args.frame_len_given) {
         if (!core::parse_duration(args.frame_len_arg, io_config.frame_length)) {
@@ -535,12 +535,12 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    sndio::Config pump_config;
+    sndio::IoConfig pump_config;
     pump_config.sample_spec = input_source->sample_spec();
     pump_config.frame_length = io_config.frame_length;
 
-    sndio::Pump pump(context.frame_pool(), context.frame_buffer_pool(), *input_source,
-                     NULL, sender.sink(), pump_config, sndio::Pump::ModePermanent);
+    sndio::IoPump pump(context.frame_pool(), context.frame_buffer_pool(), *input_source,
+                       NULL, sender.sink(), pump_config, sndio::IoPump::ModePermanent);
     if (pump.init_status() != status::StatusOK) {
         roc_log(LogError, "can't create audio pump: status=%s",
                 status::code_to_str(pump.init_status()));
