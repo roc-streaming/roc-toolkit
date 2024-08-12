@@ -60,6 +60,7 @@ Runtime dependencies
 ====================
 
 .. list-table::
+   :widths: 10 25 30 25
 
    * - **dependency**
      - **version**
@@ -71,6 +72,11 @@ Runtime dependencies
      - MIT
      - only required on pre-C11 compilers
 
+   * - `libsndfile <https://libsndfile.github.io/libsndfile/>`_
+     - >= 1.0.26
+     - LGPL
+     - optional, used for audio I/O
+
    * - `libunwind <https://www.nongnu.org/libunwind/>`_
      - >= 1.2.1
      - X11
@@ -81,9 +87,9 @@ Runtime dependencies
      - MIT
      - required
 
-   * - `OpenFEC <http://openfec.org>`_
+   * - `OpenFEC <https://openfec.inrialpes.fr>`_
      - >= 1.4.2 (recommended to use `our fork <https://github.com/roc-streaming/openfec>`_)
-     - CeCCIL-C / CeCCIL
+     - CeCCIL-C (LGPL-like) + CeCCIL (GPL-like, only for LDPC-Staircase) + BSD-like + CC BY-SA
      - optional, used for FECFRAME support
 
    * - `OpenSSL <https://www.openssl.org/>`_
@@ -98,11 +104,6 @@ Runtime dependencies
 
    * - `SoX <https://sox.sourceforge.net>`_
      - >= 14.4.0
-     - LGPL
-     - optional, used for audio I/O
-
-   * - `libsndfile <https://libsndfile.github.io/libsndfile/>`_
-     - >= 1.0.26
      - LGPL
      - optional, used for audio I/O
 

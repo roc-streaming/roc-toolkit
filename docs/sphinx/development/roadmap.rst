@@ -20,12 +20,11 @@ Basic features
 Advanced features
 =================
 
-- |:white_large_square:| End-to-end latency estimation
-- |:white_large_square:| Dynamic latency adjustment (requires RTCP)
-- |:white_large_square:| Dynamic adjustment of FEC block size (requires RTCP)
-- |:white_large_square:| Dynamic adjustment of FEC code rate (requires RTCP and XRs from `RFC 5725 <https://tools.ietf.org/html/rfc5725>`_)
-- |:white_large_square:| Dynamic audio bitrate adjustment
-- |:white_large_square:| Dynamic payload type switch
+- |:white_large_square:| End-to-end latency estimation and tuning
+- |:ballot_box_with_check:| Adaptive latency (requires RTCP)
+- |:white_large_square:| Adaptive FEC block and rate (requires RTCP and XRs from `RFC 5725 <https://tools.ietf.org/html/rfc5725>`_)
+- |:white_large_square:| Adaptive packet size
+- |:white_large_square:| Adaptive bitrate (for lossy codecs)
 - |:white_large_square:| Encryption support (SRTP and DTLS)
 - |:white_large_square:| QoS support
 - |:white_large_square:| Packet loss concealment (PLC)
@@ -45,7 +44,8 @@ Extensibility
 - |:white_large_square:| Provide custom allocator
 - |:ballot_box_with_check:| Register custom payload types
 - |:white_large_square:| Register custom codecs
-- |:white_large_square:| Register custom PLC
+- |:ballot_box_with_check:| Register custom PLC
+- |:white_large_square:| Register custom effect
 - |:white_large_square:| Register custom mixer
 
 Protocols
