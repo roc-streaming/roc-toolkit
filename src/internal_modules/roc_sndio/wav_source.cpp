@@ -9,6 +9,7 @@
 #include "roc_sndio/wav_source.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace sndio {
@@ -36,8 +37,10 @@ WavSource::WavSource(audio::FrameFactory& frame_factory,
 }
 
 WavSource::~WavSource() {
-    if (file_opened_) {
-        roc_panic("wav source: input file is not closed");
+    const status::StatusCode code = close();
+    if (code != status::StatusOK) {
+        roc_log(LogError, "wav source: close failed: status=%s",
+                status::code_to_str(code));
     }
 }
 

@@ -71,8 +71,9 @@ SoxSink::SoxSink(audio::FrameFactory& frame_factory,
 }
 
 SoxSink::~SoxSink() {
-    if (output_) {
-        roc_panic("sox sink: output file is not closed");
+    const status::StatusCode code = close();
+    if (code != status::StatusOK) {
+        roc_log(LogError, "sox sink: close failed: status=%s", status::code_to_str(code));
     }
 }
 

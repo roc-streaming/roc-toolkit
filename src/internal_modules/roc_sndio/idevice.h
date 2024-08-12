@@ -36,7 +36,7 @@ class ISource;
 //! Hardware and file devices are implemented in roc_sndio, and
 //! network devices are implemented in roc_pipeline.
 //!
-//! sndio::Pump is a class that copies stream from ISource to ISink
+//! sndio::IoPump is a class that copies stream from ISource to ISink
 //! regardless of the device kind, e.g. from file to network sender,
 //! or from network receiver to speakers.
 class IDevice {
@@ -120,9 +120,9 @@ public:
 
     //! Explicitly close the device.
     //! @remarks
-    //!  This method should be called to release resources held by the device
-    //!  before the object is destructed. If this method is not called before
-    //!  the destructor, the destructor will trigger a panic.
+    //!  This method should be called to release resources held by the device.
+    //!  If this method is not called before the destructor, it's called
+    //!  automatically, but you won't know if error happened.
     virtual ROC_ATTR_NODISCARD status::StatusCode close() = 0;
 };
 

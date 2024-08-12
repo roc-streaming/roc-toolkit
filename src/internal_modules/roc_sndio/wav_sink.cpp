@@ -12,6 +12,7 @@
 #include "roc_core/endian_ops.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace sndio {
@@ -48,8 +49,9 @@ WavSink::WavSink(audio::FrameFactory& frame_factory,
 }
 
 WavSink::~WavSink() {
-    if (output_file_) {
-        roc_panic("wav sink: output file is not closed");
+    const status::StatusCode code = close();
+    if (code != status::StatusOK) {
+        roc_log(LogError, "wav sink: close failed: status=%s", status::code_to_str(code));
     }
 }
 

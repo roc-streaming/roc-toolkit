@@ -177,8 +177,10 @@ PulseaudioDevice::PulseaudioDevice(audio::FrameFactory& frame_factory,
 }
 
 PulseaudioDevice::~PulseaudioDevice() {
-    if (mainloop_) {
-        roc_panic("pulseaudio %s: device not closed", device_type_to_str(device_type_));
+    const status::StatusCode code = close();
+    if (code != status::StatusOK) {
+        roc_log(LogError, "pulseaudio %s: close failed: status=%s",
+                device_type_to_str(device_type_), status::code_to_str(code));
     }
 }
 

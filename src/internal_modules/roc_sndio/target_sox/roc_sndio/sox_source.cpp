@@ -75,8 +75,10 @@ SoxSource::SoxSource(audio::FrameFactory& frame_factory,
 }
 
 SoxSource::~SoxSource() {
-    if (input_) {
-        roc_panic("sox source: input file is not closed");
+    const status::StatusCode code = close();
+    if (code != status::StatusOK) {
+        roc_log(LogError, "sox source: close failed: status=%s",
+                status::code_to_str(code));
     }
 }
 

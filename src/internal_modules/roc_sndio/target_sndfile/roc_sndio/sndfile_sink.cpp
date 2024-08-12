@@ -12,6 +12,7 @@
 #include "roc_core/panic.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/sndfile_tables.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace sndio {
@@ -258,8 +259,10 @@ SndfileSink::SndfileSink(audio::FrameFactory& frame_factory,
 }
 
 SndfileSink::~SndfileSink() {
-    if (file_) {
-        roc_panic("sndfile sink: output file is not closed");
+    const status::StatusCode code = close();
+    if (code != status::StatusOK) {
+        roc_log(LogError, "sndfile sink: close failed: status=%s",
+                status::code_to_str(code));
     }
 }
 

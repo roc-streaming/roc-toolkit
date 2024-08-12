@@ -41,8 +41,10 @@ SndfileSource::SndfileSource(audio::FrameFactory& frame_factory,
 }
 
 SndfileSource::~SndfileSource() {
-    if (file_) {
-        roc_panic("sndfile source: input file is not closed");
+    const status::StatusCode code = close();
+    if (code != status::StatusOK) {
+        roc_log(LogError, "sndfile source: close failed: status=%s",
+                status::code_to_str(code));
     }
 }
 
