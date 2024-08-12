@@ -45,8 +45,13 @@ This section lists features which development was sponsored by companies, indivi
      - Source
      - Feature
 
+   * - Aug 2024
+     - 0.5.0
+     - contract work
+     - Adaptive latency support.
+
    * - Jun 2024
-     -
+     - 0.5.0
      - contract work
      - Simple PLC & support for registering custom PLC in C API.
 
