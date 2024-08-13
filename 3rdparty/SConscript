@@ -191,11 +191,6 @@ elif 'openfec' in system_dependencies:
     if not conf.CheckDeclaration('OF_USE_DECODER', '#include <of_openfec_api.h>', 'c'):
         env.Die("openfec has no decoder support (OF_USE_DECODER)")
 
-    if not conf.CheckDeclaration('OF_USE_LDPC_STAIRCASE_CODEC',
-                                 '#include <of_openfec_api.h>', 'c'):
-        env.Die(
-            "openfec has no LDPC-Staircase codec support (OF_USE_LDPC_STAIRCASE_CODEC)")
-
     env = conf.Finish()
 
 # dep: openssl
