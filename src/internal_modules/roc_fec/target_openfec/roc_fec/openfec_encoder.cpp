@@ -36,7 +36,7 @@ OpenfecEncoder::OpenfecEncoder(const CodecConfig& config,
 
         of_sess_params_ = (of_parameters_t*)&codec_params_.rs_params_;
 
-        max_block_length_ = OF_REED_SOLOMON_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
+        max_block_length_ = (1 << config.rs_m) - 1;
     } break;
 #endif // OF_USE_REED_SOLOMON_2_M_CODEC
 
