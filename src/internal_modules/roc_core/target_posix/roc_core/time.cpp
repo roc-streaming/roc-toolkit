@@ -6,14 +6,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_core/time.h"
+#include "roc_core/errno_to_str.h"
+#include "roc_core/panic.h"
+
 #include <errno.h>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
-
-#include "roc_core/errno_to_str.h"
-#include "roc_core/panic.h"
-#include "roc_core/time.h"
 
 namespace roc {
 namespace core {

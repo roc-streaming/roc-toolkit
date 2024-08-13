@@ -12,12 +12,12 @@
 #ifndef ROC_CORE_SEMAPHORE_H_
 #define ROC_CORE_SEMAPHORE_H_
 
-#include <semaphore.h>
-
 #include "roc_core/atomic.h"
 #include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
+
+#include <semaphore.h>
 
 namespace roc {
 namespace core {

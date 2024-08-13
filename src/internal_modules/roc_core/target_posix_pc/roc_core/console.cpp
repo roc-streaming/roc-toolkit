@@ -6,15 +6,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_core/console.h"
+#include "roc_core/atomic_ops.h"
+
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#include "roc_core/atomic_ops.h"
-#include "roc_core/console.h"
 
 // ANSI Color Codes.
 #define COLOR_NONE ""

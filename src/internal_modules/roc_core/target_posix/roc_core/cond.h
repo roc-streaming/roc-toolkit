@@ -12,14 +12,14 @@
 #ifndef ROC_CORE_COND_H_
 #define ROC_CORE_COND_H_
 
-#include <errno.h>
-#include <pthread.h>
-
 #include "roc_core/atomic.h"
 #include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
+
+#include <errno.h>
+#include <pthread.h>
 
 namespace roc {
 namespace core {

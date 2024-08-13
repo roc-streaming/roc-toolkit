@@ -12,12 +12,12 @@
 #ifndef ROC_CORE_SINGLETON_H_
 #define ROC_CORE_SINGLETON_H_
 
-#include <pthread.h>
-
 #include "roc_core/aligned_storage.h"
 #include "roc_core/atomic_ops.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
+
+#include <pthread.h>
 
 namespace roc {
 namespace core {

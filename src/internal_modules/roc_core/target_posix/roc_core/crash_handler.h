@@ -12,9 +12,9 @@
 #ifndef ROC_CORE_CRASH_HANDLER_H_
 #define ROC_CORE_CRASH_HANDLER_H_
 
-#include <signal.h>
-
 #include "roc_core/noncopyable.h"
+
+#include <signal.h>
 
 namespace roc {
 namespace core {

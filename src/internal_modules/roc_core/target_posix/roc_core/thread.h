@@ -12,13 +12,13 @@
 #ifndef ROC_CORE_THREAD_H_
 #define ROC_CORE_THREAD_H_
 
-#include <pthread.h>
-
 #include "roc_core/atomic.h"
 #include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
+
+#include <pthread.h>
 
 namespace roc {
 namespace core {

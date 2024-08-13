@@ -6,13 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_core/die.h"
+#include "roc_core/atomic_ops.h"
+#include "roc_core/backtrace.h"
+
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-#include "roc_core/atomic_ops.h"
-#include "roc_core/backtrace.h"
-#include "roc_core/die.h"
 
 namespace roc {
 namespace core {
