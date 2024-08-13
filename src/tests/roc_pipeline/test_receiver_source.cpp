@@ -4027,7 +4027,7 @@ TEST(receiver_source, metrics_jitter) {
             UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
 
             if (np > Latency / SamplesPerPacket) {
-                DOUBLES_EQUAL(jitter1, party_metrics.link.mean_jitter, precision);
+                DOUBLES_EQUAL(jitter1, party_metrics.link.peak_jitter, precision);
             }
         }
     }
@@ -4053,7 +4053,7 @@ TEST(receiver_source, metrics_jitter) {
             UNSIGNED_LONGS_EQUAL(1, party_metrics_size);
 
             if (np > JitterMeterWindow) {
-                DOUBLES_EQUAL(jitter2, party_metrics.link.mean_jitter, precision);
+                DOUBLES_EQUAL(jitter2, party_metrics.link.peak_jitter, precision);
             }
         }
     }

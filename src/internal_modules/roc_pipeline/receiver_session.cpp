@@ -386,7 +386,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
         report.packet_count = link_metrics.expected_packets;
         report.cum_loss = link_metrics.lost_packets;
-        report.jitter = link_metrics.mean_jitter;
+        report.jitter = link_metrics.peak_jitter;
         report.niq_latency = latency_metrics.niq_latency;
         report.niq_stalling = latency_metrics.niq_stalling;
         report.e2e_latency = latency_metrics.e2e_latency;
@@ -411,7 +411,7 @@ void ReceiverSession::generate_reports(const char* report_cname,
         report.ext_last_seqnum = link_metrics.ext_last_seqnum;
         report.packet_count = link_metrics.expected_packets;
         report.cum_loss = link_metrics.lost_packets;
-        report.jitter = link_metrics.mean_jitter;
+        report.jitter = link_metrics.peak_jitter;
 
         reports++;
         n_reports--;

@@ -805,8 +805,8 @@ void link_metrics_to_user(roc_connection_metrics& out, const packet::LinkMetrics
         out.rtt = (unsigned long long)in.rtt;
     }
 
-    if (in.mean_jitter > 0) {
-        out.jitter = (unsigned long long)in.mean_jitter;
+    if (in.peak_jitter > 0) {
+        out.jitter = (unsigned long long)in.peak_jitter;
     }
 
     if (in.expected_packets > 0) {

@@ -404,7 +404,7 @@ SenderSession::notify_send_stream(packet::stream_source_t recv_source_id,
         link_metrics.ext_last_seqnum = recv_report.ext_last_seqnum;
         link_metrics.expected_packets = recv_report.packet_count;
         link_metrics.lost_packets = recv_report.cum_loss;
-        link_metrics.mean_jitter = recv_report.jitter;
+        link_metrics.peak_jitter = recv_report.jitter;
         link_metrics.rtt = recv_report.rtt;
 
         feedback_monitor_->process_feedback(recv_source_id, latency_metrics,
