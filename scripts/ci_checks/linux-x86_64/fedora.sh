@@ -8,5 +8,5 @@ scons -Q \
       --enable-benchmarks \
       --enable-examples \
       --enable-doxygen \
-      --build-3rdparty=openfec,cpputest \
+      --build-3rdparty=openfec \
       test

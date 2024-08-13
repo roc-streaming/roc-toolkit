@@ -10,7 +10,7 @@ do
           --enable-benchmarks \
           --enable-examples \
           --enable-doxygen \
-          --build-3rdparty=openfec,google-benchmark \
+          --build-3rdparty=openfec,cpputest,google-benchmark \
           --compiler=${comp} \
           test
 done
