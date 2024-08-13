@@ -140,7 +140,10 @@ def unpack(ctx, filename, dirname):
     mkpath('tmp')
 
     tar = tarfile.open('src/'+filename, 'r')
-    tar.extractall('tmp')
+    try:
+        tar.extractall('tmp', filter='data')
+    except:
+        tar.extractall('tmp')
     tar.close()
 
     shutil.move(dirname_tmp, dirname_res)
