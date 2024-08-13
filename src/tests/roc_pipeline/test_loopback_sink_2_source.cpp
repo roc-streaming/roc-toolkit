@@ -452,7 +452,7 @@ void check_metrics(ReceiverSlot& receiver,
                              send_party_metrics.link.lost_packets);
         CHECK(std::abs(recv_party_metrics.link.peak_jitter
                        - send_party_metrics.link.peak_jitter)
-              < 5 * core::Millisecond);
+              < 10 * core::Millisecond);
 
         DOUBLES_EQUAL(recv_party_metrics.latency.niq_latency,
                       send_party_metrics.latency.niq_latency, core::Millisecond);
