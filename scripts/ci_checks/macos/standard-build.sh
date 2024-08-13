@@ -2,7 +2,7 @@
 
 set -euxo pipefail
 
-brew install --force --overwrite \
+brew install --quiet --force --overwrite \
      automake scons ragel gengetopt \
      libuv speexdsp sox openssl@3 \
      cpputest google-benchmark libsndfile

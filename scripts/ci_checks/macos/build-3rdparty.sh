@@ -2,7 +2,7 @@
 
 set -euxo pipefail
 
-brew install --force --overwrite \
+brew install --quiet --force --overwrite \
      automake scons
 
 scons -Q \
