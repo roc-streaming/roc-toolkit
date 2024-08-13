@@ -181,7 +181,7 @@ struct LatencyConfig {
         , starting_timeout(5 * core::Second)
         , cooldown_dec_timeout(5 * core::Second)
         , cooldown_inc_timeout(15 * core::Second)
-        , max_jitter_overhead(1.15f)
+        , max_jitter_overhead(1.2f)
         , mean_jitter_overhead(3.00f) {
     }
 

@@ -13,23 +13,11 @@ namespace roc {
 namespace audio {
 
 bool JitterMeterConfig::deduce_defaults(audio::LatencyTunerProfile latency_profile) {
-    if (jitter_window == 0) {
-        if (latency_profile == audio::LatencyTunerProfile_Responsive) {
-            jitter_window = 10000;
-        } else {
-            jitter_window = 30000;
-        }
-    }
-
-    if (peak_quantile_window == 0) {
-        peak_quantile_window = jitter_window / 5;
-    }
-
     if (envelope_resistance_coeff == 0) {
         if (latency_profile == audio::LatencyTunerProfile_Responsive) {
-            envelope_resistance_coeff = 0.05;
+            envelope_resistance_coeff = 0.07;
         } else {
-            envelope_resistance_coeff = 0.1;
+            envelope_resistance_coeff = 0.10;
         }
     }
 

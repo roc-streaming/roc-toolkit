@@ -95,12 +95,12 @@ struct JitterMeterConfig {
     double peak_quantile_coeff;
 
     JitterMeterConfig()
-        : jitter_window(0)
+        : jitter_window(50000)
         , envelope_smoothing_window_len(10)
         , envelope_resistance_exponent(6)
         , envelope_resistance_coeff(0)
-        , peak_quantile_window(0)
-        , peak_quantile_coeff(0.90) {
+        , peak_quantile_window(10000)
+        , peak_quantile_coeff(0.92) {
     }
 
     //! Automatically fill missing settings.
