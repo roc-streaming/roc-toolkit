@@ -48,7 +48,7 @@ OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
 
         of_sess_params_ = (of_parameters_t*)&codec_params_.rs_params_;
 
-        max_block_length_ = (1 << config.rs_m) - 1;
+        max_block_length_ = size_t(1 << config.rs_m) - 1;
     } break;
 #endif // OF_USE_REED_SOLOMON_2_M_CODEC
 
