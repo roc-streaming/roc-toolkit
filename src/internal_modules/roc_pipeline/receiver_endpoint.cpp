@@ -40,7 +40,7 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
     case address::Proto_RTP:
     case address::Proto_RTP_LDPC_Source:
     case address::Proto_RTP_RS8M_Source:
-        rtp_parser_.reset(new (rtp_parser_) rtp::Parser(encoding_map, NULL));
+        rtp_parser_.reset(new (rtp_parser_) rtp::Parser(NULL, encoding_map, arena));
         if ((init_status_ = rtp_parser_->init_status()) != status::StatusOK) {
             return;
         }
@@ -53,9 +53,8 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
     switch (proto) {
     case address::Proto_RTP_LDPC_Source:
         fec_parser_.reset(
-            new (arena)
-                fec::Parser<fec::LDPC_Source_PayloadID, fec::Source, fec::Footer>(parser),
-            arena);
+            new (arena) fec::Parser<fec::LDPC_Source_PayloadID, fec::Source, fec::Footer>(
+                parser, arena));
         if (!fec_parser_) {
             init_status_ = status::StatusNoMem;
             return;
@@ -67,9 +66,8 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
         break;
     case address::Proto_LDPC_Repair:
         fec_parser_.reset(
-            new (arena)
-                fec::Parser<fec::LDPC_Repair_PayloadID, fec::Repair, fec::Header>(parser),
-            arena);
+            new (arena) fec::Parser<fec::LDPC_Repair_PayloadID, fec::Repair, fec::Header>(
+                parser, arena));
         if (!fec_parser_) {
             init_status_ = status::StatusNoMem;
             return;
@@ -80,10 +78,9 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
         parser = fec_parser_.get();
         break;
     case address::Proto_RTP_RS8M_Source:
-        fec_parser_.reset(
-            new (arena)
-                fec::Parser<fec::RS8M_PayloadID, fec::Source, fec::Footer>(parser),
-            arena);
+        fec_parser_.reset(new (arena)
+                              fec::Parser<fec::RS8M_PayloadID, fec::Source, fec::Footer>(
+                                  parser, arena));
         if (!fec_parser_) {
             init_status_ = status::StatusNoMem;
             return;
@@ -94,10 +91,9 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
         parser = fec_parser_.get();
         break;
     case address::Proto_RS8M_Repair:
-        fec_parser_.reset(
-            new (arena)
-                fec::Parser<fec::RS8M_PayloadID, fec::Repair, fec::Header>(parser),
-            arena);
+        fec_parser_.reset(new (arena)
+                              fec::Parser<fec::RS8M_PayloadID, fec::Repair, fec::Header>(
+                                  parser, arena));
         if (!fec_parser_) {
             init_status_ = status::StatusNoMem;
             return;
@@ -113,13 +109,13 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
 
     switch (proto) {
     case address::Proto_RTCP:
-        rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
+        rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer(arena));
         if ((init_status_ = rtcp_composer_->init_status()) != status::StatusOK) {
             return;
         }
         composer = rtcp_composer_.get();
 
-        rtcp_parser_.reset(new (rtcp_parser_) rtcp::Parser());
+        rtcp_parser_.reset(new (rtcp_parser_) rtcp::Parser(arena));
         if ((init_status_ = rtcp_parser_->init_status()) != status::StatusOK) {
             return;
         }

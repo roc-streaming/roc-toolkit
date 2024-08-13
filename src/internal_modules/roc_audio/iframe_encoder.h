@@ -22,8 +22,12 @@ namespace roc {
 namespace audio {
 
 //! Audio frame encoder interface.
-class IFrameEncoder {
+class IFrameEncoder : public core::ArenaAllocation {
 public:
+    //! Initialize.
+    explicit IFrameEncoder(core::IArena& arena);
+
+    //! Deinitialize.
     virtual ~IFrameEncoder();
 
     //! Check if the object was successfully constructed.

@@ -53,7 +53,7 @@ core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, MaxBufSize);
 FrameFactory frame_factory(arena, MaxBufSize * sizeof(sample_t));
 
-rtp::Composer rtp_composer(NULL);
+rtp::Composer rtp_composer(NULL, arena);
 
 sample_t nth_sample(uint8_t n) {
     return sample_t(n) / sample_t(1 << 8);
@@ -200,8 +200,8 @@ TEST_GROUP(packetizer) {};
 TEST(packetizer, one_buffer_one_packet) {
     enum { NumFrames = 10 };
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue packet_queue;
 
@@ -228,8 +228,8 @@ TEST(packetizer, one_buffer_one_packet) {
 TEST(packetizer, one_buffer_multiple_packets) {
     enum { NumPackets = 10 };
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue packet_queue;
 
@@ -256,8 +256,8 @@ TEST(packetizer, multiple_buffers_one_packet) {
 
     CHECK(SamplesPerPacket % FramesPerPacket == 0);
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue packet_queue;
 
@@ -290,8 +290,8 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
         NumPackets = (NumSamples * NumFrames / SamplesPerPacket)
     };
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue packet_queue;
 
@@ -318,8 +318,8 @@ TEST(packetizer, multiple_buffers_multiple_packets) {
 TEST(packetizer, flush) {
     enum { NumIterations = 5, Missing = 10 };
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue packet_queue;
 
@@ -357,8 +357,8 @@ TEST(packetizer, timestamp_zero_cts) {
         NumPackets = (NumSamples * NumFrames / SamplesPerPacket)
     };
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue packet_queue;
 
@@ -387,7 +387,7 @@ TEST(packetizer, timestamp_zero_cts) {
 TEST(packetizer, metrics) {
     enum { NumPackets = 10 };
 
-    PcmEncoder encoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
     packet::FifoQueue packet_queue;
 
     rtp::Identity identity;
@@ -410,8 +410,8 @@ TEST(packetizer, metrics) {
 }
 
 TEST(packetizer, forward_error) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     StatusWriter packet_writer(status::StatusAbort);
 

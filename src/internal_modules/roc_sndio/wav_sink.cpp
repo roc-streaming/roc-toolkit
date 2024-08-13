@@ -20,7 +20,9 @@ namespace sndio {
 WavSink::WavSink(audio::FrameFactory& frame_factory,
                  core::IArena& arena,
                  const IoConfig& io_config)
-    : output_file_(NULL)
+    : IDevice(arena)
+    , ISink(arena)
+    , output_file_(NULL)
     , init_status_(status::NoStatus) {
     if (io_config.latency != 0) {
         roc_log(LogError, "wav sink: setting io latency not supported by backend");
@@ -61,10 +63,6 @@ status::StatusCode WavSink::init_status() const {
 
 status::StatusCode WavSink::open(const char* path) {
     return open_(path);
-}
-
-status::StatusCode WavSink::close() {
-    return close_();
 }
 
 DeviceType WavSink::type() const {
@@ -152,6 +150,14 @@ status::StatusCode WavSink::flush() {
     }
 
     return status::StatusOK;
+}
+
+status::StatusCode WavSink::close() {
+    return close_();
+}
+
+void WavSink::dispose() {
+    arena().dispose_object(*this);
 }
 
 status::StatusCode WavSink::open_(const char* path) {

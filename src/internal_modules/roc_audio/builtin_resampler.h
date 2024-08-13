@@ -39,11 +39,11 @@ namespace audio {
 class BuiltinResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
-    BuiltinResampler(core::IArena& arena,
-                     FrameFactory& frame_factory,
-                     const ResamplerConfig& config,
+    BuiltinResampler(const ResamplerConfig& config,
                      const SampleSpec& in_spec,
-                     const SampleSpec& out_spec);
+                     const SampleSpec& out_spec,
+                     FrameFactory& frame_factory,
+                     core::IArena& arena);
 
     ~BuiltinResampler();
 

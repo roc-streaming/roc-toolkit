@@ -165,14 +165,14 @@ void check_parse_decode(const test::PacketInfo& pi) {
 
     packet->set_buffer(buffer);
 
-    Parser parser(encoding_map, NULL);
+    Parser parser(NULL, encoding_map, arena);
     CHECK(parser.parse(*packet, packet->buffer()));
 
     const Encoding* encoding = encoding_map.find_by_pt(packet->rtp()->payload_type);
     CHECK(encoding);
 
     core::ScopedPtr<audio::IFrameDecoder> decoder(
-        encoding->new_decoder(arena, encoding->sample_spec), arena);
+        encoding->new_decoder(encoding->sample_spec, arena));
     CHECK(decoder);
 
     check_format_info(*encoding, pi);
@@ -197,10 +197,10 @@ void check_compose_encode(const test::PacketInfo& pi) {
     CHECK(encoding);
 
     core::ScopedPtr<audio::IFrameEncoder> encoder(
-        encoding->new_encoder(arena, encoding->sample_spec), arena);
+        encoding->new_encoder(encoding->sample_spec, arena));
     CHECK(encoder);
 
-    Composer composer(NULL);
+    Composer composer(NULL, arena);
 
     CHECK(composer.prepare(*packet, buffer, pi.payload_size + pi.padding_size));
     packet->set_buffer(buffer);

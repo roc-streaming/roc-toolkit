@@ -19,8 +19,10 @@ namespace test {
 
 class MockSink : public ISink {
 public:
-    MockSink()
-        : pos_(0) {
+    MockSink(core::IArena& arena)
+        : IDevice(arena)
+        , ISink(arena)
+        , pos_(0) {
     }
 
     virtual DeviceType type() const {
@@ -65,10 +67,6 @@ public:
         return false;
     }
 
-    virtual status::StatusCode close() {
-        return status::StatusOK;
-    }
-
     virtual status::StatusCode write(audio::Frame& frame) {
         CHECK(pos_ + frame.num_raw_samples() <= MaxSz);
 
@@ -78,16 +76,24 @@ public:
         return status::StatusOK;
     }
 
+    virtual ROC_ATTR_NODISCARD status::StatusCode flush() {
+        return status::StatusOK;
+    }
+
+    virtual status::StatusCode close() {
+        return status::StatusOK;
+    }
+
+    virtual void dispose() {
+        arena().dispose_object(*this);
+    }
+
     void check(size_t offset, size_t size) {
         UNSIGNED_LONGS_EQUAL(pos_, size);
 
         for (size_t n = 0; n < size; n++) {
             DOUBLES_EQUAL((double)samples_[n], (double)nth_sample_(offset + n), 0.0001);
         }
-    }
-
-    virtual ROC_ATTR_NODISCARD status::StatusCode flush() {
-        return status::StatusOK;
     }
 
 private:

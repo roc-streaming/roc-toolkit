@@ -37,9 +37,12 @@ namespace audio {
 //!
 //! PLC implementation is allowed to use arbitrary PCM format, specified
 //! by its sample_spec() method.
-class IPlc {
+class IPlc : public core::ArenaAllocation {
 public:
-    //! Deinitialization.
+    //! Initialize.
+    explicit IPlc(core::IArena& arena);
+
+    //! Deinitialize.
     virtual ~IPlc();
 
     //! Check if the object was successfully constructed.

@@ -22,7 +22,9 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
                                core::IPool& frame_pool,
                                core::IPool& frame_buffer_pool,
                                core::IArena& arena)
-    : source_config_(source_config)
+    : IDevice(arena)
+    , ISource(arena)
+    , source_config_(source_config)
     , processor_map_(processor_map)
     , encoding_map_(encoding_map)
     , packet_factory_(packet_pool, packet_buffer_pool)
@@ -50,7 +52,7 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
             audio::Sample_RawFormat,
             source_config_.common.output_sample_spec.channel_set());
 
-        mixer_.reset(new (mixer_) audio::Mixer(frame_factory_, arena, inout_spec, true));
+        mixer_.reset(new (mixer_) audio::Mixer(inout_spec, true, frame_factory_, arena));
         if ((init_status_ = mixer_->init_status()) != status::StatusOK) {
             return;
         }
@@ -231,18 +233,6 @@ bool ReceiverSource::has_clock() const {
     return source_config_.common.enable_cpu_clock;
 }
 
-status::StatusCode ReceiverSource::close() {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    if (state_tracker_.is_closed()) {
-        return status::StatusBadState;
-    }
-
-    state_tracker_.set_closed();
-
-    return status::StatusOK;
-}
-
 status::StatusCode ReceiverSource::rewind() {
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -286,6 +276,22 @@ status::StatusCode ReceiverSource::read(audio::Frame& frame,
     }
 
     return code;
+}
+
+status::StatusCode ReceiverSource::close() {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (state_tracker_.is_closed()) {
+        return status::StatusBadState;
+    }
+
+    state_tracker_.set_closed();
+
+    return status::StatusOK;
+}
+
+void ReceiverSource::dispose() {
+    arena_.dispose_object(*this);
 }
 
 } // namespace pipeline

@@ -40,8 +40,7 @@ int roc_context_open(const roc_context_config* config, roc_context** result) {
     }
 
     core::ScopedPtr<node::Context> imp_context(
-        new (api::default_arena) node::Context(imp_config, api::default_arena),
-        api::default_arena);
+        new (api::default_arena) node::Context(imp_config, api::default_arena));
 
     if (!imp_context) {
         roc_log(LogError, "roc_context_open(): can't allocate context");
@@ -54,7 +53,7 @@ int roc_context_open(const roc_context_config* config, roc_context** result) {
         return -1;
     }
 
-    *result = (roc_context*)imp_context.release();
+    *result = (roc_context*)imp_context.hijack();
     return 0;
 }
 
@@ -165,7 +164,7 @@ int roc_context_close(roc_context* context) {
         return -1;
     }
 
-    api::default_arena.destroy_object(*imp_context);
+    api::default_arena.dispose_object(*imp_context);
 
     roc_log(LogInfo, "roc_context_close(): closed context");
 

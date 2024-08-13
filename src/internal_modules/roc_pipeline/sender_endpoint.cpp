@@ -37,7 +37,7 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
     case address::Proto_RTP:
     case address::Proto_RTP_LDPC_Source:
     case address::Proto_RTP_RS8M_Source:
-        rtp_composer_.reset(new (rtp_composer_) rtp::Composer(NULL));
+        rtp_composer_.reset(new (rtp_composer_) rtp::Composer(NULL, arena));
         if ((init_status_ = rtp_composer_->init_status()) != status::StatusOK) {
             return;
         }
@@ -52,8 +52,7 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
         fec_composer_.reset(
             new (arena)
                 fec::Composer<fec::LDPC_Source_PayloadID, fec::Source, fec::Footer>(
-                    composer),
-            arena);
+                    composer, arena));
         if (!fec_composer_) {
             init_status_ = status::StatusNoMem;
             return;
@@ -67,8 +66,7 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
         fec_composer_.reset(
             new (arena)
                 fec::Composer<fec::LDPC_Repair_PayloadID, fec::Repair, fec::Header>(
-                    composer),
-            arena);
+                    composer, arena));
         if (!fec_composer_) {
             init_status_ = status::StatusNoMem;
             return;
@@ -80,9 +78,8 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
         break;
     case address::Proto_RTP_RS8M_Source:
         fec_composer_.reset(
-            new (arena)
-                fec::Composer<fec::RS8M_PayloadID, fec::Source, fec::Footer>(composer),
-            arena);
+            new (arena) fec::Composer<fec::RS8M_PayloadID, fec::Source, fec::Footer>(
+                composer, arena));
         if (!fec_composer_) {
             init_status_ = status::StatusNoMem;
             return;
@@ -94,9 +91,8 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
         break;
     case address::Proto_RS8M_Repair:
         fec_composer_.reset(
-            new (arena)
-                fec::Composer<fec::RS8M_PayloadID, fec::Repair, fec::Header>(composer),
-            arena);
+            new (arena) fec::Composer<fec::RS8M_PayloadID, fec::Repair, fec::Header>(
+                composer, arena));
         if (!fec_composer_) {
             init_status_ = status::StatusNoMem;
             return;
@@ -112,13 +108,13 @@ SenderEndpoint::SenderEndpoint(address::Protocol proto,
 
     switch (proto) {
     case address::Proto_RTCP:
-        rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer());
+        rtcp_composer_.reset(new (rtcp_composer_) rtcp::Composer(arena));
         if ((init_status_ = rtcp_composer_->init_status()) != status::StatusOK) {
             return;
         }
         composer = rtcp_composer_.get();
 
-        rtcp_parser_.reset(new (rtcp_parser_) rtcp::Parser());
+        rtcp_parser_.reset(new (rtcp_parser_) rtcp::Parser(arena));
         if ((init_status_ = rtcp_parser_->init_status()) != status::StatusOK) {
             return;
         }

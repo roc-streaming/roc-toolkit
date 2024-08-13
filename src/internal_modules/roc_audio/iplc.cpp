@@ -11,6 +11,10 @@
 namespace roc {
 namespace audio {
 
+IPlc::IPlc(core::IArena& arena)
+    : core::ArenaAllocation(arena) {
+}
+
 IPlc::~IPlc() {
 }
 

@@ -20,7 +20,9 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
                                core::IPool& frame_pool,
                                core::IPool& frame_buffer_pool,
                                core::IArena& arena)
-    : frame_factory_(frame_pool, frame_buffer_pool)
+    : IDevice(arena)
+    , ISink(arena)
+    , frame_factory_(frame_pool, frame_buffer_pool)
     , frame_writer_(NULL)
     , config_(config)
     , init_status_(status::NoStatus) {
@@ -63,8 +65,8 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
                                         audio::Sample_RawFormat,
                                         config_.input_sample_spec.channel_set());
 
-        resampler_.reset(processor_map.new_resampler(
-            arena, frame_factory_, config_.resampler, from_spec, to_spec));
+        resampler_.reset(processor_map.new_resampler(config_.resampler, from_spec,
+                                                     to_spec, frame_factory_, arena));
         if (!resampler_) {
             init_status_ = status::StatusNoMem;
             return;
@@ -126,10 +128,6 @@ bool TranscoderSink::has_clock() const {
     return false;
 }
 
-status::StatusCode TranscoderSink::close() {
-    return status::StatusOK;
-}
-
 status::StatusCode TranscoderSink::write(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -138,6 +136,14 @@ status::StatusCode TranscoderSink::write(audio::Frame& frame) {
 
 status::StatusCode TranscoderSink::flush() {
     return status::StatusOK;
+}
+
+status::StatusCode TranscoderSink::close() {
+    return status::StatusOK;
+}
+
+void TranscoderSink::dispose() {
+    arena().dispose_object(*this);
 }
 
 } // namespace pipeline

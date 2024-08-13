@@ -178,58 +178,51 @@ private:
         // payload encoder
         const rtp::Encoding* enc = encoding_map.find_by_pt(pt);
         CHECK(enc);
-        payload_encoder_.reset(enc->new_encoder(arena, enc->sample_spec), arena);
+        payload_encoder_.reset(enc->new_encoder(enc->sample_spec, arena));
         CHECK(payload_encoder_);
 
         if (fec_scheme == packet::FEC_None) {
             // rtp composer
-            source_composer_.reset(new (arena) rtp::Composer(NULL), arena);
+            source_composer_.reset(new (arena) rtp::Composer(NULL, arena));
         } else {
             if (fec_scheme == packet::FEC_ReedSolomon_M8) {
                 // rs8m composers
-                payload_composer_.reset(new (arena) rtp::Composer(NULL), arena);
+                payload_composer_.reset(new (arena) rtp::Composer(NULL, arena));
 
                 source_composer_.reset(
                     new (arena)
                         fec::Composer<fec::RS8M_PayloadID, fec::Source, fec::Footer>(
-                            payload_composer_.get()),
-                    arena);
+                            payload_composer_.get(), arena));
 
                 repair_composer_.reset(
                     new (arena)
                         fec::Composer<fec::RS8M_PayloadID, fec::Repair, fec::Header>(
-                            NULL),
-                    arena);
+                            NULL, arena));
             } else if (fec_scheme == packet::FEC_LDPC_Staircase) {
                 // ldpc composers
-                payload_composer_.reset(new (arena) rtp::Composer(NULL), arena);
+                payload_composer_.reset(new (arena) rtp::Composer(NULL, arena));
 
-                source_composer_.reset(
-                    new (arena) fec::Composer<fec::LDPC_Source_PayloadID, fec::Source,
-                                              fec::Footer>(payload_composer_.get()),
-                    arena);
+                source_composer_.reset(new (
+                    arena) fec::Composer<fec::LDPC_Source_PayloadID, fec::Source,
+                                         fec::Footer>(payload_composer_.get(), arena));
 
-                repair_composer_.reset(new (arena)
-                                           fec::Composer<fec::LDPC_Repair_PayloadID,
-                                                         fec::Repair, fec::Header>(NULL),
-                                       arena);
+                repair_composer_.reset(
+                    new (arena) fec::Composer<fec::LDPC_Repair_PayloadID, fec::Repair,
+                                              fec::Header>(NULL, arena));
             }
 
             // fec encoder
             fec::CodecConfig codec_config;
             codec_config.scheme = fec_scheme;
             fec_encoder_.reset(fec::CodecMap::instance().new_block_encoder(
-                                   codec_config, packet_factory, arena),
-                               arena);
+                codec_config, packet_factory, arena));
             CHECK(fec_encoder_);
             LONGS_EQUAL(status::StatusOK, fec_encoder_->init_status());
 
             // fec writer
-            fec_writer_.reset(
-                new (arena) fec::BlockWriter(fec_config, fec_scheme, *fec_encoder_,
-                                             fec_queue_, *source_composer_,
-                                             *repair_composer_, packet_factory, arena),
-                arena);
+            fec_writer_.reset(new (fec_writer_) fec::BlockWriter(
+                fec_config, fec_scheme, *fec_encoder_, fec_queue_, *source_composer_,
+                *repair_composer_, packet_factory, arena));
             CHECK(fec_writer_);
             LONGS_EQUAL(status::StatusOK, fec_writer_->init_status());
         }
@@ -356,7 +349,7 @@ private:
     core::ScopedPtr<packet::IComposer> repair_composer_;
 
     core::ScopedPtr<fec::IBlockEncoder> fec_encoder_;
-    core::ScopedPtr<fec::BlockWriter> fec_writer_;
+    core::Optional<fec::BlockWriter> fec_writer_;
     packet::FifoQueue fec_queue_;
 
     core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;

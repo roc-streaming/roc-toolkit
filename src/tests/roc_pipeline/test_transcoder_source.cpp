@@ -95,7 +95,7 @@ TEST(transcoder_source, state) {
 
     init(Chans, Chans);
 
-    test::MockSource mock_source(frame_factory, input_sample_spec);
+    test::MockSource mock_source(frame_factory, input_sample_spec, arena);
 
     TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
                                 frame_buffer_pool, arena);
@@ -113,7 +113,7 @@ TEST(transcoder_source, pause_resume) {
 
     init(Chans, Chans);
 
-    test::MockSource mock_source(frame_factory, input_sample_spec);
+    test::MockSource mock_source(frame_factory, input_sample_spec, arena);
 
     TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
                                 frame_buffer_pool, arena);
@@ -133,7 +133,7 @@ TEST(transcoder_source, pause_restart) {
 
     init(Chans, Chans);
 
-    test::MockSource mock_source(frame_factory, input_sample_spec);
+    test::MockSource mock_source(frame_factory, input_sample_spec, arena);
 
     TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
                                 frame_buffer_pool, arena);
@@ -153,7 +153,7 @@ TEST(transcoder_source, read) {
 
     init(Chans, Chans);
 
-    test::MockSource mock_source(frame_factory, input_sample_spec);
+    test::MockSource mock_source(frame_factory, input_sample_spec, arena);
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
     TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
@@ -174,7 +174,7 @@ TEST(transcoder_source, eof) {
 
     init(Chans, Chans);
 
-    test::MockSource mock_source(frame_factory, input_sample_spec);
+    test::MockSource mock_source(frame_factory, input_sample_spec, arena);
 
     TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
                                 frame_buffer_pool, arena);
@@ -191,7 +191,7 @@ TEST(transcoder_source, frame_size_small) {
 
     init(Chans, Chans);
 
-    test::MockSource mock_source(frame_factory, input_sample_spec);
+    test::MockSource mock_source(frame_factory, input_sample_spec, arena);
     mock_source.add(ManyFrames * SamplesPerSmallFrame, input_sample_spec);
 
     TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
@@ -212,7 +212,7 @@ TEST(transcoder_source, frame_size_large) {
 
     init(Chans, Chans);
 
-    test::MockSource mock_source(frame_factory, input_sample_spec);
+    test::MockSource mock_source(frame_factory, input_sample_spec, arena);
     mock_source.add(ManyFrames * SamplesPerLargeFrame, input_sample_spec);
 
     TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
@@ -233,7 +233,7 @@ TEST(transcoder_source, channel_mapping_stereo_to_mono) {
 
     init(InputChans, OutputChans);
 
-    test::MockSource mock_source(frame_factory, input_sample_spec);
+    test::MockSource mock_source(frame_factory, input_sample_spec, arena);
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
     TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,
@@ -254,7 +254,7 @@ TEST(transcoder_source, channel_mapping_mono_to_stereo) {
 
     init(InputChans, OutputChans);
 
-    test::MockSource mock_source(frame_factory, input_sample_spec);
+    test::MockSource mock_source(frame_factory, input_sample_spec, arena);
     mock_source.add(ManyFrames * SamplesPerFrame, input_sample_spec);
 
     TranscoderSource transcoder(make_config(), mock_source, processor_map, frame_pool,

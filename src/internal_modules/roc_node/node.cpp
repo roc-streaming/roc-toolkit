@@ -12,7 +12,8 @@ namespace roc {
 namespace node {
 
 Node::Node(Context& context)
-    : context_(&context) {
+    : core::ArenaAllocation(context.arena())
+    , context_(&context) {
 }
 
 Node::~Node() {

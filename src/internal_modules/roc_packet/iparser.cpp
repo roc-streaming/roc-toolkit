@@ -11,6 +11,10 @@
 namespace roc {
 namespace packet {
 
+IParser::IParser(core::IArena& arena)
+    : core::ArenaAllocation(arena) {
+}
+
 IParser::~IParser() {
 }
 

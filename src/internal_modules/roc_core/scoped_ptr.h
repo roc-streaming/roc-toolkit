@@ -7,7 +7,7 @@
  */
 
 //! @file roc_core/scoped_ptr.h
-//! @brief Unique ownrship pointer.
+//! @brief Lexical scoped ownership pointer.
 
 #ifndef ROC_CORE_SCOPED_PTR_H_
 #define ROC_CORE_SCOPED_PTR_H_
@@ -24,23 +24,17 @@ namespace core {
 
 //! Lexical scoped ownership pointer.
 //!
-//! @tparam T defines pointee type. It may be const.
-//! @tparam AllocationPolicy defies (de)allocation policy.
+//! @tparam T defines pointee type.
+//! Pointee type should inherit one of the allocation policies (ArenaAllocation,
+//! PoolAllocation, etc).
 //!
-//! ScopedPtr holds an instance of AllocationPolicy. When ScopedPtr is
-//! destroyed or reset, it invokes AllocationPolicy::destroy().
-template <class T, class AllocationPolicy = ArenaAllocation>
-class ScopedPtr : public NonCopyable<> {
+//! ScopedPtr holds a pointer to an object and calls its dispose() method
+//! (implemented by allocation policy) in destructor.
+template <class T> class ScopedPtr : public NonCopyable<> {
 public:
-    //! Initialize null pointer.
-    ScopedPtr()
-        : ptr_(NULL) {
-    }
-
-    //! Initialize from a raw pointer.
-    ScopedPtr(T* ptr, const AllocationPolicy& alloc)
+    //! Initialize.
+    ScopedPtr(T* ptr = NULL)
         : ptr_(ptr) {
-        policy_.reset(new (policy_) AllocationPolicy(alloc));
     }
 
     //! Destroy object.
@@ -49,35 +43,22 @@ public:
     }
 
     //! Reset pointer to null.
-    void reset() {
-        if (ptr_ != NULL) {
-            policy_->destroy(*ptr_);
-            policy_.reset();
+    void reset(T* new_ptr = NULL) {
+        if (ptr_ != NULL && ptr_ != new_ptr) {
+            ptr_->dispose();
             ptr_ = NULL;
         }
-    }
-
-    //! Reset pointer to a new value.
-    //! @p alloc defines an argument for AllocationPolicy constructor.
-    void reset(T* new_ptr, const AllocationPolicy& new_alloc) {
-        if (new_ptr != ptr_) {
-            reset();
-
-            ptr_ = new_ptr;
-            policy_.reset(new (policy_) AllocationPolicy(new_alloc));
-        }
+        ptr_ = new_ptr;
     }
 
     //! Get underlying pointer and pass ownership to the caller.
-    T* release() {
+    T* hijack() {
         T* ret = ptr_;
         if (ret == NULL) {
             roc_panic("scoped ptr: attempting to release a null pointer");
         }
 
         ptr_ = NULL;
-        policy_.reset();
-
         return ret;
     }
 
@@ -106,18 +87,17 @@ public:
 
 private:
     T* ptr_;
-    Optional<AllocationPolicy> policy_;
 };
 
 //! Equality check.
 template <class T1, class T2, class P>
-inline bool operator==(const ScopedPtr<T1, P>& a, const ScopedPtr<T2, P>& b) {
+inline bool operator==(const ScopedPtr<T1>& a, const ScopedPtr<T2>& b) {
     return a.get() == b.get();
 }
 
 //! Equality check.
 template <class T1, class T2, class P>
-inline bool operator!=(const ScopedPtr<T1, P>& a, const ScopedPtr<T2, P>& b) {
+inline bool operator!=(const ScopedPtr<T1>& a, const ScopedPtr<T2>& b) {
     return a.get() != b.get();
 }
 

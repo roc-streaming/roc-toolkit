@@ -11,6 +11,10 @@
 namespace roc {
 namespace fec {
 
+IBlockEncoder::IBlockEncoder(core::IArena& arena)
+    : core::ArenaAllocation(arena) {
+}
+
 IBlockEncoder::~IBlockEncoder() {
 }
 

@@ -22,6 +22,10 @@ namespace sndio {
 //! Source interface.
 class ISource : virtual public IDevice, public audio::IFrameReader {
 public:
+    //! Initialize.
+    explicit ISource(core::IArena& arena);
+
+    //! Deinitialize.
     virtual ~ISource();
 
     //! Restart reading from beginning.

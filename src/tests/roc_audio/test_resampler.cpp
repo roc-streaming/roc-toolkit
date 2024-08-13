@@ -353,7 +353,7 @@ void resample(ResamplerBackend backend,
               const SampleSpec& sample_spec,
               float scaling) {
     core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-        arena, frame_factory, make_config(backend, profile), sample_spec, sample_spec);
+        make_config(backend, profile), sample_spec, sample_spec, frame_factory, arena);
     CHECK(resampler);
     LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
@@ -411,9 +411,8 @@ TEST(resampler, supported_scalings) {
 
                         core::SharedPtr<IResampler> resampler =
                             processor_map.new_resampler(
-                                arena, frame_factory,
                                 make_config(backend, supported_profiles[n_prof]), in_spec,
-                                out_spec);
+                                out_spec, frame_factory, arena);
                         CHECK(resampler);
                         LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
@@ -468,9 +467,8 @@ TEST(resampler, invalid_scalings) {
                                    ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
                     core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-                        arena, frame_factory,
                         make_config(backend, supported_profiles[n_prof]), in_spec,
-                        out_spec);
+                        out_spec, frame_factory, arena);
                     CHECK(resampler);
                     LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
@@ -520,8 +518,8 @@ TEST(resampler, scaling_trend) {
                     const float scaling = supported_scalings[n_scale];
 
                     core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-                        arena, frame_factory, make_config(backend, ResamplerProfile_Low),
-                        in_spec, out_spec);
+                        make_config(backend, ResamplerProfile_Low), in_spec, out_spec,
+                        frame_factory, arena);
                     CHECK(resampler);
                     LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
@@ -742,9 +740,8 @@ TEST(resampler, reader_timestamp_passthrough) {
                                    ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
                     core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-                        arena, frame_factory,
                         make_config(backend, supported_profiles[n_prof]), in_spec,
-                        out_spec);
+                        out_spec, frame_factory, arena);
 
                     const core::nanoseconds_t start_ts = 1691499037871419405;
                     core::nanoseconds_t cur_ts = start_ts;
@@ -855,9 +852,8 @@ TEST(resampler, writer_timestamp_passthrough) {
                                    ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
                     core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-                        arena, frame_factory,
                         make_config(backend, supported_profiles[n_prof]), in_spec,
-                        out_spec);
+                        out_spec, frame_factory, arena);
 
                     const core::nanoseconds_t start_ts = 1691499037871419405;
                     core::nanoseconds_t cur_ts = start_ts;
@@ -966,9 +962,8 @@ TEST(resampler, reader_timestamp_zero_or_small) {
                                    ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
                     core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-                        arena, frame_factory,
                         make_config(backend, supported_profiles[n_prof]), in_spec,
-                        out_spec);
+                        out_spec, frame_factory, arena);
 
                     test::MockReader input_reader(frame_factory, in_spec);
                     input_reader.add_zero_samples();
@@ -1045,9 +1040,8 @@ TEST(resampler, writer_timestamp_zero_or_small) {
                                    ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
                     core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-                        arena, frame_factory,
                         make_config(backend, supported_profiles[n_prof]), in_spec,
-                        out_spec);
+                        out_spec, frame_factory, arena);
 
                     const core::nanoseconds_t epsilon =
                         core::nanoseconds_t(1. / in_spec.sample_rate() * core::Second
@@ -1110,9 +1104,9 @@ TEST(resampler, reader_big_frame) {
         test::MockReader input_reader(frame_factory, sample_spec);
         input_reader.add_zero_samples();
 
-        core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-            arena, frame_factory, make_config(backend, profile), sample_spec,
-            sample_spec);
+        core::SharedPtr<IResampler> resampler =
+            processor_map.new_resampler(make_config(backend, profile), sample_spec,
+                                        sample_spec, frame_factory, arena);
         CHECK(resampler);
         LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
@@ -1148,9 +1142,9 @@ TEST(resampler, writer_big_frame) {
 
         test::MockWriter output_writer;
 
-        core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-            arena, frame_factory, make_config(backend, profile), sample_spec,
-            sample_spec);
+        core::SharedPtr<IResampler> resampler =
+            processor_map.new_resampler(make_config(backend, profile), sample_spec,
+                                        sample_spec, frame_factory, arena);
         CHECK(resampler);
         LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
@@ -1191,9 +1185,9 @@ TEST(resampler, reader_forward_mode) {
         test::MockReader input_reader(frame_factory, sample_spec);
         input_reader.add_zero_samples();
 
-        core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-            arena, frame_factory, make_config(backend, profile), sample_spec,
-            sample_spec);
+        core::SharedPtr<IResampler> resampler =
+            processor_map.new_resampler(make_config(backend, profile), sample_spec,
+                                        sample_spec, frame_factory, arena);
         CHECK(resampler);
         LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
@@ -1235,9 +1229,9 @@ TEST(resampler, reader_forward_error) {
 
         test::MockReader input_reader(frame_factory, sample_spec);
 
-        core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-            arena, frame_factory, make_config(backend, profile), sample_spec,
-            sample_spec);
+        core::SharedPtr<IResampler> resampler =
+            processor_map.new_resampler(make_config(backend, profile), sample_spec,
+                                        sample_spec, frame_factory, arena);
         CHECK(resampler);
         LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
@@ -1279,9 +1273,9 @@ TEST(resampler, writer_forward_error) {
 
         test::MockWriter output_writer;
 
-        core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-            arena, frame_factory, make_config(backend, profile), sample_spec,
-            sample_spec);
+        core::SharedPtr<IResampler> resampler =
+            processor_map.new_resampler(make_config(backend, profile), sample_spec,
+                                        sample_spec, frame_factory, arena);
         CHECK(resampler);
         LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
@@ -1322,9 +1316,9 @@ TEST(resampler, reader_process_partial) {
 
         test::MockReader input_reader(frame_factory, sample_spec);
 
-        core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-            arena, frame_factory, make_config(backend, profile), sample_spec,
-            sample_spec);
+        core::SharedPtr<IResampler> resampler =
+            processor_map.new_resampler(make_config(backend, profile), sample_spec,
+                                        sample_spec, frame_factory, arena);
         CHECK(resampler);
         LONGS_EQUAL(status::StatusOK, resampler->init_status());
 
@@ -1370,9 +1364,9 @@ TEST(resampler, reader_preallocated_buffer) {
             test::MockReader input_reader(frame_factory, sample_spec);
             input_reader.add_zero_samples();
 
-            core::SharedPtr<IResampler> resampler = processor_map.new_resampler(
-                arena, frame_factory, make_config(backend, profile), sample_spec,
-                sample_spec);
+            core::SharedPtr<IResampler> resampler =
+                processor_map.new_resampler(make_config(backend, profile), sample_spec,
+                                            sample_spec, frame_factory, arena);
             CHECK(resampler);
             LONGS_EQUAL(status::StatusOK, resampler->init_status());
 

@@ -14,9 +14,9 @@
 namespace roc {
 namespace audio {
 
-Fanout::Fanout(FrameFactory& frame_factory,
-               core::IArena& arena,
-               const SampleSpec& sample_spec)
+Fanout::Fanout(const SampleSpec& sample_spec,
+               FrameFactory& frame_factory,
+               core::IArena& arena)
     : outputs_(arena)
     , sample_spec_(sample_spec)
     , init_status_(status::NoStatus) {

@@ -19,7 +19,9 @@ SoxSink::SoxSink(audio::FrameFactory& frame_factory,
                  core::IArena& arena,
                  const IoConfig& io_config,
                  DriverType driver_type)
-    : driver_type_(driver_type)
+    : IDevice(arena)
+    , ISink(arena)
+    , driver_type_(driver_type)
     , driver_name_(arena)
     , output_name_(arena)
     , output_(NULL)
@@ -103,10 +105,6 @@ status::StatusCode SoxSink::open(const char* driver, const char* path) {
     }
 
     return status::StatusOK;
-}
-
-status::StatusCode SoxSink::close() {
-    return close_();
 }
 
 DeviceType SoxSink::type() const {
@@ -238,6 +236,14 @@ status::StatusCode SoxSink::flush() {
     }
 
     return status::StatusOK;
+}
+
+status::StatusCode SoxSink::close() {
+    return close_();
+}
+
+void SoxSink::dispose() {
+    arena().dispose_object(*this);
 }
 
 status::StatusCode SoxSink::init_names_(const char* driver, const char* path) {

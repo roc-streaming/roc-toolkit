@@ -19,7 +19,9 @@ namespace sndio {
 SndfileSource::SndfileSource(audio::FrameFactory& frame_factory,
                              core::IArena& arena,
                              const IoConfig& io_config)
-    : frame_factory_(frame_factory)
+    : IDevice(arena)
+    , ISource(arena)
+    , frame_factory_(frame_factory)
     , file_(NULL)
     , path_(arena)
     , init_status_(status::NoStatus) {
@@ -69,10 +71,6 @@ status::StatusCode SndfileSource::open(const char* driver, const char* path) {
     }
 
     return open_();
-}
-
-status::StatusCode SndfileSource::close() {
-    return close_();
 }
 
 DeviceType SndfileSource::type() const {
@@ -164,6 +162,14 @@ status::StatusCode SndfileSource::read(audio::Frame& frame,
     }
 
     return status::StatusOK;
+}
+
+status::StatusCode SndfileSource::close() {
+    return close_();
+}
+
+void SndfileSource::dispose() {
+    arena().dispose_object(*this);
 }
 
 status::StatusCode SndfileSource::seek_(size_t offset) {

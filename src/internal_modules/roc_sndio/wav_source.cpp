@@ -17,7 +17,9 @@ namespace sndio {
 WavSource::WavSource(audio::FrameFactory& frame_factory,
                      core::IArena& arena,
                      const IoConfig& io_config)
-    : frame_factory_(frame_factory)
+    : IDevice(arena)
+    , ISource(arena)
+    , frame_factory_(frame_factory)
     , file_opened_(false)
     , eof_(false)
     , init_status_(status::NoStatus) {
@@ -50,10 +52,6 @@ status::StatusCode WavSource::init_status() const {
 
 status::StatusCode WavSource::open(const char* path) {
     return open_(path);
-}
-
-status::StatusCode WavSource::close() {
-    return close_();
 }
 
 DeviceType WavSource::type() const {
@@ -161,6 +159,14 @@ status::StatusCode WavSource::read(audio::Frame& frame,
     }
 
     return status::StatusOK;
+}
+
+status::StatusCode WavSource::close() {
+    return close_();
+}
+
+void WavSource::dispose() {
+    arena().dispose_object(*this);
 }
 
 status::StatusCode WavSource::open_(const char* path) {

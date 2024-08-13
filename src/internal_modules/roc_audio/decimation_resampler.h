@@ -51,10 +51,10 @@ class DecimationResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
     DecimationResampler(const core::SharedPtr<IResampler>& inner_resampler,
-                        core::IArena& arena,
-                        FrameFactory& frame_factory,
                         const SampleSpec& in_spec,
-                        const SampleSpec& out_spec);
+                        const SampleSpec& out_spec,
+                        FrameFactory& frame_factory,
+                        core::IArena& arena);
 
     ~DecimationResampler();
 

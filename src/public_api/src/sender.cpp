@@ -46,8 +46,7 @@ int roc_sender_open(roc_context* context,
     }
 
     core::ScopedPtr<node::Sender> imp_sender(new (imp_context->arena())
-                                                 node::Sender(*imp_context, imp_config),
-                                             imp_context->arena());
+                                                 node::Sender(*imp_context, imp_config));
 
     if (!imp_sender) {
         roc_log(LogError, "roc_sender_open(): can't allocate sender");
@@ -60,7 +59,7 @@ int roc_sender_open(roc_context* context,
         return -1;
     }
 
-    *result = (roc_sender*)imp_sender.release();
+    *result = (roc_sender*)imp_sender.hijack();
     return 0;
 }
 
@@ -219,7 +218,7 @@ int roc_sender_close(roc_sender* sender) {
     }
 
     node::Sender* imp_sender = (node::Sender*)sender;
-    imp_sender->context().arena().destroy_object(*imp_sender);
+    imp_sender->context().arena().dispose_object(*imp_sender);
 
     roc_log(LogInfo, "roc_sender_close(): closed sender");
 

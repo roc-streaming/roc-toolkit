@@ -19,7 +19,9 @@ SoxSource::SoxSource(audio::FrameFactory& frame_factory,
                      core::IArena& arena,
                      const IoConfig& io_config,
                      DriverType driver_type)
-    : frame_factory_(frame_factory)
+    : IDevice(arena)
+    , ISource(arena)
+    , frame_factory_(frame_factory)
     , driver_type_(driver_type)
     , driver_name_(arena)
     , input_name_(arena)
@@ -108,10 +110,6 @@ status::StatusCode SoxSource::open(const char* driver, const char* path) {
     }
 
     return status::StatusOK;
-}
-
-status::StatusCode SoxSource::close() {
-    return close_();
 }
 
 DeviceType SoxSource::type() const {
@@ -296,6 +294,14 @@ status::StatusCode SoxSource::read(audio::Frame& frame,
     }
 
     return status::StatusOK;
+}
+
+status::StatusCode SoxSource::close() {
+    return close_();
+}
+
+void SoxSource::dispose() {
+    arena().dispose_object(*this);
 }
 
 status::StatusCode SoxSource::init_names_(const char* driver, const char* path) {

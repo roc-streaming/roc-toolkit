@@ -19,82 +19,81 @@
 namespace roc {
 namespace core {
 
-//! Allocation policy for objects allocated using IArena.
+//! Base class for objects allocated using IArena.
+//! @remarks
+//!  Objects allocated on arena should inherit either ArenaAllocation (to use with
+//!  ScopedPtr) or RefCounted<ArenaAllocation> (to use with SharedPtr).
 class ArenaAllocation {
 public:
     //! Initialize.
-    ArenaAllocation(IArena& arena)
-        : arena_(&arena) {
+    explicit ArenaAllocation(IArena& arena)
+        : arena_(arena) {
     }
 
+    virtual ~ArenaAllocation();
+
     //! Destroy object and return memory to arena.
-    template <class T> void destroy(T& object) {
-        arena_->destroy_object(object);
+    //! @remarks
+    //!  Usually default implementation is fine, but you may need to override
+    //!  it if you're using multiple inheritance.
+    virtual void dispose() {
+        arena_.dispose_object(*this);
     }
 
 protected:
     //! Get arena.
     IArena& arena() const {
-        return *arena_;
+        return arena_;
     }
 
 private:
-    IArena* arena_;
+    IArena& arena_;
 };
 
-//! Allocation policy for objects allocated using IPool.
+//! Base class for objects allocated using IPool.
+//! @remarks
+//!  Objects allocated on arena should inherit either PoolAllocation (to use with
+//!  ScopedPtr) or RefCounted<PoolAllocation> (to use with SharedPtr).
 class PoolAllocation {
 public:
     //! Initialize.
-    PoolAllocation(IPool& pool)
-        : pool_(&pool) {
+    explicit PoolAllocation(IPool& pool)
+        : pool_(pool) {
     }
 
+    virtual ~PoolAllocation();
+
     //! Destroy object and return memory to pool.
-    template <class T> void destroy(T& object) {
-        pool_->destroy_object(object);
+    //! @remarks
+    //!  Usually default implementation is fine, but you may need to override
+    //!  it if you're using multiple inheritance.
+    virtual void dispose() {
+        pool_.dispose_object(*this);
     }
 
 protected:
     //! Get pool.
     IPool& pool() const {
-        return *pool_;
+        return pool_;
     }
 
 private:
-    IPool* pool_;
+    IPool& pool_;
 };
 
-//! Allocation policy for objects with custom deallocation function.
-class FuncAllocation {
-    typedef void (*DestroyFunc)(void*);
-
-public:
-    //! Initialize.
-    template <class T>
-    FuncAllocation(void (*destroy_func)(T*))
-        : destroy_func_((DestroyFunc)destroy_func) {
-        if (!destroy_func_) {
-            roc_panic("allocation policy: null function");
-        }
-    }
-
-    //! Invoke custom destruction function.
-    template <class T> void destroy(T& object) {
-        destroy_func_(&object);
-    }
-
-private:
-    DestroyFunc destroy_func_;
-};
-
-//! Allocation policy for objects that don't have automatic deallocation.
+//! Base class for objects which allocation is not managed by smart pointer.
+//! @remarks
+//!  Useful when you want to use RefCounted for an object to enable it's safety
+//!  checks (e.g. it panic in destructor if there are active references), but
+//!  don't want smart pointer to manage allocation and deallocation.
 class NoopAllocation {
 public:
+    virtual ~NoopAllocation();
+
     //! No-op.
     //! When SharedPtr or ScopedPtr "destroys" object, nothing happens.
     //! The user is responsible for destroying object.
-    template <class T> void destroy(T&) {
+    virtual void dispose() {
     }
 };
 

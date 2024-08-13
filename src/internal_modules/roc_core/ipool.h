@@ -46,7 +46,7 @@ public:
     virtual void deallocate(void* memory) = 0;
 
     //! Destroy object and deallocate its memory.
-    template <class T> void destroy_object(T& object) {
+    template <class T> void dispose_object(T& object) {
         object.~T();
         deallocate(&object);
     }

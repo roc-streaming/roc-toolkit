@@ -30,8 +30,9 @@ public:
     //! @remarks
     //!  Composes FECFRAME header or footer and passes the rest to
     //!  @p inner_composer if it's not null.
-    Composer(packet::IComposer* inner_composer)
-        : inner_composer_(inner_composer) {
+    Composer(packet::IComposer* inner_composer, core::IArena& arena)
+        : IComposer(arena)
+        , inner_composer_(inner_composer) {
     }
 
     //! Check if the object was successfully constructed.

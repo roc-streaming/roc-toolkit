@@ -22,8 +22,12 @@ namespace test {
 
 class MockSource : public ISource {
 public:
-    MockSource(audio::FrameFactory& frame_factory, const audio::SampleSpec& sample_spec)
-        : frame_factory_(frame_factory)
+    MockSource(audio::FrameFactory& frame_factory,
+               const audio::SampleSpec& sample_spec,
+               core::IArena& arena)
+        : IDevice(arena)
+        , ISource(arena)
+        , frame_factory_(frame_factory)
         , sample_spec_(sample_spec)
         , pos_(0)
         , size_(0) {
@@ -75,10 +79,6 @@ public:
         return false;
     }
 
-    virtual status::StatusCode close() {
-        return status::StatusOK;
-    }
-
     virtual status::StatusCode rewind() {
         FAIL("not implemented");
         return status::StatusAbort;
@@ -115,6 +115,14 @@ public:
         }
 
         return status::StatusOK;
+    }
+
+    virtual status::StatusCode close() {
+        return status::StatusOK;
+    }
+
+    virtual void dispose() {
+        arena().dispose_object(*this);
     }
 
     void add(size_t sz) {

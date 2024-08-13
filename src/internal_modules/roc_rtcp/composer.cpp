@@ -14,7 +14,8 @@
 namespace roc {
 namespace rtcp {
 
-Composer::Composer() {
+Composer::Composer(core::IArena& arena)
+    : IComposer(arena) {
 }
 
 status::StatusCode Composer::init_status() const {

@@ -20,8 +20,12 @@ namespace roc {
 namespace packet {
 
 //! Packet composer interface.
-class IComposer {
+class IComposer : public core::ArenaAllocation {
 public:
+    //! Initialize.
+    explicit IComposer(core::IArena& arena);
+
+    //! Deinitialize.
     virtual ~IComposer();
 
     //! Check if the object was successfully constructed.

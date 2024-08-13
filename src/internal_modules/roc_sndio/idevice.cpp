@@ -12,6 +12,10 @@
 namespace roc {
 namespace sndio {
 
+IDevice::IDevice(core::IArena& arena)
+    : core::ArenaAllocation(arena) {
+}
+
 IDevice::~IDevice() {
 }
 

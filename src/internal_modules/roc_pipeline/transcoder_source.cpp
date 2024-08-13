@@ -20,7 +20,9 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
                                    core::IPool& frame_pool,
                                    core::IPool& frame_buffer_pool,
                                    core::IArena& arena)
-    : frame_factory_(frame_pool, frame_buffer_pool)
+    : IDevice(arena)
+    , ISource(arena)
+    , frame_factory_(frame_pool, frame_buffer_pool)
     , input_source_(input_source)
     , frame_reader_(NULL)
     , config_(config)
@@ -61,8 +63,8 @@ TranscoderSource::TranscoderSource(const TranscoderConfig& config,
                                         audio::Sample_RawFormat,
                                         config_.output_sample_spec.channel_set());
 
-        resampler_.reset(processor_map.new_resampler(
-            arena, frame_factory_, config_.resampler, from_spec, to_spec));
+        resampler_.reset(processor_map.new_resampler(config_.resampler, from_spec,
+                                                     to_spec, frame_factory_, arena));
         if (!resampler_) {
             init_status_ = status::StatusNoMem;
             return;
@@ -140,10 +142,6 @@ bool TranscoderSource::has_clock() const {
     return input_source_.has_clock();
 }
 
-status::StatusCode TranscoderSource::close() {
-    return input_source_.close();
-}
-
 status::StatusCode TranscoderSource::rewind() {
     return input_source_.rewind();
 }
@@ -158,6 +156,14 @@ status::StatusCode TranscoderSource::read(audio::Frame& frame,
     roc_panic_if(init_status_ != status::StatusOK);
 
     return frame_reader_->read(frame, duration, mode);
+}
+
+status::StatusCode TranscoderSource::close() {
+    return input_source_.close();
+}
+
+void TranscoderSource::dispose() {
+    arena().dispose_object(*this);
 }
 
 } // namespace pipeline

@@ -48,7 +48,7 @@ void write_wav(IBackend& backend,
                const IoConfig& config,
                const char* path,
                size_t num_samples) {
-    test::MockSource mock_source(frame_factory, config.sample_spec);
+    test::MockSource mock_source(frame_factory, config.sample_spec, arena);
     mock_source.add(num_samples * sample_spec.num_channels());
 
     IDevice* backend_device = NULL;
@@ -56,7 +56,7 @@ void write_wav(IBackend& backend,
                 backend.open_device(DeviceType_Sink, DriverType_File, NULL, path, config,
                                     frame_factory, arena, &backend_device));
     CHECK(backend_device != NULL);
-    core::ScopedPtr<ISink> backend_sink(backend_device->to_sink(), arena);
+    core::ScopedPtr<ISink> backend_sink(backend_device->to_sink());
     CHECK(backend_sink != NULL);
 
     IoPump pump(frame_pool, frame_buffer_pool, mock_source, NULL, *backend_sink, config,

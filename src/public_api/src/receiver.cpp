@@ -46,8 +46,7 @@ int roc_receiver_open(roc_context* context,
     }
 
     core::ScopedPtr<node::Receiver> imp_receiver(
-        new (imp_context->arena()) node::Receiver(*imp_context, imp_config),
-        imp_context->arena());
+        new (imp_context->arena()) node::Receiver(*imp_context, imp_config));
 
     if (!imp_receiver) {
         roc_log(LogError, "roc_receiver_open(): can't allocate receiver");
@@ -60,7 +59,7 @@ int roc_receiver_open(roc_context* context,
         return -1;
     }
 
-    *result = (roc_receiver*)imp_receiver.release();
+    *result = (roc_receiver*)imp_receiver.hijack();
     return 0;
 }
 
@@ -220,7 +219,7 @@ int roc_receiver_close(roc_receiver* receiver) {
     }
 
     node::Receiver* imp_receiver = (node::Receiver*)receiver;
-    imp_receiver->context().arena().destroy_object(*imp_receiver);
+    imp_receiver->context().arena().dispose_object(*imp_receiver);
 
     roc_log(LogInfo, "roc_receiver_close(): closed receiver");
 

@@ -80,7 +80,7 @@ status::StatusCode BackendDispatcher::open_default_sink(const IoConfig& io_confi
     roc_panic_if_msg(!device || device->type() != DeviceType_Sink || !device->to_sink(),
                      "backend dispatcher: unexpected device");
 
-    result.reset(device->to_sink(), arena_);
+    result.reset(device->to_sink());
     return status::StatusOK;
 }
 
@@ -99,7 +99,7 @@ BackendDispatcher::open_default_source(const IoConfig& io_config,
                          || !device->to_source(),
                      "backend dispatcher: unexpected device");
 
-    result.reset(device->to_source(), arena_);
+    result.reset(device->to_source());
     return status::StatusOK;
 }
 
@@ -125,7 +125,7 @@ status::StatusCode BackendDispatcher::open_sink(const address::IoUri& uri,
     roc_panic_if_msg(!device || device->type() != DeviceType_Sink || !device->to_sink(),
                      "backend dispatcher: unexpected device");
 
-    result.reset(device->to_sink(), arena_);
+    result.reset(device->to_sink());
     return status::StatusOK;
 }
 
@@ -152,7 +152,7 @@ status::StatusCode BackendDispatcher::open_source(const address::IoUri& uri,
                          || !device->to_source(),
                      "backend dispatcher: unexpected device");
 
-    result.reset(device->to_source(), arena_);
+    result.reset(device->to_source());
     return status::StatusOK;
 }
 

@@ -64,9 +64,6 @@ public:
     //! Check if the source has own clock.
     virtual bool has_clock() const;
 
-    //! Explicitly close the source.
-    virtual ROC_ATTR_NODISCARD status::StatusCode close();
-
     //! Restart reading from beginning.
     virtual ROC_ATTR_NODISCARD status::StatusCode rewind();
 
@@ -78,6 +75,12 @@ public:
     read(audio::Frame& frame,
          packet::stream_timestamp_t duration,
          audio::FrameReadMode mode);
+
+    //! Explicitly close the source.
+    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+
+    //! Destroy object and return memory to arena.
+    virtual void dispose();
 
 private:
     status::StatusCode open_();

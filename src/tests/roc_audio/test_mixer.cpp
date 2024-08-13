@@ -82,7 +82,7 @@ void expect_error(status::StatusCode expected_code,
 TEST_GROUP(mixer) {};
 
 TEST(mixer, no_readers) {
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     expect_output(status::StatusOK, mixer, BufSz, BufSz, 0);
@@ -91,7 +91,7 @@ TEST(mixer, no_readers) {
 TEST(mixer, one_input) {
     test::MockReader reader(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
@@ -108,7 +108,7 @@ TEST(mixer, one_input_big_frame) {
 
     test::MockReader reader(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
@@ -124,7 +124,7 @@ TEST(mixer, two_inputs) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -146,7 +146,7 @@ TEST(mixer, remove_input) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -176,7 +176,7 @@ TEST(mixer, has_input) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     CHECK(!mixer.has_input(reader1));
@@ -204,7 +204,7 @@ TEST(mixer, finish) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -238,7 +238,7 @@ TEST(mixer, partial) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -275,7 +275,7 @@ TEST(mixer, partial_end) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -306,7 +306,7 @@ TEST(mixer, clamp) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -339,7 +339,7 @@ TEST(mixer, cts_one_reader) {
 
     test::MockReader reader(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
@@ -370,7 +370,7 @@ TEST(mixer, cts_two_readers) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -409,7 +409,7 @@ TEST(mixer, cts_partial) {
     test::MockReader reader2(frame_factory, sample_spec);
     test::MockReader reader3(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -457,7 +457,7 @@ TEST(mixer, cts_prevent_overflow) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -494,7 +494,7 @@ TEST(mixer, cts_disabled) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, false);
+    Mixer mixer(sample_spec, false, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     reader1.enable_timestamps(start_ts);
@@ -522,7 +522,7 @@ TEST(mixer, soft_read_drain) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -560,7 +560,7 @@ TEST(mixer, soft_read_partial) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -597,7 +597,7 @@ TEST(mixer, soft_read_partial) {
 TEST(mixer, soft_read_partial_drain) {
     test::MockReader reader(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
@@ -634,7 +634,7 @@ TEST(mixer, soft_read_partial_drain_two_readers) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -703,7 +703,7 @@ TEST(mixer, soft_read_partial_end_two_readers) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -741,7 +741,7 @@ TEST(mixer, soft_read_cts) {
 
     test::MockReader reader(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
@@ -772,7 +772,7 @@ TEST(mixer, soft_read_cts_partial) {
 
     test::MockReader reader(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
@@ -806,7 +806,7 @@ TEST(mixer, soft_read_cts_two_readers) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -849,7 +849,7 @@ TEST(mixer, soft_read_add_reader) {
     test::MockReader reader2(frame_factory, sample_spec);
     test::MockReader reader3(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -892,7 +892,7 @@ TEST(mixer, soft_read_remove_reader) {
     test::MockReader reader2(frame_factory, sample_spec);
     test::MockReader reader3(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -973,7 +973,7 @@ TEST(mixer, soft_read_remove_reader) {
 TEST(mixer, forward_mode) {
     test::MockReader reader(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader));
@@ -998,7 +998,7 @@ TEST(mixer, forward_error) {
     test::MockReader reader1(frame_factory, sample_spec);
     test::MockReader reader2(frame_factory, sample_spec);
 
-    Mixer mixer(frame_factory, arena, sample_spec, true);
+    Mixer mixer(sample_spec, true, frame_factory, arena);
     LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
     LONGS_EQUAL(status::StatusOK, mixer.add_input(reader1));
@@ -1050,7 +1050,7 @@ TEST(mixer, preallocated_buffer) {
         test::MockReader reader1(frame_factory, sample_spec);
         test::MockReader reader2(frame_factory, sample_spec);
 
-        Mixer mixer(frame_factory, arena, sample_spec, true);
+        Mixer mixer(sample_spec, true, frame_factory, arena);
         LONGS_EQUAL(status::StatusOK, mixer.init_status());
 
         reader1.add_zero_samples();

@@ -236,12 +236,12 @@ void test_all(const PacketTest& test) {
 TEST_GROUP(composer_parser) {};
 
 TEST(composer_parser, rtp_ldpc_source) {
-    rtp::Composer rtp_composer(NULL);
-    Composer<LDPC_Source_PayloadID, Source, Footer> ldpc_composer(&rtp_composer);
+    rtp::Composer rtp_composer(NULL, arena);
+    Composer<LDPC_Source_PayloadID, Source, Footer> ldpc_composer(&rtp_composer, arena);
 
     rtp::EncodingMap rtp_encoding_map(arena);
-    rtp::Parser rtp_parser(rtp_encoding_map, NULL);
-    Parser<LDPC_Source_PayloadID, Source, Footer> ldpc_parser(&rtp_parser);
+    rtp::Parser rtp_parser(NULL, rtp_encoding_map, arena);
+    Parser<LDPC_Source_PayloadID, Source, Footer> ldpc_parser(&rtp_parser, arena);
 
     PacketTest test;
     test.composer = &ldpc_composer;
@@ -256,8 +256,8 @@ TEST(composer_parser, rtp_ldpc_source) {
 }
 
 TEST(composer_parser, ldpc_repair) {
-    Composer<LDPC_Repair_PayloadID, Repair, Header> ldpc_composer(NULL);
-    Parser<LDPC_Repair_PayloadID, Repair, Header> ldpc_parser(NULL);
+    Composer<LDPC_Repair_PayloadID, Repair, Header> ldpc_composer(NULL, arena);
+    Parser<LDPC_Repair_PayloadID, Repair, Header> ldpc_parser(NULL, arena);
 
     PacketTest test;
     test.composer = &ldpc_composer;
@@ -272,12 +272,12 @@ TEST(composer_parser, ldpc_repair) {
 }
 
 TEST(composer_parser, rtp_rs8m_source) {
-    rtp::Composer rtp_composer(NULL);
-    Composer<RS8M_PayloadID, Source, Footer> rs8m_composer(&rtp_composer);
+    rtp::Composer rtp_composer(NULL, arena);
+    Composer<RS8M_PayloadID, Source, Footer> rs8m_composer(&rtp_composer, arena);
 
     rtp::EncodingMap rtp_encoding_map(arena);
-    rtp::Parser rtp_parser(rtp_encoding_map, NULL);
-    Parser<RS8M_PayloadID, Source, Footer> rs8m_parser(&rtp_parser);
+    rtp::Parser rtp_parser(NULL, rtp_encoding_map, arena);
+    Parser<RS8M_PayloadID, Source, Footer> rs8m_parser(&rtp_parser, arena);
 
     PacketTest test;
     test.composer = &rs8m_composer;
@@ -292,8 +292,8 @@ TEST(composer_parser, rtp_rs8m_source) {
 }
 
 TEST(composer_parser, rs8m_repair) {
-    Composer<RS8M_PayloadID, Repair, Header> rs8m_composer(NULL);
-    Parser<RS8M_PayloadID, Repair, Header> rs8m_parser(NULL);
+    Composer<RS8M_PayloadID, Repair, Header> rs8m_composer(NULL, arena);
+    Parser<RS8M_PayloadID, Repair, Header> rs8m_parser(NULL, arena);
 
     PacketTest test;
     test.composer = &rs8m_composer;

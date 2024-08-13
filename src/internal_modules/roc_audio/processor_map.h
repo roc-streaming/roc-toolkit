@@ -42,30 +42,30 @@ public:
     explicit ProcessorMap(core::IArena& arena);
 
     //! Resampler factory function.
-    typedef IResampler* (*ResamplerFunc)(void* backend_owner,
-                                         core::IArena& arena,
-                                         FrameFactory& frame_factory,
-                                         const ResamplerConfig& config,
+    typedef IResampler* (*ResamplerFunc)(const ResamplerConfig& config,
                                          const SampleSpec& in_spec,
-                                         const SampleSpec& out_spec);
+                                         const SampleSpec& out_spec,
+                                         FrameFactory& frame_factory,
+                                         core::IArena& arena,
+                                         void* backend_owner);
 
     //! Check if given backend is supported.
     bool has_resampler_backend(ResamplerBackend backend_id) const;
 
     //! Instantiate IResampler for given configuration.
     //! The type depends on backend specified in @p config.
-    IResampler* new_resampler(core::IArena& arena,
-                              FrameFactory& frame_factory,
-                              const ResamplerConfig& config,
+    IResampler* new_resampler(const ResamplerConfig& config,
                               const SampleSpec& in_spec,
-                              const SampleSpec& out_spec);
+                              const SampleSpec& out_spec,
+                              FrameFactory& frame_factory,
+                              core::IArena& arena);
 
     //! PLC factory function.
-    typedef IPlc* (*PlcFunc)(void* backend_owner,
-                             core::IArena& arena,
+    typedef IPlc* (*PlcFunc)(const PlcConfig& config,
+                             const SampleSpec& sample_spec,
                              FrameFactory& frame_factory,
-                             const PlcConfig& config,
-                             const SampleSpec& sample_spec);
+                             core::IArena& arena,
+                             void* backend_owner);
 
     //! Register custom PLC backend.
     ROC_ATTR_NODISCARD status::StatusCode
@@ -76,10 +76,10 @@ public:
 
     //! Instantiate IPlc for given configuration.
     //! The type depends on backend specified in @p config.
-    IPlc* new_plc(core::IArena& arena,
+    IPlc* new_plc(const PlcConfig& config,
+                  const SampleSpec& sample_spec,
                   FrameFactory& frame_factory,
-                  const PlcConfig& config,
-                  const SampleSpec& sample_spec);
+                  core::IArena& arena);
 
 private:
     friend class core::Singleton<ProcessorMap>;

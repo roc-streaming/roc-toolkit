@@ -24,10 +24,10 @@ namespace audio {
 class PcmEncoder : public IFrameEncoder, public core::NonCopyable<> {
 public:
     //! Construction function.
-    static IFrameEncoder* construct(core::IArena& arena, const SampleSpec& sample_spec);
+    static IFrameEncoder* construct(const SampleSpec& sample_spec, core::IArena& arena);
 
     //! Initialize.
-    PcmEncoder(const SampleSpec& sample_spec);
+    PcmEncoder(const SampleSpec& sample_spec, core::IArena& arena);
 
     //! Check if the object was successfully constructed.
     virtual status::StatusCode init_status() const;

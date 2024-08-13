@@ -25,7 +25,7 @@ public:
     //! Initialization.
     //! @remarks
     //!  If @p inner_composer is not NULL, it is used to compose the packet payload.
-    Composer(packet::IComposer* inner_composer);
+    Composer(packet::IComposer* inner_composer, core::IArena& arena);
 
     //! Check if the object was successfully constructed.
     virtual status::StatusCode init_status() const;

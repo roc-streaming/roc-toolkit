@@ -49,8 +49,7 @@ int roc_sender_encoder_open(roc_context* context,
     }
 
     core::ScopedPtr<node::SenderEncoder> imp_encoder(
-        new (imp_context->arena()) node::SenderEncoder(*imp_context, imp_config),
-        imp_context->arena());
+        new (imp_context->arena()) node::SenderEncoder(*imp_context, imp_config));
 
     if (!imp_encoder) {
         roc_log(LogError, "roc_sender_encoder_open(): can't allocate encoder");
@@ -64,7 +63,7 @@ int roc_sender_encoder_open(roc_context* context,
         return -1;
     }
 
-    *result = (roc_sender_encoder*)imp_encoder.release();
+    *result = (roc_sender_encoder*)imp_encoder.hijack();
     return 0;
 }
 
@@ -293,7 +292,7 @@ int roc_sender_encoder_close(roc_sender_encoder* encoder) {
     }
 
     node::SenderEncoder* imp_encoder = (node::SenderEncoder*)encoder;
-    imp_encoder->context().arena().destroy_object(*imp_encoder);
+    imp_encoder->context().arena().dispose_object(*imp_encoder);
 
     roc_log(LogInfo, "roc_sender_encoder_close(): closed encoder");
 

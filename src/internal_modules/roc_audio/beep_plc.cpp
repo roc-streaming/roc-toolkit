@@ -13,11 +13,12 @@
 namespace roc {
 namespace audio {
 
-BeepPlc::BeepPlc(core::IArena& arena,
+BeepPlc::BeepPlc(const PlcConfig& config,
+                 const SampleSpec& sample_spec,
                  FrameFactory& frame_factory,
-                 const PlcConfig& config,
-                 const SampleSpec& sample_spec)
-    : sample_spec_(sample_spec)
+                 core::IArena& arena)
+    : IPlc(arena)
+    , sample_spec_(sample_spec)
     , signal_pos_(0) {
     if (!sample_spec_.is_valid() || !sample_spec_.is_raw()) {
         roc_panic("beep plc: required valid sample specs with raw format: spec=%s",

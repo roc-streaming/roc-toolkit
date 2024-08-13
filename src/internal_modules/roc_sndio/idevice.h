@@ -39,8 +39,12 @@ class ISource;
 //! sndio::IoPump is a class that copies stream from ISource to ISink
 //! regardless of the device kind, e.g. from file to network sender,
 //! or from network receiver to speakers.
-class IDevice {
+class IDevice : public core::ArenaAllocation {
 public:
+    //! Initialize.
+    explicit IDevice(core::IArena& arena);
+
+    //! Deinitialize.
     virtual ~IDevice();
 
     //! Get device type (sink or source).
@@ -124,6 +128,13 @@ public:
     //!  If this method is not called before the destructor, it's called
     //!  automatically, but you won't know if error happened.
     virtual ROC_ATTR_NODISCARD status::StatusCode close() = 0;
+
+    //! Destroy object and return memory to arena.
+    //! @remarks
+    //!  Since IDevice uses virtual inheritance, we force all derived classes
+    //!  to override ArenaAllocation::dispose() to ensure they pass correct
+    //!  pointer to this to IArena::dispose_object().
+    virtual void dispose() = 0;
 };
 
 } // namespace sndio

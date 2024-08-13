@@ -20,8 +20,12 @@ namespace roc {
 namespace fec {
 
 //! FEC block decoder interface.
-class IBlockDecoder {
+class IBlockDecoder : public core::ArenaAllocation {
 public:
+    //! Initialize.
+    explicit IBlockDecoder(core::IArena& arena);
+
+    //! Deinitialize.
     virtual ~IBlockDecoder();
 
     //! Check if the object was successfully constructed.

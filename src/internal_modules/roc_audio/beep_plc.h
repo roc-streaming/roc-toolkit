@@ -27,10 +27,10 @@ namespace audio {
 class BeepPlc : public IPlc {
 public:
     //! Initialize.
-    BeepPlc(core::IArena& arena,
+    BeepPlc(const PlcConfig& config,
+            const SampleSpec& sample_spec,
             FrameFactory& frame_factory,
-            const PlcConfig& config,
-            const SampleSpec& sample_spec);
+            core::IArena& arena);
 
     virtual ~BeepPlc();
 

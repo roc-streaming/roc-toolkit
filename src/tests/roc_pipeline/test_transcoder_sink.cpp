@@ -100,7 +100,7 @@ TEST(transcoder_sink, write) {
 
     init(Rate, Chans, Rate, Chans);
 
-    test::MockSink mock_sink(output_sample_spec);
+    test::MockSink mock_sink(output_sample_spec, arena);
 
     TranscoderSink transcoder(make_config(), &mock_sink, processor_map, frame_pool,
                               frame_buffer_pool, arena);
@@ -125,7 +125,7 @@ TEST(transcoder_sink, frame_size_small) {
 
     init(Rate, Chans, Rate, Chans);
 
-    test::MockSink mock_sink(output_sample_spec);
+    test::MockSink mock_sink(output_sample_spec, arena);
 
     TranscoderSink transcoder(make_config(), &mock_sink, processor_map, frame_pool,
                               frame_buffer_pool, arena);
@@ -150,7 +150,7 @@ TEST(transcoder_sink, frame_size_large) {
 
     init(Rate, Chans, Rate, Chans);
 
-    test::MockSink mock_sink(output_sample_spec);
+    test::MockSink mock_sink(output_sample_spec, arena);
 
     TranscoderSink transcoder(make_config(), &mock_sink, processor_map, frame_pool,
                               frame_buffer_pool, arena);
@@ -171,7 +171,7 @@ TEST(transcoder_sink, channel_mapping_stereo_to_mono) {
 
     init(Rate, InputChans, Rate, OutputChans);
 
-    test::MockSink mock_sink(output_sample_spec);
+    test::MockSink mock_sink(output_sample_spec, arena);
 
     TranscoderSink transcoder(make_config(), &mock_sink, processor_map, frame_pool,
                               frame_buffer_pool, arena);
@@ -192,7 +192,7 @@ TEST(transcoder_sink, channel_mapping_mono_to_stereo) {
 
     init(Rate, InputChans, Rate, OutputChans);
 
-    test::MockSink mock_sink(output_sample_spec);
+    test::MockSink mock_sink(output_sample_spec, arena);
 
     TranscoderSink transcoder(make_config(), &mock_sink, processor_map, frame_pool,
                               frame_buffer_pool, arena);

@@ -22,7 +22,8 @@ namespace fec {
 OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
                                packet::PacketFactory& packet_factory,
                                core::IArena& arena)
-    : sblen_(0)
+    : IBlockDecoder(arena)
+    , sblen_(0)
     , rblen_(0)
     , payload_size_(0)
     , max_index_(0)

@@ -1057,6 +1057,7 @@ if meta.compiler == 'gcc':
     ])
 
     if meta.compiler_ver[:2] >= (10, 0):
+        # enable
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wdouble-promotion',
@@ -1065,6 +1066,11 @@ if meta.compiler == 'gcc':
                 '-Woverlength-strings',
                 '-Wsign-conversion',
             ]})
+    else:
+        # disable
+        env.Append(CXXFLAGS=[
+            '-Wno-reorder',
+        ])
 
 if meta.compiler == 'clang':
     for var in ['CXXFLAGS', 'CFLAGS']:
@@ -1099,15 +1105,25 @@ if meta.compiler == 'clang':
         ]})
 
     env.Append(CXXFLAGS=[
-        '-Wno-invalid-offsetof',
+        # enable
         '-Wnon-virtual-dtor',
+
+        # disable
+        '-Wno-invalid-offsetof',
     ])
 
-    if meta.platform in ['darwin', 'android'] or meta.compiler_ver[:2] < (11, 0):
+    if meta.platform not in ['darwin', 'android'] and meta.compiler_ver[:2] >= (11, 0):
+        # enable
+        pass
+    else:
+        # disable
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wno-unknown-warning-option',
             ]})
+        env.Append(CXXFLAGS=[
+            '-Wno-reorder',
+        ])
 
 if meta.compiler in ['gcc', 'clang']:
     for var in ['CXXFLAGS', 'CFLAGS']:

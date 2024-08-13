@@ -15,8 +15,9 @@
 namespace roc {
 namespace rtp {
 
-Composer::Composer(packet::IComposer* inner_composer)
-    : inner_composer_(inner_composer) {
+Composer::Composer(packet::IComposer* inner_composer, core::IArena& arena)
+    : IComposer(arena)
+    , inner_composer_(inner_composer) {
 }
 
 status::StatusCode Composer::init_status() const {

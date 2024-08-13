@@ -43,14 +43,14 @@ core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, MaxBuffSize);
 
 rtp::EncodingMap encoding_map(arena);
-rtp::Parser rtp_parser(encoding_map, NULL);
+rtp::Parser rtp_parser(NULL, encoding_map, arena);
 
-Parser<RS8M_PayloadID, Source, Footer> source_parser(&rtp_parser);
-Parser<RS8M_PayloadID, Repair, Header> repair_parser(NULL);
+Parser<RS8M_PayloadID, Source, Footer> source_parser(&rtp_parser, arena);
+Parser<RS8M_PayloadID, Repair, Header> repair_parser(NULL, arena);
 
-rtp::Composer rtp_composer(NULL);
-Composer<RS8M_PayloadID, Source, Footer> source_composer(&rtp_composer);
-Composer<RS8M_PayloadID, Repair, Header> repair_composer(NULL);
+rtp::Composer rtp_composer(NULL, arena);
+Composer<RS8M_PayloadID, Source, Footer> source_composer(&rtp_composer, arena);
+Composer<RS8M_PayloadID, Repair, Header> repair_composer(NULL, arena);
 
 } // namespace
 
@@ -72,11 +72,9 @@ TEST_GROUP(block_writer_reader_peek) {
 
         if (fec_supported()) {
             encoder.reset(CodecMap::instance().new_block_encoder(codec_config,
-                                                                 packet_factory, arena),
-                          arena);
+                                                                 packet_factory, arena));
             decoder.reset(CodecMap::instance().new_block_decoder(codec_config,
-                                                                 packet_factory, arena),
-                          arena);
+                                                                 packet_factory, arena));
             CHECK(encoder);
             CHECK(decoder);
         }

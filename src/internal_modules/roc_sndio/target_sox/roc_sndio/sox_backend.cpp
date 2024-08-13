@@ -274,7 +274,7 @@ status::StatusCode SoxBackend::open_device(DeviceType device_type,
     switch (device_type) {
     case DeviceType_Sink: {
         core::ScopedPtr<SoxSink> sink(
-            new (arena) SoxSink(frame_factory, arena, io_config, driver_type), arena);
+            new (arena) SoxSink(frame_factory, arena, io_config, driver_type));
 
         if (!sink) {
             roc_log(LogDebug, "sox backend: can't allocate sink: path=%s", path);
@@ -294,13 +294,13 @@ status::StatusCode SoxBackend::open_device(DeviceType device_type,
             return code;
         }
 
-        *result = sink.release();
+        *result = sink.hijack();
         return status::StatusOK;
     } break;
 
     case DeviceType_Source: {
         core::ScopedPtr<SoxSource> source(
-            new (arena) SoxSource(frame_factory, arena, io_config, driver_type), arena);
+            new (arena) SoxSource(frame_factory, arena, io_config, driver_type));
 
         if (!source) {
             roc_log(LogDebug, "sox backend: can't allocate source: path=%s", path);
@@ -320,7 +320,7 @@ status::StatusCode SoxBackend::open_device(DeviceType device_type,
             return code;
         }
 
-        *result = source.release();
+        *result = source.hijack();
         return status::StatusOK;
     } break;
 

@@ -17,12 +17,7 @@ namespace core {
 
 namespace {
 
-struct NoAllocation {
-    template <class T> void destroy(T&) {
-    }
-};
-
-struct Object : RefCounted<Object, NoAllocation>, MpscQueueNode<> {};
+struct Object : RefCounted<Object, NoopAllocation>, MpscQueueNode<> {};
 
 } // namespace
 

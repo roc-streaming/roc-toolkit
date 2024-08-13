@@ -122,7 +122,10 @@ PulseaudioDevice::PulseaudioDevice(audio::FrameFactory& frame_factory,
                                    core::IArena& arena,
                                    const IoConfig& io_config,
                                    DeviceType device_type)
-    : device_type_(device_type)
+    : IDevice(arena)
+    , ISink(arena)
+    , ISource(arena)
+    , device_type_(device_type)
     , device_(NULL)
     , frame_factory_(frame_factory)
     , sample_spec_(io_config.sample_spec)
@@ -210,15 +213,6 @@ status::StatusCode PulseaudioDevice::open(const char* device) {
     if ((code = open_()) != status::StatusOK) {
         return code;
     }
-
-    return status::StatusOK;
-}
-
-status::StatusCode PulseaudioDevice::close() {
-    roc_log(LogDebug, "pulseaudio %s: closing device", device_type_to_str(device_type_));
-
-    close_();
-    stop_mainloop_();
 
     return status::StatusOK;
 }
@@ -330,16 +324,6 @@ void PulseaudioDevice::reclock(core::nanoseconds_t timestamp) {
     // no-op
 }
 
-status::StatusCode PulseaudioDevice::write(audio::Frame& frame) {
-    roc_panic_if(device_type_ != DeviceType_Sink);
-
-    return handle_request_(frame.bytes(), frame.num_bytes());
-}
-
-status::StatusCode PulseaudioDevice::flush() {
-    return status::StatusOK;
-}
-
 status::StatusCode PulseaudioDevice::read(audio::Frame& frame,
                                           packet::stream_timestamp_t duration,
                                           audio::FrameReadMode mode) {
@@ -354,6 +338,29 @@ status::StatusCode PulseaudioDevice::read(audio::Frame& frame,
     frame.set_duration(duration);
 
     return handle_request_(frame.bytes(), frame.num_bytes());
+}
+
+status::StatusCode PulseaudioDevice::write(audio::Frame& frame) {
+    roc_panic_if(device_type_ != DeviceType_Sink);
+
+    return handle_request_(frame.bytes(), frame.num_bytes());
+}
+
+status::StatusCode PulseaudioDevice::flush() {
+    return status::StatusOK;
+}
+
+status::StatusCode PulseaudioDevice::close() {
+    roc_log(LogDebug, "pulseaudio %s: closing device", device_type_to_str(device_type_));
+
+    close_();
+    stop_mainloop_();
+
+    return status::StatusOK;
+}
+
+void PulseaudioDevice::dispose() {
+    arena().dispose_object(*this);
 }
 
 status::StatusCode PulseaudioDevice::handle_request_(uint8_t* data, size_t size) {

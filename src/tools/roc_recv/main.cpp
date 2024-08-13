@@ -15,6 +15,7 @@
 #include "roc_core/log.h"
 #include "roc_core/parse_units.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/scoped_release.h"
 #include "roc_core/time.h"
 #include "roc_netio/network_loop.h"
 #include "roc_node/context.h"
@@ -46,8 +47,7 @@ int main(int argc, char** argv) {
         return code;
     }
 
-    core::ScopedPtr<gengetopt_args_info, core::FuncAllocation> args_holder(
-        &args, &cmdline_parser_free);
+    core::ScopedRelease<gengetopt_args_info> args_holder(&args, &cmdline_parser_free);
 
     core::Logger::instance().set_verbosity(args.verbose_given);
 
@@ -459,10 +459,8 @@ int main(int argc, char** argv) {
                               receiver_config.common.output_sample_spec.channel_set());
 
         backup_pipeline.reset(new (context.arena()) pipeline::TranscoderSource(
-                                  transcoder_config, *backup_source,
-                                  context.processor_map(), context.frame_pool(),
-                                  context.frame_buffer_pool(), context.arena()),
-                              context.arena());
+            transcoder_config, *backup_source, context.processor_map(),
+            context.frame_pool(), context.frame_buffer_pool(), context.arena()));
         if (!backup_pipeline) {
             roc_log(LogError, "can't allocate backup pipeline");
             return 1;

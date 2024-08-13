@@ -14,10 +14,10 @@
 namespace roc {
 namespace audio {
 
-Mixer::Mixer(FrameFactory& frame_factory,
-             core::IArena& arena,
-             const SampleSpec& sample_spec,
-             bool enable_timestamps)
+Mixer::Mixer(const SampleSpec& sample_spec,
+             bool enable_timestamps,
+             FrameFactory& frame_factory,
+             core::IArena& arena)
     : frame_factory_(frame_factory)
     , inputs_(arena)
     , sample_spec_(sample_spec)

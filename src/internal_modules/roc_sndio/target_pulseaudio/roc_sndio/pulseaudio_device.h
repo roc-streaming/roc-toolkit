@@ -79,9 +79,6 @@ public:
     //! Check if the device has own clock.
     virtual bool has_clock() const;
 
-    //! Explicitly close the device.
-    virtual ROC_ATTR_NODISCARD status::StatusCode close();
-
     //! Restart reading from beginning.
     virtual ROC_ATTR_NODISCARD status::StatusCode rewind();
 
@@ -103,6 +100,12 @@ public:
 
     //! Flush buffered data, if any.
     virtual ROC_ATTR_NODISCARD status::StatusCode flush();
+
+    //! Explicitly close the device.
+    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+
+    //! Destroy object and return memory to arena.
+    virtual void dispose();
 
 private:
     static void context_state_cb_(pa_context* context, void* userdata);

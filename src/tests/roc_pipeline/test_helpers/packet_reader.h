@@ -117,11 +117,11 @@ private:
         // payload decoder
         const rtp::Encoding* enc = encoding_map.find_by_pt(pt);
         CHECK(enc);
-        payload_decoder_.reset(enc->new_decoder(arena, enc->sample_spec), arena);
+        payload_decoder_.reset(enc->new_decoder(enc->sample_spec, arena));
         CHECK(payload_decoder_);
 
         // rtp parser
-        parser_.reset(new (arena) rtp::Parser(encoding_map, NULL), arena);
+        parser_.reset(new (arena) rtp::Parser(NULL, encoding_map, arena));
     }
 
     packet::PacketPtr read_packet_() {

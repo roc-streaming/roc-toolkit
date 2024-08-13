@@ -73,7 +73,7 @@ TEST(io_pump, write_read) {
 
         dbgio::TempFile file("test.wav");
 
-        test::MockSource mock_source(frame_factory, sink_config.sample_spec);
+        test::MockSource mock_source(frame_factory, sink_config.sample_spec, arena);
         mock_source.add(NumSamples);
 
         {
@@ -99,7 +99,7 @@ TEST(io_pump, write_read) {
                                  backend_source);
 
         // copy from source to mock sink
-        test::MockSink mock_sink;
+        test::MockSink mock_sink(arena);
         IoPump pump(frame_pool, frame_buffer_pool, *backend_source, NULL, mock_sink,
                     sink_config, IoPump::ModePermanent);
         LONGS_EQUAL(status::StatusOK, pump.init_status());
@@ -122,7 +122,7 @@ TEST(io_pump, write_overwrite_read) {
 
         dbgio::TempFile file("test.wav");
 
-        test::MockSource mock_source(frame_factory, sink_config.sample_spec);
+        test::MockSource mock_source(frame_factory, sink_config.sample_spec, arena);
         mock_source.add(NumSamples);
 
         {
@@ -169,7 +169,7 @@ TEST(io_pump, write_overwrite_read) {
                                  backend_source);
 
         // copy from source to mock sink
-        test::MockSink mock_sink;
+        test::MockSink mock_sink(arena);
         IoPump pump(frame_pool, frame_buffer_pool, *backend_source, NULL, mock_sink,
                     sink_config, IoPump::ModePermanent);
         LONGS_EQUAL(status::StatusOK, pump.init_status());

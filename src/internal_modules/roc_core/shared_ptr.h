@@ -21,14 +21,15 @@ namespace core {
 
 //! Shared ownership intrusive pointer.
 //!
-//! @tparam T defines pointee type. It may be const.
+//! @tparam T defines pointee type.
 //!
 //! @tparam OwnershipPolicy defines ownership policy. It provides methods to
 //! increase and decrease the reference counter embedded into object.
 //!
 //! If RefCountedOwnership is used, T should inherit RefCounted. RefCounted
 //! has a template parameter AllocationPolicy, and inherits from it.
-//! When reference counter reaches zero, it invokes AllocationPolicy::destroy().
+//! When reference counter reaches zero, it invokes dispose() method provided
+//! by the allocation policy.
 template <class T, template <class TT> class OwnershipPolicy = RefCountedOwnership>
 class SharedPtr {
 public:
@@ -91,7 +92,7 @@ public:
     }
 
     //! Get underlying pointer and pass ownership to the caller.
-    T* release() {
+    T* hijack() {
         T* ret = ptr_;
         if (ret == NULL) {
             roc_panic("shared ptr: attempting to release a null pointer");

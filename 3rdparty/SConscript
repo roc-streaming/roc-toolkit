@@ -28,7 +28,7 @@ thirdparty_versions = {
     'sox':              '14.4.2',
     'speexdsp':         '1.2.0',
 
-    # CLI tools
+    # cli tools
     'gengetopt':        '2.22.6',
     'ragel':            '6.10',
 

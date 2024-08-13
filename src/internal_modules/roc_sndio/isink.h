@@ -22,6 +22,10 @@ namespace sndio {
 //! Sink interface.
 class ISink : virtual public IDevice, public audio::IFrameWriter {
 public:
+    //! Initialize.
+    explicit ISink(core::IArena& arena);
+
+    //! Deinitialize.
     virtual ~ISink();
 
     //! Flush buffered data, if any.

@@ -35,12 +35,12 @@ struct Encoding {
     unsigned packet_flags;
 
     //! Create frame encoder.
-    audio::IFrameEncoder* (*new_encoder)(core::IArena& arena,
-                                         const audio::SampleSpec& sample_spec);
+    audio::IFrameEncoder* (*new_encoder)(const audio::SampleSpec& sample_spec,
+                                         core::IArena& arena);
 
     //! Create frame decoder.
-    audio::IFrameDecoder* (*new_decoder)(core::IArena& arena,
-                                         const audio::SampleSpec& sample_spec);
+    audio::IFrameDecoder* (*new_decoder)(const audio::SampleSpec& sample_spec,
+                                         core::IArena& arena);
 
     //! Initialize.
     Encoding()

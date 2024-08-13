@@ -12,6 +12,7 @@
 #ifndef ROC_PACKET_IPARSER_H_
 #define ROC_PACKET_IPARSER_H_
 
+#include "roc_core/allocation_policy.h"
 #include "roc_core/slice.h"
 #include "roc_packet/packet.h"
 #include "roc_status/status_code.h"
@@ -20,8 +21,12 @@ namespace roc {
 namespace packet {
 
 //! Packet parser interface.
-class IParser {
+class IParser : public core::ArenaAllocation {
 public:
+    //! Initialize.
+    explicit IParser(core::IArena& arena);
+
+    //! Deinitialize.
     virtual ~IParser();
 
     //! Check if the object was successfully constructed.

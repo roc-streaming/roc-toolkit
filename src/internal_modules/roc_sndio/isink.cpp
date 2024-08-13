@@ -11,6 +11,10 @@
 namespace roc {
 namespace sndio {
 
+ISink::ISink(core::IArena& arena)
+    : IDevice(arena) {
+}
+
 ISink::~ISink() {
 }
 

@@ -69,7 +69,7 @@ packet::PacketFactory packet_factory(arena, MaxPacketSz);
 packet::PacketFactory small_packet_factory(arena, SmallPacketSz);
 packet::PacketFactory tiny_packet_factory(arena, TinyPacketSz);
 
-Composer composer;
+Composer composer(arena);
 
 // Mock implementation of IParticipant
 struct MockParticipant : public IParticipant, public core::NonCopyable<> {

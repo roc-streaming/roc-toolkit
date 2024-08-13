@@ -71,8 +71,8 @@ status::StatusCode WavBackend::open_device(DeviceType device_type,
 
     switch (device_type) {
     case DeviceType_Sink: {
-        core::ScopedPtr<WavSink> sink(
-            new (arena) WavSink(frame_factory, arena, io_config), arena);
+        core::ScopedPtr<WavSink> sink(new (arena)
+                                          WavSink(frame_factory, arena, io_config));
 
         if (!sink) {
             roc_log(LogDebug, "wav backend: can't allocate sink: path=%s", path);
@@ -92,13 +92,13 @@ status::StatusCode WavBackend::open_device(DeviceType device_type,
             return code;
         }
 
-        *result = sink.release();
+        *result = sink.hijack();
         return status::StatusOK;
     } break;
 
     case DeviceType_Source: {
-        core::ScopedPtr<WavSource> source(
-            new (arena) WavSource(frame_factory, arena, io_config), arena);
+        core::ScopedPtr<WavSource> source(new (arena)
+                                              WavSource(frame_factory, arena, io_config));
 
         if (!source) {
             roc_log(LogDebug, "wav backend: can't allocate source: path=%s", path);
@@ -118,7 +118,7 @@ status::StatusCode WavBackend::open_device(DeviceType device_type,
             return code;
         }
 
-        *result = source.release();
+        *result = source.hijack();
         return status::StatusOK;
     } break;
 

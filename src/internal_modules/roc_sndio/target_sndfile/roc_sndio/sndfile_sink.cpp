@@ -212,7 +212,9 @@ bool select_sub_format(SF_INFO& file_info,
 SndfileSink::SndfileSink(audio::FrameFactory& frame_factory,
                          core::IArena& arena,
                          const IoConfig& io_config)
-    : file_(NULL)
+    : IDevice(arena)
+    , ISink(arena)
+    , file_(NULL)
     , requested_subformat_(0)
     , init_status_(status::NoStatus) {
     if (io_config.latency != 0) {
@@ -284,10 +286,6 @@ status::StatusCode SndfileSink::open(const char* driver, const char* path) {
     return open_(driver, path);
 }
 
-status::StatusCode SndfileSink::close() {
-    return close_();
-}
-
 DeviceType SndfileSink::type() const {
     return DeviceType_Sink;
 }
@@ -347,6 +345,14 @@ status::StatusCode SndfileSink::flush() {
     }
 
     return status::StatusOK;
+}
+
+status::StatusCode SndfileSink::close() {
+    return close_();
+}
+
+void SndfileSink::dispose() {
+    arena().dispose_object(*this);
 }
 
 status::StatusCode SndfileSink::open_(const char* driver, const char* path) {

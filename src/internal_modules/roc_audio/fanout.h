@@ -35,9 +35,9 @@ namespace audio {
 class Fanout : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    Fanout(FrameFactory& frame_factory,
-           core::IArena& arena,
-           const SampleSpec& sample_spec);
+    Fanout(const SampleSpec& sample_spec,
+           FrameFactory& frame_factory,
+           core::IArena& arena);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;

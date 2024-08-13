@@ -76,7 +76,7 @@ status::StatusCode SndfileBackend::open_device(DeviceType device_type,
     switch (device_type) {
     case DeviceType_Sink: {
         core::ScopedPtr<SndfileSink> sink(
-            new (arena) SndfileSink(frame_factory, arena, io_config), arena);
+            new (arena) SndfileSink(frame_factory, arena, io_config));
 
         if (!sink) {
             roc_log(LogDebug, "sndfile backend: can't allocate sink: driver=%s path=%s",
@@ -99,13 +99,13 @@ status::StatusCode SndfileBackend::open_device(DeviceType device_type,
             return code;
         }
 
-        *result = sink.release();
+        *result = sink.hijack();
         return status::StatusOK;
     } break;
 
     case DeviceType_Source: {
         core::ScopedPtr<SndfileSource> source(
-            new (arena) SndfileSource(frame_factory, arena, io_config), arena);
+            new (arena) SndfileSource(frame_factory, arena, io_config));
 
         if (!source) {
             roc_log(LogDebug, "sndfile backend: can't allocate source: driver=%s path=%s",
@@ -129,7 +129,7 @@ status::StatusCode SndfileBackend::open_device(DeviceType device_type,
             return code;
         }
 
-        *result = source.release();
+        *result = source.hijack();
         return status::StatusOK;
     } break;
 

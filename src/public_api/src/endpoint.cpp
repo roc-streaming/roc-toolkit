@@ -289,7 +289,7 @@ int roc_endpoint_deallocate(roc_endpoint* endpoint) {
     }
 
     address::EndpointUri& imp_endpoint = *(address::EndpointUri*)endpoint;
-    api::default_arena.destroy_object(imp_endpoint);
+    api::default_arena.dispose_object(imp_endpoint);
 
     return 0;
 }

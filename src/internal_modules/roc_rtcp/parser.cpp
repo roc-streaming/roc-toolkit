@@ -12,7 +12,8 @@
 namespace roc {
 namespace rtcp {
 
-Parser::Parser() {
+Parser::Parser(core::IArena& arena)
+    : IParser(arena) {
 }
 
 status::StatusCode Parser::init_status() const {

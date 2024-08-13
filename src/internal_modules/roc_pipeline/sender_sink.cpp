@@ -22,7 +22,9 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
                        core::IPool& frame_pool,
                        core::IPool& frame_buffer_pool,
                        core::IArena& arena)
-    : sink_config_(sink_config)
+    : IDevice(arena)
+    , ISink(arena)
+    , sink_config_(sink_config)
     , processor_map_(processor_map)
     , encoding_map_(encoding_map)
     , packet_factory_(packet_pool, packet_buffer_pool)
@@ -49,7 +51,7 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
                                            audio::Sample_RawFormat,
                                            sink_config_.input_sample_spec.channel_set());
 
-        fanout_.reset(new (fanout_) audio::Fanout(frame_factory_, arena_, inout_spec));
+        fanout_.reset(new (fanout_) audio::Fanout(inout_spec, frame_factory_, arena_));
         if ((init_status_ = fanout_->init_status()) != status::StatusOK) {
             return;
         }
@@ -230,18 +232,6 @@ bool SenderSink::has_clock() const {
     return sink_config_.enable_cpu_clock;
 }
 
-status::StatusCode SenderSink::close() {
-    roc_panic_if(init_status_ != status::StatusOK);
-
-    if (state_tracker_.is_closed()) {
-        return status::StatusBadState;
-    }
-
-    state_tracker_.set_closed();
-
-    return status::StatusOK;
-}
-
 status::StatusCode SenderSink::write(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -262,6 +252,22 @@ status::StatusCode SenderSink::write(audio::Frame& frame) {
 
 status::StatusCode SenderSink::flush() {
     return status::StatusOK;
+}
+
+status::StatusCode SenderSink::close() {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (state_tracker_.is_closed()) {
+        return status::StatusBadState;
+    }
+
+    state_tracker_.set_closed();
+
+    return status::StatusOK;
+}
+
+void SenderSink::dispose() {
+    arena_.dispose_object(*this);
 }
 
 } // namespace pipeline

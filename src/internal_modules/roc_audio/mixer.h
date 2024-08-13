@@ -51,10 +51,10 @@ class Mixer : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialize.
     //! @p enable_timestamps defines whether to enable calculation of capture timestamps.
-    Mixer(FrameFactory& frame_factory,
-          core::IArena& arena,
-          const SampleSpec& sample_spec,
-          bool enable_timestamps);
+    Mixer(const SampleSpec& sample_spec,
+          bool enable_timestamps,
+          FrameFactory& frame_factory,
+          core::IArena& arena);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;

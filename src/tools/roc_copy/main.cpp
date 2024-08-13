@@ -12,6 +12,7 @@
 #include "roc_core/log.h"
 #include "roc_core/parse_units.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/scoped_release.h"
 #include "roc_pipeline/transcoder_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/backend_map.h"
@@ -37,8 +38,7 @@ int main(int argc, char** argv) {
         return code;
     }
 
-    core::ScopedPtr<gengetopt_args_info, core::FuncAllocation> args_holder(
-        &args, &cmdline_parser_free);
+    core::ScopedRelease<gengetopt_args_info> args_holder(&args, &cmdline_parser_free);
 
     core::Logger::instance().set_verbosity(args.verbose_given);
 

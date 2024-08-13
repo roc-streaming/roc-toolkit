@@ -42,10 +42,10 @@ const audio::SampleSpec payload_spec(SampleRate,
                                      audio::ChanOrder_Smpte,
                                      ChMask);
 
-audio::PcmDecoder decoder(payload_spec);
-
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, PacketSz);
+
+audio::PcmDecoder decoder(payload_spec, arena);
 
 packet::PacketPtr new_packet(PayloadType pt,
                              packet::stream_source_t src,

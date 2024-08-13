@@ -27,7 +27,7 @@ namespace rtcp {
 class Composer : public packet::IComposer, public core::NonCopyable<> {
 public:
     //! Initialization.
-    Composer();
+    explicit Composer(core::IArena& arena);
 
     //! Check if the object was successfully constructed.
     virtual status::StatusCode init_status() const;

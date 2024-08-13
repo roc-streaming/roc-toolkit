@@ -46,18 +46,19 @@ core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, MaxBuffSize);
 
 rtp::EncodingMap encoding_map(arena);
-rtp::Parser rtp_parser(encoding_map, NULL);
+rtp::Parser rtp_parser(NULL, encoding_map, arena);
 
-Parser<RS8M_PayloadID, Source, Footer> rs8m_source_parser(&rtp_parser);
-Parser<RS8M_PayloadID, Repair, Header> rs8m_repair_parser(NULL);
-Parser<LDPC_Source_PayloadID, Source, Footer> ldpc_source_parser(&rtp_parser);
-Parser<LDPC_Repair_PayloadID, Repair, Header> ldpc_repair_parser(NULL);
+Parser<RS8M_PayloadID, Source, Footer> rs8m_source_parser(&rtp_parser, arena);
+Parser<RS8M_PayloadID, Repair, Header> rs8m_repair_parser(NULL, arena);
+Parser<LDPC_Source_PayloadID, Source, Footer> ldpc_source_parser(&rtp_parser, arena);
+Parser<LDPC_Repair_PayloadID, Repair, Header> ldpc_repair_parser(NULL, arena);
 
-rtp::Composer rtp_composer(NULL);
-Composer<RS8M_PayloadID, Source, Footer> rs8m_source_composer(&rtp_composer);
-Composer<RS8M_PayloadID, Repair, Header> rs8m_repair_composer(NULL);
-Composer<LDPC_Source_PayloadID, Source, Footer> ldpc_source_composer(&rtp_composer);
-Composer<LDPC_Repair_PayloadID, Repair, Header> ldpc_repair_composer(NULL);
+rtp::Composer rtp_composer(NULL, arena);
+Composer<RS8M_PayloadID, Source, Footer> rs8m_source_composer(&rtp_composer, arena);
+Composer<RS8M_PayloadID, Repair, Header> rs8m_repair_composer(NULL, arena);
+Composer<LDPC_Source_PayloadID, Source, Footer> ldpc_source_composer(&rtp_composer,
+                                                                     arena);
+Composer<LDPC_Repair_PayloadID, Repair, Header> ldpc_repair_composer(NULL, arena);
 
 } // namespace
 
@@ -210,12 +211,10 @@ TEST(block_writer_reader, no_losses) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -259,12 +258,10 @@ TEST(block_writer_reader, 1_loss) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -310,12 +307,10 @@ TEST(block_writer_reader, lost_first_packet_in_first_block) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -370,12 +365,10 @@ TEST(block_writer_reader, lost_one_source_and_all_repair_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -444,12 +437,10 @@ TEST(block_writer_reader, multiple_blocks_1_loss) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -520,12 +511,10 @@ TEST(block_writer_reader, multiple_blocks_in_queue) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -577,12 +566,10 @@ TEST(block_writer_reader, interleaved_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -634,12 +621,10 @@ TEST(block_writer_reader, delayed_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -710,12 +695,10 @@ TEST(block_writer_reader, late_out_of_order_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -792,12 +775,10 @@ TEST(block_writer_reader, repair_packets_before_source_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -881,12 +862,10 @@ TEST(block_writer_reader, repair_packets_mixed_with_source_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -984,12 +963,10 @@ TEST(block_writer_reader, multiple_repair_attempts) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1067,12 +1044,10 @@ TEST(block_writer_reader, drop_outdated_block) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1142,12 +1117,10 @@ TEST(block_writer_reader, repaired_block_numbering) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1232,12 +1205,10 @@ TEST(block_writer_reader, invalid_esi) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1315,12 +1286,10 @@ TEST(block_writer_reader, invalid_sbl) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1393,12 +1362,10 @@ TEST(block_writer_reader, invalid_nes) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1470,12 +1437,10 @@ TEST(block_writer_reader, invalid_payload_size) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1557,12 +1522,10 @@ TEST(block_writer_reader, zero_source_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1644,12 +1607,10 @@ TEST(block_writer_reader, zero_repair_packets) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1729,12 +1690,10 @@ TEST(block_writer_reader, zero_payload_size) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1818,12 +1777,10 @@ TEST(block_writer_reader, sbn_jump) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -1933,10 +1890,8 @@ TEST(block_writer_reader, writer_encode_blocks) {
         packet::stream_source_t data_source = 555;
 
         for (size_t n = 0; n < 5; n++) {
-            core::ScopedPtr<IBlockEncoder> encoder(
-                CodecMap::instance().new_block_encoder(codec_config, packet_factory,
-                                                       arena),
-                arena);
+            core::ScopedPtr<IBlockEncoder> encoder(CodecMap::instance().new_block_encoder(
+                codec_config, packet_factory, arena));
 
             CHECK(encoder);
 
@@ -2028,8 +1983,7 @@ TEST(block_writer_reader, writer_resize_blocks) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
         CHECK(encoder);
 
         test::PacketDispatcher dispatcher(source_parser(), repair_parser(),
@@ -2092,12 +2046,10 @@ TEST(block_writer_reader, resize_block_begin) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(decoder);
         CHECK(encoder);
@@ -2168,12 +2120,10 @@ TEST(block_writer_reader, resize_block_middle) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(decoder);
         CHECK(encoder);
@@ -2267,12 +2217,10 @@ TEST(block_writer_reader, resize_block_losses) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(decoder);
         CHECK(encoder);
@@ -2345,12 +2293,10 @@ TEST(block_writer_reader, resize_block_repair_first) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2440,12 +2386,10 @@ TEST(block_writer_reader, writer_oversized_block) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2509,12 +2453,10 @@ TEST(block_writer_reader, reader_oversized_source_block) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2582,12 +2524,10 @@ TEST(block_writer_reader, reader_oversized_repair_block) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2659,12 +2599,10 @@ TEST(block_writer_reader, reader_invalid_fec_scheme_source_packet) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);
@@ -2734,12 +2672,10 @@ TEST(block_writer_reader, reader_invalid_fec_scheme_repair_packet) {
         codec_config.scheme = CodecMap::instance().nth_scheme(n_scheme);
 
         core::ScopedPtr<IBlockEncoder> encoder(
-            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
 
         core::ScopedPtr<IBlockDecoder> decoder(
-            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena),
-            arena);
+            CodecMap::instance().new_block_decoder(codec_config, packet_factory, arena));
 
         CHECK(encoder);
         CHECK(decoder);

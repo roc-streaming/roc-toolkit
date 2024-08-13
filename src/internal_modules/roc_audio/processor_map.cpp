@@ -23,36 +23,36 @@ namespace audio {
 namespace {
 
 template <class T>
-IResampler* resampler_ctor_fn(void* backend_owner,
-                              core::IArena& arena,
-                              FrameFactory& frame_factory,
-                              const ResamplerConfig& config,
+IResampler* resampler_ctor_fn(const ResamplerConfig& config,
                               const SampleSpec& in_spec,
-                              const SampleSpec& out_spec) {
-    return new (arena) T(arena, frame_factory, config, in_spec, out_spec);
+                              const SampleSpec& out_spec,
+                              FrameFactory& frame_factory,
+                              core::IArena& arena,
+                              void* backend_owner) {
+    return new (arena) T(config, in_spec, out_spec, frame_factory, arena);
 }
 
 template <class T>
-IResampler* decim_resampler_ctor_fn(void* backend_owner,
-                                    core::IArena& arena,
-                                    FrameFactory& frame_factory,
-                                    const ResamplerConfig& config,
+IResampler* decim_resampler_ctor_fn(const ResamplerConfig& config,
                                     const SampleSpec& in_spec,
-                                    const SampleSpec& out_spec) {
+                                    const SampleSpec& out_spec,
+                                    FrameFactory& frame_factory,
+                                    core::IArena& arena,
+                                    void* backend_owner) {
     core::SharedPtr<IResampler> inner_resampler =
-        new (arena) T(arena, frame_factory, config, in_spec, out_spec);
+        new (arena) T(config, in_spec, out_spec, frame_factory, arena);
 
     return new (arena)
-        DecimationResampler(inner_resampler, arena, frame_factory, in_spec, out_spec);
+        DecimationResampler(inner_resampler, in_spec, out_spec, frame_factory, arena);
 }
 
 template <class T>
-IPlc* plc_ctor_fn(void* backend_owner,
-                  core::IArena& arena,
+IPlc* plc_ctor_fn(const PlcConfig& config,
+                  const SampleSpec& sample_spec,
                   FrameFactory& frame_factory,
-                  const PlcConfig& config,
-                  const SampleSpec& sample_spec) {
-    return new (arena) T(arena, frame_factory, config, sample_spec);
+                  core::IArena& arena,
+                  void* backend_owner) {
+    return new (arena) T(config, sample_spec, frame_factory, arena);
 }
 
 } // namespace
@@ -101,11 +101,11 @@ bool ProcessorMap::has_resampler_backend(ResamplerBackend backend_id) const {
     return find_node_(NodeType_Resampler, backend_id) != NULL;
 }
 
-IResampler* ProcessorMap::new_resampler(core::IArena& arena,
-                                        FrameFactory& frame_factory,
-                                        const ResamplerConfig& config,
+IResampler* ProcessorMap::new_resampler(const ResamplerConfig& config,
                                         const SampleSpec& in_spec,
-                                        const SampleSpec& out_spec) {
+                                        const SampleSpec& out_spec,
+                                        FrameFactory& frame_factory,
+                                        core::IArena& arena) {
     core::SharedPtr<Node> node;
 
     {
@@ -119,8 +119,8 @@ IResampler* ProcessorMap::new_resampler(core::IArena& arena,
     }
 
     roc_panic_if(!node->ctor_fn);
-    return ((ResamplerFunc)node->ctor_fn)(node->owner, arena, frame_factory, config,
-                                          in_spec, out_spec);
+    return ((ResamplerFunc)node->ctor_fn)(config, in_spec, out_spec, frame_factory, arena,
+                                          node->owner);
 }
 
 bool ProcessorMap::has_plc_backend(PlcBackend backend_id) const {
@@ -189,10 +189,10 @@ ProcessorMap::register_plc(int backend_id, void* backend_owner, PlcFunc ctor_fn)
     return status::StatusOK;
 }
 
-IPlc* ProcessorMap::new_plc(core::IArena& arena,
+IPlc* ProcessorMap::new_plc(const PlcConfig& config,
+                            const SampleSpec& sample_spec,
                             FrameFactory& frame_factory,
-                            const PlcConfig& config,
-                            const SampleSpec& sample_spec) {
+                            core::IArena& arena) {
     core::SharedPtr<Node> node;
 
     {
@@ -206,8 +206,8 @@ IPlc* ProcessorMap::new_plc(core::IArena& arena,
     }
 
     roc_panic_if(!node->ctor_fn);
-    return ((PlcFunc)node->ctor_fn)(node->owner, arena, frame_factory, config,
-                                    sample_spec);
+    return ((PlcFunc)node->ctor_fn)(config, sample_spec, frame_factory, arena,
+                                    node->owner);
 }
 
 core::SharedPtr<ProcessorMap::Node> ProcessorMap::find_node_(NodeType type,

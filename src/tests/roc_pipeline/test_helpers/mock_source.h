@@ -23,8 +23,12 @@ namespace test {
 
 class MockSource : public sndio::ISource {
 public:
-    MockSource(audio::FrameFactory& frame_factory, const audio::SampleSpec& sample_spec)
-        : frame_factory_(frame_factory)
+    MockSource(audio::FrameFactory& frame_factory,
+               const audio::SampleSpec& sample_spec,
+               core::IArena& arena)
+        : sndio::IDevice(arena)
+        , sndio::ISource(arena)
+        , frame_factory_(frame_factory)
         , sample_spec_(sample_spec)
         , state_(sndio::DeviceState_Active)
         , pos_(0)
@@ -79,10 +83,6 @@ public:
         return false;
     }
 
-    virtual status::StatusCode close() {
-        return status::StatusOK;
-    }
-
     virtual status::StatusCode rewind() {
         state_ = sndio::DeviceState_Active;
         return status::StatusOK;
@@ -126,6 +126,14 @@ public:
         frame.set_duration(frame.num_raw_samples() / n_ch_);
 
         return status::StatusOK;
+    }
+
+    virtual status::StatusCode close() {
+        return status::StatusOK;
+    }
+
+    virtual void dispose() {
+        arena().dispose_object(*this);
     }
 
     void add(size_t num_samples, const audio::SampleSpec& sample_spec) {

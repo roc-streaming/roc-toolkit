@@ -27,7 +27,7 @@ namespace rtcp {
 class Parser : public packet::IParser, public core::NonCopyable<> {
 public:
     //! Initialization.
-    Parser();
+    explicit Parser(core::IArena& arena);
 
     //! Check if the object was successfully constructed.
     virtual status::StatusCode init_status() const;

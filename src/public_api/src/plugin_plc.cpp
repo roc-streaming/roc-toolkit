@@ -49,16 +49,19 @@ bool PluginPlc::validate(roc_plugin_plc* plugin) {
     return true;
 }
 
-audio::IPlc* PluginPlc::construct(void* plugin,
-                                  core::IArena& arena,
+audio::IPlc* PluginPlc::construct(const audio::PlcConfig& config,
+                                  const audio::SampleSpec& sample_spec,
                                   audio::FrameFactory& frame_factory,
-                                  const audio::PlcConfig& config,
-                                  const audio::SampleSpec& sample_spec) {
-    return new (arena) PluginPlc((roc_plugin_plc*)plugin, sample_spec);
+                                  core::IArena& arena,
+                                  void* plugin) {
+    return new (arena) PluginPlc(sample_spec, arena, (roc_plugin_plc*)plugin);
 }
 
-PluginPlc::PluginPlc(roc_plugin_plc* plugin, const audio::SampleSpec& sample_spec)
-    : plugin_(plugin)
+PluginPlc::PluginPlc(const audio::SampleSpec& sample_spec,
+                     core::IArena& arena,
+                     roc_plugin_plc* plugin)
+    : IPlc(arena)
+    , plugin_(plugin)
     , plugin_instance_(NULL)
     , sample_spec_(sample_spec) {
     roc_panic_if(!plugin_);

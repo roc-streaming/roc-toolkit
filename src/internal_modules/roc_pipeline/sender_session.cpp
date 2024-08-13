@@ -98,8 +98,7 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         }
 
         fec_encoder_.reset(fec::CodecMap::instance().new_block_encoder(
-                               sink_config_.fec_encoder, packet_factory_, arena_),
-                           arena_);
+            sink_config_.fec_encoder, packet_factory_, arena_));
         if (!fec_encoder_) {
             return status::StatusNoMem;
         }
@@ -124,8 +123,7 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     }
     pkt_writer = timestamp_extractor_.get();
 
-    payload_encoder_.reset(pkt_encoding->new_encoder(arena_, pkt_encoding->sample_spec),
-                           arena_);
+    payload_encoder_.reset(pkt_encoding->new_encoder(pkt_encoding->sample_spec, arena_));
     if (!payload_encoder_) {
         return status::StatusNoMem;
     }
@@ -188,8 +186,8 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
                                          audio::Sample_RawFormat,
                                          sink_config_.input_sample_spec.channel_set());
 
-        resampler_.reset(processor_map_.new_resampler(
-            arena_, frame_factory_, sink_config_.resampler, in_spec, out_spec));
+        resampler_.reset(processor_map_.new_resampler(sink_config_.resampler, in_spec,
+                                                      out_spec, frame_factory_, arena_));
         if (!resampler_) {
             return status::StatusNoMem;
         }

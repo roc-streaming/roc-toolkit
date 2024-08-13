@@ -53,8 +53,9 @@ private:
 };
 
 struct MockComposer : public IComposer, public core::NonCopyable<> {
-    MockComposer()
-        : compose_call_count(0) {
+    MockComposer(core::IArena& arena)
+        : IComposer(arena)
+        , compose_call_count(0) {
     }
 
     virtual status::StatusCode init_status() const {
@@ -86,7 +87,7 @@ struct MockComposer : public IComposer, public core::NonCopyable<> {
 TEST_GROUP(shipper) {};
 
 TEST(shipper, without_address) {
-    MockComposer composer;
+    MockComposer composer(arena);
     FifoQueue queue;
 
     Shipper shipper(composer, queue, NULL);
@@ -110,7 +111,7 @@ TEST(shipper, with_address) {
     address::SocketAddr address;
     CHECK(address.set_host_port_auto("127.0.0.1", 123));
 
-    MockComposer composer;
+    MockComposer composer(arena);
     FifoQueue queue;
 
     Shipper shipper(composer, queue, &address);
@@ -132,7 +133,7 @@ TEST(shipper, with_address) {
 
 TEST(shipper, packet_already_composed) {
     address::SocketAddr address;
-    MockComposer composer;
+    MockComposer composer(arena);
     FifoQueue queue;
 
     Shipper shipper(composer, queue, &address);
@@ -155,7 +156,7 @@ TEST(shipper, packet_already_composed) {
 
 TEST(shipper, packet_not_composed) {
     address::SocketAddr address;
-    MockComposer composer;
+    MockComposer composer(arena);
     FifoQueue queue;
 
     Shipper shipper(composer, queue, &address);
@@ -183,7 +184,7 @@ TEST(shipper, forward_error) {
 
     for (size_t st_n = 0; st_n < ROC_ARRAY_SIZE(status_codes); ++st_n) {
         address::SocketAddr address;
-        MockComposer composer;
+        MockComposer composer(arena);
         MockWriter writer(status_codes[st_n]);
 
         Shipper shipper(composer, writer, &address);

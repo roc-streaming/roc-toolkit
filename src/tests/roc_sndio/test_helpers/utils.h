@@ -60,7 +60,7 @@ void expect_open_sink(status::StatusCode expected_code,
     if (code == status::StatusOK) {
         CHECK(device);
         CHECK(device->to_sink());
-        result.reset(device->to_sink(), arena);
+        result.reset(device->to_sink());
     } else {
         CHECK(!device);
     }
@@ -94,7 +94,7 @@ void expect_open_source(status::StatusCode expected_code,
     if (code == status::StatusOK) {
         CHECK(device);
         CHECK(device->to_source());
-        result.reset(device->to_source(), arena);
+        result.reset(device->to_source());
     } else {
         CHECK(!device);
     }

@@ -25,14 +25,16 @@ public:
 
     //! Construction function.
     //! @p plugin is roc_plugin_plc.
-    static IPlc* construct(void* plugin,
-                           core::IArena& arena,
+    static IPlc* construct(const audio::PlcConfig& config,
+                           const audio::SampleSpec& sample_spec,
                            audio::FrameFactory& frame_factory,
-                           const audio::PlcConfig& config,
-                           const audio::SampleSpec& sample_spec);
+                           core::IArena& arena,
+                           void* plugin);
 
     //! Initialize.
-    PluginPlc(roc_plugin_plc* plugin, const audio::SampleSpec& sample_spec);
+    PluginPlc(const audio::SampleSpec& sample_spec,
+              core::IArena& arena,
+              roc_plugin_plc* plugin);
 
     virtual ~PluginPlc();
 

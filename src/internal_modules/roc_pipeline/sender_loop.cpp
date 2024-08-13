@@ -94,12 +94,14 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
                        core::IPool& frame_pool,
                        core::IPool& frame_buffer_pool,
                        core::IArena& arena)
-    : PipelineLoop(scheduler,
+    : IDevice(arena)
+    , PipelineLoop(scheduler,
                    sink_config.pipeline_loop,
                    sink_config.input_sample_spec,
                    frame_pool,
                    frame_buffer_pool,
                    Dir_WriteFrames)
+    , ISink(arena)
     , sink_(sink_config,
             processor_map,
             encoding_map,
@@ -122,6 +124,9 @@ SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
     }
 
     init_status_ = status::StatusOK;
+}
+
+SenderLoop::~SenderLoop() {
 }
 
 status::StatusCode SenderLoop::init_status() const {
@@ -194,12 +199,6 @@ bool SenderLoop::has_clock() const {
     return sink_.has_clock();
 }
 
-status::StatusCode SenderLoop::close() {
-    core::Mutex::Lock lock(sink_mutex_);
-
-    return sink_.close();
-}
-
 status::StatusCode SenderLoop::write(audio::Frame& frame) {
     roc_panic_if(init_status_ != status::StatusOK);
 
@@ -236,6 +235,16 @@ status::StatusCode SenderLoop::flush() {
     core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.flush();
+}
+
+status::StatusCode SenderLoop::close() {
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.close();
+}
+
+void SenderLoop::dispose() {
+    arena().dispose_object(*this);
 }
 
 core::nanoseconds_t SenderLoop::timestamp_imp() const {

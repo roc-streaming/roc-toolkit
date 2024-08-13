@@ -22,8 +22,10 @@ namespace test {
 
 class MockSink : public sndio::ISink, public core::NonCopyable<> {
 public:
-    MockSink(const audio::SampleSpec& sample_spec)
-        : off_(0)
+    MockSink(const audio::SampleSpec& sample_spec, core::IArena& arena)
+        : sndio::IDevice(arena)
+        , sndio::ISink(arena)
+        , off_(0)
         , n_frames_(0)
         , n_samples_(0)
         , n_chans_(sample_spec.num_channels()) {
@@ -57,10 +59,6 @@ public:
         return false;
     }
 
-    virtual status::StatusCode close() {
-        return status::StatusOK;
-    }
-
     virtual status::StatusCode write(audio::Frame& frame) {
         CHECK(frame.num_raw_samples() % n_chans_ == 0);
 
@@ -81,6 +79,14 @@ public:
 
     virtual ROC_ATTR_NODISCARD status::StatusCode flush() {
         return status::StatusOK;
+    }
+
+    virtual status::StatusCode close() {
+        return status::StatusOK;
+    }
+
+    virtual void dispose() {
+        arena().dispose_object(*this);
     }
 
     void expect_frames(size_t total) {

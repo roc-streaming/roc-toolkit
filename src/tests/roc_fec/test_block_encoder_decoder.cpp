@@ -31,11 +31,9 @@ public:
         : arena_()
         , packet_factory_(arena_, MaxPayloadSize)
         , encoder_(
-              CodecMap::instance().new_block_encoder(config, packet_factory_, arena_),
-              arena_)
+              CodecMap::instance().new_block_encoder(config, packet_factory_, arena_))
         , decoder_(
-              CodecMap::instance().new_block_decoder(config, packet_factory_, arena_),
-              arena_)
+              CodecMap::instance().new_block_decoder(config, packet_factory_, arena_))
         , buffers_(arena_) {
         set_fail(false);
 

@@ -128,8 +128,9 @@ void expect_int_samples(const Frame& frame, size_t n_samples, T value) {
 
 class MockPlc : public IPlc {
 public:
-    MockPlc(const SampleSpec& sample_spec)
-        : sample_spec_(sample_spec)
+    MockPlc(const SampleSpec& sample_spec, core::IArena& arena)
+        : IPlc(arena)
+        , sample_spec_(sample_spec)
         , lookbehind_len_(0)
         , lookahead_len_(0)
         , fill_value_(0)
@@ -258,8 +259,11 @@ private:
 
 template <class T> class IntPlc : public IPlc {
 public:
-    IntPlc(const SampleSpec& sample_spec, packet::stream_timestamp_t window_len)
-        : sample_spec_(sample_spec)
+    IntPlc(const SampleSpec& sample_spec,
+           packet::stream_timestamp_t window_len,
+           core::IArena& arena)
+        : IPlc(arena)
+        , sample_spec_(sample_spec)
         , window_len_(window_len)
         , fill_value_(0) {
     }
@@ -385,7 +389,7 @@ TEST(plc_reader, small_read) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     add_samples(mock_reader, FrameSz, 0.11f, Frame::HasSignal);
 
@@ -414,7 +418,7 @@ TEST(plc_reader, big_read) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     add_samples(mock_reader, FrameSz, 0.11f, Frame::HasSignal);
 
@@ -443,7 +447,7 @@ TEST(plc_reader, initial_gap) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     add_samples(mock_reader, FrameSz, 0.00f, Frame::HasGaps);
     add_samples(mock_reader, FrameSz, 0.00f, Frame::HasGaps);
@@ -496,7 +500,7 @@ TEST(plc_reader, readahead_disabled) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     add_samples(mock_reader, FrameSz, 0.11f, Frame::HasSignal);
     add_samples(mock_reader, FrameSz, 0.00f, Frame::HasGaps);
@@ -568,7 +572,7 @@ TEST(plc_reader, readahead_enabled) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     add_samples(mock_reader, FrameSz, 0.11f, Frame::HasSignal);
     add_samples(mock_reader, FrameSz, 0.00f, Frame::HasGaps);
@@ -675,7 +679,7 @@ TEST(plc_reader, readahead_drained) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     add_samples(mock_reader, FrameSz, 0.11f, Frame::HasSignal);
     add_samples(mock_reader, FrameSz, 0.00f, Frame::HasGaps);
@@ -749,7 +753,7 @@ TEST(plc_reader, readahead_partial) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     add_samples(mock_reader, FrameSz, 0.11f, Frame::HasSignal);
     add_samples(mock_reader, FrameSz, 0.00f, Frame::HasGaps);
@@ -826,7 +830,7 @@ TEST(plc_reader, soft_reads) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     add_samples(mock_reader, FrameSz, 0.00f, Frame::HasGaps);
     add_samples(mock_reader, FrameSz, 0.22f, Frame::HasSignal);
@@ -967,7 +971,7 @@ TEST(plc_reader, variable_frame_sizes) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     mock_plc.set_lookbehind(LookbehindSz);
     mock_plc.set_lookahead(LookaheadSz);
@@ -1130,7 +1134,7 @@ TEST(plc_reader, without_cts) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     add_samples(mock_reader, FrameSz, 0.11f, Frame::HasSignal);
     add_samples(mock_reader, FrameSz, 0.00f, Frame::HasGaps);
@@ -1198,7 +1202,7 @@ TEST(plc_reader, with_cts) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     add_samples(mock_reader, FrameSz, 0.11f, Frame::HasSignal);
     add_samples(mock_reader, FrameSz, 0.00f, Frame::HasGaps);
@@ -1272,7 +1276,7 @@ TEST(plc_reader, non_raw_format) {
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     IntReader<int16_t> int_reader(int_spec);
-    IntPlc<int16_t> int_plc(int_spec, FrameSz);
+    IntPlc<int16_t> int_plc(int_spec, FrameSz, arena);
 
     PlcReader plc_reader(int_reader, frame_factory, int_plc, int_spec);
     LONGS_EQUAL(status::StatusOK, plc_reader.init_status());
@@ -1360,7 +1364,7 @@ TEST(plc_reader, supported_backends) {
         plc_config.backend = supported_backends[n_back];
 
         core::ScopedPtr<IPlc> plc(
-            processor_map.new_plc(arena, frame_factory, plc_config, sample_spec), arena);
+            processor_map.new_plc(plc_config, sample_spec, frame_factory, arena));
         CHECK(plc);
         LONGS_EQUAL(status::StatusOK, plc->init_status());
 
@@ -1401,7 +1405,7 @@ TEST(plc_reader, forward_mode) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     add_samples(mock_reader, FrameSz * 10, 0.00f, Frame::HasSignal);
 
@@ -1429,7 +1433,7 @@ TEST(plc_reader, forward_error) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     add_samples(mock_reader, FrameSz * 10, 0.00f, Frame::HasSignal);
 
@@ -1457,7 +1461,7 @@ TEST(plc_reader, forward_partial) {
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
-    MockPlc mock_plc(sample_spec);
+    MockPlc mock_plc(sample_spec, arena);
 
     add_samples(mock_reader, FrameSz / 2, 0.00f, Frame::HasSignal);
 
@@ -1493,7 +1497,7 @@ TEST(plc_reader, preallocated_buffer) {
         test::MockReader mock_reader(frame_factory, sample_spec);
         add_samples(mock_reader, FrameSz, 0.00f, Frame::HasSignal);
 
-        MockPlc mock_plc(sample_spec);
+        MockPlc mock_plc(sample_spec, arena);
         PlcReader plc_reader(mock_reader, frame_factory, mock_plc, sample_spec);
         LONGS_EQUAL(status::StatusOK, plc_reader.init_status());
 

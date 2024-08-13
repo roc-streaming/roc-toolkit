@@ -50,7 +50,7 @@ core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, MaxBufSize);
 FrameFactory frame_factory(arena, MaxBufSize);
 
-rtp::Composer rtp_composer(NULL);
+rtp::Composer rtp_composer(NULL, arena);
 
 packet::PacketPtr new_packet(IFrameEncoder& encoder,
                              packet::stream_timestamp_t ts,
@@ -225,8 +225,8 @@ TEST_GROUP(depacketizer) {};
 
 // Frame size same as packet size.
 TEST(depacketizer, one_packet_one_read) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -242,8 +242,8 @@ TEST(depacketizer, one_packet_one_read) {
 
 // Small frame, big packet.
 TEST(depacketizer, one_packet_multiple_reads) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -269,8 +269,8 @@ TEST(depacketizer, one_packet_multiple_reads) {
 TEST(depacketizer, multiple_packets_one_read) {
     enum { NumPackets = 10 };
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -298,8 +298,8 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
 
     CHECK(SamplesPerPacket % FramesPerPacket == 0);
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -350,8 +350,8 @@ TEST(depacketizer, multiple_packets_multiple_reads) {
 
 // Wrapping of 32-bit packet stream timestamp (STS).
 TEST(depacketizer, timestamp_wrap) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -381,8 +381,8 @@ TEST(depacketizer, timestamp_wrap) {
 }
 
 TEST(depacketizer, drop_late_packets) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -412,8 +412,8 @@ TEST(depacketizer, drop_late_packets) {
 }
 
 TEST(depacketizer, drop_late_packets_timestamp_wrap) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -443,8 +443,8 @@ TEST(depacketizer, drop_late_packets_timestamp_wrap) {
 }
 
 TEST(depacketizer, zeros_no_first_packet) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -454,8 +454,8 @@ TEST(depacketizer, zeros_no_first_packet) {
 }
 
 TEST(depacketizer, zeros_no_next_packet) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -471,8 +471,8 @@ TEST(depacketizer, zeros_no_next_packet) {
 }
 
 TEST(depacketizer, zeros_between_packets) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -494,8 +494,8 @@ TEST(depacketizer, zeros_between_packets) {
 }
 
 TEST(depacketizer, zeros_between_packets_timestamp_wrap) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -522,8 +522,8 @@ TEST(depacketizer, zeros_between_packets_timestamp_wrap) {
 }
 
 TEST(depacketizer, zeros_after_packet) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     CHECK(SamplesPerPacket % 2 == 0);
 
@@ -544,8 +544,8 @@ TEST(depacketizer, zeros_after_packet) {
 }
 
 TEST(depacketizer, packet_after_zeros) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -565,8 +565,8 @@ TEST(depacketizer, packet_after_zeros) {
 TEST(depacketizer, overlapping_packets) {
     CHECK(SamplesPerPacket % 2 == 0);
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -597,8 +597,8 @@ TEST(depacketizer, overlapping_packets) {
 // Depacketizer should check what is next packet using ModePeek and don't fetch
 // packet if it's not needed yet.
 TEST(depacketizer, late_reordered) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     CHECK(SamplesPerPacket % 2 == 0);
 
@@ -643,8 +643,8 @@ TEST(depacketizer, late_reordered) {
 // In hard read mode, depacketizer should fill packet losses with zeros and generate
 // partial reads to avoid mixing losses and normal samples in a same frame.
 TEST(depacketizer, frequent_losses_hard_read) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -763,8 +763,8 @@ TEST(depacketizer, frequent_losses_hard_read) {
 // In soft read mode, depacketizer should stop reading on packet loss and
 // generate partial read or drain.
 TEST(depacketizer, frequent_losses_soft_read) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -895,8 +895,8 @@ TEST(depacketizer, frequent_losses_soft_read) {
 TEST(depacketizer, frame_flags_signal_gaps) {
     enum { PacketsPerFrame = 3 };
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -1016,8 +1016,8 @@ TEST(depacketizer, frame_flags_signal_gaps) {
 }
 
 TEST(depacketizer, frame_flags_drops) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -1067,8 +1067,8 @@ TEST(depacketizer, capture_timestamp) {
 
     CHECK(SamplesPerPacket % FramesPerPacket == 0);
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -1124,8 +1124,8 @@ TEST(depacketizer, capture_timestamp_fract_frame_per_packet) {
         SamplesPerFrame = SamplesPerPacket + 50
     };
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -1148,8 +1148,8 @@ TEST(depacketizer, capture_timestamp_small_non_zero) {
         PacketsPerFrame = 10
     };
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -1202,8 +1202,8 @@ TEST(depacketizer, partial_on_big_read) {
         NumPackets = (MaxFrameSamples / SamplesPerPacket) * NumFrames
     };
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     Depacketizer dp(queue, decoder, frame_factory, frame_spec, NULL);
@@ -1225,8 +1225,8 @@ TEST(depacketizer, partial_on_big_read) {
 
 // Forward error from packet reader.
 TEST(depacketizer, forward_error) {
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     packet::FifoQueue queue;
     StatusReader reader(queue);
@@ -1264,8 +1264,8 @@ TEST(depacketizer, preallocated_buffer) {
         0,            // no buffer (depacketizer should allocate buffer)
     };
 
-    PcmEncoder encoder(packet_spec);
-    PcmDecoder decoder(packet_spec);
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
 
     for (size_t bn = 0; bn < ROC_ARRAY_SIZE(buffer_list); bn++) {
         const size_t orig_buf_sz = buffer_list[bn];

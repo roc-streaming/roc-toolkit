@@ -70,8 +70,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     // packets stored in the queues.
     packet::IReader* pkt_reader = source_queue_.get();
 
-    payload_decoder_.reset(pkt_encoding->new_decoder(arena, pkt_encoding->sample_spec),
-                           arena);
+    payload_decoder_.reset(pkt_encoding->new_decoder(pkt_encoding->sample_spec, arena));
     if (!payload_decoder_) {
         init_status_ = status::StatusNoMem;
         return;
@@ -124,8 +123,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
         // Sub-pipeline with chained readers for packets after repairing losses.
         fec_decoder_.reset(fec::CodecMap::instance().new_block_decoder(
-                               session_config.fec_decoder, packet_factory, arena),
-                           arena);
+            session_config.fec_decoder, packet_factory, arena));
         if (!fec_decoder_) {
             init_status_ = status::StatusNoMem;
             return;
@@ -134,7 +132,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
             return;
         }
 
-        fec_parser_.reset(new (fec_parser_) rtp::Parser(encoding_map, NULL));
+        fec_parser_.reset(new (fec_parser_) rtp::Parser(NULL, encoding_map, arena));
         if ((init_status_ = fec_parser_->init_status()) != status::StatusOK) {
             return;
         }
@@ -181,9 +179,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         frm_reader = depacketizer_.get();
 
         if (session_config.plc.backend != audio::PlcBackend_None) {
-            plc_.reset(
-                processor_map.new_plc(arena, frame_factory, session_config.plc, out_spec),
-                arena);
+            plc_.reset(processor_map.new_plc(session_config.plc, out_spec, frame_factory,
+                                             arena));
             if (!plc_) {
                 init_status_ = status::StatusNoMem;
                 return;
@@ -241,8 +238,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
                                          audio::Sample_RawFormat,
                                          common_config.output_sample_spec.channel_set());
 
-        resampler_.reset(processor_map.new_resampler(
-            arena, frame_factory, session_config.resampler, in_spec, out_spec));
+        resampler_.reset(processor_map.new_resampler(session_config.resampler, in_spec,
+                                                     out_spec, frame_factory, arena));
         if (!resampler_) {
             init_status_ = status::StatusNoMem;
             return;

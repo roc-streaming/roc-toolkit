@@ -21,17 +21,19 @@ namespace core {
 
 namespace {
 
-struct HeapAllocation {
-    template <class T> void destroy(T& object) {
-        delete &object;
+struct TestAllocation {
+    virtual ~TestAllocation() {
+    }
+
+    void dispose() {
+        delete this;
     }
 };
 
-class Object : public HashmapNode<>, public RefCounted<Object, HeapAllocation> {
+class Object : public HashmapNode<>, public RefCounted<Object, TestAllocation> {
 public:
     Object(const char* k) {
         strcpy(key_, k);
-        visited_ = false;
     }
 
     static hashsum_t key_hash(const char* key) {
@@ -46,17 +48,8 @@ public:
         return key_;
     }
 
-    bool is_visited() {
-        return visited_;
-    }
-
-    void set_visited() {
-        visited_ = true;
-    }
-
 private:
     char key_[64];
-    bool visited_;
 };
 
 void format_key(char* key, size_t keysz, size_t n) {

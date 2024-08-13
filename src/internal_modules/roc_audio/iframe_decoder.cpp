@@ -11,6 +11,10 @@
 namespace roc {
 namespace audio {
 
+IFrameDecoder::IFrameDecoder(core::IArena& arena)
+    : core::ArenaAllocation(arena) {
+}
+
 IFrameDecoder::~IFrameDecoder() {
 }
 

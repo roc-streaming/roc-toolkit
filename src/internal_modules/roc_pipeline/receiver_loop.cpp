@@ -95,12 +95,14 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
                            core::IPool& frame_pool,
                            core::IPool& frame_buffer_pool,
                            core::IArena& arena)
-    : PipelineLoop(scheduler,
+    : IDevice(arena)
+    , PipelineLoop(scheduler,
                    source_config.pipeline_loop,
                    source_config.common.output_sample_spec,
                    frame_pool,
                    frame_buffer_pool,
                    Dir_ReadFrames)
+    , ISource(arena)
     , source_(source_config,
               processor_map,
               encoding_map,
@@ -122,6 +124,9 @@ ReceiverLoop::ReceiverLoop(IPipelineTaskScheduler& scheduler,
     }
 
     init_status_ = status::StatusOK;
+}
+
+ReceiverLoop::~ReceiverLoop() {
 }
 
 status::StatusCode ReceiverLoop::init_status() const {
@@ -194,12 +199,6 @@ bool ReceiverLoop::has_clock() const {
     return source_.has_clock();
 }
 
-status::StatusCode ReceiverLoop::close() {
-    core::Mutex::Lock lock(source_mutex_);
-
-    return source_.close();
-}
-
 status::StatusCode ReceiverLoop::rewind() {
     core::Mutex::Lock lock(source_mutex_);
 
@@ -249,6 +248,16 @@ status::StatusCode ReceiverLoop::read(audio::Frame& frame,
     }
 
     return code;
+}
+
+status::StatusCode ReceiverLoop::close() {
+    core::Mutex::Lock lock(source_mutex_);
+
+    return source_.close();
+}
+
+void ReceiverLoop::dispose() {
+    arena().dispose_object(*this);
 }
 
 core::nanoseconds_t ReceiverLoop::timestamp_imp() const {

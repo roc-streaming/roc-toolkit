@@ -52,8 +52,7 @@ int roc_receiver_decoder_open(roc_context* context,
     }
 
     core::ScopedPtr<node::ReceiverDecoder> imp_decoder(
-        new (imp_context->arena()) node::ReceiverDecoder(*imp_context, imp_config),
-        imp_context->arena());
+        new (imp_context->arena()) node::ReceiverDecoder(*imp_context, imp_config));
 
     if (!imp_decoder) {
         roc_log(LogError, "roc_receiver_decoder_open(): can't allocate decoder");
@@ -67,7 +66,7 @@ int roc_receiver_decoder_open(roc_context* context,
         return -1;
     }
 
-    *result = (roc_receiver_decoder*)imp_decoder.release();
+    *result = (roc_receiver_decoder*)imp_decoder.hijack();
     return 0;
 }
 
@@ -297,7 +296,7 @@ int roc_receiver_decoder_close(roc_receiver_decoder* decoder) {
     }
 
     node::ReceiverDecoder* imp_decoder = (node::ReceiverDecoder*)decoder;
-    imp_decoder->context().arena().destroy_object(*imp_decoder);
+    imp_decoder->context().arena().dispose_object(*imp_decoder);
 
     roc_log(LogInfo, "roc_receiver_decoder_close(): closed decoder");
 

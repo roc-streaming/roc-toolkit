@@ -117,11 +117,11 @@ inline size_t get_frame_size(size_t window_size,
 
 } // namespace
 
-BuiltinResampler::BuiltinResampler(core::IArena& arena,
-                                   FrameFactory& frame_factory,
-                                   const ResamplerConfig& config,
+BuiltinResampler::BuiltinResampler(const ResamplerConfig& config,
                                    const SampleSpec& in_spec,
-                                   const SampleSpec& out_spec)
+                                   const SampleSpec& out_spec,
+                                   FrameFactory& frame_factory,
+                                   core::IArena& arena)
     : IResampler(arena)
     , in_spec_(in_spec)
     , out_spec_(out_spec)

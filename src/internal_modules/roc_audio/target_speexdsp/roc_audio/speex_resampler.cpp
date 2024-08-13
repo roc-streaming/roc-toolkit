@@ -45,11 +45,11 @@ inline int get_quality(ResamplerProfile profile) {
 
 } // namespace
 
-SpeexResampler::SpeexResampler(core::IArena& arena,
-                               FrameFactory& frame_factory,
-                               const ResamplerConfig& config,
+SpeexResampler::SpeexResampler(const ResamplerConfig& config,
                                const SampleSpec& in_spec,
-                               const SampleSpec& out_spec)
+                               const SampleSpec& out_spec,
+                               FrameFactory& frame_factory,
+                               core::IArena& arena)
     : IResampler(arena)
     , speex_state_(NULL)
     , num_ch_((spx_uint32_t)in_spec.num_channels())

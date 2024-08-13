@@ -131,6 +131,7 @@ public:
                  core::IPool& frame_pool,
                  core::IPool& frame_buffer_pool,
                  core::IArena& arena);
+    ~ReceiverLoop();
 
     //! Check if the pipeline was successfully constructed.
     status::StatusCode init_status() const;
@@ -153,12 +154,13 @@ private:
     virtual bool has_latency() const;
     virtual core::nanoseconds_t latency() const;
     virtual bool has_clock() const;
-    virtual status::StatusCode close();
     virtual status::StatusCode rewind();
     virtual void reclock(core::nanoseconds_t timestamp);
     virtual status::StatusCode read(audio::Frame& frame,
                                     packet::stream_timestamp_t duration,
                                     audio::FrameReadMode mode);
+    virtual status::StatusCode close();
+    virtual void dispose();
 
     // Methods of PipelineLoop
     virtual core::nanoseconds_t timestamp_imp() const;

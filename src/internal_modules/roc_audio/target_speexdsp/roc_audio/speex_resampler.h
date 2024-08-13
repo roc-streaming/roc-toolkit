@@ -40,11 +40,11 @@ namespace audio {
 class SpeexResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
-    SpeexResampler(core::IArena& arena,
-                   FrameFactory& frame_factory,
-                   const ResamplerConfig& config,
+    SpeexResampler(const ResamplerConfig& config,
                    const SampleSpec& in_spec,
-                   const SampleSpec& out_spec);
+                   const SampleSpec& out_spec,
+                   FrameFactory& frame_factory,
+                   core::IArena& arena);
 
     ~SpeexResampler();
 
