@@ -7,13 +7,14 @@
  */
 
 //! @file roc_audio/target_libvorbis/roc_audio/vorbis_encoder.h
-//! @brief Vorbis audio decoder.
+//! @brief Vorbis audio encoder.
 
 #ifndef ROC_AUDIO_VORBIS_ENCODER_H_
 #define ROC_AUDIO_VORBIS_ENCODER_H_
 
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/sample_spec.h"
+#include <vorbis/codec.h>
 #include <vorbis/vorbisenc.h>
 
 namespace roc {
@@ -44,6 +45,12 @@ public:
     virtual void end_frame();
 
 private:
+    void buffer_samples_(const sample_t* samples, size_t n_samples);
+    size_t process_analysis_and_encoding_();
+    size_t extract_and_write_packets_();
+    size_t write_ogg_pages_();
+    void write_to_frame_(const void* data, long size, long offset);
+
     bool initialized_;
     void* frame_data_;
     size_t frame_size_;
