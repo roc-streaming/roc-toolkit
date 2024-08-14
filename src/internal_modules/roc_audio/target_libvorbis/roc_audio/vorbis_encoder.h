@@ -24,7 +24,7 @@ namespace audio {
 class VorbisEncoder : public IFrameEncoder {
 public:
     //! Initialize.
-    VorbisEncoder(const SampleSpec& sample_spec);
+    VorbisEncoder(const SampleSpec& sample_spec, core::IArena& arena);
 
     //! End.
     ~VorbisEncoder();

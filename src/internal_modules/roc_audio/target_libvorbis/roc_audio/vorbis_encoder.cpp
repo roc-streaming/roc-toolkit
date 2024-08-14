@@ -13,8 +13,9 @@
 namespace roc {
 namespace audio {
 
-VorbisEncoder::VorbisEncoder(const SampleSpec& sample_spec)
-    : initialized_(false)
+VorbisEncoder::VorbisEncoder(const SampleSpec& sample_spec, core::IArena& arena)
+    : IFrameEncoder(arena)
+    , initialized_(false)
     , frame_data_(NULL)
     , frame_size_(0) {
     vorbis_info_init(&vorbis_info_);

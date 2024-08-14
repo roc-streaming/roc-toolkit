@@ -12,7 +12,8 @@
 namespace roc {
 namespace audio {
 
-VorbisDecoder::VorbisDecoder(const SampleSpec& sample_spec) {
+VorbisDecoder::VorbisDecoder(const SampleSpec& sample_spec, core::IArena& arena)
+    : IFrameDecoder(arena) {
     // TODO
 }
 

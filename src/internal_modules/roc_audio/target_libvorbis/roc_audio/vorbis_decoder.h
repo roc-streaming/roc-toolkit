@@ -23,7 +23,7 @@ namespace audio {
 class VorbisDecoder : public IFrameDecoder {
 public:
     //! Initialize.
-    VorbisDecoder(const SampleSpec& sample_spec);
+    VorbisDecoder(const SampleSpec& sample_spec, core::IArena& arena);
 
     //! End.
     ~VorbisDecoder();
