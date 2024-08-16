@@ -46,17 +46,13 @@ public:
 
 private:
     void buffer_samples_(const sample_t* samples, size_t n_samples);
-    void process_analysis_and_encoding_();
-    void extract_and_write_packets_();
-    void write_ogg_pages_();
-    void write_to_frame_(const void* data, long size, long offset);
+    void process_encoding_();
 
     bool initialized_;
-    void* frame_data_;
+    uint8_t* frame_data_;
     size_t frame_size_;
-    ogg_stream_state ogg_stream_;
+    size_t current_position_;
     vorbis_info vorbis_info_;
-    vorbis_comment vorbis_comment_;
     vorbis_dsp_state vorbis_dsp_;
     vorbis_block vorbis_block_;
 };
