@@ -274,16 +274,10 @@ if 'libvorbis' in autobuild_dependencies:
                         deps=pa_deps)
 
 elif 'libvorbis' in system_dependencies:
-    vorbis_prefix = None
-    # macOS: for mac uses brew install
-    if meta.platform == 'darwin' and not is_crosscompiling:
-        env.FindBrewPackage('libogg')
-        vorbis_prefix = env.FindBrewPackage('libvorbis')
-
     conf = Configure(env, custom_tests=env.CustomTests)
 
-    if not conf.AddPkgConfigDependency('vorbis', '--cflags --libs', exclude_from_pc=True, add_prefix=vorbis_prefix):
-        conf.env.AddManualDependency(libs=['vorbis', 'vorbisenc', 'vorbisfile'], exclude_from_pc=True, prefix=vorbis_prefix)
+    if not conf.AddPkgConfigDependency('vorbis', '--cflags --libs', exclude_from_pc=True):
+        conf.env.AddManualDependency(libs=['vorbis', 'vorbisenc', 'vorbisfile'], exclude_from_pc=True)
 
     if not conf.CheckLibWithHeaderExt('vorbis', 'vorbis/vorbisenc.h', 'C', run=False):
         env.Die("libvorbis not found (see 'config.log' for details)")

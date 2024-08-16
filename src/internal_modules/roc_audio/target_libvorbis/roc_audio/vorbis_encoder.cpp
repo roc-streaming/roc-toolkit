@@ -22,19 +22,19 @@ VorbisEncoder::VorbisEncoder(const SampleSpec& sample_spec, core::IArena& arena)
 
     const long num_channels = static_cast<long>(sample_spec.num_channels());
     const long sample_rate = static_cast<long>(sample_spec.sample_rate());
-    int ret = vorbis_encode_init_vbr(&vorbis_info_, num_channels, sample_rate, 0.5f);
-    if (ret != 0) {
+    const float quality = 0.5f;
+
+    if (vorbis_encode_init_vbr(&vorbis_info_, num_channels, sample_rate, quality) != 0) {
         roc_panic("vorbis encoder: failed to initialize vorbis encoder");
     }
+
     vorbis_comment_init(&vorbis_comment_);
 
-    ret = vorbis_analysis_init(&vorbis_dsp_, &vorbis_info_);
-    if (ret != 0) {
+    if (vorbis_analysis_init(&vorbis_dsp_, &vorbis_info_) != 0) {
         roc_panic("vorbis encoder: failed to initialize vorbis dsp");
     }
 
-    ret = vorbis_block_init(&vorbis_dsp_, &vorbis_block_);
-    if (ret != 0) {
+    if (vorbis_block_init(&vorbis_dsp_, &vorbis_block_) != 0) {
         roc_panic("vorbis encoder: failed to initialize vorbis block");
     }
 
@@ -56,48 +56,47 @@ status::StatusCode VorbisEncoder::init_status() const {
     return initialized_ ? status::StatusOK : status::StatusAbort;
 }
 
-size_t VorbisEncoder::encoded_byte_count(size_t num_samples) const {
-    if (!initialized_) {
-        roc_panic("vorbis encoder: encoder not initialized");
-        return 0;
-    }
+size_t VorbisEncoder::encoded_byte_count(size_t n_samples) const {
+    roc_panic_if_not(initialized_);
 
-    const size_t channels = static_cast<size_t>(vorbis_info_.channels);
-    // const size_t sample_rate = static_cast<size_t>(vorbis_info_.rate);
-    // const size_t bitrate_nominal = static_cast<size_t>(vorbis_info_.bitrate_nominal);
+    const float nominal_bitrate = vorbis_info_.bitrate_nominal;
+    const long num_channels = vorbis_info_.channels;
+    const long sample_rate = vorbis_info_.rate;
 
-    size_t estimated_bytes = (32 * num_samples * channels) / (8);
-    return estimated_bytes;
+    // Estimated encoded byte count
+    return static_cast<size_t>((nominal_bitrate * n_samples * num_channels)
+                               / (sample_rate * 8.0f));
 }
 
 void VorbisEncoder::begin_frame(void* frame_data, size_t frame_size) {
     roc_panic_if_not(frame_data);
+
     if (frame_data_) {
         roc_panic("vorbis encoder: unpaired begin/end");
     }
+
     frame_data_ = frame_data;
     frame_size_ = frame_size;
 }
 
 size_t VorbisEncoder::write_samples(const sample_t* samples, size_t n_samples) {
-    if (!initialized_) {
-        roc_panic("vorbis encoder: encoder not initialized");
-        return 0;
-    }
+    roc_panic_if_not(initialized_);
 
     if (!samples || n_samples == 0) {
         return 0;
     }
 
     buffer_samples_(samples, n_samples);
+    process_analysis_and_encoding_();
 
-    size_t total_bytes_written = process_analysis_and_encoding_();
-
+    // Indicate that no more samples are to be written
     vorbis_analysis_wrote(&vorbis_dsp_, 0);
+    process_analysis_and_encoding_();
 
-    total_bytes_written += process_analysis_and_encoding_();
-
-    return total_bytes_written;
+    // Vorbis encodes with blocks of fixed amount of samples, if the number of samples to
+    // be encoded are less than the block amount of samples, it fill the rest of the block
+    // with 0 So the return value is the amount of samples put inside the buffer
+    return n_samples;
 }
 
 void VorbisEncoder::end_frame() {
@@ -119,51 +118,36 @@ void VorbisEncoder::buffer_samples_(const sample_t* samples, size_t n_samples) {
     vorbis_analysis_wrote(&vorbis_dsp_, int_n_samples);
 }
 
-size_t VorbisEncoder::process_analysis_and_encoding_() {
-    size_t total_bytes_written = 0;
-
+void VorbisEncoder::process_analysis_and_encoding_() {
     while (vorbis_analysis_blockout(&vorbis_dsp_, &vorbis_block_) == 1) {
         vorbis_analysis(&vorbis_block_, NULL);
 
         vorbis_bitrate_addblock(&vorbis_block_);
 
-        total_bytes_written += extract_and_write_packets_();
+        extract_and_write_packets_();
     }
-
-    return total_bytes_written;
 }
 
-size_t VorbisEncoder::extract_and_write_packets_() {
-    size_t bytes_written = 0;
-
+void VorbisEncoder::extract_and_write_packets_() {
     ogg_packet packet;
+
     while (vorbis_bitrate_flushpacket(&vorbis_dsp_, &packet)) {
         ogg_stream_packetin(&ogg_stream_, &packet);
-
-        bytes_written += write_ogg_pages_();
+        write_ogg_pages_();
     }
-
-    return bytes_written;
 }
 
-size_t VorbisEncoder::write_ogg_pages_() {
+void VorbisEncoder::write_ogg_pages_() {
     long bytes_written = 0;
-
     ogg_page page;
-    while (ogg_stream_pageout(&ogg_stream_, &page)) {
-        if (bytes_written + page.header_len + page.body_len
-            > static_cast<long>(frame_size_)) {
-            roc_panic("vorbis encoder: frame buffer overflow");
-        }
 
+    while (ogg_stream_pageout(&ogg_stream_, &page)) {
         write_to_frame_(page.header, page.header_len, bytes_written);
         bytes_written += page.header_len;
 
         write_to_frame_(page.body, page.body_len, bytes_written);
         bytes_written += page.body_len;
     }
-
-    return static_cast<size_t>(bytes_written);
 }
 
 void VorbisEncoder::write_to_frame_(const void* data, long size, long offset) {

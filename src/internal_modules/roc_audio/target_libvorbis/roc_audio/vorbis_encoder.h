@@ -33,7 +33,7 @@ public:
     virtual status::StatusCode init_status() const;
 
     //! Get encoded frame size in bytes for given number of samples per channel.
-    virtual size_t encoded_byte_count(size_t num_samples) const;
+    virtual size_t encoded_byte_count(size_t n_samples) const;
 
     //! Start encoding a new frame.
     virtual void begin_frame(void* frame, size_t frame_size);
@@ -46,9 +46,9 @@ public:
 
 private:
     void buffer_samples_(const sample_t* samples, size_t n_samples);
-    size_t process_analysis_and_encoding_();
-    size_t extract_and_write_packets_();
-    size_t write_ogg_pages_();
+    void process_analysis_and_encoding_();
+    void extract_and_write_packets_();
+    void write_ogg_pages_();
     void write_to_frame_(const void* data, long size, long offset);
 
     bool initialized_;
