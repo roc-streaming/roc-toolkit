@@ -14,7 +14,7 @@
 
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/sample_spec.h"
-#include <vorbis/vorbisfile.h>
+#include <vorbis/codec.h>
 
 namespace roc {
 namespace audio {
@@ -55,6 +55,23 @@ public:
     virtual void end_frame();
 
 private:
+    void process_packet_();
+
+    bool initialized_;
+    vorbis_info vorbis_info_;
+    vorbis_comment vorbis_comment_;
+    vorbis_dsp_state vorbis_dsp_;
+    vorbis_block vorbis_block_;
+    ogg_packet current_packet_;
+    ogg_sync_state ogg_sync_;
+    ogg_stream_state ogg_stream_;
+
+    packet::stream_timestamp_t current_position_;
+    size_t available_samples_;
+    float** pcm_samples_;
+    int current_sample_pos_;
+    int total_samples_in_frame_;
+    bool headers_read_;
 };
 
 } // namespace audio
