@@ -18,17 +18,25 @@
 namespace roc {
 namespace sndio {
 
-//! WAV header
+//! PCM signed integers.
+const uint16_t WAV_FORMAT_PCM = 0x0001;
+//! PCM IEEE floats.
+const uint16_t WAV_FORMAT_IEEE_FLOAT = 0x0003;
+
+//! WAV header.
 //! @remarks
-//!  Holds data of a WAV header
-//!  Allows easy generation of WAV header
+//!  Holds data of a WAV header.
+//!  Allows easy generation of WAV header.
+//!  Reference:
+//!  https://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
 class WavHeader {
 public:
     //! WAV header data
     ROC_ATTR_PACKED_BEGIN struct WavHeaderData {
         //! Constructor
         WavHeaderData(uint32_t chunk_id,
-                      uint32_t format,
+                      uint32_t chunk_size,
+                      uint32_t form_type,
                       uint32_t subchunk1_id,
                       uint32_t subchunk1_size,
                       uint16_t audio_format,
@@ -37,40 +45,46 @@ public:
                       uint32_t byte_rate,
                       uint16_t block_align,
                       uint16_t bits_per_sample,
-                      uint32_t subchunk2_id);
+                      uint32_t subchunk2_id,
+                      uint32_t subchunk2_size);
         // RIFF header
         //! Chunk ID
-        const uint32_t chunk_id_;
+        const uint32_t chunk_id;
         //! Chunk size
-        uint32_t chunk_size_;
+        uint32_t chunk_size;
         //! Format
-        const uint32_t format_;
+        const uint32_t form_type;
+
         // WAVE fmt
         //! Subchunk1 ID
-        const uint32_t subchunk1_id_;
+        const uint32_t subchunk1_id;
         //! Subchunk1 size
-        const uint32_t subchunk1_size_;
+        const uint32_t subchunk1_size;
         //! Audio format
-        const uint16_t audio_format_;
+        const uint16_t audio_format;
         //! Num channels
-        const uint16_t num_channels_;
+        const uint16_t num_channels;
         //! Sample rate
-        const uint32_t sample_rate_;
+        const uint32_t sample_rate;
         //! Byte rate
-        const uint32_t byte_rate_;
+        const uint32_t byte_rate;
         //! Block align
-        const uint16_t block_align_;
+        const uint16_t block_align;
         //! Bits per sample
-        const uint16_t bits_per_sample_;
+        const uint16_t bits_per_sample;
+
         // WAVE data
         //! Subchunk2 ID
-        const uint32_t subchunk2_id_;
+        const uint32_t subchunk2_id;
         //! Subchunk2 size
-        uint32_t subchunk2_size_;
+        uint32_t subchunk2_size;
     } ROC_ATTR_PACKED_END;
 
     //! Initialize
-    WavHeader(uint16_t num_channels, uint32_t sample_rate, uint16_t bits_per_sample);
+    WavHeader(const uint16_t format_tag,
+              const uint16_t bits_per_sample,
+              const uint32_t sample_rate,
+              const uint16_t num_channels);
 
     //! Get number of channels
     uint16_t num_channels() const;

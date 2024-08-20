@@ -80,6 +80,7 @@ private:
 
     FILE* output_file_;
     core::Optional<WavHeader> header_;
+    bool is_first_;
 
     status::StatusCode init_status_;
 };
