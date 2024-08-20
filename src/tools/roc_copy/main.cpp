@@ -29,6 +29,8 @@ int main(int argc, char** argv) {
     core::HeapArena::set_guards(core::HeapArena_DefaultGuards
                                 | core::HeapArena_LeakGuard);
 
+    core::HeapArena arena;
+
     core::CrashHandler crash_handler;
 
     gengetopt_args_info args;
@@ -59,9 +61,6 @@ int main(int argc, char** argv) {
     pipeline::TranscoderConfig transcoder_config;
 
     sndio::IoConfig source_config;
-    source_config.sample_spec.set_channel_set(
-        transcoder_config.input_sample_spec.channel_set());
-    source_config.sample_spec.set_sample_rate(0);
 
     if (args.frame_len_given) {
         if (!core::parse_duration(args.frame_len_arg, source_config.frame_length)) {
@@ -72,74 +71,6 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --frame-len: should be > 0");
             return 1;
         }
-    }
-
-    core::HeapArena arena;
-
-    core::SlabPool<audio::Frame> frame_pool("frame_pool", arena);
-    core::SlabPool<core::Buffer> frame_buffer_pool(
-        "frame_buffer_pool", arena,
-        sizeof(core::Buffer)
-            + transcoder_config.input_sample_spec.ns_2_bytes(source_config.frame_length));
-
-    sndio::BackendDispatcher backend_dispatcher(frame_pool, frame_buffer_pool, arena);
-
-    sndio::BackendMap::instance().set_frame_size(source_config.frame_length,
-                                                 transcoder_config.input_sample_spec);
-
-    if (args.list_supported_given) {
-        if (!sndio::print_supported(backend_dispatcher, arena)) {
-            return 1;
-        }
-        return 0;
-    }
-
-    address::IoUri input_uri(arena);
-    if (args.input_given) {
-        if (!address::parse_io_uri(args.input_arg, input_uri) || !input_uri.is_file()) {
-            roc_log(LogError, "invalid --input file URI");
-            return 1;
-        }
-    }
-
-    if (!args.input_format_given && input_uri.is_special_file()) {
-        roc_log(LogError, "--input-format should be specified if --input is \"-\"");
-        return 1;
-    }
-
-    core::ScopedPtr<sndio::ISource> input_source;
-    if (input_uri.is_valid()) {
-        const status::StatusCode code = backend_dispatcher.open_source(
-            input_uri, args.input_format_arg, source_config, input_source);
-
-        if (code != status::StatusOK) {
-            roc_log(LogError, "can't open --input file or device: status=%s",
-                    status::code_to_str(code));
-            return 1;
-        }
-    } else {
-        const status::StatusCode code =
-            backend_dispatcher.open_default_source(source_config, input_source);
-
-        if (code != status::StatusOK) {
-            roc_log(LogError, "can't open default --input file or device: status=%s",
-                    status::code_to_str(code));
-            return 1;
-        }
-    }
-    if (input_source->has_clock()) {
-        roc_log(LogError, "unsupported --input type");
-        return 1;
-    }
-
-    transcoder_config.input_sample_spec.set_sample_rate(
-        input_source->sample_spec().sample_rate());
-
-    if (args.rate_given) {
-        transcoder_config.output_sample_spec.set_sample_rate((size_t)args.rate_arg);
-    } else {
-        transcoder_config.output_sample_spec.set_sample_rate(
-            transcoder_config.input_sample_spec.sample_rate());
     }
 
     switch (args.resampler_backend_arg) {
@@ -175,6 +106,63 @@ int main(int argc, char** argv) {
 
     transcoder_config.enable_profiling = args.profile_flag;
 
+    core::SlabPool<audio::Frame> frame_pool("frame_pool", arena);
+    core::SlabPool<core::Buffer> frame_buffer_pool(
+        "frame_buffer_pool", arena,
+        sizeof(core::Buffer)
+            + transcoder_config.input_sample_spec.ns_2_bytes(source_config.frame_length));
+
+    sndio::BackendDispatcher backend_dispatcher(frame_pool, frame_buffer_pool, arena);
+
+    sndio::BackendMap::instance().set_frame_size(source_config.frame_length,
+                                                 transcoder_config.input_sample_spec);
+
+    if (args.list_supported_given) {
+        if (!sndio::print_supported(backend_dispatcher, arena)) {
+            return 1;
+        }
+        return 0;
+    }
+
+    address::IoUri input_uri(arena);
+    if (!address::parse_io_uri(args.input_arg, input_uri) || !input_uri.is_file()) {
+        roc_log(LogError, "invalid --input file URI");
+        return 1;
+    }
+    if (!args.input_format_given && input_uri.is_special_file()) {
+        roc_log(LogError, "--input-format should be specified if --input is \"-\"");
+        return 1;
+    }
+
+    core::ScopedPtr<sndio::ISource> input_source;
+    {
+        const status::StatusCode code = backend_dispatcher.open_source(
+            input_uri, args.input_format_arg, source_config, input_source);
+
+        if (code != status::StatusOK) {
+            roc_log(LogError, "can't open --input file or device: status=%s",
+                    status::code_to_str(code));
+            return 1;
+        }
+
+        if (input_source->has_clock()) {
+            roc_log(LogError, "unsupported --input type");
+            return 1;
+        }
+    }
+
+    transcoder_config.input_sample_spec = input_source->sample_spec();
+
+    if (args.output_encoding_given) {
+        if (!audio::parse_sample_spec(args.output_encoding_arg,
+                                      transcoder_config.output_sample_spec)) {
+            roc_log(LogError, "invalid --output-encoding");
+            return 1;
+        }
+    } else {
+        transcoder_config.output_sample_spec = transcoder_config.input_sample_spec;
+    }
+
     audio::IFrameWriter* output_writer = NULL;
 
     sndio::IoConfig sink_config;
@@ -189,7 +177,6 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
-
     if (!args.output_format_given && output_uri.is_special_file()) {
         roc_log(LogError, "--output-format should be specified if --output is \"-\"");
         return 1;
@@ -197,29 +184,20 @@ int main(int argc, char** argv) {
 
     core::ScopedPtr<sndio::ISink> output_sink;
     if (args.output_given) {
-        if (output_uri.is_valid()) {
-            const status::StatusCode code = backend_dispatcher.open_sink(
-                output_uri, args.output_format_arg, sink_config, output_sink);
+        const status::StatusCode code = backend_dispatcher.open_sink(
+            output_uri, args.output_format_arg, sink_config, output_sink);
 
-            if (code != status::StatusOK) {
-                roc_log(LogError, "can't open --output file or device: status=%s",
-                        status::code_to_str(code));
-                return 1;
-            }
-        } else {
-            const status::StatusCode code =
-                backend_dispatcher.open_default_sink(sink_config, output_sink);
-
-            if (code != status::StatusOK) {
-                roc_log(LogError, "can't open default --output device: status=%s",
-                        status::code_to_str(code));
-                return 1;
-            }
+        if (code != status::StatusOK) {
+            roc_log(LogError, "can't open --output file or device: status=%s",
+                    status::code_to_str(code));
+            return 1;
         }
+
         if (output_sink->has_clock()) {
             roc_log(LogError, "unsupported --output type");
             return 1;
         }
+
         output_writer = output_sink.get();
     }
 

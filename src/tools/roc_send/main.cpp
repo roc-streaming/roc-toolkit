@@ -90,13 +90,11 @@ int main(int argc, char** argv) {
         }
     }
 
-    // TODO(gh-608): replace --rate with --io-encoding
-    if (args.rate_given) {
-        if (args.rate_arg <= 0) {
-            roc_log(LogError, "invalid --rate: should be > 0");
+    if (args.io_encoding_given) {
+        if (!audio::parse_sample_spec(args.io_encoding_arg, io_config.sample_spec)) {
+            roc_log(LogError, "invalid --io-encoding");
             return 1;
         }
-        io_config.sample_spec.set_sample_rate((size_t)args.rate_arg);
     }
 
     // TODO(gh-568): remove set_frame_size() after removing sox
