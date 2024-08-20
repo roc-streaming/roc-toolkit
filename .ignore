@@ -11,3 +11,4 @@ build
 compile_commands.json
 docs/html
 docs/man
+src/internal_modules/roc_audio/pcm_format.cpp

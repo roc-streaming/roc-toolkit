@@ -408,11 +408,11 @@ bool sample_format_to_user(roc_format& out, const audio::SampleSpec& in) {
     }
 
     const audio::PcmTraits traits = audio::pcm_format_traits(in.pcm_format());
-    if (!traits.is_valid || !traits.is_native) {
+    if (!traits.has_flags(audio::Pcm_IsNative)) {
         return false;
     }
 
-    switch (traits.native_alias) {
+    switch (traits.default_variant) {
     case audio::PcmFormat_Float32:
         out = ROC_FORMAT_PCM_FLOAT32;
         return true;

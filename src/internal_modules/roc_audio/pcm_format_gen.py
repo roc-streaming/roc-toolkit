@@ -89,13 +89,13 @@ def compute_octets(code):
 
 # generate enum name for pcm code + endian
 # e.g.:
-#  SInt18_3, Native => PcmFormat_SInt18_3
+#  SInt18_3, Default => PcmFormat_SInt18_3
 #  SInt18_3, Little => PcmFormat_SInt18_3_Le
 #  SInt18_3, Big => PcmFormat_SInt18_3_Be
 def make_enum_name(code, endian):
     name = code['code']
 
-    if endian != 'Native':
+    if endian != 'Default':
         if endian == 'Little':
             name += '_Le'
         if endian == 'Big':
@@ -105,13 +105,13 @@ def make_enum_name(code, endian):
 
 # generate short string name for pcm code + endian
 # e.g.:
-#  SInt18_3, Native => s18_3
+#  SInt18_3, Default => s18_3
 #  SInt18_3, Little => s18_3le
 #  SInt18_3, Big => s18_3be
 def make_short_name(code, endian):
     name = code['short_name']
 
-    if endian != 'Native':
+    if endian != 'Default':
         if not '_' in name:
             name += '_'
         if endian == 'Little':
@@ -120,6 +120,23 @@ def make_short_name(code, endian):
             name += 'be'
 
     return name
+
+# generate format flags
+def make_format_flags(code):
+    flags = []
+
+    if code['is_integer']:
+        flags.append('IsInteger')
+    else:
+        flags.append('IsFloat')
+    if code['is_signed']:
+        flags.append('IsSigned')
+    if code['width'] == code['packed_width']:
+        flags.append('IsPacked')
+    if code['width'] % 8 == 0:
+        flags.append('IsAligned')
+
+    return ' | '.join(['Pcm_'+f for f in flags])
 
 # find all codes which short name has given prefix, and return
 # sorted list of all possible characters in short name that can
@@ -506,7 +523,7 @@ CODES = [
         'is_integer': False,
         'is_signed': True,
         'is_raw': True,
-        'depth': 25,
+        'depth': 32,
         'width': 32,
         'packed_width': 32,
         'unpacked_width': 32,
@@ -520,7 +537,7 @@ CODES = [
         'is_integer': False,
         'is_signed': True,
         'is_raw': False,
-        'depth': 53,
+        'depth': 64,
         'width': 64,
         'packed_width': 64,
         'unpacked_width': 64,
@@ -528,7 +545,7 @@ CODES = [
 ]
 
 ENDIANS = [
-    'Native',
+    'Default',
     'Big',
     'Little',
 ]
@@ -591,14 +608,14 @@ enum PcmCode {
 // PCM endians.
 enum PcmEndian {
 {% for endian in ENDIANS %}
-{% if endian != 'Native' %}
+{% if endian != 'Default' %}
     PcmEndian_{{ endian }},
 {% endif %}
 {% endfor %}
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-    PcmEndian_Native = PcmEndian_Big,
+    PcmEndian_Default = PcmEndian_Big,
 #else
-    PcmEndian_Native = PcmEndian_Little,
+    PcmEndian_Default = PcmEndian_Little,
 #endif
 };
 
@@ -858,13 +875,13 @@ PcmMapFn pcm_map_to_raw(PcmFormat raw_format) {
 {% for ocode in CODES %}
 {% if ocode.is_raw: %}
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-    case {{ make_enum_name(ocode, 'Native') }}:
+    case {{ make_enum_name(ocode, 'Default') }}:
     case {{ make_enum_name(ocode, 'Big') }}:
 #else
-    case {{ make_enum_name(ocode, 'Native') }}:
+    case {{ make_enum_name(ocode, 'Default') }}:
     case {{ make_enum_name(ocode, 'Little') }}:
 #endif
-        return &pcm_mapper<InCode, InEndian, PcmCode_{{ ocode.code }}, PcmEndian_Native>::map;
+        return &pcm_mapper<InCode, InEndian, PcmCode_{{ ocode.code }}, PcmEndian_Default>::map;
 {% endif %}
 {% endfor %}
     default:
@@ -880,13 +897,13 @@ PcmMapFn pcm_map_from_raw(PcmFormat raw_format) {
 {% for icode in CODES %}
 {% if icode.is_raw: %}
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-    case {{ make_enum_name(icode, 'Native') }}:
+    case {{ make_enum_name(icode, 'Default') }}:
     case {{ make_enum_name(icode, 'Big') }}:
 #else
-    case {{ make_enum_name(icode, 'Native') }}:
+    case {{ make_enum_name(icode, 'Default') }}:
     case {{ make_enum_name(icode, 'Little') }}:
 #endif
-        return &pcm_mapper<PcmCode_{{ icode.code }}, PcmEndian_Native, OutCode, OutEndian>::map;
+        return &pcm_mapper<PcmCode_{{ icode.code }}, PcmEndian_Default, OutCode, OutEndian>::map;
 {% endif %}
 {% endfor %}
     default:
@@ -947,14 +964,14 @@ PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
     switch (out_format) {
 {% for ocode in CODES %}
 {% if ocode.is_raw %}
-    case {{ make_enum_name(ocode, 'Native') }}:
-        return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Native>(in_format);
+    case {{ make_enum_name(ocode, 'Default') }}:
+        return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Default>(in_format);
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
     case {{ make_enum_name(ocode, 'Big') }}:
-        return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Default>(in_format);
 #else
     case {{ make_enum_name(ocode, 'Little') }}:
-        return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Default>(in_format);
 #endif
 {% endif %}
 {% endfor %}
@@ -973,45 +990,35 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 {% for code in CODES %}
 {% for endian in ENDIANS %}
     case {{ make_enum_name(code, endian) }}:
-        traits.is_valid = true;
-        traits.is_integer = {{ str(code.is_integer).lower() }};
-        traits.is_signed = {{ str(code.is_signed).lower() }};
-{% if endian == 'Native' %}
+        traits.bit_width = {{ code.packed_width }};
+        traits.bit_depth = {{ code.depth }};
+        traits.flags = {{ make_format_flags(code) }};
+{% if endian == 'Default' %}
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = {{ make_enum_name(code, endian) }};
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = {{ make_enum_name(code, 'Big') }};
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = {{ make_enum_name(code, 'Little') }};
 #endif
 {% elif endian == 'Big' %}
-        traits.is_little = false;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = {{ make_enum_name(code, 'Native') }};
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = {{ make_enum_name(code, endian) }};
 {% elif endian == 'Little' %}
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = {{ make_enum_name(code, 'Native') }};
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = {{ make_enum_name(code, endian) }};
 {% endif %}
-        traits.bit_depth = {{ code.depth }};
-        traits.bit_width = {{ code.packed_width }};
+        traits.default_variant = {{ make_enum_name(code, 'Default') }};
+        traits.be_variant = {{ make_enum_name(code, 'Big') }};
+        traits.le_variant = {{ make_enum_name(code, 'Little') }};
         break;
 
 {% endfor %}

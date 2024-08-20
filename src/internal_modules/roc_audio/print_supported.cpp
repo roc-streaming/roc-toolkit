@@ -24,11 +24,11 @@ void print_pcm_formats(core::Printer& prn) {
 
     for (int n = 0; n < PcmFormat_Max; n++) {
         const PcmFormat fmt = (PcmFormat)n;
-
-        curr_traits = pcm_format_traits(fmt);
-        if (!curr_traits.is_valid) {
+        if (fmt == PcmFormat_Invalid) {
             continue;
         }
+
+        curr_traits = pcm_format_traits(fmt);
 
         if (prev_traits.bit_depth != curr_traits.bit_depth
             || prev_traits.bit_width != curr_traits.bit_width) {

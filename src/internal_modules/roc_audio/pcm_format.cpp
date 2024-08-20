@@ -47,9 +47,9 @@ enum PcmEndian {
     PcmEndian_Big,
     PcmEndian_Little,
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-    PcmEndian_Native = PcmEndian_Big,
+    PcmEndian_Default = PcmEndian_Big,
 #else
-    PcmEndian_Native = PcmEndian_Little,
+    PcmEndian_Default = PcmEndian_Little,
 #endif
 };
 
@@ -4186,7 +4186,7 @@ PcmMapFn pcm_map_to_raw(PcmFormat raw_format) {
     case PcmFormat_Float32:
     case PcmFormat_Float32_Le:
 #endif
-        return &pcm_mapper<InCode, InEndian, PcmCode_Float32, PcmEndian_Native>::map;
+        return &pcm_mapper<InCode, InEndian, PcmCode_Float32, PcmEndian_Default>::map;
     default:
         break;
     }
@@ -4204,7 +4204,7 @@ PcmMapFn pcm_map_from_raw(PcmFormat raw_format) {
     case PcmFormat_Float32:
     case PcmFormat_Float32_Le:
 #endif
-        return &pcm_mapper<PcmCode_Float32, PcmEndian_Native, OutCode, OutEndian>::map;
+        return &pcm_mapper<PcmCode_Float32, PcmEndian_Default, OutCode, OutEndian>::map;
     default:
         break;
     }
@@ -4218,145 +4218,145 @@ PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
     // non-raw to raw
     switch (in_format) {
     case PcmFormat_SInt8:
-        return pcm_map_to_raw<PcmCode_SInt8, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_SInt8, PcmEndian_Default>(out_format);
     case PcmFormat_SInt8_Be:
         return pcm_map_to_raw<PcmCode_SInt8, PcmEndian_Big>(out_format);
     case PcmFormat_SInt8_Le:
         return pcm_map_to_raw<PcmCode_SInt8, PcmEndian_Little>(out_format);
     case PcmFormat_UInt8:
-        return pcm_map_to_raw<PcmCode_UInt8, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_UInt8, PcmEndian_Default>(out_format);
     case PcmFormat_UInt8_Be:
         return pcm_map_to_raw<PcmCode_UInt8, PcmEndian_Big>(out_format);
     case PcmFormat_UInt8_Le:
         return pcm_map_to_raw<PcmCode_UInt8, PcmEndian_Little>(out_format);
     case PcmFormat_SInt16:
-        return pcm_map_to_raw<PcmCode_SInt16, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_SInt16, PcmEndian_Default>(out_format);
     case PcmFormat_SInt16_Be:
         return pcm_map_to_raw<PcmCode_SInt16, PcmEndian_Big>(out_format);
     case PcmFormat_SInt16_Le:
         return pcm_map_to_raw<PcmCode_SInt16, PcmEndian_Little>(out_format);
     case PcmFormat_UInt16:
-        return pcm_map_to_raw<PcmCode_UInt16, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_UInt16, PcmEndian_Default>(out_format);
     case PcmFormat_UInt16_Be:
         return pcm_map_to_raw<PcmCode_UInt16, PcmEndian_Big>(out_format);
     case PcmFormat_UInt16_Le:
         return pcm_map_to_raw<PcmCode_UInt16, PcmEndian_Little>(out_format);
     case PcmFormat_SInt18:
-        return pcm_map_to_raw<PcmCode_SInt18, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_SInt18, PcmEndian_Default>(out_format);
     case PcmFormat_SInt18_Be:
         return pcm_map_to_raw<PcmCode_SInt18, PcmEndian_Big>(out_format);
     case PcmFormat_SInt18_Le:
         return pcm_map_to_raw<PcmCode_SInt18, PcmEndian_Little>(out_format);
     case PcmFormat_UInt18:
-        return pcm_map_to_raw<PcmCode_UInt18, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_UInt18, PcmEndian_Default>(out_format);
     case PcmFormat_UInt18_Be:
         return pcm_map_to_raw<PcmCode_UInt18, PcmEndian_Big>(out_format);
     case PcmFormat_UInt18_Le:
         return pcm_map_to_raw<PcmCode_UInt18, PcmEndian_Little>(out_format);
     case PcmFormat_SInt18_3:
-        return pcm_map_to_raw<PcmCode_SInt18_3, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_SInt18_3, PcmEndian_Default>(out_format);
     case PcmFormat_SInt18_3_Be:
         return pcm_map_to_raw<PcmCode_SInt18_3, PcmEndian_Big>(out_format);
     case PcmFormat_SInt18_3_Le:
         return pcm_map_to_raw<PcmCode_SInt18_3, PcmEndian_Little>(out_format);
     case PcmFormat_UInt18_3:
-        return pcm_map_to_raw<PcmCode_UInt18_3, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_UInt18_3, PcmEndian_Default>(out_format);
     case PcmFormat_UInt18_3_Be:
         return pcm_map_to_raw<PcmCode_UInt18_3, PcmEndian_Big>(out_format);
     case PcmFormat_UInt18_3_Le:
         return pcm_map_to_raw<PcmCode_UInt18_3, PcmEndian_Little>(out_format);
     case PcmFormat_SInt18_4:
-        return pcm_map_to_raw<PcmCode_SInt18_4, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_SInt18_4, PcmEndian_Default>(out_format);
     case PcmFormat_SInt18_4_Be:
         return pcm_map_to_raw<PcmCode_SInt18_4, PcmEndian_Big>(out_format);
     case PcmFormat_SInt18_4_Le:
         return pcm_map_to_raw<PcmCode_SInt18_4, PcmEndian_Little>(out_format);
     case PcmFormat_UInt18_4:
-        return pcm_map_to_raw<PcmCode_UInt18_4, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_UInt18_4, PcmEndian_Default>(out_format);
     case PcmFormat_UInt18_4_Be:
         return pcm_map_to_raw<PcmCode_UInt18_4, PcmEndian_Big>(out_format);
     case PcmFormat_UInt18_4_Le:
         return pcm_map_to_raw<PcmCode_UInt18_4, PcmEndian_Little>(out_format);
     case PcmFormat_SInt20:
-        return pcm_map_to_raw<PcmCode_SInt20, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_SInt20, PcmEndian_Default>(out_format);
     case PcmFormat_SInt20_Be:
         return pcm_map_to_raw<PcmCode_SInt20, PcmEndian_Big>(out_format);
     case PcmFormat_SInt20_Le:
         return pcm_map_to_raw<PcmCode_SInt20, PcmEndian_Little>(out_format);
     case PcmFormat_UInt20:
-        return pcm_map_to_raw<PcmCode_UInt20, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_UInt20, PcmEndian_Default>(out_format);
     case PcmFormat_UInt20_Be:
         return pcm_map_to_raw<PcmCode_UInt20, PcmEndian_Big>(out_format);
     case PcmFormat_UInt20_Le:
         return pcm_map_to_raw<PcmCode_UInt20, PcmEndian_Little>(out_format);
     case PcmFormat_SInt20_3:
-        return pcm_map_to_raw<PcmCode_SInt20_3, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_SInt20_3, PcmEndian_Default>(out_format);
     case PcmFormat_SInt20_3_Be:
         return pcm_map_to_raw<PcmCode_SInt20_3, PcmEndian_Big>(out_format);
     case PcmFormat_SInt20_3_Le:
         return pcm_map_to_raw<PcmCode_SInt20_3, PcmEndian_Little>(out_format);
     case PcmFormat_UInt20_3:
-        return pcm_map_to_raw<PcmCode_UInt20_3, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_UInt20_3, PcmEndian_Default>(out_format);
     case PcmFormat_UInt20_3_Be:
         return pcm_map_to_raw<PcmCode_UInt20_3, PcmEndian_Big>(out_format);
     case PcmFormat_UInt20_3_Le:
         return pcm_map_to_raw<PcmCode_UInt20_3, PcmEndian_Little>(out_format);
     case PcmFormat_SInt20_4:
-        return pcm_map_to_raw<PcmCode_SInt20_4, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_SInt20_4, PcmEndian_Default>(out_format);
     case PcmFormat_SInt20_4_Be:
         return pcm_map_to_raw<PcmCode_SInt20_4, PcmEndian_Big>(out_format);
     case PcmFormat_SInt20_4_Le:
         return pcm_map_to_raw<PcmCode_SInt20_4, PcmEndian_Little>(out_format);
     case PcmFormat_UInt20_4:
-        return pcm_map_to_raw<PcmCode_UInt20_4, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_UInt20_4, PcmEndian_Default>(out_format);
     case PcmFormat_UInt20_4_Be:
         return pcm_map_to_raw<PcmCode_UInt20_4, PcmEndian_Big>(out_format);
     case PcmFormat_UInt20_4_Le:
         return pcm_map_to_raw<PcmCode_UInt20_4, PcmEndian_Little>(out_format);
     case PcmFormat_SInt24:
-        return pcm_map_to_raw<PcmCode_SInt24, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_SInt24, PcmEndian_Default>(out_format);
     case PcmFormat_SInt24_Be:
         return pcm_map_to_raw<PcmCode_SInt24, PcmEndian_Big>(out_format);
     case PcmFormat_SInt24_Le:
         return pcm_map_to_raw<PcmCode_SInt24, PcmEndian_Little>(out_format);
     case PcmFormat_UInt24:
-        return pcm_map_to_raw<PcmCode_UInt24, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_UInt24, PcmEndian_Default>(out_format);
     case PcmFormat_UInt24_Be:
         return pcm_map_to_raw<PcmCode_UInt24, PcmEndian_Big>(out_format);
     case PcmFormat_UInt24_Le:
         return pcm_map_to_raw<PcmCode_UInt24, PcmEndian_Little>(out_format);
     case PcmFormat_SInt24_4:
-        return pcm_map_to_raw<PcmCode_SInt24_4, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_SInt24_4, PcmEndian_Default>(out_format);
     case PcmFormat_SInt24_4_Be:
         return pcm_map_to_raw<PcmCode_SInt24_4, PcmEndian_Big>(out_format);
     case PcmFormat_SInt24_4_Le:
         return pcm_map_to_raw<PcmCode_SInt24_4, PcmEndian_Little>(out_format);
     case PcmFormat_UInt24_4:
-        return pcm_map_to_raw<PcmCode_UInt24_4, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_UInt24_4, PcmEndian_Default>(out_format);
     case PcmFormat_UInt24_4_Be:
         return pcm_map_to_raw<PcmCode_UInt24_4, PcmEndian_Big>(out_format);
     case PcmFormat_UInt24_4_Le:
         return pcm_map_to_raw<PcmCode_UInt24_4, PcmEndian_Little>(out_format);
     case PcmFormat_SInt32:
-        return pcm_map_to_raw<PcmCode_SInt32, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_SInt32, PcmEndian_Default>(out_format);
     case PcmFormat_SInt32_Be:
         return pcm_map_to_raw<PcmCode_SInt32, PcmEndian_Big>(out_format);
     case PcmFormat_SInt32_Le:
         return pcm_map_to_raw<PcmCode_SInt32, PcmEndian_Little>(out_format);
     case PcmFormat_UInt32:
-        return pcm_map_to_raw<PcmCode_UInt32, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_UInt32, PcmEndian_Default>(out_format);
     case PcmFormat_UInt32_Be:
         return pcm_map_to_raw<PcmCode_UInt32, PcmEndian_Big>(out_format);
     case PcmFormat_UInt32_Le:
         return pcm_map_to_raw<PcmCode_UInt32, PcmEndian_Little>(out_format);
     case PcmFormat_SInt64:
-        return pcm_map_to_raw<PcmCode_SInt64, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_SInt64, PcmEndian_Default>(out_format);
     case PcmFormat_SInt64_Be:
         return pcm_map_to_raw<PcmCode_SInt64, PcmEndian_Big>(out_format);
     case PcmFormat_SInt64_Le:
         return pcm_map_to_raw<PcmCode_SInt64, PcmEndian_Little>(out_format);
     case PcmFormat_UInt64:
-        return pcm_map_to_raw<PcmCode_UInt64, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_UInt64, PcmEndian_Default>(out_format);
     case PcmFormat_UInt64_Be:
         return pcm_map_to_raw<PcmCode_UInt64, PcmEndian_Big>(out_format);
     case PcmFormat_UInt64_Le:
@@ -4369,7 +4369,7 @@ PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
         return pcm_map_to_raw<PcmCode_Float32, PcmEndian_Little>(out_format);
 #endif
     case PcmFormat_Float64:
-        return pcm_map_to_raw<PcmCode_Float64, PcmEndian_Native>(out_format);
+        return pcm_map_to_raw<PcmCode_Float64, PcmEndian_Default>(out_format);
     case PcmFormat_Float64_Be:
         return pcm_map_to_raw<PcmCode_Float64, PcmEndian_Big>(out_format);
     case PcmFormat_Float64_Le:
@@ -4381,145 +4381,145 @@ PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
     // raw to non-raw
     switch (out_format) {
     case PcmFormat_SInt8:
-        return pcm_map_from_raw<PcmCode_SInt8, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_SInt8, PcmEndian_Default>(in_format);
     case PcmFormat_SInt8_Be:
         return pcm_map_from_raw<PcmCode_SInt8, PcmEndian_Big>(in_format);
     case PcmFormat_SInt8_Le:
         return pcm_map_from_raw<PcmCode_SInt8, PcmEndian_Little>(in_format);
     case PcmFormat_UInt8:
-        return pcm_map_from_raw<PcmCode_UInt8, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_UInt8, PcmEndian_Default>(in_format);
     case PcmFormat_UInt8_Be:
         return pcm_map_from_raw<PcmCode_UInt8, PcmEndian_Big>(in_format);
     case PcmFormat_UInt8_Le:
         return pcm_map_from_raw<PcmCode_UInt8, PcmEndian_Little>(in_format);
     case PcmFormat_SInt16:
-        return pcm_map_from_raw<PcmCode_SInt16, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_SInt16, PcmEndian_Default>(in_format);
     case PcmFormat_SInt16_Be:
         return pcm_map_from_raw<PcmCode_SInt16, PcmEndian_Big>(in_format);
     case PcmFormat_SInt16_Le:
         return pcm_map_from_raw<PcmCode_SInt16, PcmEndian_Little>(in_format);
     case PcmFormat_UInt16:
-        return pcm_map_from_raw<PcmCode_UInt16, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_UInt16, PcmEndian_Default>(in_format);
     case PcmFormat_UInt16_Be:
         return pcm_map_from_raw<PcmCode_UInt16, PcmEndian_Big>(in_format);
     case PcmFormat_UInt16_Le:
         return pcm_map_from_raw<PcmCode_UInt16, PcmEndian_Little>(in_format);
     case PcmFormat_SInt18:
-        return pcm_map_from_raw<PcmCode_SInt18, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_SInt18, PcmEndian_Default>(in_format);
     case PcmFormat_SInt18_Be:
         return pcm_map_from_raw<PcmCode_SInt18, PcmEndian_Big>(in_format);
     case PcmFormat_SInt18_Le:
         return pcm_map_from_raw<PcmCode_SInt18, PcmEndian_Little>(in_format);
     case PcmFormat_UInt18:
-        return pcm_map_from_raw<PcmCode_UInt18, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_UInt18, PcmEndian_Default>(in_format);
     case PcmFormat_UInt18_Be:
         return pcm_map_from_raw<PcmCode_UInt18, PcmEndian_Big>(in_format);
     case PcmFormat_UInt18_Le:
         return pcm_map_from_raw<PcmCode_UInt18, PcmEndian_Little>(in_format);
     case PcmFormat_SInt18_3:
-        return pcm_map_from_raw<PcmCode_SInt18_3, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_SInt18_3, PcmEndian_Default>(in_format);
     case PcmFormat_SInt18_3_Be:
         return pcm_map_from_raw<PcmCode_SInt18_3, PcmEndian_Big>(in_format);
     case PcmFormat_SInt18_3_Le:
         return pcm_map_from_raw<PcmCode_SInt18_3, PcmEndian_Little>(in_format);
     case PcmFormat_UInt18_3:
-        return pcm_map_from_raw<PcmCode_UInt18_3, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_UInt18_3, PcmEndian_Default>(in_format);
     case PcmFormat_UInt18_3_Be:
         return pcm_map_from_raw<PcmCode_UInt18_3, PcmEndian_Big>(in_format);
     case PcmFormat_UInt18_3_Le:
         return pcm_map_from_raw<PcmCode_UInt18_3, PcmEndian_Little>(in_format);
     case PcmFormat_SInt18_4:
-        return pcm_map_from_raw<PcmCode_SInt18_4, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_SInt18_4, PcmEndian_Default>(in_format);
     case PcmFormat_SInt18_4_Be:
         return pcm_map_from_raw<PcmCode_SInt18_4, PcmEndian_Big>(in_format);
     case PcmFormat_SInt18_4_Le:
         return pcm_map_from_raw<PcmCode_SInt18_4, PcmEndian_Little>(in_format);
     case PcmFormat_UInt18_4:
-        return pcm_map_from_raw<PcmCode_UInt18_4, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_UInt18_4, PcmEndian_Default>(in_format);
     case PcmFormat_UInt18_4_Be:
         return pcm_map_from_raw<PcmCode_UInt18_4, PcmEndian_Big>(in_format);
     case PcmFormat_UInt18_4_Le:
         return pcm_map_from_raw<PcmCode_UInt18_4, PcmEndian_Little>(in_format);
     case PcmFormat_SInt20:
-        return pcm_map_from_raw<PcmCode_SInt20, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_SInt20, PcmEndian_Default>(in_format);
     case PcmFormat_SInt20_Be:
         return pcm_map_from_raw<PcmCode_SInt20, PcmEndian_Big>(in_format);
     case PcmFormat_SInt20_Le:
         return pcm_map_from_raw<PcmCode_SInt20, PcmEndian_Little>(in_format);
     case PcmFormat_UInt20:
-        return pcm_map_from_raw<PcmCode_UInt20, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_UInt20, PcmEndian_Default>(in_format);
     case PcmFormat_UInt20_Be:
         return pcm_map_from_raw<PcmCode_UInt20, PcmEndian_Big>(in_format);
     case PcmFormat_UInt20_Le:
         return pcm_map_from_raw<PcmCode_UInt20, PcmEndian_Little>(in_format);
     case PcmFormat_SInt20_3:
-        return pcm_map_from_raw<PcmCode_SInt20_3, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_SInt20_3, PcmEndian_Default>(in_format);
     case PcmFormat_SInt20_3_Be:
         return pcm_map_from_raw<PcmCode_SInt20_3, PcmEndian_Big>(in_format);
     case PcmFormat_SInt20_3_Le:
         return pcm_map_from_raw<PcmCode_SInt20_3, PcmEndian_Little>(in_format);
     case PcmFormat_UInt20_3:
-        return pcm_map_from_raw<PcmCode_UInt20_3, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_UInt20_3, PcmEndian_Default>(in_format);
     case PcmFormat_UInt20_3_Be:
         return pcm_map_from_raw<PcmCode_UInt20_3, PcmEndian_Big>(in_format);
     case PcmFormat_UInt20_3_Le:
         return pcm_map_from_raw<PcmCode_UInt20_3, PcmEndian_Little>(in_format);
     case PcmFormat_SInt20_4:
-        return pcm_map_from_raw<PcmCode_SInt20_4, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_SInt20_4, PcmEndian_Default>(in_format);
     case PcmFormat_SInt20_4_Be:
         return pcm_map_from_raw<PcmCode_SInt20_4, PcmEndian_Big>(in_format);
     case PcmFormat_SInt20_4_Le:
         return pcm_map_from_raw<PcmCode_SInt20_4, PcmEndian_Little>(in_format);
     case PcmFormat_UInt20_4:
-        return pcm_map_from_raw<PcmCode_UInt20_4, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_UInt20_4, PcmEndian_Default>(in_format);
     case PcmFormat_UInt20_4_Be:
         return pcm_map_from_raw<PcmCode_UInt20_4, PcmEndian_Big>(in_format);
     case PcmFormat_UInt20_4_Le:
         return pcm_map_from_raw<PcmCode_UInt20_4, PcmEndian_Little>(in_format);
     case PcmFormat_SInt24:
-        return pcm_map_from_raw<PcmCode_SInt24, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_SInt24, PcmEndian_Default>(in_format);
     case PcmFormat_SInt24_Be:
         return pcm_map_from_raw<PcmCode_SInt24, PcmEndian_Big>(in_format);
     case PcmFormat_SInt24_Le:
         return pcm_map_from_raw<PcmCode_SInt24, PcmEndian_Little>(in_format);
     case PcmFormat_UInt24:
-        return pcm_map_from_raw<PcmCode_UInt24, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_UInt24, PcmEndian_Default>(in_format);
     case PcmFormat_UInt24_Be:
         return pcm_map_from_raw<PcmCode_UInt24, PcmEndian_Big>(in_format);
     case PcmFormat_UInt24_Le:
         return pcm_map_from_raw<PcmCode_UInt24, PcmEndian_Little>(in_format);
     case PcmFormat_SInt24_4:
-        return pcm_map_from_raw<PcmCode_SInt24_4, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_SInt24_4, PcmEndian_Default>(in_format);
     case PcmFormat_SInt24_4_Be:
         return pcm_map_from_raw<PcmCode_SInt24_4, PcmEndian_Big>(in_format);
     case PcmFormat_SInt24_4_Le:
         return pcm_map_from_raw<PcmCode_SInt24_4, PcmEndian_Little>(in_format);
     case PcmFormat_UInt24_4:
-        return pcm_map_from_raw<PcmCode_UInt24_4, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_UInt24_4, PcmEndian_Default>(in_format);
     case PcmFormat_UInt24_4_Be:
         return pcm_map_from_raw<PcmCode_UInt24_4, PcmEndian_Big>(in_format);
     case PcmFormat_UInt24_4_Le:
         return pcm_map_from_raw<PcmCode_UInt24_4, PcmEndian_Little>(in_format);
     case PcmFormat_SInt32:
-        return pcm_map_from_raw<PcmCode_SInt32, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_SInt32, PcmEndian_Default>(in_format);
     case PcmFormat_SInt32_Be:
         return pcm_map_from_raw<PcmCode_SInt32, PcmEndian_Big>(in_format);
     case PcmFormat_SInt32_Le:
         return pcm_map_from_raw<PcmCode_SInt32, PcmEndian_Little>(in_format);
     case PcmFormat_UInt32:
-        return pcm_map_from_raw<PcmCode_UInt32, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_UInt32, PcmEndian_Default>(in_format);
     case PcmFormat_UInt32_Be:
         return pcm_map_from_raw<PcmCode_UInt32, PcmEndian_Big>(in_format);
     case PcmFormat_UInt32_Le:
         return pcm_map_from_raw<PcmCode_UInt32, PcmEndian_Little>(in_format);
     case PcmFormat_SInt64:
-        return pcm_map_from_raw<PcmCode_SInt64, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_SInt64, PcmEndian_Default>(in_format);
     case PcmFormat_SInt64_Be:
         return pcm_map_from_raw<PcmCode_SInt64, PcmEndian_Big>(in_format);
     case PcmFormat_SInt64_Le:
         return pcm_map_from_raw<PcmCode_SInt64, PcmEndian_Little>(in_format);
     case PcmFormat_UInt64:
-        return pcm_map_from_raw<PcmCode_UInt64, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_UInt64, PcmEndian_Default>(in_format);
     case PcmFormat_UInt64_Be:
         return pcm_map_from_raw<PcmCode_UInt64, PcmEndian_Big>(in_format);
     case PcmFormat_UInt64_Le:
@@ -4532,7 +4532,7 @@ PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
         return pcm_map_from_raw<PcmCode_Float32, PcmEndian_Little>(in_format);
 #endif
     case PcmFormat_Float64:
-        return pcm_map_from_raw<PcmCode_Float64, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_Float64, PcmEndian_Default>(in_format);
     case PcmFormat_Float64_Be:
         return pcm_map_from_raw<PcmCode_Float64, PcmEndian_Big>(in_format);
     case PcmFormat_Float64_Le:
@@ -4544,13 +4544,13 @@ PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
     // raw to raw
     switch (out_format) {
     case PcmFormat_Float32:
-        return pcm_map_from_raw<PcmCode_Float32, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_Float32, PcmEndian_Default>(in_format);
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
     case PcmFormat_Float32_Be:
-        return pcm_map_from_raw<PcmCode_Float32, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_Float32, PcmEndian_Default>(in_format);
 #else
     case PcmFormat_Float32_Le:
-        return pcm_map_from_raw<PcmCode_Float32, PcmEndian_Native>(in_format);
+        return pcm_map_from_raw<PcmCode_Float32, PcmEndian_Default>(in_format);
 #endif
     default:
         break;
@@ -4565,1407 +4565,1199 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 
     switch (format) {
     case PcmFormat_SInt8:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
+        traits.bit_width = 8;
+        traits.bit_depth = 8;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt8;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_SInt8_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_SInt8_Le;
 #endif
-        traits.bit_depth = 8;
-        traits.bit_width = 8;
+        traits.default_variant = PcmFormat_SInt8;
+        traits.be_variant = PcmFormat_SInt8_Be;
+        traits.le_variant = PcmFormat_SInt8_Le;
         break;
 
     case PcmFormat_SInt8_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 8;
+        traits.bit_depth = 8;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt8;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_SInt8_Be;
-        traits.bit_depth = 8;
-        traits.bit_width = 8;
+        traits.default_variant = PcmFormat_SInt8;
+        traits.be_variant = PcmFormat_SInt8_Be;
+        traits.le_variant = PcmFormat_SInt8_Le;
         break;
 
     case PcmFormat_SInt8_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 8;
+        traits.bit_depth = 8;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt8;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_SInt8_Le;
-        traits.bit_depth = 8;
-        traits.bit_width = 8;
+        traits.default_variant = PcmFormat_SInt8;
+        traits.be_variant = PcmFormat_SInt8_Be;
+        traits.le_variant = PcmFormat_SInt8_Le;
         break;
 
     case PcmFormat_UInt8:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
+        traits.bit_width = 8;
+        traits.bit_depth = 8;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt8;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_UInt8_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_UInt8_Le;
 #endif
-        traits.bit_depth = 8;
-        traits.bit_width = 8;
+        traits.default_variant = PcmFormat_UInt8;
+        traits.be_variant = PcmFormat_UInt8_Be;
+        traits.le_variant = PcmFormat_UInt8_Le;
         break;
 
     case PcmFormat_UInt8_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = false;
+        traits.bit_width = 8;
+        traits.bit_depth = 8;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt8;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_UInt8_Be;
-        traits.bit_depth = 8;
-        traits.bit_width = 8;
+        traits.default_variant = PcmFormat_UInt8;
+        traits.be_variant = PcmFormat_UInt8_Be;
+        traits.le_variant = PcmFormat_UInt8_Le;
         break;
 
     case PcmFormat_UInt8_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 8;
+        traits.bit_depth = 8;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt8;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_UInt8_Le;
-        traits.bit_depth = 8;
-        traits.bit_width = 8;
+        traits.default_variant = PcmFormat_UInt8;
+        traits.be_variant = PcmFormat_UInt8_Be;
+        traits.le_variant = PcmFormat_UInt8_Le;
         break;
 
     case PcmFormat_SInt16:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
+        traits.bit_width = 16;
+        traits.bit_depth = 16;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt16;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_SInt16_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_SInt16_Le;
 #endif
-        traits.bit_depth = 16;
-        traits.bit_width = 16;
+        traits.default_variant = PcmFormat_SInt16;
+        traits.be_variant = PcmFormat_SInt16_Be;
+        traits.le_variant = PcmFormat_SInt16_Le;
         break;
 
     case PcmFormat_SInt16_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 16;
+        traits.bit_depth = 16;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt16;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_SInt16_Be;
-        traits.bit_depth = 16;
-        traits.bit_width = 16;
+        traits.default_variant = PcmFormat_SInt16;
+        traits.be_variant = PcmFormat_SInt16_Be;
+        traits.le_variant = PcmFormat_SInt16_Le;
         break;
 
     case PcmFormat_SInt16_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 16;
+        traits.bit_depth = 16;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt16;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_SInt16_Le;
-        traits.bit_depth = 16;
-        traits.bit_width = 16;
+        traits.default_variant = PcmFormat_SInt16;
+        traits.be_variant = PcmFormat_SInt16_Be;
+        traits.le_variant = PcmFormat_SInt16_Le;
         break;
 
     case PcmFormat_UInt16:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
+        traits.bit_width = 16;
+        traits.bit_depth = 16;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt16;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_UInt16_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_UInt16_Le;
 #endif
-        traits.bit_depth = 16;
-        traits.bit_width = 16;
+        traits.default_variant = PcmFormat_UInt16;
+        traits.be_variant = PcmFormat_UInt16_Be;
+        traits.le_variant = PcmFormat_UInt16_Le;
         break;
 
     case PcmFormat_UInt16_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = false;
+        traits.bit_width = 16;
+        traits.bit_depth = 16;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt16;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_UInt16_Be;
-        traits.bit_depth = 16;
-        traits.bit_width = 16;
+        traits.default_variant = PcmFormat_UInt16;
+        traits.be_variant = PcmFormat_UInt16_Be;
+        traits.le_variant = PcmFormat_UInt16_Le;
         break;
 
     case PcmFormat_UInt16_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 16;
+        traits.bit_depth = 16;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt16;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_UInt16_Le;
-        traits.bit_depth = 16;
-        traits.bit_width = 16;
+        traits.default_variant = PcmFormat_UInt16;
+        traits.be_variant = PcmFormat_UInt16_Be;
+        traits.le_variant = PcmFormat_UInt16_Le;
         break;
 
     case PcmFormat_SInt18:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
+        traits.bit_width = 18;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt18;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_SInt18_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_SInt18_Le;
 #endif
-        traits.bit_depth = 18;
-        traits.bit_width = 18;
+        traits.default_variant = PcmFormat_SInt18;
+        traits.be_variant = PcmFormat_SInt18_Be;
+        traits.le_variant = PcmFormat_SInt18_Le;
         break;
 
     case PcmFormat_SInt18_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 18;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt18;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_SInt18_Be;
-        traits.bit_depth = 18;
-        traits.bit_width = 18;
+        traits.default_variant = PcmFormat_SInt18;
+        traits.be_variant = PcmFormat_SInt18_Be;
+        traits.le_variant = PcmFormat_SInt18_Le;
         break;
 
     case PcmFormat_SInt18_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 18;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt18;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_SInt18_Le;
-        traits.bit_depth = 18;
-        traits.bit_width = 18;
+        traits.default_variant = PcmFormat_SInt18;
+        traits.be_variant = PcmFormat_SInt18_Be;
+        traits.le_variant = PcmFormat_SInt18_Le;
         break;
 
     case PcmFormat_UInt18:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
+        traits.bit_width = 18;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt18;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_UInt18_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_UInt18_Le;
 #endif
-        traits.bit_depth = 18;
-        traits.bit_width = 18;
+        traits.default_variant = PcmFormat_UInt18;
+        traits.be_variant = PcmFormat_UInt18_Be;
+        traits.le_variant = PcmFormat_UInt18_Le;
         break;
 
     case PcmFormat_UInt18_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = false;
+        traits.bit_width = 18;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt18;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_UInt18_Be;
-        traits.bit_depth = 18;
-        traits.bit_width = 18;
+        traits.default_variant = PcmFormat_UInt18;
+        traits.be_variant = PcmFormat_UInt18_Be;
+        traits.le_variant = PcmFormat_UInt18_Le;
         break;
 
     case PcmFormat_UInt18_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 18;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt18;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_UInt18_Le;
-        traits.bit_depth = 18;
-        traits.bit_width = 18;
+        traits.default_variant = PcmFormat_UInt18;
+        traits.be_variant = PcmFormat_UInt18_Be;
+        traits.le_variant = PcmFormat_UInt18_Le;
         break;
 
     case PcmFormat_SInt18_3:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
+        traits.bit_width = 24;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt18_3;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_SInt18_3_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_SInt18_3_Le;
 #endif
-        traits.bit_depth = 18;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_SInt18_3;
+        traits.be_variant = PcmFormat_SInt18_3_Be;
+        traits.le_variant = PcmFormat_SInt18_3_Le;
         break;
 
     case PcmFormat_SInt18_3_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 24;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt18_3;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_SInt18_3_Be;
-        traits.bit_depth = 18;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_SInt18_3;
+        traits.be_variant = PcmFormat_SInt18_3_Be;
+        traits.le_variant = PcmFormat_SInt18_3_Le;
         break;
 
     case PcmFormat_SInt18_3_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 24;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt18_3;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_SInt18_3_Le;
-        traits.bit_depth = 18;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_SInt18_3;
+        traits.be_variant = PcmFormat_SInt18_3_Be;
+        traits.le_variant = PcmFormat_SInt18_3_Le;
         break;
 
     case PcmFormat_UInt18_3:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
+        traits.bit_width = 24;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt18_3;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_UInt18_3_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_UInt18_3_Le;
 #endif
-        traits.bit_depth = 18;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_UInt18_3;
+        traits.be_variant = PcmFormat_UInt18_3_Be;
+        traits.le_variant = PcmFormat_UInt18_3_Le;
         break;
 
     case PcmFormat_UInt18_3_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = false;
+        traits.bit_width = 24;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt18_3;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_UInt18_3_Be;
-        traits.bit_depth = 18;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_UInt18_3;
+        traits.be_variant = PcmFormat_UInt18_3_Be;
+        traits.le_variant = PcmFormat_UInt18_3_Le;
         break;
 
     case PcmFormat_UInt18_3_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 24;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt18_3;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_UInt18_3_Le;
-        traits.bit_depth = 18;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_UInt18_3;
+        traits.be_variant = PcmFormat_UInt18_3_Be;
+        traits.le_variant = PcmFormat_UInt18_3_Le;
         break;
 
     case PcmFormat_SInt18_4:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
+        traits.bit_width = 32;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt18_4;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_SInt18_4_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_SInt18_4_Le;
 #endif
-        traits.bit_depth = 18;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_SInt18_4;
+        traits.be_variant = PcmFormat_SInt18_4_Be;
+        traits.le_variant = PcmFormat_SInt18_4_Le;
         break;
 
     case PcmFormat_SInt18_4_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 32;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt18_4;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_SInt18_4_Be;
-        traits.bit_depth = 18;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_SInt18_4;
+        traits.be_variant = PcmFormat_SInt18_4_Be;
+        traits.le_variant = PcmFormat_SInt18_4_Le;
         break;
 
     case PcmFormat_SInt18_4_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 32;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt18_4;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_SInt18_4_Le;
-        traits.bit_depth = 18;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_SInt18_4;
+        traits.be_variant = PcmFormat_SInt18_4_Be;
+        traits.le_variant = PcmFormat_SInt18_4_Le;
         break;
 
     case PcmFormat_UInt18_4:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
+        traits.bit_width = 32;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt18_4;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_UInt18_4_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_UInt18_4_Le;
 #endif
-        traits.bit_depth = 18;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_UInt18_4;
+        traits.be_variant = PcmFormat_UInt18_4_Be;
+        traits.le_variant = PcmFormat_UInt18_4_Le;
         break;
 
     case PcmFormat_UInt18_4_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = false;
+        traits.bit_width = 32;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt18_4;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_UInt18_4_Be;
-        traits.bit_depth = 18;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_UInt18_4;
+        traits.be_variant = PcmFormat_UInt18_4_Be;
+        traits.le_variant = PcmFormat_UInt18_4_Le;
         break;
 
     case PcmFormat_UInt18_4_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 32;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt18_4;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_UInt18_4_Le;
-        traits.bit_depth = 18;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_UInt18_4;
+        traits.be_variant = PcmFormat_UInt18_4_Be;
+        traits.le_variant = PcmFormat_UInt18_4_Le;
         break;
 
     case PcmFormat_SInt20:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
+        traits.bit_width = 20;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt20;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_SInt20_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_SInt20_Le;
 #endif
-        traits.bit_depth = 20;
-        traits.bit_width = 20;
+        traits.default_variant = PcmFormat_SInt20;
+        traits.be_variant = PcmFormat_SInt20_Be;
+        traits.le_variant = PcmFormat_SInt20_Le;
         break;
 
     case PcmFormat_SInt20_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 20;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt20;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_SInt20_Be;
-        traits.bit_depth = 20;
-        traits.bit_width = 20;
+        traits.default_variant = PcmFormat_SInt20;
+        traits.be_variant = PcmFormat_SInt20_Be;
+        traits.le_variant = PcmFormat_SInt20_Le;
         break;
 
     case PcmFormat_SInt20_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 20;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt20;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_SInt20_Le;
-        traits.bit_depth = 20;
-        traits.bit_width = 20;
+        traits.default_variant = PcmFormat_SInt20;
+        traits.be_variant = PcmFormat_SInt20_Be;
+        traits.le_variant = PcmFormat_SInt20_Le;
         break;
 
     case PcmFormat_UInt20:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
+        traits.bit_width = 20;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt20;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_UInt20_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_UInt20_Le;
 #endif
-        traits.bit_depth = 20;
-        traits.bit_width = 20;
+        traits.default_variant = PcmFormat_UInt20;
+        traits.be_variant = PcmFormat_UInt20_Be;
+        traits.le_variant = PcmFormat_UInt20_Le;
         break;
 
     case PcmFormat_UInt20_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = false;
+        traits.bit_width = 20;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt20;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_UInt20_Be;
-        traits.bit_depth = 20;
-        traits.bit_width = 20;
+        traits.default_variant = PcmFormat_UInt20;
+        traits.be_variant = PcmFormat_UInt20_Be;
+        traits.le_variant = PcmFormat_UInt20_Le;
         break;
 
     case PcmFormat_UInt20_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 20;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt20;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_UInt20_Le;
-        traits.bit_depth = 20;
-        traits.bit_width = 20;
+        traits.default_variant = PcmFormat_UInt20;
+        traits.be_variant = PcmFormat_UInt20_Be;
+        traits.le_variant = PcmFormat_UInt20_Le;
         break;
 
     case PcmFormat_SInt20_3:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
+        traits.bit_width = 24;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt20_3;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_SInt20_3_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_SInt20_3_Le;
 #endif
-        traits.bit_depth = 20;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_SInt20_3;
+        traits.be_variant = PcmFormat_SInt20_3_Be;
+        traits.le_variant = PcmFormat_SInt20_3_Le;
         break;
 
     case PcmFormat_SInt20_3_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 24;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt20_3;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_SInt20_3_Be;
-        traits.bit_depth = 20;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_SInt20_3;
+        traits.be_variant = PcmFormat_SInt20_3_Be;
+        traits.le_variant = PcmFormat_SInt20_3_Le;
         break;
 
     case PcmFormat_SInt20_3_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 24;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt20_3;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_SInt20_3_Le;
-        traits.bit_depth = 20;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_SInt20_3;
+        traits.be_variant = PcmFormat_SInt20_3_Be;
+        traits.le_variant = PcmFormat_SInt20_3_Le;
         break;
 
     case PcmFormat_UInt20_3:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
+        traits.bit_width = 24;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt20_3;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_UInt20_3_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_UInt20_3_Le;
 #endif
-        traits.bit_depth = 20;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_UInt20_3;
+        traits.be_variant = PcmFormat_UInt20_3_Be;
+        traits.le_variant = PcmFormat_UInt20_3_Le;
         break;
 
     case PcmFormat_UInt20_3_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = false;
+        traits.bit_width = 24;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt20_3;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_UInt20_3_Be;
-        traits.bit_depth = 20;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_UInt20_3;
+        traits.be_variant = PcmFormat_UInt20_3_Be;
+        traits.le_variant = PcmFormat_UInt20_3_Le;
         break;
 
     case PcmFormat_UInt20_3_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 24;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt20_3;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_UInt20_3_Le;
-        traits.bit_depth = 20;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_UInt20_3;
+        traits.be_variant = PcmFormat_UInt20_3_Be;
+        traits.le_variant = PcmFormat_UInt20_3_Le;
         break;
 
     case PcmFormat_SInt20_4:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
+        traits.bit_width = 32;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt20_4;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_SInt20_4_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_SInt20_4_Le;
 #endif
-        traits.bit_depth = 20;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_SInt20_4;
+        traits.be_variant = PcmFormat_SInt20_4_Be;
+        traits.le_variant = PcmFormat_SInt20_4_Le;
         break;
 
     case PcmFormat_SInt20_4_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 32;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt20_4;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_SInt20_4_Be;
-        traits.bit_depth = 20;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_SInt20_4;
+        traits.be_variant = PcmFormat_SInt20_4_Be;
+        traits.le_variant = PcmFormat_SInt20_4_Le;
         break;
 
     case PcmFormat_SInt20_4_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 32;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt20_4;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_SInt20_4_Le;
-        traits.bit_depth = 20;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_SInt20_4;
+        traits.be_variant = PcmFormat_SInt20_4_Be;
+        traits.le_variant = PcmFormat_SInt20_4_Le;
         break;
 
     case PcmFormat_UInt20_4:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
+        traits.bit_width = 32;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt20_4;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_UInt20_4_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_UInt20_4_Le;
 #endif
-        traits.bit_depth = 20;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_UInt20_4;
+        traits.be_variant = PcmFormat_UInt20_4_Be;
+        traits.le_variant = PcmFormat_UInt20_4_Le;
         break;
 
     case PcmFormat_UInt20_4_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = false;
+        traits.bit_width = 32;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt20_4;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_UInt20_4_Be;
-        traits.bit_depth = 20;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_UInt20_4;
+        traits.be_variant = PcmFormat_UInt20_4_Be;
+        traits.le_variant = PcmFormat_UInt20_4_Le;
         break;
 
     case PcmFormat_UInt20_4_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 32;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt20_4;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_UInt20_4_Le;
-        traits.bit_depth = 20;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_UInt20_4;
+        traits.be_variant = PcmFormat_UInt20_4_Be;
+        traits.le_variant = PcmFormat_UInt20_4_Le;
         break;
 
     case PcmFormat_SInt24:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
+        traits.bit_width = 24;
+        traits.bit_depth = 24;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt24;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_SInt24_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_SInt24_Le;
 #endif
-        traits.bit_depth = 24;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_SInt24;
+        traits.be_variant = PcmFormat_SInt24_Be;
+        traits.le_variant = PcmFormat_SInt24_Le;
         break;
 
     case PcmFormat_SInt24_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 24;
+        traits.bit_depth = 24;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt24;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_SInt24_Be;
-        traits.bit_depth = 24;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_SInt24;
+        traits.be_variant = PcmFormat_SInt24_Be;
+        traits.le_variant = PcmFormat_SInt24_Le;
         break;
 
     case PcmFormat_SInt24_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 24;
+        traits.bit_depth = 24;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt24;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_SInt24_Le;
-        traits.bit_depth = 24;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_SInt24;
+        traits.be_variant = PcmFormat_SInt24_Be;
+        traits.le_variant = PcmFormat_SInt24_Le;
         break;
 
     case PcmFormat_UInt24:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
+        traits.bit_width = 24;
+        traits.bit_depth = 24;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt24;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_UInt24_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_UInt24_Le;
 #endif
-        traits.bit_depth = 24;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_UInt24;
+        traits.be_variant = PcmFormat_UInt24_Be;
+        traits.le_variant = PcmFormat_UInt24_Le;
         break;
 
     case PcmFormat_UInt24_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = false;
+        traits.bit_width = 24;
+        traits.bit_depth = 24;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt24;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_UInt24_Be;
-        traits.bit_depth = 24;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_UInt24;
+        traits.be_variant = PcmFormat_UInt24_Be;
+        traits.le_variant = PcmFormat_UInt24_Le;
         break;
 
     case PcmFormat_UInt24_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 24;
+        traits.bit_depth = 24;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt24;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_UInt24_Le;
-        traits.bit_depth = 24;
-        traits.bit_width = 24;
+        traits.default_variant = PcmFormat_UInt24;
+        traits.be_variant = PcmFormat_UInt24_Be;
+        traits.le_variant = PcmFormat_UInt24_Le;
         break;
 
     case PcmFormat_SInt24_4:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
+        traits.bit_width = 32;
+        traits.bit_depth = 24;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt24_4;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_SInt24_4_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_SInt24_4_Le;
 #endif
-        traits.bit_depth = 24;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_SInt24_4;
+        traits.be_variant = PcmFormat_SInt24_4_Be;
+        traits.le_variant = PcmFormat_SInt24_4_Le;
         break;
 
     case PcmFormat_SInt24_4_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 32;
+        traits.bit_depth = 24;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt24_4;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_SInt24_4_Be;
-        traits.bit_depth = 24;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_SInt24_4;
+        traits.be_variant = PcmFormat_SInt24_4_Be;
+        traits.le_variant = PcmFormat_SInt24_4_Le;
         break;
 
     case PcmFormat_SInt24_4_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 32;
+        traits.bit_depth = 24;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt24_4;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_SInt24_4_Le;
-        traits.bit_depth = 24;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_SInt24_4;
+        traits.be_variant = PcmFormat_SInt24_4_Be;
+        traits.le_variant = PcmFormat_SInt24_4_Le;
         break;
 
     case PcmFormat_UInt24_4:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
+        traits.bit_width = 32;
+        traits.bit_depth = 24;
+        traits.flags = Pcm_IsInteger | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt24_4;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_UInt24_4_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_UInt24_4_Le;
 #endif
-        traits.bit_depth = 24;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_UInt24_4;
+        traits.be_variant = PcmFormat_UInt24_4_Be;
+        traits.le_variant = PcmFormat_UInt24_4_Le;
         break;
 
     case PcmFormat_UInt24_4_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = false;
+        traits.bit_width = 32;
+        traits.bit_depth = 24;
+        traits.flags = Pcm_IsInteger | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt24_4;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_UInt24_4_Be;
-        traits.bit_depth = 24;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_UInt24_4;
+        traits.be_variant = PcmFormat_UInt24_4_Be;
+        traits.le_variant = PcmFormat_UInt24_4_Le;
         break;
 
     case PcmFormat_UInt24_4_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 32;
+        traits.bit_depth = 24;
+        traits.flags = Pcm_IsInteger | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt24_4;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_UInt24_4_Le;
-        traits.bit_depth = 24;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_UInt24_4;
+        traits.be_variant = PcmFormat_UInt24_4_Be;
+        traits.le_variant = PcmFormat_UInt24_4_Le;
         break;
 
     case PcmFormat_SInt32:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
+        traits.bit_width = 32;
+        traits.bit_depth = 32;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt32;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_SInt32_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_SInt32_Le;
 #endif
-        traits.bit_depth = 32;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_SInt32;
+        traits.be_variant = PcmFormat_SInt32_Be;
+        traits.le_variant = PcmFormat_SInt32_Le;
         break;
 
     case PcmFormat_SInt32_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 32;
+        traits.bit_depth = 32;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt32;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_SInt32_Be;
-        traits.bit_depth = 32;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_SInt32;
+        traits.be_variant = PcmFormat_SInt32_Be;
+        traits.le_variant = PcmFormat_SInt32_Le;
         break;
 
     case PcmFormat_SInt32_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 32;
+        traits.bit_depth = 32;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt32;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_SInt32_Le;
-        traits.bit_depth = 32;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_SInt32;
+        traits.be_variant = PcmFormat_SInt32_Be;
+        traits.le_variant = PcmFormat_SInt32_Le;
         break;
 
     case PcmFormat_UInt32:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
+        traits.bit_width = 32;
+        traits.bit_depth = 32;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt32;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_UInt32_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_UInt32_Le;
 #endif
-        traits.bit_depth = 32;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_UInt32;
+        traits.be_variant = PcmFormat_UInt32_Be;
+        traits.le_variant = PcmFormat_UInt32_Le;
         break;
 
     case PcmFormat_UInt32_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = false;
+        traits.bit_width = 32;
+        traits.bit_depth = 32;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt32;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_UInt32_Be;
-        traits.bit_depth = 32;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_UInt32;
+        traits.be_variant = PcmFormat_UInt32_Be;
+        traits.le_variant = PcmFormat_UInt32_Le;
         break;
 
     case PcmFormat_UInt32_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 32;
+        traits.bit_depth = 32;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt32;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_UInt32_Le;
-        traits.bit_depth = 32;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_UInt32;
+        traits.be_variant = PcmFormat_UInt32_Be;
+        traits.le_variant = PcmFormat_UInt32_Le;
         break;
 
     case PcmFormat_SInt64:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
+        traits.bit_width = 64;
+        traits.bit_depth = 64;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt64;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_SInt64_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_SInt64_Le;
 #endif
-        traits.bit_depth = 64;
-        traits.bit_width = 64;
+        traits.default_variant = PcmFormat_SInt64;
+        traits.be_variant = PcmFormat_SInt64_Be;
+        traits.le_variant = PcmFormat_SInt64_Le;
         break;
 
     case PcmFormat_SInt64_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 64;
+        traits.bit_depth = 64;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt64;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_SInt64_Be;
-        traits.bit_depth = 64;
-        traits.bit_width = 64;
+        traits.default_variant = PcmFormat_SInt64;
+        traits.be_variant = PcmFormat_SInt64_Be;
+        traits.le_variant = PcmFormat_SInt64_Le;
         break;
 
     case PcmFormat_SInt64_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 64;
+        traits.bit_depth = 64;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_SInt64;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_SInt64_Le;
-        traits.bit_depth = 64;
-        traits.bit_width = 64;
+        traits.default_variant = PcmFormat_SInt64;
+        traits.be_variant = PcmFormat_SInt64_Be;
+        traits.le_variant = PcmFormat_SInt64_Le;
         break;
 
     case PcmFormat_UInt64:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
+        traits.bit_width = 64;
+        traits.bit_depth = 64;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt64;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_UInt64_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_UInt64_Le;
 #endif
-        traits.bit_depth = 64;
-        traits.bit_width = 64;
+        traits.default_variant = PcmFormat_UInt64;
+        traits.be_variant = PcmFormat_UInt64_Be;
+        traits.le_variant = PcmFormat_UInt64_Le;
         break;
 
     case PcmFormat_UInt64_Be:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = false;
+        traits.bit_width = 64;
+        traits.bit_depth = 64;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt64;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_UInt64_Be;
-        traits.bit_depth = 64;
-        traits.bit_width = 64;
+        traits.default_variant = PcmFormat_UInt64;
+        traits.be_variant = PcmFormat_UInt64_Be;
+        traits.le_variant = PcmFormat_UInt64_Le;
         break;
 
     case PcmFormat_UInt64_Le:
-        traits.is_valid = true;
-        traits.is_integer = true;
-        traits.is_signed = false;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 64;
+        traits.bit_depth = 64;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_UInt64;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_UInt64_Le;
-        traits.bit_depth = 64;
-        traits.bit_width = 64;
+        traits.default_variant = PcmFormat_UInt64;
+        traits.be_variant = PcmFormat_UInt64_Be;
+        traits.le_variant = PcmFormat_UInt64_Le;
         break;
 
     case PcmFormat_Float32:
-        traits.is_valid = true;
-        traits.is_integer = false;
-        traits.is_signed = true;
+        traits.bit_width = 32;
+        traits.bit_depth = 32;
+        traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_Float32;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_Float32_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_Float32_Le;
 #endif
-        traits.bit_depth = 25;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_Float32;
+        traits.be_variant = PcmFormat_Float32_Be;
+        traits.le_variant = PcmFormat_Float32_Le;
         break;
 
     case PcmFormat_Float32_Be:
-        traits.is_valid = true;
-        traits.is_integer = false;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 32;
+        traits.bit_depth = 32;
+        traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_Float32;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_Float32_Be;
-        traits.bit_depth = 25;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_Float32;
+        traits.be_variant = PcmFormat_Float32_Be;
+        traits.le_variant = PcmFormat_Float32_Le;
         break;
 
     case PcmFormat_Float32_Le:
-        traits.is_valid = true;
-        traits.is_integer = false;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 32;
+        traits.bit_depth = 32;
+        traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_Float32;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_Float32_Le;
-        traits.bit_depth = 25;
-        traits.bit_width = 32;
+        traits.default_variant = PcmFormat_Float32;
+        traits.be_variant = PcmFormat_Float32_Be;
+        traits.le_variant = PcmFormat_Float32_Le;
         break;
 
     case PcmFormat_Float64:
-        traits.is_valid = true;
-        traits.is_integer = false;
-        traits.is_signed = true;
+        traits.bit_width = 64;
+        traits.bit_depth = 64;
+        traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_little = false;
-#else
-        traits.is_little = true;
-#endif
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_Float64;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = PcmFormat_Float64_Be;
 #else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmFormat_Float64_Le;
 #endif
-        traits.bit_depth = 53;
-        traits.bit_width = 64;
+        traits.default_variant = PcmFormat_Float64;
+        traits.be_variant = PcmFormat_Float64_Be;
+        traits.le_variant = PcmFormat_Float64_Le;
         break;
 
     case PcmFormat_Float64_Be:
-        traits.is_valid = true;
-        traits.is_integer = false;
-        traits.is_signed = true;
-        traits.is_little = false;
+        traits.bit_width = 64;
+        traits.bit_depth = 64;
+        traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_Float64;
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.flags |= Pcm_IsBig;
 #endif
         traits.portable_alias = PcmFormat_Float64_Be;
-        traits.bit_depth = 53;
-        traits.bit_width = 64;
+        traits.default_variant = PcmFormat_Float64;
+        traits.be_variant = PcmFormat_Float64_Be;
+        traits.le_variant = PcmFormat_Float64_Le;
         break;
 
     case PcmFormat_Float64_Le:
-        traits.is_valid = true;
-        traits.is_integer = false;
-        traits.is_signed = true;
-        traits.is_little = true;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.is_native = false;
-        traits.native_alias = PcmFormat_Invalid;
+        traits.bit_width = 64;
+        traits.bit_depth = 64;
+        traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
 #else
-        traits.is_native = true;
-        traits.native_alias = PcmFormat_Float64;
+        traits.flags |= Pcm_IsLittle;
 #endif
         traits.portable_alias = PcmFormat_Float64_Le;
-        traits.bit_depth = 53;
-        traits.bit_width = 64;
+        traits.default_variant = PcmFormat_Float64;
+        traits.be_variant = PcmFormat_Float64_Be;
+        traits.le_variant = PcmFormat_Float64_Le;
         break;
 
     default:
