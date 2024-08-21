@@ -115,7 +115,7 @@ int roc_sender_connect(roc_sender* sender,
         return -1;
     }
 
-    const address::EndpointUri& imp_endpoint = *(const address::EndpointUri*)endpoint;
+    const address::NetworkUri& imp_endpoint = *(const address::NetworkUri*)endpoint;
 
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {

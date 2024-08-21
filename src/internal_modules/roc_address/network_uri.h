@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_address/endpoint_uri.h
+//! @file roc_address/network_uri.h
 //! @brief Network endpoint URI.
 
-#ifndef ROC_ADDRESS_ENDPOINT_URI_H_
-#define ROC_ADDRESS_ENDPOINT_URI_H_
+#ifndef ROC_ADDRESS_NETWORK_URI_H_
+#define ROC_ADDRESS_NETWORK_URI_H_
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
@@ -24,7 +24,7 @@ namespace roc {
 namespace address {
 
 //! Network endpoint URI.
-class EndpointUri : public core::NonCopyable<> {
+class NetworkUri : public core::NonCopyable<> {
 public:
     //! URI subset.
     enum Subset {
@@ -33,13 +33,13 @@ public:
     };
 
     //! Initialize empty URI.
-    explicit EndpointUri(core::IArena&);
+    explicit NetworkUri(core::IArena& arena);
 
     //! Check if URI is equivalent to another URI.
-    bool is_equal(const EndpointUri& other) const;
+    bool is_equal(const NetworkUri& other) const;
 
     //! Copy data from another URI.
-    ROC_ATTR_NODISCARD bool assign(const EndpointUri& other);
+    ROC_ATTR_NODISCARD bool assign(const NetworkUri& other);
 
     //! Check given subset of the URI.
     bool verify(Subset subset) const;
@@ -158,7 +158,7 @@ private:
     core::StringBuffer query_;
 };
 
-//! Parse EndpointUri from string.
+//! Parse NetworkUri from string.
 //!
 //! The URI should be in the following form:
 //!  - PROTOCOL://HOST[:PORT][/PATH][?QUERY]
@@ -185,9 +185,9 @@ private:
 //! This parser does not try to perform full URI validation. For example, it does not
 //! check that path contains only allowed symbols. If it can be parsed, it will be.
 ROC_ATTR_NODISCARD bool
-parse_endpoint_uri(const char* str, EndpointUri::Subset subset, EndpointUri& result);
+parse_network_uri(const char* str, NetworkUri::Subset subset, NetworkUri& result);
 
-//! Format EndpointUri to string.
+//! Format NetworkUri to string.
 //!
 //! Formats a normalized form of the URI.
 //!
@@ -196,11 +196,11 @@ parse_endpoint_uri(const char* str, EndpointUri::Subset subset, EndpointUri& res
 //!
 //! @returns
 //!  true on success or false if the buffer is too small.
-ROC_ATTR_NODISCARD bool format_endpoint_uri(const EndpointUri& uri,
-                                            EndpointUri::Subset subset,
-                                            core::StringBuilder& dst);
+ROC_ATTR_NODISCARD bool format_network_uri(const NetworkUri& uri,
+                                           NetworkUri::Subset subset,
+                                           core::StringBuilder& dst);
 
 } // namespace address
 } // namespace roc
 
-#endif // ROC_ADDRESS_ENDPOINT_URI_H_
+#endif // ROC_ADDRESS_NETWORK_URI_H_

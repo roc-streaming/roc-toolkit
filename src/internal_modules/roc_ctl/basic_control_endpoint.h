@@ -12,7 +12,7 @@
 #ifndef ROC_CTL_BASIC_CONTROL_ENDPOINT_H_
 #define ROC_CTL_BASIC_CONTROL_ENDPOINT_H_
 
-#include "roc_address/endpoint_uri.h"
+#include "roc_address/network_uri.h"
 #include "roc_core/list_node.h"
 #include "roc_core/ref_counted.h"
 #include "roc_ctl/control_task.h"
@@ -40,13 +40,12 @@ public:
 
     //! Initiate asynchronous binding to local URI.
     //! On completion, resumes @p notify_task.
-    virtual bool async_bind(const address::EndpointUri& uri,
-                            ControlTask& notify_task) = 0;
+    virtual bool async_bind(const address::NetworkUri& uri, ControlTask& notify_task) = 0;
 
     //! Initiate asynchronous connecting to remote URI.
     //! Should be called after successfull bind.
     //! On completion, resumes @p notify_task.
-    virtual bool async_connect(const address::EndpointUri& uri,
+    virtual bool async_connect(const address::NetworkUri& uri,
                                ControlTask& notify_task) = 0;
 
     //! Initiate asynchronous closing of endpoint.
@@ -55,7 +54,7 @@ public:
 
     //! Add sink pipeline controlled by this endpoint.
     //! Should be called after successfull bind.
-    virtual bool attach_sink(const address::EndpointUri& uri,
+    virtual bool attach_sink(const address::NetworkUri& uri,
                              pipeline::SenderLoop& sink) = 0;
 
     //! Remove sink pipeline.
@@ -64,7 +63,7 @@ public:
 
     //! Add source pipeline controlled by this endpoint.
     //! Should be called after successfull bind.
-    virtual bool attach_source(const address::EndpointUri& uri,
+    virtual bool attach_source(const address::NetworkUri& uri,
                                pipeline::ReceiverLoop& source) = 0;
 
     //! Remove source pipeline.

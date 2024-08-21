@@ -116,7 +116,7 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
-    address::EndpointUri& imp_endpoint = *(address::EndpointUri*)endpoint;
+    address::NetworkUri& imp_endpoint = *(address::NetworkUri*)endpoint;
 
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {

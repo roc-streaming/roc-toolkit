@@ -6,23 +6,23 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_address/endpoint_uri_to_str.h
-//! @brief Format EndpointUri to string.
+//! @file roc_address/network_uri_to_str.h
+//! @brief Format NetworkUri to string.
 
-#ifndef ROC_ADDRESS_ENDPOINT_URI_TO_STR_H_
-#define ROC_ADDRESS_ENDPOINT_URI_TO_STR_H_
+#ifndef ROC_ADDRESS_NETWORK_URI_TO_STR_H_
+#define ROC_ADDRESS_NETWORK_URI_TO_STR_H_
 
-#include "roc_address/endpoint_uri.h"
+#include "roc_address/network_uri.h"
 #include "roc_core/noncopyable.h"
 
 namespace roc {
 namespace address {
 
-//! Convert EndpointUri to string.
-class endpoint_uri_to_str : public core::NonCopyable<> {
+//! Convert NetworkUri to string.
+class network_uri_to_str : public core::NonCopyable<> {
 public:
     //! Construct.
-    explicit endpoint_uri_to_str(const EndpointUri&);
+    explicit network_uri_to_str(const NetworkUri&);
 
     //! Get formatted string.
     const char* c_str() const {
@@ -36,4 +36,4 @@ private:
 } // namespace address
 } // namespace roc
 
-#endif // ROC_ADDRESS_ENDPOINT_URI_TO_STR_H_
+#endif // ROC_ADDRESS_NETWORK_URI_TO_STR_H_

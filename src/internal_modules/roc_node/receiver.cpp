@@ -7,7 +7,7 @@
  */
 
 #include "roc_node/receiver.h"
-#include "roc_address/endpoint_uri_to_str.h"
+#include "roc_address/network_uri_to_str.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -111,7 +111,7 @@ bool Receiver::configure(slot_index_t slot_index,
 
 bool Receiver::bind(slot_index_t slot_index,
                     address::Interface iface,
-                    address::EndpointUri& uri) {
+                    address::NetworkUri& uri) {
     core::Mutex::Lock lock(control_mutex_);
 
     roc_panic_if(init_status_ != status::StatusOK);
@@ -121,7 +121,7 @@ bool Receiver::bind(slot_index_t slot_index,
 
     roc_log(LogInfo, "receiver node: binding %s interface of slot %lu to %s",
             address::interface_to_str(iface), (unsigned long)slot_index,
-            address::endpoint_uri_to_str(uri).c_str());
+            address::network_uri_to_str(uri).c_str());
 
     core::SharedPtr<Slot> slot = get_slot_(slot_index, true);
     if (!slot) {
@@ -142,7 +142,7 @@ bool Receiver::bind(slot_index_t slot_index,
         return false;
     }
 
-    if (!uri.verify(address::EndpointUri::Subset_Full)) {
+    if (!uri.verify(address::NetworkUri::Subset_Full)) {
         roc_log(LogError,
                 "receiver node:"
                 " can't bind %s interface of slot %lu:"

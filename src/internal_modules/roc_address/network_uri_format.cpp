@@ -6,21 +6,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_address/endpoint_uri.h"
+#include "roc_address/network_uri.h"
 #include "roc_core/panic.h"
 #include "roc_core/string_builder.h"
 
 namespace roc {
 namespace address {
 
-bool format_endpoint_uri(const EndpointUri& u,
-                         EndpointUri::Subset subset,
-                         core::StringBuilder& dst) {
+bool format_network_uri(const NetworkUri& u,
+                        NetworkUri::Subset subset,
+                        core::StringBuilder& dst) {
     if (!u.verify(subset)) {
         return false;
     }
 
-    if (subset == EndpointUri::Subset_Full) {
+    if (subset == NetworkUri::Subset_Full) {
         if (!u.format_proto(dst)) {
             return false;
         }
@@ -37,7 +37,7 @@ bool format_endpoint_uri(const EndpointUri& u,
         }
     }
 
-    if (subset == EndpointUri::Subset_Resource) {
+    if (subset == NetworkUri::Subset_Resource) {
         if (!u.path() && !u.encoded_query()) {
             return false;
         }

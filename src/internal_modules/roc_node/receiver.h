@@ -12,8 +12,8 @@
 #ifndef ROC_NODE_RECEIVER_H_
 #define ROC_NODE_RECEIVER_H_
 
-#include "roc_address/endpoint_uri.h"
 #include "roc_address/interface.h"
+#include "roc_address/network_uri.h"
 #include "roc_address/protocol.h"
 #include "roc_core/attributes.h"
 #include "roc_core/hashmap.h"
@@ -52,7 +52,7 @@ public:
 
     //! Bind to local endpoint.
     ROC_ATTR_NODISCARD bool
-    bind(slot_index_t slot_index, address::Interface iface, address::EndpointUri& uri);
+    bind(slot_index_t slot_index, address::Interface iface, address::NetworkUri& uri);
 
     //! Remove slot.
     ROC_ATTR_NODISCARD bool unlink(slot_index_t slot_index);

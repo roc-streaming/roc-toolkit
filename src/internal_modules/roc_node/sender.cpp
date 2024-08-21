@@ -7,7 +7,7 @@
  */
 
 #include "roc_node/sender.h"
-#include "roc_address/endpoint_uri_to_str.h"
+#include "roc_address/network_uri_to_str.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -113,7 +113,7 @@ bool Sender::configure(slot_index_t slot_index,
 
 bool Sender::connect(slot_index_t slot_index,
                      address::Interface iface,
-                     const address::EndpointUri& uri) {
+                     const address::NetworkUri& uri) {
     core::Mutex::Lock lock(control_mutex_);
 
     roc_panic_if(init_status_ != status::StatusOK);
@@ -123,7 +123,7 @@ bool Sender::connect(slot_index_t slot_index,
 
     roc_log(LogInfo, "sender node: connecting %s interface of slot %lu to %s",
             address::interface_to_str(iface), (unsigned long)slot_index,
-            address::endpoint_uri_to_str(uri).c_str());
+            address::network_uri_to_str(uri).c_str());
 
     core::SharedPtr<Slot> slot = get_slot_(slot_index, true);
     if (!slot) {
@@ -144,7 +144,7 @@ bool Sender::connect(slot_index_t slot_index,
         return false;
     }
 
-    if (!uri.verify(address::EndpointUri::Subset_Full)) {
+    if (!uri.verify(address::NetworkUri::Subset_Full)) {
         roc_log(LogError,
                 "sender node: can't connect %s interface of slot %lu: invalid uri",
                 address::interface_to_str(iface), (unsigned long)slot_index);
@@ -412,7 +412,7 @@ sndio::ISink& Sender::sink() {
 }
 
 bool Sender::check_compatibility_(address::Interface iface,
-                                  const address::EndpointUri& uri) {
+                                  const address::NetworkUri& uri) {
     if (used_interfaces_[iface] && used_protocols_[iface] != uri.proto()) {
         roc_log(LogError,
                 "sender node: same interface of all slots should use same protocols:"
@@ -426,7 +426,7 @@ bool Sender::check_compatibility_(address::Interface iface,
 }
 
 void Sender::update_compatibility_(address::Interface iface,
-                                   const address::EndpointUri& uri) {
+                                   const address::NetworkUri& uri) {
     used_interfaces_[iface] = true;
     used_protocols_[iface] = uri.proto();
 }

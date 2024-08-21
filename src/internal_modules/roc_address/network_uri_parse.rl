@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_address/endpoint_uri.h"
+#include "roc_address/network_uri.h"
 #include "roc_address/protocol_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -15,13 +15,13 @@ namespace roc {
 namespace address {
 
 %%{
-    machine parse_endpoint_uri;
+    machine parse_network_uri;
     write data;
 }%%
 
 namespace {
 
-bool parse_endpoint_uri_imp(const char* str, EndpointUri::Subset subset, EndpointUri& result) {
+bool parse_network_uri_imp(const char* str, NetworkUri::Subset subset, NetworkUri& result) {
     if (!str) {
         roc_log(LogError, "parse endpoint uri: input string is null");
         return false;
@@ -69,7 +69,7 @@ bool parse_endpoint_uri_imp(const char* str, EndpointUri::Subset subset, Endpoin
         }
 
         action set_host {
-            if (subset != EndpointUri::Subset_Full) {
+            if (subset != NetworkUri::Subset_Full) {
                 roc_log(LogError,
                         "parse endpoint uri: unexpected host when parsing resource");
                 return false;
@@ -81,7 +81,7 @@ bool parse_endpoint_uri_imp(const char* str, EndpointUri::Subset subset, Endpoin
         }
 
         action set_port {
-            if (subset != EndpointUri::Subset_Full) {
+            if (subset != NetworkUri::Subset_Full) {
                 roc_log(LogError,
                         "parse endpoint uri: unexpected port when parsing resource");
                 return false;
@@ -136,7 +136,7 @@ bool parse_endpoint_uri_imp(const char* str, EndpointUri::Subset subset, Endpoin
     }%%
 
     if (!success) {
-        if (subset == EndpointUri::Subset_Full) {
+        if (subset == NetworkUri::Subset_Full) {
             roc_log(LogError,
                     "parse endpoint uri: expected"
                     " 'PROTO://HOST[:PORT][/PATH][?QUERY]',\n"
@@ -153,7 +153,7 @@ bool parse_endpoint_uri_imp(const char* str, EndpointUri::Subset subset, Endpoin
     }
 
     if (!result.verify(subset)) {
-        roc_log(LogError, "parse endpoint uri: invalud uri");
+        roc_log(LogError, "parse endpoint uri: invalid uri");
         return false;
     }
 
@@ -162,8 +162,8 @@ bool parse_endpoint_uri_imp(const char* str, EndpointUri::Subset subset, Endpoin
 
 } // namespace
 
-bool parse_endpoint_uri(const char* str, EndpointUri::Subset subset, EndpointUri& result) {
-    if (!parse_endpoint_uri_imp(str, subset, result)) {
+bool parse_network_uri(const char* str, NetworkUri::Subset subset, NetworkUri& result) {
+    if (!parse_network_uri_imp(str, subset, result)) {
         result.invalidate(subset);
         return false;
     }

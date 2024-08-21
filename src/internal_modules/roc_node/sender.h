@@ -12,8 +12,8 @@
 #ifndef ROC_NODE_SENDER_H_
 #define ROC_NODE_SENDER_H_
 
-#include "roc_address/endpoint_uri.h"
 #include "roc_address/interface.h"
+#include "roc_address/network_uri.h"
 #include "roc_address/protocol.h"
 #include "roc_core/allocation_policy.h"
 #include "roc_core/hashmap.h"
@@ -54,7 +54,7 @@ public:
     //! Connect to remote endpoint.
     ROC_ATTR_NODISCARD bool connect(slot_index_t slot_index,
                                     address::Interface iface,
-                                    const address::EndpointUri& uri);
+                                    const address::NetworkUri& uri);
 
     //! Remove slot.
     ROC_ATTR_NODISCARD bool unlink(slot_index_t slot_index);
@@ -133,8 +133,8 @@ private:
         }
     };
 
-    bool check_compatibility_(address::Interface iface, const address::EndpointUri& uri);
-    void update_compatibility_(address::Interface iface, const address::EndpointUri& uri);
+    bool check_compatibility_(address::Interface iface, const address::NetworkUri& uri);
+    void update_compatibility_(address::Interface iface, const address::NetworkUri& uri);
 
     core::SharedPtr<Slot> get_slot_(slot_index_t slot_index, bool auto_create);
     void cleanup_slot_(Slot& slot);

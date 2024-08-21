@@ -92,7 +92,7 @@ NetworkLoop::Tasks::RemovePort::RemovePort(PortHandle handle) {
 }
 
 NetworkLoop::Tasks::ResolveEndpointAddress::ResolveEndpointAddress(
-    const address::EndpointUri& endpoint_uri) {
+    const address::NetworkUri& endpoint_uri) {
     func_ = &NetworkLoop::task_resolve_endpoint_address_;
     resolve_req_.endpoint_uri = &endpoint_uri;
 }

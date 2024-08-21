@@ -6,21 +6,21 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_address/endpoint_uri_to_str.h"
+#include "roc_address/network_uri_to_str.h"
 #include "roc_core/string_builder.h"
 
 namespace roc {
 namespace address {
 
-endpoint_uri_to_str::endpoint_uri_to_str(const EndpointUri& u) {
+network_uri_to_str::network_uri_to_str(const NetworkUri& u) {
     core::StringBuilder b(buf_, sizeof(buf_));
 
-    if (!u.verify(EndpointUri::Subset_Full)) {
+    if (!u.verify(NetworkUri::Subset_Full)) {
         b.rewrite("<bad>");
         return;
     }
 
-    if (!format_endpoint_uri(u, EndpointUri::Subset_Full, b)) {
+    if (!format_network_uri(u, NetworkUri::Subset_Full, b)) {
         b.rewrite("<bad>");
         return;
     }

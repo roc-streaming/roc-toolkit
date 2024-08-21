@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_address/endpoint_uri.h"
 #include "roc_address/io_uri.h"
+#include "roc_address/network_uri.h"
 #include "roc_address/protocol_map.h"
 #include "roc_core/crash_handler.h"
 #include "roc_core/heap_arena.h"
@@ -112,9 +112,9 @@ int main(int argc, char** argv) {
     }
 
     if (args.source_given) {
-        address::EndpointUri source_endpoint(heap_arena);
-        if (!address::parse_endpoint_uri(
-                args.source_arg[0], address::EndpointUri::Subset_Full, source_endpoint)) {
+        address::NetworkUri source_endpoint(heap_arena);
+        if (!address::parse_network_uri(
+                args.source_arg[0], address::NetworkUri::Subset_Full, source_endpoint)) {
             roc_log(LogError, "can't parse --source endpoint: %s", args.source_arg[0]);
             return 1;
         }
@@ -452,10 +452,10 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.source_given; slot++) {
-        address::EndpointUri source_endpoint(context.arena());
-        if (!address::parse_endpoint_uri(args.source_arg[slot],
-                                         address::EndpointUri::Subset_Full,
-                                         source_endpoint)) {
+        address::NetworkUri source_endpoint(context.arena());
+        if (!address::parse_network_uri(args.source_arg[slot],
+                                        address::NetworkUri::Subset_Full,
+                                        source_endpoint)) {
             roc_log(LogError, "can't parse --source endpoint: %s", args.source_arg[slot]);
             return 1;
         }
@@ -475,10 +475,10 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.repair_given; slot++) {
-        address::EndpointUri repair_endpoint(context.arena());
-        if (!address::parse_endpoint_uri(args.repair_arg[slot],
-                                         address::EndpointUri::Subset_Full,
-                                         repair_endpoint)) {
+        address::NetworkUri repair_endpoint(context.arena());
+        if (!address::parse_network_uri(args.repair_arg[slot],
+                                        address::NetworkUri::Subset_Full,
+                                        repair_endpoint)) {
             roc_log(LogError, "can't parse --repair endpoint: %s", args.repair_arg[slot]);
             return 1;
         }
@@ -498,10 +498,10 @@ int main(int argc, char** argv) {
     }
 
     for (size_t slot = 0; slot < (size_t)args.control_given; slot++) {
-        address::EndpointUri control_endpoint(context.arena());
-        if (!address::parse_endpoint_uri(args.control_arg[slot],
-                                         address::EndpointUri::Subset_Full,
-                                         control_endpoint)) {
+        address::NetworkUri control_endpoint(context.arena());
+        if (!address::parse_network_uri(args.control_arg[slot],
+                                        address::NetworkUri::Subset_Full,
+                                        control_endpoint)) {
             roc_log(LogError, "can't parse --control endpoint: %s",
                     args.control_arg[slot]);
             return 1;
