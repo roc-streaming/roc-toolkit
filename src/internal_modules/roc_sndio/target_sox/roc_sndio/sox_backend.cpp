@@ -36,7 +36,7 @@ const char* driver_renames[][2] = {
 };
 
 const char* hidden_drivers[] = {
-    // redundant aliases
+    // raw format aliases
     "f4",
     "f8",
     "s1",
@@ -52,9 +52,6 @@ const char* hidden_drivers[] = {
     "sl",
     "ub",
     "uw",
-    "aif",
-    "aifc",
-    // formats handled by libsndfile
     "f32",
     "f64",
     "s8",
@@ -65,12 +62,19 @@ const char* hidden_drivers[] = {
     "u16",
     "u24",
     "u32",
-    "raw",
+    // formats already handled by libsndfile
+    "aif",
+    "aifc",
+    "aiff",
+    "aiffc",
     "mat",
+    "mat4",
+    "mat5",
     "vorbis",
     // pseudo-formats
     "sndfile",
     "null",
+    "wavpcm",
     // unsupported device drivers
     "ao",
     "ossdsp",
