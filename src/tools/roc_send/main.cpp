@@ -8,7 +8,6 @@
 
 #include "roc_address/endpoint_uri.h"
 #include "roc_address/io_uri.h"
-#include "roc_address/print_supported.h"
 #include "roc_address/protocol_map.h"
 #include "roc_core/crash_handler.h"
 #include "roc_core/heap_arena.h"
@@ -17,6 +16,7 @@
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/scoped_release.h"
 #include "roc_core/time.h"
+#include "roc_dbgio/print_supported.h"
 #include "roc_netio/network_loop.h"
 #include "roc_node/context.h"
 #include "roc_node/sender.h"
@@ -24,7 +24,6 @@
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/io_pump.h"
-#include "roc_sndio/print_supported.h"
 #include "roc_status/code_to_str.h"
 
 #include "roc_send/cmdline.h"
@@ -364,14 +363,11 @@ int main(int argc, char** argv) {
         context.frame_pool(), context.frame_buffer_pool(), context.arena());
 
     if (args.list_supported_given) {
-        if (!address::print_supported(context.arena())) {
+        if (!dbgio::print_supported(dbgio::Print_Netio | dbgio::Print_Sndio
+                                        | dbgio::Print_Audio | dbgio::Print_FEC,
+                                    backend_dispatcher, context.arena())) {
             return 1;
         }
-
-        if (!sndio::print_supported(backend_dispatcher, context.arena())) {
-            return 1;
-        }
-
         return 0;
     }
 

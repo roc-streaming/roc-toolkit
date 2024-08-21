@@ -13,12 +13,12 @@
 #include "roc_core/parse_units.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/scoped_release.h"
+#include "roc_dbgio/print_supported.h"
 #include "roc_pipeline/transcoder_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/io_config.h"
 #include "roc_sndio/io_pump.h"
-#include "roc_sndio/print_supported.h"
 #include "roc_status/code_to_str.h"
 
 #include "roc_copy/cmdline.h"
@@ -118,7 +118,8 @@ int main(int argc, char** argv) {
                                                  transcoder_config.input_sample_spec);
 
     if (args.list_supported_given) {
-        if (!sndio::print_supported(backend_dispatcher, arena)) {
+        if (!dbgio::print_supported(dbgio::Print_Sndio | dbgio::Print_Audio,
+                                    backend_dispatcher, arena)) {
             return 1;
         }
         return 0;
