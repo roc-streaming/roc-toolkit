@@ -39,16 +39,6 @@ const DriverInfo& BackendMap::nth_driver(size_t driver_index) const {
     return drivers_[driver_index];
 }
 
-void BackendMap::set_frame_size(core::nanoseconds_t frame_length,
-                                const audio::SampleSpec& sample_spec) {
-#ifdef ROC_TARGET_SOX
-    sox_backend_->set_frame_size(frame_length, sample_spec);
-#endif // ROC_TARGET_SOX
-
-    (void)frame_length;
-    (void)sample_spec;
-}
-
 void BackendMap::register_backends_() {
 #ifdef ROC_TARGET_PULSEAUDIO
     pulseaudio_backend_.reset(new (pulseaudio_backend_) PulseaudioBackend);

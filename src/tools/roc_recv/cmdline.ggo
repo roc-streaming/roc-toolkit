@@ -1,107 +1,132 @@
 package "roc-recv"
 usage "roc-recv OPTIONS"
 
-section "Options"
+section "General options"
 
     option "verbose" v "Increase verbosity level (may be used multiple times)"
         multiple optional
     option "color" - "Set colored logging mode for stderr output"
         values="auto","always","never" default="auto" enum optional
 
-    option "list-supported" L "List supported schemes and formats" optional
+    option "list-supported" L "List supported protocols, formats, etc." optional
+
+section "Operation options"
+
+    option "oneshot" 1 "Exit when last connection is closed" flag off
+
+section "Output options"
 
     option "output" o "Output file or device URI" typestr="IO_URI" string optional
     option "output-format" - "Force output file format" typestr="FILE_FORMAT" string optional
 
-    option "backup" - "Backup file or device URI (if set, used when there are no sessions)"
+    option "io-encoding" - "Output device encoding" typestr="IO_ENCODING" string optional
+    option "io-latency" - "Output device latency, TIME units" typestr="TIME"string optional
+    option "io-frame-len" - "Output frame length, TIME units" typestr="TIME" string optional
+
+section "Backup input options"
+
+    option "backup" -
+        "Backup file or device URI (used as input when there are no connections)"
         typestr="IO_URI" string optional
     option "backup-format" - "Force backup file format"
         typestr="FILE_FORMAT" string optional
-    option "oneshot" 1 "Exit when last connected client disconnects"
-        flag off
 
-    option "source" s "Local source endpoint" typestr="ENDPOINT_URI"
+section "Network options"
+
+    option "source" s "Local source endpoint to listen on" typestr="NET_URI"
         string multiple optional
-    option "repair" r "Local repair endpoint" typestr="ENDPOINT_URI"
+    option "repair" r "Local repair endpoint to listen on" typestr="NET_URI"
         string multiple optional
-    option "control" c "Local control endpoint" typestr="ENDPOINT_URI"
+    option "control" c "Local control endpoint to listen on" typestr="NET_URI"
         string multiple optional
 
     option "miface" -
-      "IPv4 or IPv6 address of the network interface on which to join the multicast group"
-      typestr="MIFACE" string multiple optional
+        "IPv4 or IPv6 address of the network interface on which to join the multicast group"
+         typestr="IPADDR" string multiple optional
     option "reuseaddr" -
-      "Enable SO_REUSEADDR when binding sockets" optional
+        "Enable SO_REUSEADDR when binding sockets" optional
 
-    option "io-latency" - "Playback device latency, TIME units"
-        string optional
+section "Decoding options"
 
-    option "target-latency" - "Target latency, TIME units or 'auto' for adaptive mode"
-        string default="auto" optional
-    option "latency-tolerance" - "Maximum deviation from target latency, TIME units"
-        string optional
-    option "start-latency" - "Starting target latency in adaptive mode, TIME units"
-        string optional
-    option "min-latency" - "Minimum target latency in adaptive mode, TIME units"
-        string optional
-    option "max-latency" - "Maximum target latency in adaptive mode, TIME units"
-        string optional
+    option "packet-encoding" - "Custom network packet encoding(s) (may be used multiple times)"
+        typestr="PKT_ENCODING" string multiple optional
 
-    option "no-play-timeout" - "No-playback timeout, TIME units"
-        string optional
-    option "choppy-play-timeout" - "Choppy playback timeout, TIME units"
-        string optional
-
-    option "latency-backend" - "Which latency to use in latency tuner"
-        values="niq" default="niq" enum optional
-    option "latency-profile" - "Latency tuning profile"
-        values="auto","responsive","gradual","intact" default="auto" enum optional
+    option "plc" - "Algorithm to mask unrecoverable packet losses"
+        values="none","beep" default="none" enum optional
 
     option "resampler-backend" - "Resampler backend"
         values="auto","builtin","speex","speexdec" default="auto" enum optional
     option "resampler-profile" - "Resampler profile"
         values="low","medium","high" default="medium" enum optional
 
-    option "plc" - "Which PLC algorithm to use"
-        values="none","beep" default="none" enum optional
+section "Latency options"
 
-    option "io-encoding" - "Force output file or device encoding"
-        typestr="IO_ENCODING" string optional
-
-    option "frame-len" - "Duration of the I/O frames, TIME units"
+    option "target-latency" - "Target latency, TIME units or 'auto' for adaptive mode"
+        typestr="TIME" string default="auto" optional
+    option "latency-tolerance" - "Maximum deviation from target latency, TIME units"
+        typestr="TIME" string optional
+    option "start-latency" - "Starting target latency in adaptive mode, TIME units"
+        typestr="TIME" string optional
+    option "min-latency" - "Minimum target latency in adaptive mode, TIME units"
+        typestr="TIME" string optional
+    option "max-latency" - "Maximum target latency in adaptive mode, TIME units"
         typestr="TIME" string optional
 
-    option "max-packet-size" - "Maximum packet size, in SIZE units"
+    option "latency-backend" - "Which latency to use in latency tuner"
+        values="niq" default="niq" enum optional
+    option "latency-profile" - "Latency tuning profile"
+        values="auto","responsive","gradual","intact" default="auto" enum optional
+
+section "Timeout options"
+
+    option "no-play-timeout" - "No-playback timeout, TIME units"
+        typestr="TIME" string optional
+    option "choppy-play-timeout" - "Choppy playback timeout, TIME units"
+        typestr="TIME" string optional
+
+section "Memory options"
+
+    option "max-packet-size" - "Maximum network packet size, SIZE units"
         typestr="SIZE" string optional
-    option "max-frame-size" - "Maximum internal frame size, in SIZE units"
+    option "max-frame-size" - "Maximum I/O and processing frame size, SIZE units"
         typestr="SIZE" string optional
 
-    option "profile" - "Enable self-profiling" flag off
-    option "dump" - "Path for a CSV file where to dump run-time metrics"
+section "Debugging options"
+
+    option "prof" - "Enable self-profiling" flag off
+    option "dump" - "Dump run-time metrics to specified CSV file"
         typestr="PATH" string optional
 
 text "
-ENDPOINT_URI is a network endpoint URI, e.g.:
-  rtp://0.0.0.0:10001; rtp+rs8m://127.0.0.1:10001; rs8m://[::1]:10001
-
-IO_URI is a device or file URI, e.g.:
+IO_URI is a device or file URI:
   pulse://default; pulse://alsa_input.pci-0000_00_1f.3.analog-stereo
   file:///home/user/test.wav; file:./test.wav; file:-
+  (use '<driver>://default' for default device, 'file://-' for stdout)
 
-IO_ENCODING is output file or device format/rate/channels, e.g.:
-  s16/44100/mono; f32/48000/stereo
+IO_ENCODING is device or file encoding in form <format>/<rate>/<channels>:
+  s16/44100/mono; f32/48000/stereo; -/-/mono
+  (any component may be '-' to use default value)
 
-FILE_FORMAT is the output file format name, e.g.:
+FILE_FORMAT is file format name:
   wav; ogg; mp3
+  (useful when format can't be auto-detected)
 
-TIME is an integer or floating-point number with a suffix, e.g.:
+NET_URI is a network endpoint URI:
+  rtp://0.0.0.0:10001; rtp+rs8m://127.0.0.1:10001; rs8m://[::1]:10001
+
+PKT_ENCODING is media packets encoding in form <id>:<format>/<rate>/<channels>:
+  101:s16/44100/mono; 102:f32/48000/stereo
+  (numeric id is arbitrary number in range 100..127 that should be used
+  on both sender and receiver to identify encoding)
+
+TIME defines duration using a number with mandatory suffix:
   123ns; 1.23us; 1.23ms; 1.23s; 1.23m; 1.23h;
 
-SIZE is an integer or floating-point number with an optional suffix, e.g.:
+SIZE defines byte size using a number with optional suffix:
   123; 1.23K; 1.23M; 1.23G;
 
 Use --list-supported (-L) option to print the list of the supported
-URI schemes and file formats.
+protocols, formats, channel masks, etc.
 
 See further details in roc-recv(1) manual page locally or online:
 https://roc-streaming.org/toolkit/docs/manuals/roc_recv.html"

@@ -25,12 +25,6 @@ class SoxBackend : public IBackend, core::NonCopyable<> {
 public:
     SoxBackend();
 
-    //! Set internal SoX frame size.
-    //! @remarks
-    //!  Number of samples for all channels.
-    void set_frame_size(core::nanoseconds_t frame_length,
-                        const audio::SampleSpec& sample_spec);
-
     //! Returns name of backend.
     virtual const char* name() const;
 

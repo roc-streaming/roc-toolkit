@@ -64,6 +64,15 @@ SoxSink::SoxSink(audio::FrameFactory& frame_factory,
         return;
     }
 
+    {
+        audio::SampleSpec spec = sample_spec_;
+        spec.use_defaults(audio::Sample_RawFormat, audio::ChanLayout_Surround,
+                          audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo, 44100);
+
+        sox_get_globals()->bufsiz =
+            spec.ns_2_samples_overall(frame_length_) * sizeof(sox_sample_t);
+    }
+
     memset(&out_signal_, 0, sizeof(out_signal_));
     out_signal_.rate = (sox_rate_t)sample_spec_.sample_rate();
     out_signal_.channels = (unsigned)sample_spec_.num_channels();

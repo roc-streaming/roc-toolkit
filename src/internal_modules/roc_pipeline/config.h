@@ -36,11 +36,8 @@
 namespace roc {
 namespace pipeline {
 
-//! Default sample rate, number of samples per second.
-const size_t DefaultSampleRate = 44100;
-
 //! Default sample specification.
-static const audio::SampleSpec DefaultSampleSpec(DefaultSampleRate,
+static const audio::SampleSpec DefaultSampleSpec(44100,
                                                  audio::Sample_RawFormat,
                                                  audio::ChanLayout_Surround,
                                                  audio::ChanOrder_Smpte,

@@ -184,19 +184,6 @@ SoxBackend::SoxBackend()
     sox_get_globals()->output_message_handler = log_handler;
 }
 
-void SoxBackend::set_frame_size(core::nanoseconds_t frame_length,
-                                const audio::SampleSpec& sample_spec) {
-    size_t size = sample_spec.ns_2_samples_overall(frame_length);
-
-    if (first_created_) {
-        roc_panic(
-            "sox backend:"
-            " set_frame_size() can be called only before creating first source or sink");
-    }
-
-    sox_get_globals()->bufsiz = size * sizeof(sox_sample_t);
-}
-
 const char* SoxBackend::name() const {
     return "sox";
 }

@@ -55,10 +55,6 @@ public:
     //! Get driver by index.
     const DriverInfo& nth_driver(size_t driver_index) const;
 
-    //! Set internal buffer size for all backends that need it.
-    void set_frame_size(core::nanoseconds_t frame_length,
-                        const audio::SampleSpec& sample_spec);
-
 private:
     friend class core::Singleton<BackendMap>;
 
