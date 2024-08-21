@@ -9,7 +9,7 @@
 #include "roc_fec/block_reader.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_packet/fec_scheme_to_str.h"
+#include "roc_packet/fec_scheme.h"
 #include "roc_status/code_to_str.h"
 
 namespace roc {

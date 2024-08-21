@@ -11,7 +11,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_packet/fec_scheme_to_str.h"
+#include "roc_packet/fec_scheme.h"
 
 #ifdef ROC_TARGET_OPENFEC
 #include "roc_fec/openfec_decoder.h"

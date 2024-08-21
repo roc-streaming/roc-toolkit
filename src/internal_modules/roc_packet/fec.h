@@ -14,22 +14,11 @@
 
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
+#include "roc_packet/fec_scheme.h"
 #include "roc_packet/units.h"
 
 namespace roc {
 namespace packet {
-
-//! FECFRAME scheme.
-enum FecScheme {
-    //! No FEC.
-    FEC_None,
-
-    //! Reed-Solomon (m=8).
-    FEC_ReedSolomon_M8,
-
-    //! LDPC-Staircase.
-    FEC_LDPC_Staircase
-};
 
 //! FECFRAME packet.
 struct FEC {

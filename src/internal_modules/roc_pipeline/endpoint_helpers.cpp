@@ -10,7 +10,7 @@
 #include "roc_address/protocol_map.h"
 #include "roc_core/log.h"
 #include "roc_fec/codec_map.h"
-#include "roc_packet/fec_scheme_to_str.h"
+#include "roc_packet/fec_scheme.h"
 
 namespace roc {
 namespace pipeline {

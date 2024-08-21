@@ -9,7 +9,7 @@
 #include "roc_fec/openfec_encoder.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_packet/fec_scheme_to_str.h"
+#include "roc_packet/fec_scheme.h"
 
 namespace roc {
 namespace fec {

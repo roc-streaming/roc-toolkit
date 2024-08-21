@@ -10,7 +10,7 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/print_memory.h"
 #include "roc_core/printer.h"
-#include "roc_packet/fec_scheme_to_str.h"
+#include "roc_packet/fec_scheme.h"
 #include "roc_packet/packet.h"
 #include "roc_packet/packet_flags_to_str.h"
 

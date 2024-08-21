@@ -6,7 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "roc_packet/fec_scheme_to_str.h"
+#include "roc_packet/fec_scheme.h"
+#include "roc_core/stddefs.h"
 
 namespace roc {
 namespace packet {
@@ -21,6 +22,16 @@ const char* fec_scheme_to_str(FecScheme scheme) {
         return "ldpc";
     }
     return "?";
+}
+
+FecScheme fec_scheme_from_str(const char* str) {
+    if (strcmp(str, "rs8m") == 0) {
+        return FEC_ReedSolomon_M8;
+    }
+    if (strcmp(str, "ldpc") == 0) {
+        return FEC_LDPC_Staircase;
+    }
+    return FEC_None;
 }
 
 } // namespace packet
