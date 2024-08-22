@@ -33,7 +33,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         roc_log(LogError,
                 "receiver session: can't find registered encoding for payload id %u",
                 (unsigned)session_config.payload_type);
-        init_status_ = status::StatusBadConfig;
+        init_status_ = status::StatusNoRoute;
         return;
     }
 
