@@ -35,8 +35,8 @@ roc-copy \- copy local audio
 \fBroc\-copy\fP \fIOPTIONS\fP
 .SH DESCRIPTION
 .sp
-Read audio stream from a file, transform it, and and write it to a another file.
-.SS Options
+Read audio stream from a file, transcode, and write to a another file.
+.SS General options
 .INDENT 0.0
 .TP
 .B  \-h\fP,\fB  \-\-help
@@ -48,51 +48,63 @@ Print version and exit
 .B  \-v\fP,\fB  \-\-verbose
 Increase verbosity level (may be used multiple times)
 .TP
+.BI \-\-color\fB= ENUM
+Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)
+.TP
 .B  \-L\fP,\fB  \-\-list\-supported
-list supported schemes and formats
+List supported protocols, formats, etc.
+.UNINDENT
+.SS I/O options
+.INDENT 0.0
 .TP
 .BI \-i\fP,\fB  \-\-input\fB= FILE_URI
 Input file URI
 .TP
-.BI \-o\fP,\fB  \-\-output\fB= FILE_URI
-Output file URI
-.TP
 .BI \-\-input\-format\fB= FILE_FORMAT
 Force input file format
+.TP
+.BI \-o\fP,\fB  \-\-output\fB= FILE_URI
+Output file URI
 .TP
 .BI \-\-output\-format\fB= FILE_FORMAT
 Force output file format
 .TP
-.BI \-\-frame\-len\fB= TIME
-Duration of the internal frames, TIME units
+.BI \-\-output\-encoding\fB= IO_ENCODING
+Output file encoding
 .TP
-.BI \-r\fP,\fB  \-\-rate\fB= INT
-Output sample rate, Hz
+.BI \-\-io\-frame\-len\fB= TIME
+I/O frame length, TIME units
+.UNINDENT
+.SS Transcoding options
+.INDENT 0.0
 .TP
 .BI \-\-resampler\-backend\fB= ENUM
 Resampler backend  (possible values=\(dqdefault\(dq, \(dqbuiltin\(dq, \(dqspeex\(dq, \(dqspeexdec\(dq default=\(gadefault\(aq)
 .TP
 .BI \-\-resampler\-profile\fB= ENUM
 Resampler profile  (possible values=\(dqlow\(dq, \(dqmedium\(dq, \(dqhigh\(dq default=\(gamedium\(aq)
-.TP
-.B  \-\-profile
-Enable self profiling  (default=off)
-.TP
-.BI \-\-color\fB= ENUM
-Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)
 .UNINDENT
+.SS Debugging options
+.INDENT 0.0
+.TP
+.B  \-\-prof
+Enable self\-profiling  (default=off)
+.UNINDENT
+.SH DETAILS
 .SS File URI
 .sp
-\fB\-\-input\fP and \fB\-\-output\fP options require a file URI in one of the following forms:
+\fB\-\-input\fP and \fB\-\-output\fP options define input / output file URI.
+.sp
+\fIFILE_URI\fP should have one of the following forms:
 .INDENT 0.0
 .IP \(bu 2
-\fBfile:///ABS/PATH\fP \-\- absolute file path
+\fBfile:///<abs>/<path>\fP \-\- absolute file path
 .IP \(bu 2
-\fBfile://localhost/ABS/PATH\fP \-\- absolute file path (alternative form; only \(dqlocalhost\(dq host is supported)
+\fBfile://localhost/<abs>/<path>\fP \-\- absolute file path (alternative form; only \(dqlocalhost\(dq host is supported)
 .IP \(bu 2
-\fBfile:/ABS/PATH\fP \-\- absolute file path (alternative form)
+\fBfile:/<abs>/<path>\fP \-\- absolute file path (alternative form)
 .IP \(bu 2
-\fBfile:REL/PATH\fP \-\- relative file path
+\fBfile:<rel>/<path>\fP \-\- relative file path
 .IP \(bu 2
 \fBfile://\-\fP \-\- stdout
 .IP \(bu 2
@@ -123,32 +135,34 @@ The path component of the provided URI is \fI\%percent\-decoded\fP\&. For conven
 .sp
 For example, the file named \fB/foo/bar%/[baz]\fP may be specified using either of the following URIs: \fBfile:///foo%2Fbar%25%2F%5Bbaz%5D\fP and \fBfile:///foo/bar%25/[baz]\fP\&.
 .SS Time units
+.sp
+\fITIME\fP defines duration with nanosecond precision.
 .INDENT 0.0
 .TP
-.B \fITIME\fP should have one of the following forms:
+.B It should have one of the following forms:
 123ns; 1.23us; 1.23ms; 1.23s; 1.23m; 1.23h;
 .UNINDENT
 .SH EXAMPLES
 .sp
-Convert sample rate to 48k:
+Convert sample rate to 24\-bit 48k stereo:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ roc\-copy \-vv \-\-rate=48000 \-i file:input.wav \-o file:output.wav
+$ roc\-copy \-vv \-\-io\-encoding s24/48000/stereo \-i file:input.wav \-o file:output.wav
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-Drop output results (useful for benchmarking):
+Same, but drop output results instead of writing to file (useful for benchmarking):
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ roc\-copy \-vv \-\-rate=48000 \-i file:input.wav
+$ roc\-copy \-vv \-\-io\-encoding s24/48000/stereo \-i file:input.wav
 .ft P
 .fi
 .UNINDENT
@@ -166,7 +180,7 @@ $ roc\-copy \-vv \-\-input\-format=wav \-i file:\- \e
 .fi
 .UNINDENT
 .UNINDENT
-.SH ENVIRONMENT VARIABLES
+.SH ENVIRONMENT
 .sp
 The following environment variables are supported:
 .INDENT 0.0
@@ -179,7 +193,7 @@ By default, terminal coloring is automatically detected. This environment variab
 .UNINDENT
 .SH SEE ALSO
 .sp
-\fBroc\-recv(1)\fP, \fBroc\-send(1)\fP, the Roc web site at \fI\%https://roc\-streaming.org/\fP
+\fBroc\-send(1)\fP, \fBroc\-recv(1)\fP, and the Roc web site at \fI\%https://roc\-streaming.org/\fP
 .SH BUGS
 .sp
 Please report any bugs found via GitHub (\fI\%https://github.com/roc\-streaming/roc\-toolkit/\fP).

@@ -1,6 +1,12 @@
 roc-copy
 ********
 
+.. only:: html
+
+  .. contents:: Table of contents:
+     :local:
+     :depth: 1
+
 SYNOPSIS
 ========
 
@@ -9,35 +15,56 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-Read audio stream from a file, transform it, and and write it to a another file.
+Read audio stream from a file, transcode, and write to a another file.
 
-Options
--------
+.. begin_options
 
--h, --help                   Print help and exit
--V, --version                Print version and exit
--v, --verbose                Increase verbosity level (may be used multiple times)
--L, --list-supported         list supported schemes and formats
--i, --input=FILE_URI         Input file URI
--o, --output=FILE_URI        Output file URI
---input-format=FILE_FORMAT   Force input file format
---output-format=FILE_FORMAT  Force output file format
---frame-len=TIME             Duration of the internal frames, TIME units
--r, --rate=INT               Output sample rate, Hz
---resampler-backend=ENUM     Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
---resampler-profile=ENUM     Resampler profile  (possible values="low", "medium", "high" default=`medium')
---profile                    Enable self profiling  (default=off)
---color=ENUM                 Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
+General options
+---------------
+
+-h, --help            Print help and exit
+-V, --version         Print version and exit
+-v, --verbose         Increase verbosity level (may be used multiple times)
+--color=ENUM          Set colored logging mode for stderr output (possible values="auto", "always", "never" default=`auto')
+-L, --list-supported  List supported protocols, formats, etc.
+
+I/O options
+-----------
+
+-i, --input=FILE_URI           Input file URI
+--input-format=FILE_FORMAT     Force input file format
+-o, --output=FILE_URI          Output file URI
+--output-format=FILE_FORMAT    Force output file format
+--output-encoding=IO_ENCODING  Output file encoding
+--io-frame-len=TIME            I/O frame length, TIME units
+
+Transcoding options
+-------------------
+
+--resampler-backend=ENUM  Resampler backend  (possible values="default", "builtin", "speex", "speexdec" default=`default')
+--resampler-profile=ENUM  Resampler profile  (possible values="low", "medium", "high" default=`medium')
+
+Debugging options
+-----------------
+
+--prof  Enable self-profiling  (default=off)
+
+.. end_options
+
+DETAILS
+=======
 
 File URI
 --------
 
-``--input`` and ``--output`` options require a file URI in one of the following forms:
+``--input`` and ``--output`` options define input / output file URI.
 
-- ``file:///ABS/PATH`` -- absolute file path
-- ``file://localhost/ABS/PATH`` -- absolute file path (alternative form; only "localhost" host is supported)
-- ``file:/ABS/PATH`` -- absolute file path (alternative form)
-- ``file:REL/PATH`` -- relative file path
+*FILE_URI* should have one of the following forms:
+
+- ``file:///<abs>/<path>`` -- absolute file path
+- ``file://localhost/<abs>/<path>`` -- absolute file path (alternative form; only "localhost" host is supported)
+- ``file:/<abs>/<path>`` -- absolute file path (alternative form)
+- ``file:<rel>/<path>`` -- relative file path
 - ``file://-`` -- stdout
 - ``file:-`` -- stdout (alternative form)
 
@@ -62,23 +89,25 @@ For example, the file named ``/foo/bar%/[baz]`` may be specified using either of
 Time units
 ----------
 
-*TIME* should have one of the following forms:
+*TIME* defines duration with nanosecond precision.
+
+It should have one of the following forms:
   123ns; 1.23us; 1.23ms; 1.23s; 1.23m; 1.23h;
 
 EXAMPLES
 ========
 
-Convert sample rate to 48k:
+Convert sample rate to 24-bit 48k stereo:
 
 .. code::
 
-    $ roc-copy -vv --rate=48000 -i file:input.wav -o file:output.wav
+    $ roc-copy -vv --io-encoding s24/48000/stereo -i file:input.wav -o file:output.wav
 
-Drop output results (useful for benchmarking):
+Same, but drop output results instead of writing to file (useful for benchmarking):
 
 .. code::
 
-    $ roc-copy -vv --rate=48000 -i file:input.wav
+    $ roc-copy -vv --io-encoding s24/48000/stereo -i file:input.wav
 
 Input from stdin, output to stdout:
 
@@ -87,8 +116,8 @@ Input from stdin, output to stdout:
     $ roc-copy -vv --input-format=wav -i file:- \
         --output-format=wav -o file:- >./output.wav <./input.wav
 
-ENVIRONMENT VARIABLES
-=====================
+ENVIRONMENT
+===========
 
 The following environment variables are supported:
 
@@ -101,7 +130,7 @@ FORCE_COLOR
 SEE ALSO
 ========
 
-:manpage:`roc-recv(1)`, :manpage:`roc-send(1)`, the Roc web site at https://roc-streaming.org/
+:manpage:`roc-send(1)`, :manpage:`roc-recv(1)`, and the Roc web site at https://roc-streaming.org/
 
 BUGS
 ====

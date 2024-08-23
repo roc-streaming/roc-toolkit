@@ -35,8 +35,8 @@ roc-send \- send real-time audio
 \fBroc\-send\fP \fIOPTIONS\fP
 .SH DESCRIPTION
 .sp
-Read audio stream from an audio device or file and send it to remote receiver.
-.SS Options
+Read audio stream from an audio device or file and send to remote receiver(s).
+.SS General options
 .INDENT 0.0
 .TP
 .B  \-h\fP,\fB  \-\-help
@@ -52,7 +52,10 @@ Increase verbosity level (may be used multiple times)
 Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)
 .TP
 .B  \-L\fP,\fB  \-\-list\-supported
-List supported schemes and formats
+List supported protocols, formats, etc.
+.UNINDENT
+.SS Input options
+.INDENT 0.0
 .TP
 .BI \-i\fP,\fB  \-\-input\fB= IO_URI
 Input file or device URI
@@ -60,140 +63,118 @@ Input file or device URI
 .BI \-\-input\-format\fB= FILE_FORMAT
 Force input file format
 .TP
-.BI \-s\fP,\fB  \-\-source\fB= ENDPOINT_URI
-Remote source endpoint
+.BI \-\-io\-encoding\fB= IO_ENCODING
+Input device encoding
 .TP
-.BI \-r\fP,\fB  \-\-repair\fB= ENDPOINT_URI
-Remote repair endpoint
+.BI \-\-io\-latency\fB= TIME
+Input device latency, TIME units
 .TP
-.BI \-c\fP,\fB  \-\-control\fB= ENDPOINT_URI
-Remote control endpoint
+.BI \-\-io\-frame\-len\fB= TIME
+Input frame length, TIME units
+.UNINDENT
+.SS Network options
+.INDENT 0.0
+.TP
+.BI \-s\fP,\fB  \-\-source\fB= NET_URI
+Remote source endpoint to connect to
+.TP
+.BI \-r\fP,\fB  \-\-repair\fB= NET_URI
+Remote repair endpoint to connect to
+.TP
+.BI \-c\fP,\fB  \-\-control\fB= NET_URI
+Remote control endpoint to connect to
+.TP
+.BI \-\-miface\fB= IPADDR
+IPv4 or IPv6 address of the network interface on which to join the multicast group
 .TP
 .B  \-\-reuseaddr
 Enable SO_REUSEADDR when binding sockets
+.UNINDENT
+.SS Encoding options
+.INDENT 0.0
 .TP
-.BI \-\-io\-latency\fB= STRING
-Recording device latency, TIME units
+.BI \-\-packet\-encoding\fB= PKT_ENCODING
+Custom network packet encoding
 .TP
-.BI \-\-target\-latency\fB= STRING
-Target latency (only for sender\-side tuning), TIME units or \(aqauto\(aq for adaptive mode
+.BI \-\-packet\-len\fB= TIME
+Network packet length, TIME units
 .TP
-.BI \-\-latency\-tolerance\fB= STRING
-Maximum deviation from target latency (only for sender\-side tuning), TIME units
+.BI \-\-fec\-encoding\fB= FEC_ENCODING
+FEC encoding, \(aqauto\(aq to auto\-detect from network endpoints
 .TP
-.BI \-\-start\-latency\fB= STRING
-Starting target latency in adaptive mode (only for sender\-side tuning), TIME units
+.BI \-\-fec\-block\-src\fB= INT
+Number of source packets in FEC block
 .TP
-.BI \-\-min\-latency\fB= STRING
-Minimum target latency in adaptive mode (only for sender\-side tuning), TIME units
-.TP
-.BI \-\-max\-latency\fB= STRING
-Maximum target latency in adaptive mode (only for sender\-side tuning), TIME units
-.TP
-.BI \-\-latency\-backend\fB= ENUM
-Which latency to use in latency tuner (possible values=\(dqniq\(dq default=\(ganiq\(aq)
-.TP
-.BI \-\-latency\-profile\fB= ENUM
-Latency tuning profile  (possible values=\(dqresponsive\(dq, \(dqgradual\(dq, \(dqintact\(dq default=\(gaintact\(aq)
+.BI \-\-fec\-block\-rpr\fB= INT
+Number of repair packets in FEC block
 .TP
 .BI \-\-resampler\-backend\fB= ENUM
 Resampler backend  (possible values=\(dqauto\(dq, \(dqbuiltin\(dq, \(dqspeex\(dq, \(dqspeexdec\(dq default=\(gaauto\(aq)
 .TP
 .BI \-\-resampler\-profile\fB= ENUM
 Resampler profile  (possible values=\(dqlow\(dq, \(dqmedium\(dq, \(dqhigh\(dq default=\(gamedium\(aq)
+.UNINDENT
+.SS Latency options (for sender\-side latency tuning)
+.INDENT 0.0
 .TP
-.BI \-\-rate\fB= INT
-Override input device sample rate, Hz
+.BI \-\-target\-latency\fB= TIME
+Target latency, TIME units or \(aqauto\(aq for adaptive mode
 .TP
-.BI \-\-nbsrc\fB= INT
-Number of source packets in FEC block
+.BI \-\-latency\-tolerance\fB= TIME
+Maximum deviation from target latency, TIME units
 .TP
-.BI \-\-nbrpr\fB= INT
-Number of repair packets in FEC block
+.BI \-\-start\-latency\fB= TIME
+Starting target latency in adaptive mode, TIME units
 .TP
-.BI \-\-packet\-len\fB= STRING
-Outgoing packet length, TIME units
+.BI \-\-min\-latency\fB= TIME
+Minimum target latency in adaptive mode, TIME units
 .TP
-.BI \-\-frame\-len\fB= TIME
-Duration of the I/O frames, TIME units
+.BI \-\-max\-latency\fB= TIME
+Maximum target latency in adaptive mode, TIME units
+.TP
+.BI \-\-latency\-backend\fB= ENUM
+Which latency to measure and tune  (possible values=\(dqniq\(dq default=\(ganiq\(aq)
+.TP
+.BI \-\-latency\-profile\fB= ENUM
+Latency tuning profile  (possible values=\(dqresponsive\(dq, \(dqgradual\(dq, \(dqintact\(dq default=\(gaintact\(aq)
+.UNINDENT
+.SS Memory options
+.INDENT 0.0
 .TP
 .BI \-\-max\-packet\-size\fB= SIZE
-Maximum packet size, in SIZE units
+Maximum network packet size, SIZE units
 .TP
 .BI \-\-max\-frame\-size\fB= SIZE
-Maximum internal frame size, in SIZE units
+Maximum I/O and processing frame size, SIZE units
+.UNINDENT
+.SS Debugging options
+.INDENT 0.0
 .TP
-.B  \-\-profile
+.B  \-\-prof
 Enable self\-profiling  (default=off)
 .TP
 .BI \-\-dump\fB= PATH
-Path for a CSV file where to dump run\-time metrics
+Dump run\-time metrics to specified CSV file
 .UNINDENT
-.SS Endpoint URI
+.SH DETAILS
+.SS I/O URI
 .sp
-\fB\-\-source\fP, \fB\-\-repair\fP, and \fB\-\-control\fP options define network endpoints to which to send the traffic.
+\fB\-\-input\fP option defines input device or file URI.
 .sp
-\fIENDPOINT_URI\fP should have the following form:
-.sp
-\fBprotocol://host[:port][/path][?query]\fP
-.sp
-Examples:
+\fIIO_URI\fP should have one of the following forms:
 .INDENT 0.0
 .IP \(bu 2
-\fBrtsp://localhost:123/path?query\fP
+\fB<driver>://<device>\fP \-\- specific driver and device
 .IP \(bu 2
-\fBrtp+rs8m://localhost:123\fP
+\fB<driver>://default\fP \-\- default device for given driver
 .IP \(bu 2
-\fBrtp://127.0.0.1:123\fP
+\fBfile:///<abs>/<path>\fP \-\- absolute file path
 .IP \(bu 2
-\fBrtp://[::1]:123\fP
+\fBfile://localhost/<abs>/<path>\fP \-\- absolute file path (alternative form for RFC conformance; only \(dqlocalhost\(dq host is supported)
 .IP \(bu 2
-\fBrtcp://10.9.8.3:123\fP
-.UNINDENT
-.sp
-The list of supported protocols can be retrieved using \fB\-\-list\-supported\fP option.
-.sp
-The host field should be either FQDN (domain name), or IPv4 address, or IPv6 address in square brackets.
-.sp
-The port field can be omitted if the protocol defines standard port. Otherwise, it is mandatory.
-.sp
-The path and query fields are allowed only for protocols that support them, e.g. for RTSP.
-.sp
-If FEC is enabled, a pair of a source and repair endpoints should be provided. The two endpoints should use compatible protocols, e.g. \fBrtp+rs8m://\fP for source endpoint, and \fBrs8m://\fP for repair endpoint. If FEC is disabled, a single source endpoint should be provided.
-.sp
-Supported source and repair protocols:
-.INDENT 0.0
+\fBfile:/<abs>/<path>\fP \-\- absolute file path (alternative form)
 .IP \(bu 2
-source \fBrtp://\fP, repair none (bare RTP without FEC)
-.IP \(bu 2
-source \fBrtp+rs8m://\fP, repair \fBrs8m://\fP (RTP with Reed\-Solomon FEC)
-.IP \(bu 2
-source \fBrtp+ldpc://\fP, repair \fBldpc://\fP (RTP with LDPC\-Staircase FEC)
-.UNINDENT
-.sp
-In addition, it is recommended to provide control endpoint. It is used to exchange non\-media information used to identify session, carry feedback, etc. If no control endpoint is provided, session operates in reduced fallback mode, which may be less robust and may not support all features.
-.sp
-Supported control protocols:
-.INDENT 0.0
-.IP \(bu 2
-\fBrtcp://\fP
-.UNINDENT
-.SS IO URI
-.sp
-\fB\-\-input\fP option requires a device or file URI in one of the following forms:
-.INDENT 0.0
-.IP \(bu 2
-\fBDEVICE_TYPE://DEVICE_NAME\fP \-\- audio device
-.IP \(bu 2
-\fBDEVICE_TYPE://default\fP \-\- default audio device for given device type
-.IP \(bu 2
-\fBfile:///ABS/PATH\fP \-\- absolute file path
-.IP \(bu 2
-\fBfile://localhost/ABS/PATH\fP \-\- absolute file path (alternative form; only \(dqlocalhost\(dq host is supported)
-.IP \(bu 2
-\fBfile:/ABS/PATH\fP \-\- absolute file path (alternative form)
-.IP \(bu 2
-\fBfile:REL/PATH\fP \-\- relative file path
+\fBfile:<rel>/<path>\fP \-\- relative file path
 .IP \(bu 2
 \fBfile://\-\fP \-\- stdin
 .IP \(bu 2
@@ -229,30 +210,252 @@ The \fB\-\-input\-format\fP option can be used to force the input file format. I
 The path component of the provided URI is \fI\%percent\-decoded\fP\&. For convenience, unencoded characters are allowed as well, except that \fB%\fP should be always encoded as \fB%25\fP\&.
 .sp
 For example, the file named \fB/foo/bar%/[baz]\fP may be specified using either of the following URIs: \fBfile:///foo%2Fbar%25%2F%5Bbaz%5D\fP and \fBfile:///foo/bar%25/[baz]\fP\&.
-.SS Multiple slots
+.SS I/O encoding
 .sp
-Multiple sets of endpoints can be specified to send media to multiple addresses.
+\fB\-\-io\-encoding\fP option allows to explicitly specify encoding of the input device. It can\(aqt be used if input is a file.
 .sp
-Such endpoint sets are called slots. All slots should have the same set of endpoint types (source, repair, etc) and should use the same protocols for them.
+This option is useful when device supports multiple encodings. Note that I/O encoding may be different from network packet encoding. Necessary conversions will be applied automatically.
+.sp
+\fIIO_ENCODING\fP should have the following form:
+.sp
+\fB<format>/<rate>/<channels>\fP
+.sp
+Where:
+.INDENT 0.0
+.IP \(bu 2
+\fBformat\fP defines sample precision and binary representation, e.g. \fBs16_le\fP stands for little\-endian signed 16\-bit integers
+.IP \(bu 2
+\fBrate\fP defines sample rate in Hertz (number of samples per second), e.g. \fB48000\fP
+.IP \(bu 2
+\fBchannels\fP defines channel layout, e.g. \fBmono\fP or \fBstereo\fP
+.UNINDENT
+.sp
+Any component may be set to special value \fB\-\fP, which means use default value for the specified input device.
+.sp
+Examples:
+.INDENT 0.0
+.IP \(bu 2
+\fBs16/44100/mono\fP \-\- 16\-bit native\-endian integers, 44.1KHz, 1 channel
+.IP \(bu 2
+\fBf32_le/48000/stereo\fP \-\- 32\-bit little\-endian floats, 48KHz, 2 channels
+.IP \(bu 2
+\fBs24_4be/\-/\-\fP \-\- 24\-bit PCM packed into 4\-byte big\-endian frames, default rate and channels
+.UNINDENT
+.sp
+The list of supported formats and channel layouts can be retrieved using \fB\-\-list\-supported\fP option.
+.SS I/O latency and frame
+.sp
+\fB\-\-io\-latency\fP option defines I/O buffer size for the input device. It can\(aqt be used if input is a file.
+.sp
+Exact semantics depends on sound system and sound card driver. For some drivers, the size of this buffer covers both software ring buffer and hardware ADC buffer, for others it covers only software buffer.
+.sp
+\fB\-\-io\-frame\-len\fP option defines chunk size for a single I/O operation. I/O latency is typically a multiple of I/O frame size.
+.sp
+Higher values increase robustness, and lower values decrease overall end\-to\-end latency. If not specified, some \(dq\(dqmedium\(dq values are selected depending on driver.
+.SS Network URI
+.sp
+\fB\-\-source\fP, \fB\-\-repair\fP, and \fB\-\-control\fP options define network endpoints to which to send the traffic.
+.sp
+\fINET_URI\fP should have the following form:
+.sp
+\fB<protocol>://<host>[:<port>][/<path>][?<query>]\fP
+.sp
+Examples:
+.INDENT 0.0
+.IP \(bu 2
+\fBrtsp://localhost:123/some_path?some_query\fP
+.IP \(bu 2
+\fBrtp+rs8m://localhost:123\fP
+.IP \(bu 2
+\fBrtp://127.0.0.1:123\fP
+.IP \(bu 2
+\fBrtp://[::1]:123\fP
+.IP \(bu 2
+\fBrtcp://10.9.8.3:123\fP
+.UNINDENT
+.sp
+The list of supported protocols can be retrieved using \fB\-\-list\-supported\fP option.
+.sp
+The host field should be either FQDN (domain name), or IPv4 address, or IPv6 address in square brackets.
+.sp
+The port field can be omitted if the protocol defines standard port. Otherwise, it is mandatory.
+.sp
+The path and query fields are allowed only for protocols that support them, e.g. for RTSP.
+.sp
+If FEC is enabled, a pair of a source and repair endpoints should be provided. The two endpoints should use compatible protocols, e.g. \fBrtp+rs8m://\fP for source endpoint, and \fBrs8m://\fP for repair endpoint. If FEC is disabled, a single source endpoint should be provided.
+.sp
+Supported source and repair protocols:
+.INDENT 0.0
+.IP \(bu 2
+source \fBrtp://\fP, repair none (bare RTP without FEC)
+.IP \(bu 2
+source \fBrtp+rs8m://\fP, repair \fBrs8m://\fP (RTP with Reed\-Solomon FEC)
+.IP \(bu 2
+source \fBrtp+ldpc://\fP, repair \fBldpc://\fP (RTP with LDPC\-Staircase FEC)
+.UNINDENT
+.sp
+In addition, it is highly recommended to provide control endpoint. It is used to exchange non\-media information used to identify session, carry feedback, etc. If no control endpoint is provided, session operates in reduced fallback mode, which may be less robust and may not support all features.
+.sp
+Supported control protocols:
+.INDENT 0.0
+.IP \(bu 2
+\fBrtcp://\fP
+.UNINDENT
+.SS Packet encoding
+.sp
+\fB\-\-packet\-encoding\fP option allows to specify custom encoding of the network packets.
+.sp
+\fIPKT_ENCODING\fP is similar to \fIIO_ENCODING\fP, but adds numeric encoding identifier:
+.sp
+\fB<id>:<format>/<rate>/<channels>\fP
+.sp
+Where:
+.INDENT 0.0
+.IP \(bu 2
+\fBid\fP is an arbitrary number in range 100..127, which should uniquely identify encoding on all related senders and receivers
+.IP \(bu 2
+\fBformat\fP defines sample precision and binary representation, e.g. \fBs16_le\fP stands for little\-endian signed 16\-bit integers
+.IP \(bu 2
+\fBrate\fP defines sample rate in Hertz (number of samples per second), e.g. \fB48000\fP
+.IP \(bu 2
+\fBchannels\fP defines channel layout, e.g. \fBmono\fP or \fBstereo\fP
+.UNINDENT
+.sp
+Examples:
+.INDENT 0.0
+.IP \(bu 2
+\fB101:s16_be/44100/mono\fP \-\- 16\-bit big\-endian integers, 44.1KHz, 1 channel
+.IP \(bu 2
+\fB102:f32_le/48000/stereo\fP \-\- 32\-bit little\-endian floats, 48KHz, 2 channels
+.UNINDENT
+.sp
+The list of supported formats and channel layouts can be retrieved using \fB\-\-list\-supported\fP option.
+.sp
+If you specify custom packet encoding on sender(s), and don\(aqt use signaling protocol like RTSP, you need to specify \fBexactly same encoding(s)\fP on receiver, with matching identifiers and parameters.
+.SS FEC encoding
+.sp
+\fB\-\-fec\-encoding\fP option allows to explicitly specify FEC codec for redundancy packets (used for loss recovery on receiver).
+.sp
+\fIFEC_ENCODING\fP supports the following values:
+.INDENT 0.0
+.IP \(bu 2
+\fBauto\fP \-\- automatically detect FEC encoding from protocols used for \fB\-\-source\fP and \fB\-\-repair\fP encodings
+.IP \(bu 2
+\fBnone\fP \-\- don\(aqt use FEC
+.IP \(bu 2
+\fBrs8m\fP \-\- Reed\-Solomon codec
+.IP \(bu 2
+\fBldpc\fP \-\- LDPC\-Staircase codec
+.UNINDENT
+.sp
+The list of supported FEC encodings and related protocols \fB\-\-list\-supported\fP option.
+.sp
+Note that every FEC encoding requires specific \fB\-\-source\fP and \fB\-\-repair\fP protocols to be used on both sender and receiver.
+.SS Packet and FEC block size
+.sp
+\fB\-\-packet\-len\fP option defines length of a single network packet. Smaller packet lengths allow lower and more precise latency, but increase network overhead and increase risk of packet losses and delays on poor networks.
+.sp
+\fB\-\-fec\-block\-src\fP and \fB\-\-fec\-block\-rpr\fP options define number of source and repair packets, respectively, in FEC block size.
+.sp
+If FEC is enabled (automatically or explicitly via \fB\-\-fec\-encoding\fP), packets are grouped into blocks of size defined by \fB\-\-fec\-block\-src\fP\&. For each such block, additional redundancy packets are generated, of quantity defined by \fB\-\-fec\-block\-rpr\fP\&.
+.sp
+Higher value for \fB\-\-fec\-block\-src\fP allows to recover packets even on long burst losses or delays, however requires latency to be higher than FEC block size. Higher value for \fB\-\-fec\-block\-rpr\fP allows to recover packets on higher loss ratios, but increases bandwidth and may increase loss or delay ratio on weak networks.
+.SS Resampler configuration
+.sp
+Sender uses resampler (a.k.a. sample rate converter) for two purposes:
+.INDENT 0.0
+.IP \(bu 2
+to convert between packet encoding sample rate and I/O encoding sample rate, if they\(aqre different
+.IP \(bu 2
+if sender\-side latency tuning is enabled (disabled by default), to adjust clock speed dynamically for clock drift compensation
+.UNINDENT
+.sp
+\fB\-\-resampler\-backend\fP and \fB\-\-resampler\-profile\fP allow to specify which engine is used for resampling and which quality profile is applied.
+.sp
+A few backends are available:
+.INDENT 0.0
+.IP \(bu 2
+\fBauto\fP \-\- select most appropriate backend automatically
+.IP \(bu 2
+\fBbuiltin\fP \-\- CPU\-intensive, good\-quality, high\-precision built\-in resampler
+.IP \(bu 2
+\fBspeex\fP \-\- fast, good\-quality, low\-precision resampler based on SpeexDSP
+.IP \(bu 2
+\fBspeexdec\fP \-\- very fast, medium\-quality, medium\-precision resampler combining SpeexDSP for base rate conversion with decimation for clock drift compensation
+.UNINDENT
+.sp
+Here, quality reflects potential distortions introduced by resampler, and precision reflects how accurately resampler can apply scaling and hence how accurately we can tune latency.
+.sp
+For very low latency or very low latency error, you usually need to use \fBbuiltin\fP backend. If those factors are not critical, you may use \fBspeex\fP resampler to reduce CPU usage. \fBspeexdec\fP backend is a compromise for situations when both CPU usage and latency are critical, and quality is less important.
+.sp
+If sender\-side latency tuning is disabled (which is the default), resampler precision is not relevant, and \fBspeex\fP is almost always the best choice.
+.SS Latency configuration
+.sp
+This section is relevant when sender\-side latency tuning is enabled (\fBdisabled by default\fP).
+.sp
+By default, latency tuning is performed on receiver side: \fB\-\-latency\-profile\fP is set to \fBauto\fP on receiver and to \fBintact\fP on sender. If you want to do it on sender side, you can set \fB\-\-latency\-profile\fP to \fBintact\fP on receiver and to something else on sender. This is useful when receiver is more CPU\-constrained than sender, because latency tuning uses resampler.
+.sp
+Sender\-side latency tuning requires latency parameters (target, start, min, and max latency) to \fBmatch on receiver and sender\fP\&. Also note that sender may perform tuning less accurately, depending on network lag.
+.sp
+\fB\-\-target\-latency\fP option defines the latency value to maintain, as measured by the \fB\-\-latency\-backend\fP:
+.INDENT 0.0
+.IP \(bu 2
+If value is provided, \fBfixed latency\fP mode is activated. The latency starts from \fB\-\-target\-latency\fP and is kept close to that value.
+.IP \(bu 2
+If option is omitted or set to \fBauto\fP, \fBadaptive latency\fP mode is activated. The latency is chosen dynamically. Initial latency is \fB\-\-start\-latency\fP, and the allowed range is \fB\-\-min\-latency\fP to \fB\-\-max\-latency\fP\&.
+.UNINDENT
+.sp
+\fB\-\-latency\-tolerance\fP option defines maximum allowed deviation of the actual latency from the (current) target latency. If this limit is exceeded for some reason (typically due to poor network conditions), connection is restarted.
+.sp
+How latency is measured (and so which latency is tuned) is defined by \fB\-\-latency\-backend\fP option. The following backends are available:
+.INDENT 0.0
+.IP \(bu 2
+\fBniq\fP \-\-  In this mode, latency is defined as the length of network incoming queue on receiver. Playback speed lock is adjusted to keep queue length close to configured target latency. This backend synchronizes only clock speed, but not position; different receivers will have different (constant, on average) delays.
+.UNINDENT
+.sp
+How latency is tuned is defines by \fB\-\-latency\-profile\fP option:
+.INDENT 0.0
+.IP \(bu 2
+\fBauto\fP \-\- Automatically select profile based on target latency.
+.IP \(bu 2
+\fBresponsive\fP \-\- Adjust clock speed quickly and accurately. Requires good network conditions. Allows very low latencies.
+.IP \(bu 2
+\fBgradual\fP \-\- Adjust clock speed slowly and smoothly. Tolerates very high network jitter, but doesn\(aqt allow low latencies.
+.IP \(bu 2
+\fBintact\fP \-\- Do not adjust clock speed at all.
+.UNINDENT
+.SS Multicast interface
+.sp
+If \fB\-\-miface\fP option is present, it defines an IP address of the network interface on which to join the multicast group. If not present, no multicast group should be joined.
+.sp
+It\(aqs not possible to receive multicast traffic without joining a multicast group. The user should either provide multicast interface, or join the group manually using third\-party tools.
+.sp
+\fIIPADDR\fP should be an IP address of the network interface on which to join the multicast group. It may be \fB0.0.0.0\fP (for IPv4) or \fB::\fP (for IPv6) to join the multicast group on all available interfaces.
+.sp
+Although most traffic goes from sender to receiver, there is also feedback traffic from receiver to sender, so both sender and receiver should join multicast group.
+.SS Multiple unicast addresses
+.sp
+You can connect sender to multiple receivers by specifying several sets of endpoints, called \(dqslots\(dq.
+.sp
+Each slot has its own \fB\-\-source\fP, \fB\-\-repair\fP, and \fB\-\-control\fP endpoint and optional \fB\-\-miface\fP address. All sender slots should have the same set of endpoint types (source, repair, etc). For example, to connect sender to 2 receivers, you\(aqll need to specify 2 groups of \fB\-\-source\fP, \fB\-\-repair\fP, and \fB\-\-control\fP options. Sender requires all slots to use the same set of protocols.
+.sp
+This feature is useful when you have static and small set of receivers and can\(aqt or don\(aqt want to configure multicast.
 .SS SO_REUSEADDR
 .sp
 If \fB\-\-reuseaddr\fP option is provided, \fBSO_REUSEADDR\fP socket option will be enabled for all sockets.
 .sp
-For TCP, it allows immediately reusing recently closed socket in TIME_WAIT state, which may be useful you want to be able to restart server quickly.
-.sp
-For UDP, it allows multiple processes to bind to the same address, which may be useful if you\(aqre using systemd socket activation.
+For TCP, it allows immediately reusing recently closed socket in TIME_WAIT state, which may be useful you want to be able to restart server quickly. For UDP, it allows multiple processes to bind to the same address, which may be useful if you\(aqre using systemd socket activation.
 .sp
 Regardless of the option, \fBSO_REUSEADDR\fP is always disabled when binding to ephemeral port.
-.SS Time units
+.SS Time and size units
+.sp
+\fITIME\fP defines duration with nanosecond precision.
 .INDENT 0.0
 .TP
-.B \fITIME\fP should have one of the following forms:
+.B It should have one of the following forms:
 123ns; 1.23us; 1.23ms; 1.23s; 1.23m; 1.23h;
-.UNINDENT
-.SS Size units
-.INDENT 0.0
 .TP
-.B \fISIZE\fP should have one of the following forms:
+.B \fISIZE\fP defines byte size and should have one of the following forms:
 123; 1.23K; 1.23M; 1.23G;
 .UNINDENT
 .SH EXAMPLES
@@ -399,13 +602,36 @@ $ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-i file:///home/user/input.wav
 .UNINDENT
 .SS Tuning examples
 .sp
-Force a specific rate on the input device:
+Force specific encoding on the input device:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-\-rate=44100
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \e
+    \-\-input alsa://hw:1,0 \-\-io\-encoding s32/48000/stereo
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Use specific encoding for network packets:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-\-packet\-encoding 101:s32/48000/stereo
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-\-packet\-encoding 101:s32/48000/stereo
 .ft P
 .fi
 .UNINDENT
@@ -417,22 +643,32 @@ Select the LDPC\-Staircase FEC scheme and a larger block size:
 .sp
 .nf
 .ft C
-$ roc\-send \-vv \-i file:./input.wav \-s rtp+ldpc://192.168.0.3:10001 \e
-    \-r ldpc://192.168.0.3:10002 \-c ldpc://192.168.0.3:10003 \e
-    \-\-nbsrc=1000 \-\-nbrpr=500
+$ roc\-send \-vv \-s rtp+ldpc://192.168.0.3:10001 \-r ldpc://192.168.0.3:10002 \e
+    \-c ldpc://192.168.0.3:10003
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
-.sp
-Select smaller packet length:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ roc\-send \-vv \-i file:./input.wav \-s rtp+ldpc://192.168.0.3:10001 \e
-    \-\-packet\-len 2500us
+$ roc\-recv \-vv \-s rtp+ldpc://0.0.0.0:10001 \-r ldpc://0.0.0.0:10002 \e
+    \-c rtcp://0.0.0.0:10003
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Select smaller packet length and FEC block size:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-i \-s rtp+rs8m://192.168.0.3:10001 \-r rtp+rs8m://192.168.0.3:10002 \e
+    \-\-packet\-len=2.5ms \-\-fec\-block\-src=10 \-\-fec\-block\-rpr=6
 .ft P
 .fi
 .UNINDENT
@@ -445,7 +681,7 @@ Select I/O latency and frame length:
 .nf
 .ft C
 $ roc\-send \-vv \-s rtp://192.168.0.3:10001 \e
-    \-\-io\-latency=20ms \-\-frame\-len 4ms
+    \-\-io\-latency=20ms \-\-io\-frame\-len=4ms
 .ft P
 .fi
 .UNINDENT
@@ -470,18 +706,18 @@ Perform latency tuning on sender instead of receiver:
 .sp
 .nf
 .ft C
-$ roc\-recv \-vv \-o pulse://default \-s rtp+rs8m://0.0.0.0:10001 \e
-    \-r rs8m://0.0.0.0:10002 \-c rtcp://0.0.0.0:10003 \e
+$ roc\-recv \-vv \-s rtp+rs8m://0.0.0.0:10001 \-r rs8m://0.0.0.0:10002 \e
+    \-c rtcp://0.0.0.0:10003 \e
     \-\-latency\-profile=intact \-\-target\-latency=auto \-\-start\-latency=300ms
 
-$ roc\-send \-vv \-i file:./input.wav \-s rtp+rs8m://192.168.0.3:10001 \e
-    \-r rs8m://192.168.0.3:10002 \-c rtcp://192.168.0.3:10003 \e
+$ roc\-send \-vv \-s rtp+rs8m://192.168.0.3:10001 \-r rs8m://192.168.0.3:10002 \e
+    \-c rtcp://192.168.0.3:10003 \e
     \-\-latency\-profile=gradual \-\-target\-latency=auto \-\-start\-latency=300ms
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
-.SH ENVIRONMENT VARIABLES
+.SH ENVIRONMENT
 .sp
 The following environment variables are supported:
 .INDENT 0.0
@@ -494,7 +730,7 @@ By default, terminal coloring is automatically detected. This environment variab
 .UNINDENT
 .SH SEE ALSO
 .sp
-\fBroc\-recv(1)\fP, and the Roc web site at \fI\%https://roc\-streaming.org/\fP
+\fBroc\-recv(1)\fP, \fBroc\-copy(1)\fP, and the Roc web site at \fI\%https://roc\-streaming.org/\fP
 .SH BUGS
 .sp
 Please report any bugs found via GitHub (\fI\%https://github.com/roc\-streaming/roc\-toolkit/\fP).

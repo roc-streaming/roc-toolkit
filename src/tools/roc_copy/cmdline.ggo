@@ -1,14 +1,12 @@
 package "roc-copy"
 usage "roc-copy OPTIONS"
 
-section "General options"
+option "verbose" v "Increase verbosity level (may be used multiple times)"
+    multiple optional
+option "color" - "Set colored logging mode for stderr output"
+    values="auto","always","never" default="auto" enum optional
 
-    option "verbose" v "Increase verbosity level (may be used multiple times)"
-        multiple optional
-    option "color" - "Set colored logging mode for stderr output"
-        values="auto","always","never" default="auto" enum optional
-
-    option "list-supported" L "List supported protocols, formats, etc." optional
+option "list-supported" L "List supported protocols, formats, etc." optional
 
 section "I/O options"
 

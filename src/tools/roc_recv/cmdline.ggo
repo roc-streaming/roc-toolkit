@@ -1,14 +1,12 @@
 package "roc-recv"
 usage "roc-recv OPTIONS"
 
-section "General options"
+option "verbose" v "Increase verbosity level (may be used multiple times)"
+    multiple optional
+option "color" - "Set colored logging mode for stderr output"
+    values="auto","always","never" default="auto" enum optional
 
-    option "verbose" v "Increase verbosity level (may be used multiple times)"
-        multiple optional
-    option "color" - "Set colored logging mode for stderr output"
-        values="auto","always","never" default="auto" enum optional
-
-    option "list-supported" L "List supported protocols, formats, etc." optional
+option "list-supported" L "List supported protocols, formats, etc." optional
 
 section "Operation options"
 
@@ -72,7 +70,7 @@ section "Latency options"
     option "max-latency" - "Maximum target latency in adaptive mode, TIME units"
         typestr="TIME" string optional
 
-    option "latency-backend" - "Which latency to use in latency tuner"
+    option "latency-backend" - "Which latency to measure and tune"
         values="niq" default="niq" enum optional
     option "latency-profile" - "Latency tuning profile"
         values="auto","responsive","gradual","intact" default="auto" enum optional

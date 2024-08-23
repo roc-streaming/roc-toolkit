@@ -1,14 +1,12 @@
 package "roc-send"
 usage "roc-send OPTIONS"
 
-section "General options"
+option "verbose" v "Increase verbosity level (may be used multiple times)"
+    multiple optional
+option "color" - "Set colored logging mode for stderr output"
+    values="auto","always","never" default="auto" enum optional
 
-    option "verbose" v "Increase verbosity level (may be used multiple times)"
-        multiple optional
-    option "color" - "Set colored logging mode for stderr output"
-        values="auto","always","never" default="auto" enum optional
-
-    option "list-supported" L "List supported protocols, formats, etc." optional
+option "list-supported" L "List supported protocols, formats, etc." optional
 
 section "Input options"
 
@@ -53,7 +51,7 @@ section "Encoding options"
     option "resampler-profile" - "Resampler profile"
         values="low","medium","high" default="medium" enum optional
 
-section "Latency options (only for sender-side latency tuning)"
+section "Latency options (for sender-side latency tuning)"
 
     option "target-latency" - "Target latency, TIME units or 'auto' for adaptive mode"
         typestr="TIME" string optional
@@ -66,7 +64,7 @@ section "Latency options (only for sender-side latency tuning)"
     option "max-latency" - "Maximum target latency in adaptive mode, TIME units"
         typestr="TIME" string optional
 
-    option "latency-backend" - "Which latency to use in latency tuner"
+    option "latency-backend" - "Which latency to measure and tune"
         values="niq" default="niq" enum optional
     option "latency-profile" - "Latency tuning profile"
         values="responsive","gradual","intact" default="intact" enum optional
