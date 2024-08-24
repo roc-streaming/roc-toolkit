@@ -26,6 +26,7 @@ namespace api {
 namespace {
 
 enum {
+    SampleRate = 44100,
     Magic = 123456789,
     NumChans = 2,
     LookaheadSamples = 10,
@@ -75,8 +76,9 @@ void* test_plc_new(roc_plugin_plc* plugin, const roc_media_encoding* encoding) {
     roc_panic_if_not(plugin);
     roc_panic_if_not(encoding);
 
-    roc_panic_if_not(encoding->format == ROC_FORMAT_PCM_FLOAT32);
-    roc_panic_if_not(encoding->rate == test::SampleRate);
+    roc_panic_if_not(encoding->format == ROC_FORMAT_PCM);
+    roc_panic_if_not(encoding->subformat == ROC_SUBFORMAT_PCM_FLOAT32);
+    roc_panic_if_not(encoding->rate == SampleRate);
     roc_panic_if_not(encoding->channels == ROC_CHANNEL_LAYOUT_STEREO);
 
     return new TestPlc((TestPlugin*)plugin);
@@ -182,13 +184,13 @@ TEST_GROUP(plugin_plc) {
 
     void setup() {
         memset(&sender_conf, 0, sizeof(sender_conf));
-        sender_conf.frame_encoding.rate = test::SampleRate;
-        sender_conf.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+        sender_conf.frame_encoding.format = ROC_FORMAT_PCM;
+        sender_conf.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
+        sender_conf.frame_encoding.rate = SampleRate;
         sender_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
         sender_conf.packet_encoding = ROC_PACKET_ENCODING_AVP_L16_STEREO;
-        sender_conf.packet_length =
-            test::PacketSamples * 1000000000ull / test::SampleRate;
+        sender_conf.packet_length = test::PacketSamples * 1000000000ull / SampleRate;
 
         sender_conf.fec_encoding = ROC_FEC_ENCODING_RS8M;
         sender_conf.fec_block_source_packets = test::SourcePackets;
@@ -197,8 +199,9 @@ TEST_GROUP(plugin_plc) {
         sender_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
         memset(&receiver_conf, 0, sizeof(receiver_conf));
-        receiver_conf.frame_encoding.rate = test::SampleRate;
-        receiver_conf.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+        receiver_conf.frame_encoding.format = ROC_FORMAT_PCM;
+        receiver_conf.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
+        receiver_conf.frame_encoding.rate = SampleRate;
         receiver_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
         receiver_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
@@ -207,11 +210,11 @@ TEST_GROUP(plugin_plc) {
         receiver_conf.plc_backend = (roc_plc_backend)PluginID;
 
         receiver_conf.latency_tuner_profile = ROC_LATENCY_TUNER_PROFILE_INTACT;
-        receiver_conf.target_latency = test::Latency * 1000000000ull / test::SampleRate;
+        receiver_conf.target_latency = test::Latency * 1000000000ull / SampleRate;
         receiver_conf.latency_tolerance =
-            test::Latency * 1000000000ull / test::SampleRate * 10000;
+            test::Latency * 1000000000ull / SampleRate * 10000;
         receiver_conf.no_playback_timeout =
-            test::Timeout * 1000000000ull / test::SampleRate * 10000;
+            test::Timeout * 1000000000ull / SampleRate * 10000;
     }
 
     bool is_rs8m_supported() {

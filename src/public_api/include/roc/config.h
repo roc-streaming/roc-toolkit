@@ -315,21 +315,115 @@ typedef enum roc_fec_encoding {
 } roc_fec_encoding;
 
 /** Sample format.
- * Defines how each sample is represented.
- * Does not define channels layout and sample rate.
+ *
+ * Format (\c roc_format) and sub-format (\c roc_subformat) together define how samples
+ * are encoded into binary form (typically local frames or network packets). Each format
+ * allows use of certain sub-formats.
+ *
+ * Format and sub-format don't define sample rate and channels layout, these parameters
+ * are configured separately via \ref roc_media_encoding.
  */
 typedef enum roc_format {
-    /** PCM floats.
-     * Uncompressed samples coded as 32-bit native-endian floats in range [-1; 1].
-     * Channels are interleaved, e.g. two channels are encoded as "L R L R ...".
+    /** Uncompressed interleaved headerless PCM samples.
+     *
+     * Multiple channels are interleaved, e.g. two channels are encoded as "L R L R ...".
+     *
+     * - supported subformats: \c ROC_SUBFORMAT_PCM_*
+     * - supported rates: any
+     * - supported channels: any
      */
-    ROC_FORMAT_PCM_FLOAT32 = 1
+    ROC_FORMAT_PCM = 1,
 } roc_format;
+
+/** Sample sub-format.
+ * Defines samples representation together with \c roc_format.
+ */
+typedef enum roc_subformat {
+    /** 8-bit signed integer. */
+    ROC_SUBFORMAT_PCM_SINT8 = 40,
+    /** 8-bit unsigned integer. */
+    ROC_SUBFORMAT_PCM_UINT8 = 41,
+
+    /** 16-bit signed integer, native endian. */
+    ROC_SUBFORMAT_PCM_SINT16 = 50,
+    /** 16-bit signed integer, little endian. */
+    ROC_SUBFORMAT_PCM_SINT16_LE = 51,
+    /** 16-bit signed integer, big endian. */
+    ROC_SUBFORMAT_PCM_SINT16_BE = 52,
+    /** 16-bit unsigned integer, native endian. */
+    ROC_SUBFORMAT_PCM_UINT16 = 53,
+    /** 16-bit unsigned integer, little endian. */
+    ROC_SUBFORMAT_PCM_UINT16_LE = 54,
+    /** 16-bit unsigned integer, big endian. */
+    ROC_SUBFORMAT_PCM_UINT16_BE = 55,
+
+    /** 24-bit signed integer, native endian. */
+    ROC_SUBFORMAT_PCM_SINT24 = 60,
+    /** 24-bit signed integer, little endian. */
+    ROC_SUBFORMAT_PCM_SINT24_LE = 61,
+    /** 24-bit signed integer, big endian. */
+    ROC_SUBFORMAT_PCM_SINT24_BE = 62,
+    /** 24-bit unsigned integer, native endian. */
+    ROC_SUBFORMAT_PCM_UINT24 = 63,
+    /** 24-bit unsigned integer, little endian. */
+    ROC_SUBFORMAT_PCM_UINT24_LE = 64,
+    /** 24-bit unsigned integer, big endian. */
+    ROC_SUBFORMAT_PCM_UINT24_BE = 65,
+
+    /** 32-bit signed integer, native endian. */
+    ROC_SUBFORMAT_PCM_SINT32 = 70,
+    /** 32-bit signed integer, little endian. */
+    ROC_SUBFORMAT_PCM_SINT32_LE = 71,
+    /** 32-bit signed integer, big endian. */
+    ROC_SUBFORMAT_PCM_SINT32_BE = 72,
+    /** 32-bit unsigned integer, native endian. */
+    ROC_SUBFORMAT_PCM_UINT32 = 73,
+    /** 32-bit unsigned integer, little endian. */
+    ROC_SUBFORMAT_PCM_UINT32_LE = 74,
+    /** 32-bit unsigned integer, big endian. */
+    ROC_SUBFORMAT_PCM_UINT32_BE = 75,
+
+    /** 64-bit signed integer, native endian. */
+    ROC_SUBFORMAT_PCM_SINT64 = 80,
+    /** 64-bit signed integer, little endian. */
+    ROC_SUBFORMAT_PCM_SINT64_LE = 81,
+    /** 64-bit signed integer, big endian. */
+    ROC_SUBFORMAT_PCM_SINT64_BE = 82,
+    /** 64-bit unsigned integer, native endian. */
+    ROC_SUBFORMAT_PCM_UINT64 = 83,
+    /** 64-bit unsigned integer, little endian. */
+    ROC_SUBFORMAT_PCM_UINT64_LE = 84,
+    /** 64-bit unsigned integer, big endian. */
+    ROC_SUBFORMAT_PCM_UINT64_BE = 85,
+
+    /** 32-bit IEEE-754 float in range [-1.0; +1.0], native endian. */
+    ROC_SUBFORMAT_PCM_FLOAT32 = 90,
+    /** 32-bit IEEE-754 float in range [-1.0; +1.0], little endian. */
+    ROC_SUBFORMAT_PCM_FLOAT32_LE = 91,
+    /** 32-bit IEEE-754 float in range [-1.0; +1.0], big endian. */
+    ROC_SUBFORMAT_PCM_FLOAT32_BE = 92,
+    /** 64-bit IEEE-754 float in range [-1.0; +1.0], native endian. */
+    ROC_SUBFORMAT_PCM_FLOAT64 = 93,
+    /** 64-bit IEEE-754 float in range [-1.0; +1.0], little endian. */
+    ROC_SUBFORMAT_PCM_FLOAT64_LE = 94,
+    /** 64-bit IEEE-754 float in range [-1.0; +1.0], big endian. */
+    ROC_SUBFORMAT_PCM_FLOAT64_BE = 95,
+} roc_subformat;
 
 /** Channel layout.
  * Defines number of channels and meaning of each channel.
  */
 typedef enum roc_channel_layout {
+    /** Mono.
+     * One channel with monophonic sound.
+     */
+    ROC_CHANNEL_LAYOUT_MONO = 1,
+
+    /** Stereo.
+     * Two channels: left, right.
+     */
+    ROC_CHANNEL_LAYOUT_STEREO = 2,
+
     /** Multi-track audio.
      *
      * In multitrack layout, stream contains multiple channels which represent
@@ -339,35 +433,33 @@ typedef enum roc_channel_layout {
      * The number of channels is arbitrary and is defined by \c tracks field of
      * \ref roc_media_encoding struct.
      */
-    ROC_CHANNEL_LAYOUT_MULTITRACK = 1,
-
-    /** Mono.
-     * One channel with monophonic sound.
-     */
-    ROC_CHANNEL_LAYOUT_MONO = 2,
-
-    /** Stereo.
-     * Two channels: left, right.
-     */
-    ROC_CHANNEL_LAYOUT_STEREO = 3,
+    ROC_CHANNEL_LAYOUT_MULTITRACK = 4
 } roc_channel_layout;
 
 /** Media encoding.
  * Defines format and parameters of samples encoded in frames or packets.
  */
 typedef struct roc_media_encoding {
-    /** Sample frequency.
-     * Defines number of samples per channel per second (e.g. 44100).
-     */
-    unsigned int rate;
-
     /** Sample format.
-     * Defines sample precision and encoding.
+     * Defines sample binary coding.
      */
     roc_format format;
 
+    /** Sample sub-format.
+     * Defines sample binary representation together with \c format.
+     * Allowed values depend on \c format.
+     */
+    roc_subformat subformat;
+
+    /** Sample frequency.
+     * Defines number of samples per channel per second (e.g. 44100).
+     * Allowed values may be limited by \c format.
+     */
+    unsigned int rate;
+
     /** Channel layout.
      * Defines number of channels and meaning of each channel.
+     * Allowed values may be limited by \c format.
      */
     roc_channel_layout channels;
 

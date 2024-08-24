@@ -22,7 +22,7 @@ namespace {
 enum { BufSz = 100, MaxBufSz = 500, SampleRate = 44100 };
 
 const SampleSpec sample_spec(SampleRate,
-                             Sample_RawFormat,
+                             PcmSubformat_Raw,
                              ChanLayout_Surround,
                              ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
@@ -333,7 +333,7 @@ TEST(mixer, clamp) {
 
 TEST(mixer, cts_one_reader) {
     // BufSz samples per second
-    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(BufSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts = 1000000000000;
 
@@ -362,7 +362,7 @@ TEST(mixer, cts_one_reader) {
 
 TEST(mixer, cts_two_readers) {
     // BufSz samples per second
-    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(BufSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts1 = 2000000000000;
     const core::nanoseconds_t start_ts2 = 1000000000000;
@@ -400,7 +400,7 @@ TEST(mixer, cts_two_readers) {
 
 TEST(mixer, cts_partial) {
     // BufSz samples per second
-    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(BufSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts1 = 2000000000000;
     const core::nanoseconds_t start_ts2 = 1000000000000;
@@ -445,7 +445,7 @@ TEST(mixer, cts_partial) {
 
 TEST(mixer, cts_prevent_overflow) {
     // BufSz samples per second
-    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(BufSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts1 = 9000000000000000000ll;
     const core::nanoseconds_t start_ts2 = 9100000000000000000ll;
@@ -487,7 +487,7 @@ TEST(mixer, cts_prevent_overflow) {
 }
 
 TEST(mixer, cts_disabled) {
-    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(BufSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts = 1000000000000;
 
@@ -735,7 +735,7 @@ TEST(mixer, soft_read_partial_end_two_readers) {
 // Soft reads and capture timestamps.
 TEST(mixer, soft_read_cts) {
     // BufSz samples per second
-    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(BufSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts = 1000000000000;
 
@@ -766,7 +766,7 @@ TEST(mixer, soft_read_cts) {
 // Soft reads and capture timestamps.
 TEST(mixer, soft_read_cts_partial) {
     // BufSz samples per second
-    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(BufSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts = 1000000000000;
 
@@ -798,7 +798,7 @@ TEST(mixer, soft_read_cts_partial) {
 // Same as above, but there are two readers, and one returns StatusDrain.
 TEST(mixer, soft_read_cts_two_readers) {
     // BufSz samples per second
-    const SampleSpec sample_spec(BufSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(BufSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
     const core::nanoseconds_t start_ts1 = 2000000000000;
     const core::nanoseconds_t start_ts2 = 1000000000000;

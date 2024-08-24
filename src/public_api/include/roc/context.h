@@ -80,7 +80,7 @@ ROC_API int roc_context_open(const roc_context_config* config, roc_context** res
  *
  * **Parameters**
  *  - \p context should point to an opened context
- *  - \p encoding_id should be in range [ROC_ENCODING_ID_MIN; ROC_ENCODING_ID_MAX]
+ *  - \p encoding_id should be in range [\c ROC_ENCODING_ID_MIN; \c ROC_ENCODING_ID_MAX]
  *  - \p encoding should point to valid encoding specification
  *
  * **Returns**
@@ -104,7 +104,7 @@ ROC_API int roc_context_register_encoding(roc_context* context,
  *
  * **Parameters**
  *  - \p context should point to an opened context
- *  - \p plugin_id should be in range [ROC_PLUGIN_ID_MIN; ROC_PLUGIN_ID_MAX]
+ *  - \p plugin_id should be in range [\c ROC_PLUGIN_ID_MIN; \c ROC_PLUGIN_ID_MAX]
  *  - \p plugin should point to plugin callback table
  *
  * **Returns**

@@ -7,7 +7,7 @@
  */
 
 #include "roc_audio/plc_reader.h"
-#include "roc_audio/sample_format.h"
+#include "roc_audio/format.h"
 #include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -33,8 +33,8 @@ PlcReader::PlcReader(IFrameReader& frame_reader,
     , got_first_signal_(false)
     , sample_spec_(sample_spec)
     , init_status_(status::NoStatus) {
-    if (!sample_spec_.is_valid() || sample_spec_.sample_format() != SampleFormat_Pcm) {
-        roc_panic("plc reader: required valid sample spec with pcm format: spec=%s",
+    if (!sample_spec_.is_complete() || !sample_spec_.is_pcm()) {
+        roc_panic("plc reader: required complete sample spec with pcm format: spec=%s",
                   sample_spec_to_str(sample_spec_).c_str());
     }
     if (sample_spec_ != plc_.sample_spec()) {

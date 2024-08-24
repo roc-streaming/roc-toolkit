@@ -1,8 +1,9 @@
 /*
- * THIS FILE IS AUTO-GENERATED USING `pcm_format_gen.py'. DO NOT EDIT!
+ * THIS FILE IS AUTO-GENERATED USING `pcm_subformat_gen.py'. DO NOT EDIT!
  */
 
-#include "roc_audio/pcm_format.h"
+#include "roc_audio/pcm_subformat.h"
+#include "roc_audio/pcm_subformat_rw.h"
 #include "roc_core/attributes.h"
 #include "roc_core/cpu_traits.h"
 #include "roc_core/stddefs.h"
@@ -2151,7 +2152,6 @@ template <> struct pcm_code_converter<PcmCode_Float64, PcmCode_Float64> {
     }
 };
 
-
 // N-byte native-endian sample
 template <class T> struct pcm_sample;
 
@@ -2358,54 +2358,6 @@ template <> struct pcm_sample<double> {
         } ROC_ATTR_PACKED_END octets;
     };
 };
-
-// Write octet at given byte-aligned bit offset
-inline void pcm_aligned_write(uint8_t* buffer, size_t& bit_offset, uint8_t arg) {
-    buffer[bit_offset >> 3] = arg;
-    bit_offset += 8;
-}
-
-// Read octet at given byte-aligned bit offset
-inline uint8_t pcm_aligned_read(const uint8_t* buffer, size_t& bit_offset) {
-    uint8_t ret = buffer[bit_offset >> 3];
-    bit_offset += 8;
-    return ret;
-}
-
-// Write value (at most 8 bits) at given unaligned bit offset
-inline void
-pcm_unaligned_write(uint8_t* buffer, size_t& bit_offset, size_t bit_length, uint8_t arg) {
-    size_t byte_index = (bit_offset >> 3);
-    size_t bit_index = (bit_offset & 0x7u);
-
-    if (bit_index == 0) {
-        buffer[byte_index] = 0;
-    }
-
-    buffer[byte_index] |= uint8_t(uint8_t(arg << (8 - bit_length)) >> bit_index);
-
-    if (bit_index + bit_length > 8) {
-        buffer[byte_index + 1] = uint8_t(arg << bit_index);
-    }
-
-    bit_offset += bit_length;
-}
-
-// Read value (at most 8 bits) at given unaligned bit offset
-inline uint8_t
-pcm_unaligned_read(const uint8_t* buffer, size_t& bit_offset, size_t bit_length) {
-    size_t byte_index = (bit_offset >> 3);
-    size_t bit_index = (bit_offset & 0x7u);
-
-    uint8_t ret = uint8_t(uint8_t(buffer[byte_index] << bit_index) >> (8 - bit_length));
-
-    if (bit_index + bit_length > 8) {
-        ret |= uint8_t(buffer[byte_index + 1] >> ((8 - bit_index) + (8 - bit_length)));
-    }
-
-    bit_offset += bit_length;
-    return ret;
-}
 
 // Sample packer / unpacker
 template <PcmCode, PcmEndian> struct pcm_packer;
@@ -4177,14 +4129,14 @@ struct pcm_mapper {
 
 // Select mapping function
 template <PcmCode InCode, PcmEndian InEndian>
-PcmMapFn pcm_map_to_raw(PcmFormat raw_format) {
+PcmMapFn pcm_map_to_raw(PcmSubformat raw_format) {
     switch (raw_format) {
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-    case PcmFormat_Float32:
-    case PcmFormat_Float32_Be:
+    case PcmSubformat_Float32:
+    case PcmSubformat_Float32_Be:
 #else
-    case PcmFormat_Float32:
-    case PcmFormat_Float32_Le:
+    case PcmSubformat_Float32:
+    case PcmSubformat_Float32_Le:
 #endif
         return &pcm_mapper<InCode, InEndian, PcmCode_Float32, PcmEndian_Default>::map;
     default:
@@ -4195,14 +4147,14 @@ PcmMapFn pcm_map_to_raw(PcmFormat raw_format) {
 
 // Select mapping function
 template <PcmCode OutCode, PcmEndian OutEndian>
-PcmMapFn pcm_map_from_raw(PcmFormat raw_format) {
+PcmMapFn pcm_map_from_raw(PcmSubformat raw_format) {
     switch (raw_format) {
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-    case PcmFormat_Float32:
-    case PcmFormat_Float32_Be:
+    case PcmSubformat_Float32:
+    case PcmSubformat_Float32_Be:
 #else
-    case PcmFormat_Float32:
-    case PcmFormat_Float32_Le:
+    case PcmSubformat_Float32:
+    case PcmSubformat_Float32_Le:
 #endif
         return &pcm_mapper<PcmCode_Float32, PcmEndian_Default, OutCode, OutEndian>::map;
     default:
@@ -4214,165 +4166,165 @@ PcmMapFn pcm_map_from_raw(PcmFormat raw_format) {
 } // namespace
 
 // Select mapping function
-PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
+PcmMapFn pcm_subformat_mapfn(PcmSubformat in_format, PcmSubformat out_format) {
     // non-raw to raw
     switch (in_format) {
-    case PcmFormat_SInt8:
+    case PcmSubformat_SInt8:
         return pcm_map_to_raw<PcmCode_SInt8, PcmEndian_Default>(out_format);
-    case PcmFormat_SInt8_Be:
+    case PcmSubformat_SInt8_Be:
         return pcm_map_to_raw<PcmCode_SInt8, PcmEndian_Big>(out_format);
-    case PcmFormat_SInt8_Le:
+    case PcmSubformat_SInt8_Le:
         return pcm_map_to_raw<PcmCode_SInt8, PcmEndian_Little>(out_format);
-    case PcmFormat_UInt8:
+    case PcmSubformat_UInt8:
         return pcm_map_to_raw<PcmCode_UInt8, PcmEndian_Default>(out_format);
-    case PcmFormat_UInt8_Be:
+    case PcmSubformat_UInt8_Be:
         return pcm_map_to_raw<PcmCode_UInt8, PcmEndian_Big>(out_format);
-    case PcmFormat_UInt8_Le:
+    case PcmSubformat_UInt8_Le:
         return pcm_map_to_raw<PcmCode_UInt8, PcmEndian_Little>(out_format);
-    case PcmFormat_SInt16:
+    case PcmSubformat_SInt16:
         return pcm_map_to_raw<PcmCode_SInt16, PcmEndian_Default>(out_format);
-    case PcmFormat_SInt16_Be:
+    case PcmSubformat_SInt16_Be:
         return pcm_map_to_raw<PcmCode_SInt16, PcmEndian_Big>(out_format);
-    case PcmFormat_SInt16_Le:
+    case PcmSubformat_SInt16_Le:
         return pcm_map_to_raw<PcmCode_SInt16, PcmEndian_Little>(out_format);
-    case PcmFormat_UInt16:
+    case PcmSubformat_UInt16:
         return pcm_map_to_raw<PcmCode_UInt16, PcmEndian_Default>(out_format);
-    case PcmFormat_UInt16_Be:
+    case PcmSubformat_UInt16_Be:
         return pcm_map_to_raw<PcmCode_UInt16, PcmEndian_Big>(out_format);
-    case PcmFormat_UInt16_Le:
+    case PcmSubformat_UInt16_Le:
         return pcm_map_to_raw<PcmCode_UInt16, PcmEndian_Little>(out_format);
-    case PcmFormat_SInt18:
+    case PcmSubformat_SInt18:
         return pcm_map_to_raw<PcmCode_SInt18, PcmEndian_Default>(out_format);
-    case PcmFormat_SInt18_Be:
+    case PcmSubformat_SInt18_Be:
         return pcm_map_to_raw<PcmCode_SInt18, PcmEndian_Big>(out_format);
-    case PcmFormat_SInt18_Le:
+    case PcmSubformat_SInt18_Le:
         return pcm_map_to_raw<PcmCode_SInt18, PcmEndian_Little>(out_format);
-    case PcmFormat_UInt18:
+    case PcmSubformat_UInt18:
         return pcm_map_to_raw<PcmCode_UInt18, PcmEndian_Default>(out_format);
-    case PcmFormat_UInt18_Be:
+    case PcmSubformat_UInt18_Be:
         return pcm_map_to_raw<PcmCode_UInt18, PcmEndian_Big>(out_format);
-    case PcmFormat_UInt18_Le:
+    case PcmSubformat_UInt18_Le:
         return pcm_map_to_raw<PcmCode_UInt18, PcmEndian_Little>(out_format);
-    case PcmFormat_SInt18_3:
+    case PcmSubformat_SInt18_3:
         return pcm_map_to_raw<PcmCode_SInt18_3, PcmEndian_Default>(out_format);
-    case PcmFormat_SInt18_3_Be:
+    case PcmSubformat_SInt18_3_Be:
         return pcm_map_to_raw<PcmCode_SInt18_3, PcmEndian_Big>(out_format);
-    case PcmFormat_SInt18_3_Le:
+    case PcmSubformat_SInt18_3_Le:
         return pcm_map_to_raw<PcmCode_SInt18_3, PcmEndian_Little>(out_format);
-    case PcmFormat_UInt18_3:
+    case PcmSubformat_UInt18_3:
         return pcm_map_to_raw<PcmCode_UInt18_3, PcmEndian_Default>(out_format);
-    case PcmFormat_UInt18_3_Be:
+    case PcmSubformat_UInt18_3_Be:
         return pcm_map_to_raw<PcmCode_UInt18_3, PcmEndian_Big>(out_format);
-    case PcmFormat_UInt18_3_Le:
+    case PcmSubformat_UInt18_3_Le:
         return pcm_map_to_raw<PcmCode_UInt18_3, PcmEndian_Little>(out_format);
-    case PcmFormat_SInt18_4:
+    case PcmSubformat_SInt18_4:
         return pcm_map_to_raw<PcmCode_SInt18_4, PcmEndian_Default>(out_format);
-    case PcmFormat_SInt18_4_Be:
+    case PcmSubformat_SInt18_4_Be:
         return pcm_map_to_raw<PcmCode_SInt18_4, PcmEndian_Big>(out_format);
-    case PcmFormat_SInt18_4_Le:
+    case PcmSubformat_SInt18_4_Le:
         return pcm_map_to_raw<PcmCode_SInt18_4, PcmEndian_Little>(out_format);
-    case PcmFormat_UInt18_4:
+    case PcmSubformat_UInt18_4:
         return pcm_map_to_raw<PcmCode_UInt18_4, PcmEndian_Default>(out_format);
-    case PcmFormat_UInt18_4_Be:
+    case PcmSubformat_UInt18_4_Be:
         return pcm_map_to_raw<PcmCode_UInt18_4, PcmEndian_Big>(out_format);
-    case PcmFormat_UInt18_4_Le:
+    case PcmSubformat_UInt18_4_Le:
         return pcm_map_to_raw<PcmCode_UInt18_4, PcmEndian_Little>(out_format);
-    case PcmFormat_SInt20:
+    case PcmSubformat_SInt20:
         return pcm_map_to_raw<PcmCode_SInt20, PcmEndian_Default>(out_format);
-    case PcmFormat_SInt20_Be:
+    case PcmSubformat_SInt20_Be:
         return pcm_map_to_raw<PcmCode_SInt20, PcmEndian_Big>(out_format);
-    case PcmFormat_SInt20_Le:
+    case PcmSubformat_SInt20_Le:
         return pcm_map_to_raw<PcmCode_SInt20, PcmEndian_Little>(out_format);
-    case PcmFormat_UInt20:
+    case PcmSubformat_UInt20:
         return pcm_map_to_raw<PcmCode_UInt20, PcmEndian_Default>(out_format);
-    case PcmFormat_UInt20_Be:
+    case PcmSubformat_UInt20_Be:
         return pcm_map_to_raw<PcmCode_UInt20, PcmEndian_Big>(out_format);
-    case PcmFormat_UInt20_Le:
+    case PcmSubformat_UInt20_Le:
         return pcm_map_to_raw<PcmCode_UInt20, PcmEndian_Little>(out_format);
-    case PcmFormat_SInt20_3:
+    case PcmSubformat_SInt20_3:
         return pcm_map_to_raw<PcmCode_SInt20_3, PcmEndian_Default>(out_format);
-    case PcmFormat_SInt20_3_Be:
+    case PcmSubformat_SInt20_3_Be:
         return pcm_map_to_raw<PcmCode_SInt20_3, PcmEndian_Big>(out_format);
-    case PcmFormat_SInt20_3_Le:
+    case PcmSubformat_SInt20_3_Le:
         return pcm_map_to_raw<PcmCode_SInt20_3, PcmEndian_Little>(out_format);
-    case PcmFormat_UInt20_3:
+    case PcmSubformat_UInt20_3:
         return pcm_map_to_raw<PcmCode_UInt20_3, PcmEndian_Default>(out_format);
-    case PcmFormat_UInt20_3_Be:
+    case PcmSubformat_UInt20_3_Be:
         return pcm_map_to_raw<PcmCode_UInt20_3, PcmEndian_Big>(out_format);
-    case PcmFormat_UInt20_3_Le:
+    case PcmSubformat_UInt20_3_Le:
         return pcm_map_to_raw<PcmCode_UInt20_3, PcmEndian_Little>(out_format);
-    case PcmFormat_SInt20_4:
+    case PcmSubformat_SInt20_4:
         return pcm_map_to_raw<PcmCode_SInt20_4, PcmEndian_Default>(out_format);
-    case PcmFormat_SInt20_4_Be:
+    case PcmSubformat_SInt20_4_Be:
         return pcm_map_to_raw<PcmCode_SInt20_4, PcmEndian_Big>(out_format);
-    case PcmFormat_SInt20_4_Le:
+    case PcmSubformat_SInt20_4_Le:
         return pcm_map_to_raw<PcmCode_SInt20_4, PcmEndian_Little>(out_format);
-    case PcmFormat_UInt20_4:
+    case PcmSubformat_UInt20_4:
         return pcm_map_to_raw<PcmCode_UInt20_4, PcmEndian_Default>(out_format);
-    case PcmFormat_UInt20_4_Be:
+    case PcmSubformat_UInt20_4_Be:
         return pcm_map_to_raw<PcmCode_UInt20_4, PcmEndian_Big>(out_format);
-    case PcmFormat_UInt20_4_Le:
+    case PcmSubformat_UInt20_4_Le:
         return pcm_map_to_raw<PcmCode_UInt20_4, PcmEndian_Little>(out_format);
-    case PcmFormat_SInt24:
+    case PcmSubformat_SInt24:
         return pcm_map_to_raw<PcmCode_SInt24, PcmEndian_Default>(out_format);
-    case PcmFormat_SInt24_Be:
+    case PcmSubformat_SInt24_Be:
         return pcm_map_to_raw<PcmCode_SInt24, PcmEndian_Big>(out_format);
-    case PcmFormat_SInt24_Le:
+    case PcmSubformat_SInt24_Le:
         return pcm_map_to_raw<PcmCode_SInt24, PcmEndian_Little>(out_format);
-    case PcmFormat_UInt24:
+    case PcmSubformat_UInt24:
         return pcm_map_to_raw<PcmCode_UInt24, PcmEndian_Default>(out_format);
-    case PcmFormat_UInt24_Be:
+    case PcmSubformat_UInt24_Be:
         return pcm_map_to_raw<PcmCode_UInt24, PcmEndian_Big>(out_format);
-    case PcmFormat_UInt24_Le:
+    case PcmSubformat_UInt24_Le:
         return pcm_map_to_raw<PcmCode_UInt24, PcmEndian_Little>(out_format);
-    case PcmFormat_SInt24_4:
+    case PcmSubformat_SInt24_4:
         return pcm_map_to_raw<PcmCode_SInt24_4, PcmEndian_Default>(out_format);
-    case PcmFormat_SInt24_4_Be:
+    case PcmSubformat_SInt24_4_Be:
         return pcm_map_to_raw<PcmCode_SInt24_4, PcmEndian_Big>(out_format);
-    case PcmFormat_SInt24_4_Le:
+    case PcmSubformat_SInt24_4_Le:
         return pcm_map_to_raw<PcmCode_SInt24_4, PcmEndian_Little>(out_format);
-    case PcmFormat_UInt24_4:
+    case PcmSubformat_UInt24_4:
         return pcm_map_to_raw<PcmCode_UInt24_4, PcmEndian_Default>(out_format);
-    case PcmFormat_UInt24_4_Be:
+    case PcmSubformat_UInt24_4_Be:
         return pcm_map_to_raw<PcmCode_UInt24_4, PcmEndian_Big>(out_format);
-    case PcmFormat_UInt24_4_Le:
+    case PcmSubformat_UInt24_4_Le:
         return pcm_map_to_raw<PcmCode_UInt24_4, PcmEndian_Little>(out_format);
-    case PcmFormat_SInt32:
+    case PcmSubformat_SInt32:
         return pcm_map_to_raw<PcmCode_SInt32, PcmEndian_Default>(out_format);
-    case PcmFormat_SInt32_Be:
+    case PcmSubformat_SInt32_Be:
         return pcm_map_to_raw<PcmCode_SInt32, PcmEndian_Big>(out_format);
-    case PcmFormat_SInt32_Le:
+    case PcmSubformat_SInt32_Le:
         return pcm_map_to_raw<PcmCode_SInt32, PcmEndian_Little>(out_format);
-    case PcmFormat_UInt32:
+    case PcmSubformat_UInt32:
         return pcm_map_to_raw<PcmCode_UInt32, PcmEndian_Default>(out_format);
-    case PcmFormat_UInt32_Be:
+    case PcmSubformat_UInt32_Be:
         return pcm_map_to_raw<PcmCode_UInt32, PcmEndian_Big>(out_format);
-    case PcmFormat_UInt32_Le:
+    case PcmSubformat_UInt32_Le:
         return pcm_map_to_raw<PcmCode_UInt32, PcmEndian_Little>(out_format);
-    case PcmFormat_SInt64:
+    case PcmSubformat_SInt64:
         return pcm_map_to_raw<PcmCode_SInt64, PcmEndian_Default>(out_format);
-    case PcmFormat_SInt64_Be:
+    case PcmSubformat_SInt64_Be:
         return pcm_map_to_raw<PcmCode_SInt64, PcmEndian_Big>(out_format);
-    case PcmFormat_SInt64_Le:
+    case PcmSubformat_SInt64_Le:
         return pcm_map_to_raw<PcmCode_SInt64, PcmEndian_Little>(out_format);
-    case PcmFormat_UInt64:
+    case PcmSubformat_UInt64:
         return pcm_map_to_raw<PcmCode_UInt64, PcmEndian_Default>(out_format);
-    case PcmFormat_UInt64_Be:
+    case PcmSubformat_UInt64_Be:
         return pcm_map_to_raw<PcmCode_UInt64, PcmEndian_Big>(out_format);
-    case PcmFormat_UInt64_Le:
+    case PcmSubformat_UInt64_Le:
         return pcm_map_to_raw<PcmCode_UInt64, PcmEndian_Little>(out_format);
 #if ROC_CPU_ENDIAN != ROC_CPU_BE
-    case PcmFormat_Float32_Be:
+    case PcmSubformat_Float32_Be:
         return pcm_map_to_raw<PcmCode_Float32, PcmEndian_Big>(out_format);
 #else
-    case PcmFormat_Float32_Le:
+    case PcmSubformat_Float32_Le:
         return pcm_map_to_raw<PcmCode_Float32, PcmEndian_Little>(out_format);
 #endif
-    case PcmFormat_Float64:
+    case PcmSubformat_Float64:
         return pcm_map_to_raw<PcmCode_Float64, PcmEndian_Default>(out_format);
-    case PcmFormat_Float64_Be:
+    case PcmSubformat_Float64_Be:
         return pcm_map_to_raw<PcmCode_Float64, PcmEndian_Big>(out_format);
-    case PcmFormat_Float64_Le:
+    case PcmSubformat_Float64_Le:
         return pcm_map_to_raw<PcmCode_Float64, PcmEndian_Little>(out_format);
     default:
         break;
@@ -4380,162 +4332,162 @@ PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
 
     // raw to non-raw
     switch (out_format) {
-    case PcmFormat_SInt8:
+    case PcmSubformat_SInt8:
         return pcm_map_from_raw<PcmCode_SInt8, PcmEndian_Default>(in_format);
-    case PcmFormat_SInt8_Be:
+    case PcmSubformat_SInt8_Be:
         return pcm_map_from_raw<PcmCode_SInt8, PcmEndian_Big>(in_format);
-    case PcmFormat_SInt8_Le:
+    case PcmSubformat_SInt8_Le:
         return pcm_map_from_raw<PcmCode_SInt8, PcmEndian_Little>(in_format);
-    case PcmFormat_UInt8:
+    case PcmSubformat_UInt8:
         return pcm_map_from_raw<PcmCode_UInt8, PcmEndian_Default>(in_format);
-    case PcmFormat_UInt8_Be:
+    case PcmSubformat_UInt8_Be:
         return pcm_map_from_raw<PcmCode_UInt8, PcmEndian_Big>(in_format);
-    case PcmFormat_UInt8_Le:
+    case PcmSubformat_UInt8_Le:
         return pcm_map_from_raw<PcmCode_UInt8, PcmEndian_Little>(in_format);
-    case PcmFormat_SInt16:
+    case PcmSubformat_SInt16:
         return pcm_map_from_raw<PcmCode_SInt16, PcmEndian_Default>(in_format);
-    case PcmFormat_SInt16_Be:
+    case PcmSubformat_SInt16_Be:
         return pcm_map_from_raw<PcmCode_SInt16, PcmEndian_Big>(in_format);
-    case PcmFormat_SInt16_Le:
+    case PcmSubformat_SInt16_Le:
         return pcm_map_from_raw<PcmCode_SInt16, PcmEndian_Little>(in_format);
-    case PcmFormat_UInt16:
+    case PcmSubformat_UInt16:
         return pcm_map_from_raw<PcmCode_UInt16, PcmEndian_Default>(in_format);
-    case PcmFormat_UInt16_Be:
+    case PcmSubformat_UInt16_Be:
         return pcm_map_from_raw<PcmCode_UInt16, PcmEndian_Big>(in_format);
-    case PcmFormat_UInt16_Le:
+    case PcmSubformat_UInt16_Le:
         return pcm_map_from_raw<PcmCode_UInt16, PcmEndian_Little>(in_format);
-    case PcmFormat_SInt18:
+    case PcmSubformat_SInt18:
         return pcm_map_from_raw<PcmCode_SInt18, PcmEndian_Default>(in_format);
-    case PcmFormat_SInt18_Be:
+    case PcmSubformat_SInt18_Be:
         return pcm_map_from_raw<PcmCode_SInt18, PcmEndian_Big>(in_format);
-    case PcmFormat_SInt18_Le:
+    case PcmSubformat_SInt18_Le:
         return pcm_map_from_raw<PcmCode_SInt18, PcmEndian_Little>(in_format);
-    case PcmFormat_UInt18:
+    case PcmSubformat_UInt18:
         return pcm_map_from_raw<PcmCode_UInt18, PcmEndian_Default>(in_format);
-    case PcmFormat_UInt18_Be:
+    case PcmSubformat_UInt18_Be:
         return pcm_map_from_raw<PcmCode_UInt18, PcmEndian_Big>(in_format);
-    case PcmFormat_UInt18_Le:
+    case PcmSubformat_UInt18_Le:
         return pcm_map_from_raw<PcmCode_UInt18, PcmEndian_Little>(in_format);
-    case PcmFormat_SInt18_3:
+    case PcmSubformat_SInt18_3:
         return pcm_map_from_raw<PcmCode_SInt18_3, PcmEndian_Default>(in_format);
-    case PcmFormat_SInt18_3_Be:
+    case PcmSubformat_SInt18_3_Be:
         return pcm_map_from_raw<PcmCode_SInt18_3, PcmEndian_Big>(in_format);
-    case PcmFormat_SInt18_3_Le:
+    case PcmSubformat_SInt18_3_Le:
         return pcm_map_from_raw<PcmCode_SInt18_3, PcmEndian_Little>(in_format);
-    case PcmFormat_UInt18_3:
+    case PcmSubformat_UInt18_3:
         return pcm_map_from_raw<PcmCode_UInt18_3, PcmEndian_Default>(in_format);
-    case PcmFormat_UInt18_3_Be:
+    case PcmSubformat_UInt18_3_Be:
         return pcm_map_from_raw<PcmCode_UInt18_3, PcmEndian_Big>(in_format);
-    case PcmFormat_UInt18_3_Le:
+    case PcmSubformat_UInt18_3_Le:
         return pcm_map_from_raw<PcmCode_UInt18_3, PcmEndian_Little>(in_format);
-    case PcmFormat_SInt18_4:
+    case PcmSubformat_SInt18_4:
         return pcm_map_from_raw<PcmCode_SInt18_4, PcmEndian_Default>(in_format);
-    case PcmFormat_SInt18_4_Be:
+    case PcmSubformat_SInt18_4_Be:
         return pcm_map_from_raw<PcmCode_SInt18_4, PcmEndian_Big>(in_format);
-    case PcmFormat_SInt18_4_Le:
+    case PcmSubformat_SInt18_4_Le:
         return pcm_map_from_raw<PcmCode_SInt18_4, PcmEndian_Little>(in_format);
-    case PcmFormat_UInt18_4:
+    case PcmSubformat_UInt18_4:
         return pcm_map_from_raw<PcmCode_UInt18_4, PcmEndian_Default>(in_format);
-    case PcmFormat_UInt18_4_Be:
+    case PcmSubformat_UInt18_4_Be:
         return pcm_map_from_raw<PcmCode_UInt18_4, PcmEndian_Big>(in_format);
-    case PcmFormat_UInt18_4_Le:
+    case PcmSubformat_UInt18_4_Le:
         return pcm_map_from_raw<PcmCode_UInt18_4, PcmEndian_Little>(in_format);
-    case PcmFormat_SInt20:
+    case PcmSubformat_SInt20:
         return pcm_map_from_raw<PcmCode_SInt20, PcmEndian_Default>(in_format);
-    case PcmFormat_SInt20_Be:
+    case PcmSubformat_SInt20_Be:
         return pcm_map_from_raw<PcmCode_SInt20, PcmEndian_Big>(in_format);
-    case PcmFormat_SInt20_Le:
+    case PcmSubformat_SInt20_Le:
         return pcm_map_from_raw<PcmCode_SInt20, PcmEndian_Little>(in_format);
-    case PcmFormat_UInt20:
+    case PcmSubformat_UInt20:
         return pcm_map_from_raw<PcmCode_UInt20, PcmEndian_Default>(in_format);
-    case PcmFormat_UInt20_Be:
+    case PcmSubformat_UInt20_Be:
         return pcm_map_from_raw<PcmCode_UInt20, PcmEndian_Big>(in_format);
-    case PcmFormat_UInt20_Le:
+    case PcmSubformat_UInt20_Le:
         return pcm_map_from_raw<PcmCode_UInt20, PcmEndian_Little>(in_format);
-    case PcmFormat_SInt20_3:
+    case PcmSubformat_SInt20_3:
         return pcm_map_from_raw<PcmCode_SInt20_3, PcmEndian_Default>(in_format);
-    case PcmFormat_SInt20_3_Be:
+    case PcmSubformat_SInt20_3_Be:
         return pcm_map_from_raw<PcmCode_SInt20_3, PcmEndian_Big>(in_format);
-    case PcmFormat_SInt20_3_Le:
+    case PcmSubformat_SInt20_3_Le:
         return pcm_map_from_raw<PcmCode_SInt20_3, PcmEndian_Little>(in_format);
-    case PcmFormat_UInt20_3:
+    case PcmSubformat_UInt20_3:
         return pcm_map_from_raw<PcmCode_UInt20_3, PcmEndian_Default>(in_format);
-    case PcmFormat_UInt20_3_Be:
+    case PcmSubformat_UInt20_3_Be:
         return pcm_map_from_raw<PcmCode_UInt20_3, PcmEndian_Big>(in_format);
-    case PcmFormat_UInt20_3_Le:
+    case PcmSubformat_UInt20_3_Le:
         return pcm_map_from_raw<PcmCode_UInt20_3, PcmEndian_Little>(in_format);
-    case PcmFormat_SInt20_4:
+    case PcmSubformat_SInt20_4:
         return pcm_map_from_raw<PcmCode_SInt20_4, PcmEndian_Default>(in_format);
-    case PcmFormat_SInt20_4_Be:
+    case PcmSubformat_SInt20_4_Be:
         return pcm_map_from_raw<PcmCode_SInt20_4, PcmEndian_Big>(in_format);
-    case PcmFormat_SInt20_4_Le:
+    case PcmSubformat_SInt20_4_Le:
         return pcm_map_from_raw<PcmCode_SInt20_4, PcmEndian_Little>(in_format);
-    case PcmFormat_UInt20_4:
+    case PcmSubformat_UInt20_4:
         return pcm_map_from_raw<PcmCode_UInt20_4, PcmEndian_Default>(in_format);
-    case PcmFormat_UInt20_4_Be:
+    case PcmSubformat_UInt20_4_Be:
         return pcm_map_from_raw<PcmCode_UInt20_4, PcmEndian_Big>(in_format);
-    case PcmFormat_UInt20_4_Le:
+    case PcmSubformat_UInt20_4_Le:
         return pcm_map_from_raw<PcmCode_UInt20_4, PcmEndian_Little>(in_format);
-    case PcmFormat_SInt24:
+    case PcmSubformat_SInt24:
         return pcm_map_from_raw<PcmCode_SInt24, PcmEndian_Default>(in_format);
-    case PcmFormat_SInt24_Be:
+    case PcmSubformat_SInt24_Be:
         return pcm_map_from_raw<PcmCode_SInt24, PcmEndian_Big>(in_format);
-    case PcmFormat_SInt24_Le:
+    case PcmSubformat_SInt24_Le:
         return pcm_map_from_raw<PcmCode_SInt24, PcmEndian_Little>(in_format);
-    case PcmFormat_UInt24:
+    case PcmSubformat_UInt24:
         return pcm_map_from_raw<PcmCode_UInt24, PcmEndian_Default>(in_format);
-    case PcmFormat_UInt24_Be:
+    case PcmSubformat_UInt24_Be:
         return pcm_map_from_raw<PcmCode_UInt24, PcmEndian_Big>(in_format);
-    case PcmFormat_UInt24_Le:
+    case PcmSubformat_UInt24_Le:
         return pcm_map_from_raw<PcmCode_UInt24, PcmEndian_Little>(in_format);
-    case PcmFormat_SInt24_4:
+    case PcmSubformat_SInt24_4:
         return pcm_map_from_raw<PcmCode_SInt24_4, PcmEndian_Default>(in_format);
-    case PcmFormat_SInt24_4_Be:
+    case PcmSubformat_SInt24_4_Be:
         return pcm_map_from_raw<PcmCode_SInt24_4, PcmEndian_Big>(in_format);
-    case PcmFormat_SInt24_4_Le:
+    case PcmSubformat_SInt24_4_Le:
         return pcm_map_from_raw<PcmCode_SInt24_4, PcmEndian_Little>(in_format);
-    case PcmFormat_UInt24_4:
+    case PcmSubformat_UInt24_4:
         return pcm_map_from_raw<PcmCode_UInt24_4, PcmEndian_Default>(in_format);
-    case PcmFormat_UInt24_4_Be:
+    case PcmSubformat_UInt24_4_Be:
         return pcm_map_from_raw<PcmCode_UInt24_4, PcmEndian_Big>(in_format);
-    case PcmFormat_UInt24_4_Le:
+    case PcmSubformat_UInt24_4_Le:
         return pcm_map_from_raw<PcmCode_UInt24_4, PcmEndian_Little>(in_format);
-    case PcmFormat_SInt32:
+    case PcmSubformat_SInt32:
         return pcm_map_from_raw<PcmCode_SInt32, PcmEndian_Default>(in_format);
-    case PcmFormat_SInt32_Be:
+    case PcmSubformat_SInt32_Be:
         return pcm_map_from_raw<PcmCode_SInt32, PcmEndian_Big>(in_format);
-    case PcmFormat_SInt32_Le:
+    case PcmSubformat_SInt32_Le:
         return pcm_map_from_raw<PcmCode_SInt32, PcmEndian_Little>(in_format);
-    case PcmFormat_UInt32:
+    case PcmSubformat_UInt32:
         return pcm_map_from_raw<PcmCode_UInt32, PcmEndian_Default>(in_format);
-    case PcmFormat_UInt32_Be:
+    case PcmSubformat_UInt32_Be:
         return pcm_map_from_raw<PcmCode_UInt32, PcmEndian_Big>(in_format);
-    case PcmFormat_UInt32_Le:
+    case PcmSubformat_UInt32_Le:
         return pcm_map_from_raw<PcmCode_UInt32, PcmEndian_Little>(in_format);
-    case PcmFormat_SInt64:
+    case PcmSubformat_SInt64:
         return pcm_map_from_raw<PcmCode_SInt64, PcmEndian_Default>(in_format);
-    case PcmFormat_SInt64_Be:
+    case PcmSubformat_SInt64_Be:
         return pcm_map_from_raw<PcmCode_SInt64, PcmEndian_Big>(in_format);
-    case PcmFormat_SInt64_Le:
+    case PcmSubformat_SInt64_Le:
         return pcm_map_from_raw<PcmCode_SInt64, PcmEndian_Little>(in_format);
-    case PcmFormat_UInt64:
+    case PcmSubformat_UInt64:
         return pcm_map_from_raw<PcmCode_UInt64, PcmEndian_Default>(in_format);
-    case PcmFormat_UInt64_Be:
+    case PcmSubformat_UInt64_Be:
         return pcm_map_from_raw<PcmCode_UInt64, PcmEndian_Big>(in_format);
-    case PcmFormat_UInt64_Le:
+    case PcmSubformat_UInt64_Le:
         return pcm_map_from_raw<PcmCode_UInt64, PcmEndian_Little>(in_format);
 #if ROC_CPU_ENDIAN != ROC_CPU_BE
-    case PcmFormat_Float32_Be:
+    case PcmSubformat_Float32_Be:
         return pcm_map_from_raw<PcmCode_Float32, PcmEndian_Big>(in_format);
 #else
-    case PcmFormat_Float32_Le:
+    case PcmSubformat_Float32_Le:
         return pcm_map_from_raw<PcmCode_Float32, PcmEndian_Little>(in_format);
 #endif
-    case PcmFormat_Float64:
+    case PcmSubformat_Float64:
         return pcm_map_from_raw<PcmCode_Float64, PcmEndian_Default>(in_format);
-    case PcmFormat_Float64_Be:
+    case PcmSubformat_Float64_Be:
         return pcm_map_from_raw<PcmCode_Float64, PcmEndian_Big>(in_format);
-    case PcmFormat_Float64_Le:
+    case PcmSubformat_Float64_Le:
         return pcm_map_from_raw<PcmCode_Float64, PcmEndian_Little>(in_format);
     default:
         break;
@@ -4543,13 +4495,13 @@ PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
 
     // raw to raw
     switch (out_format) {
-    case PcmFormat_Float32:
+    case PcmSubformat_Float32:
         return pcm_map_from_raw<PcmCode_Float32, PcmEndian_Default>(in_format);
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
-    case PcmFormat_Float32_Be:
+    case PcmSubformat_Float32_Be:
         return pcm_map_from_raw<PcmCode_Float32, PcmEndian_Default>(in_format);
 #else
-    case PcmFormat_Float32_Le:
+    case PcmSubformat_Float32_Le:
         return pcm_map_from_raw<PcmCode_Float32, PcmEndian_Default>(in_format);
 #endif
     default:
@@ -4560,27 +4512,31 @@ PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
 }
 
 // Get format traits
-PcmTraits pcm_format_traits(PcmFormat format) {
+PcmTraits pcm_subformat_traits(PcmSubformat format) {
     PcmTraits traits;
 
     switch (format) {
-    case PcmFormat_SInt8:
+    case PcmSubformat_SInt8:
+        traits.id = PcmSubformat_SInt8;
+        traits.name = "s8";
         traits.bit_width = 8;
         traits.bit_depth = 8;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_SInt8_Be;
+        traits.portable_alias = PcmSubformat_SInt8_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_SInt8_Le;
+        traits.portable_alias = PcmSubformat_SInt8_Le;
 #endif
-        traits.default_variant = PcmFormat_SInt8;
-        traits.be_variant = PcmFormat_SInt8_Be;
-        traits.le_variant = PcmFormat_SInt8_Le;
+        traits.default_variant = PcmSubformat_SInt8;
+        traits.be_variant = PcmSubformat_SInt8_Be;
+        traits.le_variant = PcmSubformat_SInt8_Le;
         break;
 
-    case PcmFormat_SInt8_Be:
+    case PcmSubformat_SInt8_Be:
+        traits.id = PcmSubformat_SInt8_Be;
+        traits.name = "s8_be";
         traits.bit_width = 8;
         traits.bit_depth = 8;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
@@ -4589,13 +4545,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_SInt8_Be;
-        traits.default_variant = PcmFormat_SInt8;
-        traits.be_variant = PcmFormat_SInt8_Be;
-        traits.le_variant = PcmFormat_SInt8_Le;
+        traits.portable_alias = PcmSubformat_SInt8_Be;
+        traits.default_variant = PcmSubformat_SInt8;
+        traits.be_variant = PcmSubformat_SInt8_Be;
+        traits.le_variant = PcmSubformat_SInt8_Le;
         break;
 
-    case PcmFormat_SInt8_Le:
+    case PcmSubformat_SInt8_Le:
+        traits.id = PcmSubformat_SInt8_Le;
+        traits.name = "s8_le";
         traits.bit_width = 8;
         traits.bit_depth = 8;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
@@ -4604,29 +4562,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_SInt8_Le;
-        traits.default_variant = PcmFormat_SInt8;
-        traits.be_variant = PcmFormat_SInt8_Be;
-        traits.le_variant = PcmFormat_SInt8_Le;
+        traits.portable_alias = PcmSubformat_SInt8_Le;
+        traits.default_variant = PcmSubformat_SInt8;
+        traits.be_variant = PcmSubformat_SInt8_Be;
+        traits.le_variant = PcmSubformat_SInt8_Le;
         break;
 
-    case PcmFormat_UInt8:
+    case PcmSubformat_UInt8:
+        traits.id = PcmSubformat_UInt8;
+        traits.name = "u8";
         traits.bit_width = 8;
         traits.bit_depth = 8;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_UInt8_Be;
+        traits.portable_alias = PcmSubformat_UInt8_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_UInt8_Le;
+        traits.portable_alias = PcmSubformat_UInt8_Le;
 #endif
-        traits.default_variant = PcmFormat_UInt8;
-        traits.be_variant = PcmFormat_UInt8_Be;
-        traits.le_variant = PcmFormat_UInt8_Le;
+        traits.default_variant = PcmSubformat_UInt8;
+        traits.be_variant = PcmSubformat_UInt8_Be;
+        traits.le_variant = PcmSubformat_UInt8_Le;
         break;
 
-    case PcmFormat_UInt8_Be:
+    case PcmSubformat_UInt8_Be:
+        traits.id = PcmSubformat_UInt8_Be;
+        traits.name = "u8_be";
         traits.bit_width = 8;
         traits.bit_depth = 8;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
@@ -4635,13 +4597,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_UInt8_Be;
-        traits.default_variant = PcmFormat_UInt8;
-        traits.be_variant = PcmFormat_UInt8_Be;
-        traits.le_variant = PcmFormat_UInt8_Le;
+        traits.portable_alias = PcmSubformat_UInt8_Be;
+        traits.default_variant = PcmSubformat_UInt8;
+        traits.be_variant = PcmSubformat_UInt8_Be;
+        traits.le_variant = PcmSubformat_UInt8_Le;
         break;
 
-    case PcmFormat_UInt8_Le:
+    case PcmSubformat_UInt8_Le:
+        traits.id = PcmSubformat_UInt8_Le;
+        traits.name = "u8_le";
         traits.bit_width = 8;
         traits.bit_depth = 8;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
@@ -4650,29 +4614,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_UInt8_Le;
-        traits.default_variant = PcmFormat_UInt8;
-        traits.be_variant = PcmFormat_UInt8_Be;
-        traits.le_variant = PcmFormat_UInt8_Le;
+        traits.portable_alias = PcmSubformat_UInt8_Le;
+        traits.default_variant = PcmSubformat_UInt8;
+        traits.be_variant = PcmSubformat_UInt8_Be;
+        traits.le_variant = PcmSubformat_UInt8_Le;
         break;
 
-    case PcmFormat_SInt16:
+    case PcmSubformat_SInt16:
+        traits.id = PcmSubformat_SInt16;
+        traits.name = "s16";
         traits.bit_width = 16;
         traits.bit_depth = 16;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_SInt16_Be;
+        traits.portable_alias = PcmSubformat_SInt16_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_SInt16_Le;
+        traits.portable_alias = PcmSubformat_SInt16_Le;
 #endif
-        traits.default_variant = PcmFormat_SInt16;
-        traits.be_variant = PcmFormat_SInt16_Be;
-        traits.le_variant = PcmFormat_SInt16_Le;
+        traits.default_variant = PcmSubformat_SInt16;
+        traits.be_variant = PcmSubformat_SInt16_Be;
+        traits.le_variant = PcmSubformat_SInt16_Le;
         break;
 
-    case PcmFormat_SInt16_Be:
+    case PcmSubformat_SInt16_Be:
+        traits.id = PcmSubformat_SInt16_Be;
+        traits.name = "s16_be";
         traits.bit_width = 16;
         traits.bit_depth = 16;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
@@ -4681,13 +4649,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_SInt16_Be;
-        traits.default_variant = PcmFormat_SInt16;
-        traits.be_variant = PcmFormat_SInt16_Be;
-        traits.le_variant = PcmFormat_SInt16_Le;
+        traits.portable_alias = PcmSubformat_SInt16_Be;
+        traits.default_variant = PcmSubformat_SInt16;
+        traits.be_variant = PcmSubformat_SInt16_Be;
+        traits.le_variant = PcmSubformat_SInt16_Le;
         break;
 
-    case PcmFormat_SInt16_Le:
+    case PcmSubformat_SInt16_Le:
+        traits.id = PcmSubformat_SInt16_Le;
+        traits.name = "s16_le";
         traits.bit_width = 16;
         traits.bit_depth = 16;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
@@ -4696,29 +4666,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_SInt16_Le;
-        traits.default_variant = PcmFormat_SInt16;
-        traits.be_variant = PcmFormat_SInt16_Be;
-        traits.le_variant = PcmFormat_SInt16_Le;
+        traits.portable_alias = PcmSubformat_SInt16_Le;
+        traits.default_variant = PcmSubformat_SInt16;
+        traits.be_variant = PcmSubformat_SInt16_Be;
+        traits.le_variant = PcmSubformat_SInt16_Le;
         break;
 
-    case PcmFormat_UInt16:
+    case PcmSubformat_UInt16:
+        traits.id = PcmSubformat_UInt16;
+        traits.name = "u16";
         traits.bit_width = 16;
         traits.bit_depth = 16;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_UInt16_Be;
+        traits.portable_alias = PcmSubformat_UInt16_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_UInt16_Le;
+        traits.portable_alias = PcmSubformat_UInt16_Le;
 #endif
-        traits.default_variant = PcmFormat_UInt16;
-        traits.be_variant = PcmFormat_UInt16_Be;
-        traits.le_variant = PcmFormat_UInt16_Le;
+        traits.default_variant = PcmSubformat_UInt16;
+        traits.be_variant = PcmSubformat_UInt16_Be;
+        traits.le_variant = PcmSubformat_UInt16_Le;
         break;
 
-    case PcmFormat_UInt16_Be:
+    case PcmSubformat_UInt16_Be:
+        traits.id = PcmSubformat_UInt16_Be;
+        traits.name = "u16_be";
         traits.bit_width = 16;
         traits.bit_depth = 16;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
@@ -4727,13 +4701,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_UInt16_Be;
-        traits.default_variant = PcmFormat_UInt16;
-        traits.be_variant = PcmFormat_UInt16_Be;
-        traits.le_variant = PcmFormat_UInt16_Le;
+        traits.portable_alias = PcmSubformat_UInt16_Be;
+        traits.default_variant = PcmSubformat_UInt16;
+        traits.be_variant = PcmSubformat_UInt16_Be;
+        traits.le_variant = PcmSubformat_UInt16_Le;
         break;
 
-    case PcmFormat_UInt16_Le:
+    case PcmSubformat_UInt16_Le:
+        traits.id = PcmSubformat_UInt16_Le;
+        traits.name = "u16_le";
         traits.bit_width = 16;
         traits.bit_depth = 16;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
@@ -4742,29 +4718,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_UInt16_Le;
-        traits.default_variant = PcmFormat_UInt16;
-        traits.be_variant = PcmFormat_UInt16_Be;
-        traits.le_variant = PcmFormat_UInt16_Le;
+        traits.portable_alias = PcmSubformat_UInt16_Le;
+        traits.default_variant = PcmSubformat_UInt16;
+        traits.be_variant = PcmSubformat_UInt16_Be;
+        traits.le_variant = PcmSubformat_UInt16_Le;
         break;
 
-    case PcmFormat_SInt18:
+    case PcmSubformat_SInt18:
+        traits.id = PcmSubformat_SInt18;
+        traits.name = "s18";
         traits.bit_width = 18;
         traits.bit_depth = 18;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_SInt18_Be;
+        traits.portable_alias = PcmSubformat_SInt18_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_SInt18_Le;
+        traits.portable_alias = PcmSubformat_SInt18_Le;
 #endif
-        traits.default_variant = PcmFormat_SInt18;
-        traits.be_variant = PcmFormat_SInt18_Be;
-        traits.le_variant = PcmFormat_SInt18_Le;
+        traits.default_variant = PcmSubformat_SInt18;
+        traits.be_variant = PcmSubformat_SInt18_Be;
+        traits.le_variant = PcmSubformat_SInt18_Le;
         break;
 
-    case PcmFormat_SInt18_Be:
+    case PcmSubformat_SInt18_Be:
+        traits.id = PcmSubformat_SInt18_Be;
+        traits.name = "s18_be";
         traits.bit_width = 18;
         traits.bit_depth = 18;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
@@ -4773,13 +4753,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_SInt18_Be;
-        traits.default_variant = PcmFormat_SInt18;
-        traits.be_variant = PcmFormat_SInt18_Be;
-        traits.le_variant = PcmFormat_SInt18_Le;
+        traits.portable_alias = PcmSubformat_SInt18_Be;
+        traits.default_variant = PcmSubformat_SInt18;
+        traits.be_variant = PcmSubformat_SInt18_Be;
+        traits.le_variant = PcmSubformat_SInt18_Le;
         break;
 
-    case PcmFormat_SInt18_Le:
+    case PcmSubformat_SInt18_Le:
+        traits.id = PcmSubformat_SInt18_Le;
+        traits.name = "s18_le";
         traits.bit_width = 18;
         traits.bit_depth = 18;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
@@ -4788,320 +4770,362 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_SInt18_Le;
-        traits.default_variant = PcmFormat_SInt18;
-        traits.be_variant = PcmFormat_SInt18_Be;
-        traits.le_variant = PcmFormat_SInt18_Le;
+        traits.portable_alias = PcmSubformat_SInt18_Le;
+        traits.default_variant = PcmSubformat_SInt18;
+        traits.be_variant = PcmSubformat_SInt18_Be;
+        traits.le_variant = PcmSubformat_SInt18_Le;
         break;
 
-    case PcmFormat_UInt18:
+    case PcmSubformat_UInt18:
+        traits.id = PcmSubformat_UInt18;
+        traits.name = "u18";
         traits.bit_width = 18;
         traits.bit_depth = 18;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_UInt18_Be;
+        traits.portable_alias = PcmSubformat_UInt18_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_UInt18_Le;
+        traits.portable_alias = PcmSubformat_UInt18_Le;
 #endif
-        traits.default_variant = PcmFormat_UInt18;
-        traits.be_variant = PcmFormat_UInt18_Be;
-        traits.le_variant = PcmFormat_UInt18_Le;
+        traits.default_variant = PcmSubformat_UInt18;
+        traits.be_variant = PcmSubformat_UInt18_Be;
+        traits.le_variant = PcmSubformat_UInt18_Le;
         break;
 
-    case PcmFormat_UInt18_Be:
+    case PcmSubformat_UInt18_Be:
+        traits.id = PcmSubformat_UInt18_Be;
+        traits.name = "u18_be";
         traits.bit_width = 18;
         traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger | Pcm_IsPacked;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-#else
-        traits.flags |= Pcm_IsBig;
-#endif
-        traits.portable_alias = PcmFormat_UInt18_Be;
-        traits.default_variant = PcmFormat_UInt18;
-        traits.be_variant = PcmFormat_UInt18_Be;
-        traits.le_variant = PcmFormat_UInt18_Le;
-        break;
-
-    case PcmFormat_UInt18_Le:
-        traits.bit_width = 18;
-        traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger | Pcm_IsPacked;
-#if ROC_CPU_ENDIAN == ROC_CPU_LE
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-#else
-        traits.flags |= Pcm_IsLittle;
-#endif
-        traits.portable_alias = PcmFormat_UInt18_Le;
-        traits.default_variant = PcmFormat_UInt18;
-        traits.be_variant = PcmFormat_UInt18_Be;
-        traits.le_variant = PcmFormat_UInt18_Le;
-        break;
-
-    case PcmFormat_SInt18_3:
-        traits.bit_width = 24;
-        traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_SInt18_3_Be;
-#else
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_SInt18_3_Le;
-#endif
-        traits.default_variant = PcmFormat_SInt18_3;
-        traits.be_variant = PcmFormat_SInt18_3_Be;
-        traits.le_variant = PcmFormat_SInt18_3_Le;
-        break;
-
-    case PcmFormat_SInt18_3_Be:
-        traits.bit_width = 24;
-        traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-#else
-        traits.flags |= Pcm_IsBig;
-#endif
-        traits.portable_alias = PcmFormat_SInt18_3_Be;
-        traits.default_variant = PcmFormat_SInt18_3;
-        traits.be_variant = PcmFormat_SInt18_3_Be;
-        traits.le_variant = PcmFormat_SInt18_3_Le;
-        break;
-
-    case PcmFormat_SInt18_3_Le:
-        traits.bit_width = 24;
-        traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
-#if ROC_CPU_ENDIAN == ROC_CPU_LE
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-#else
-        traits.flags |= Pcm_IsLittle;
-#endif
-        traits.portable_alias = PcmFormat_SInt18_3_Le;
-        traits.default_variant = PcmFormat_SInt18_3;
-        traits.be_variant = PcmFormat_SInt18_3_Be;
-        traits.le_variant = PcmFormat_SInt18_3_Le;
-        break;
-
-    case PcmFormat_UInt18_3:
-        traits.bit_width = 24;
-        traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_UInt18_3_Be;
-#else
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_UInt18_3_Le;
-#endif
-        traits.default_variant = PcmFormat_UInt18_3;
-        traits.be_variant = PcmFormat_UInt18_3_Be;
-        traits.le_variant = PcmFormat_UInt18_3_Le;
-        break;
-
-    case PcmFormat_UInt18_3_Be:
-        traits.bit_width = 24;
-        traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-#else
-        traits.flags |= Pcm_IsBig;
-#endif
-        traits.portable_alias = PcmFormat_UInt18_3_Be;
-        traits.default_variant = PcmFormat_UInt18_3;
-        traits.be_variant = PcmFormat_UInt18_3_Be;
-        traits.le_variant = PcmFormat_UInt18_3_Le;
-        break;
-
-    case PcmFormat_UInt18_3_Le:
-        traits.bit_width = 24;
-        traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger;
-#if ROC_CPU_ENDIAN == ROC_CPU_LE
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-#else
-        traits.flags |= Pcm_IsLittle;
-#endif
-        traits.portable_alias = PcmFormat_UInt18_3_Le;
-        traits.default_variant = PcmFormat_UInt18_3;
-        traits.be_variant = PcmFormat_UInt18_3_Be;
-        traits.le_variant = PcmFormat_UInt18_3_Le;
-        break;
-
-    case PcmFormat_SInt18_4:
-        traits.bit_width = 32;
-        traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_SInt18_4_Be;
-#else
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_SInt18_4_Le;
-#endif
-        traits.default_variant = PcmFormat_SInt18_4;
-        traits.be_variant = PcmFormat_SInt18_4_Be;
-        traits.le_variant = PcmFormat_SInt18_4_Le;
-        break;
-
-    case PcmFormat_SInt18_4_Be:
-        traits.bit_width = 32;
-        traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-#else
-        traits.flags |= Pcm_IsBig;
-#endif
-        traits.portable_alias = PcmFormat_SInt18_4_Be;
-        traits.default_variant = PcmFormat_SInt18_4;
-        traits.be_variant = PcmFormat_SInt18_4_Be;
-        traits.le_variant = PcmFormat_SInt18_4_Le;
-        break;
-
-    case PcmFormat_SInt18_4_Le:
-        traits.bit_width = 32;
-        traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
-#if ROC_CPU_ENDIAN == ROC_CPU_LE
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-#else
-        traits.flags |= Pcm_IsLittle;
-#endif
-        traits.portable_alias = PcmFormat_SInt18_4_Le;
-        traits.default_variant = PcmFormat_SInt18_4;
-        traits.be_variant = PcmFormat_SInt18_4_Be;
-        traits.le_variant = PcmFormat_SInt18_4_Le;
-        break;
-
-    case PcmFormat_UInt18_4:
-        traits.bit_width = 32;
-        traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_UInt18_4_Be;
-#else
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_UInt18_4_Le;
-#endif
-        traits.default_variant = PcmFormat_UInt18_4;
-        traits.be_variant = PcmFormat_UInt18_4_Be;
-        traits.le_variant = PcmFormat_UInt18_4_Le;
-        break;
-
-    case PcmFormat_UInt18_4_Be:
-        traits.bit_width = 32;
-        traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-#else
-        traits.flags |= Pcm_IsBig;
-#endif
-        traits.portable_alias = PcmFormat_UInt18_4_Be;
-        traits.default_variant = PcmFormat_UInt18_4;
-        traits.be_variant = PcmFormat_UInt18_4_Be;
-        traits.le_variant = PcmFormat_UInt18_4_Le;
-        break;
-
-    case PcmFormat_UInt18_4_Le:
-        traits.bit_width = 32;
-        traits.bit_depth = 18;
-        traits.flags = Pcm_IsInteger;
-#if ROC_CPU_ENDIAN == ROC_CPU_LE
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-#else
-        traits.flags |= Pcm_IsLittle;
-#endif
-        traits.portable_alias = PcmFormat_UInt18_4_Le;
-        traits.default_variant = PcmFormat_UInt18_4;
-        traits.be_variant = PcmFormat_UInt18_4_Be;
-        traits.le_variant = PcmFormat_UInt18_4_Le;
-        break;
-
-    case PcmFormat_SInt20:
-        traits.bit_width = 20;
-        traits.bit_depth = 20;
-        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_SInt20_Be;
-#else
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_SInt20_Le;
-#endif
-        traits.default_variant = PcmFormat_SInt20;
-        traits.be_variant = PcmFormat_SInt20_Be;
-        traits.le_variant = PcmFormat_SInt20_Le;
-        break;
-
-    case PcmFormat_SInt20_Be:
-        traits.bit_width = 20;
-        traits.bit_depth = 20;
-        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-#else
-        traits.flags |= Pcm_IsBig;
-#endif
-        traits.portable_alias = PcmFormat_SInt20_Be;
-        traits.default_variant = PcmFormat_SInt20;
-        traits.be_variant = PcmFormat_SInt20_Be;
-        traits.le_variant = PcmFormat_SInt20_Le;
-        break;
-
-    case PcmFormat_SInt20_Le:
-        traits.bit_width = 20;
-        traits.bit_depth = 20;
-        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
-#if ROC_CPU_ENDIAN == ROC_CPU_LE
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-#else
-        traits.flags |= Pcm_IsLittle;
-#endif
-        traits.portable_alias = PcmFormat_SInt20_Le;
-        traits.default_variant = PcmFormat_SInt20;
-        traits.be_variant = PcmFormat_SInt20_Be;
-        traits.le_variant = PcmFormat_SInt20_Le;
-        break;
-
-    case PcmFormat_UInt20:
-        traits.bit_width = 20;
-        traits.bit_depth = 20;
-        traits.flags = Pcm_IsInteger | Pcm_IsPacked;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_UInt20_Be;
-#else
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_UInt20_Le;
-#endif
-        traits.default_variant = PcmFormat_UInt20;
-        traits.be_variant = PcmFormat_UInt20_Be;
-        traits.le_variant = PcmFormat_UInt20_Le;
-        break;
-
-    case PcmFormat_UInt20_Be:
-        traits.bit_width = 20;
-        traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_UInt20_Be;
-        traits.default_variant = PcmFormat_UInt20;
-        traits.be_variant = PcmFormat_UInt20_Be;
-        traits.le_variant = PcmFormat_UInt20_Le;
+        traits.portable_alias = PcmSubformat_UInt18_Be;
+        traits.default_variant = PcmSubformat_UInt18;
+        traits.be_variant = PcmSubformat_UInt18_Be;
+        traits.le_variant = PcmSubformat_UInt18_Le;
         break;
 
-    case PcmFormat_UInt20_Le:
+    case PcmSubformat_UInt18_Le:
+        traits.id = PcmSubformat_UInt18_Le;
+        traits.name = "u18_le";
+        traits.bit_width = 18;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+#else
+        traits.flags |= Pcm_IsLittle;
+#endif
+        traits.portable_alias = PcmSubformat_UInt18_Le;
+        traits.default_variant = PcmSubformat_UInt18;
+        traits.be_variant = PcmSubformat_UInt18_Be;
+        traits.le_variant = PcmSubformat_UInt18_Le;
+        break;
+
+    case PcmSubformat_SInt18_3:
+        traits.id = PcmSubformat_SInt18_3;
+        traits.name = "s18_3";
+        traits.bit_width = 24;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.portable_alias = PcmSubformat_SInt18_3_Be;
+#else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.portable_alias = PcmSubformat_SInt18_3_Le;
+#endif
+        traits.default_variant = PcmSubformat_SInt18_3;
+        traits.be_variant = PcmSubformat_SInt18_3_Be;
+        traits.le_variant = PcmSubformat_SInt18_3_Le;
+        break;
+
+    case PcmSubformat_SInt18_3_Be:
+        traits.id = PcmSubformat_SInt18_3_Be;
+        traits.name = "s18_3be";
+        traits.bit_width = 24;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+#else
+        traits.flags |= Pcm_IsBig;
+#endif
+        traits.portable_alias = PcmSubformat_SInt18_3_Be;
+        traits.default_variant = PcmSubformat_SInt18_3;
+        traits.be_variant = PcmSubformat_SInt18_3_Be;
+        traits.le_variant = PcmSubformat_SInt18_3_Le;
+        break;
+
+    case PcmSubformat_SInt18_3_Le:
+        traits.id = PcmSubformat_SInt18_3_Le;
+        traits.name = "s18_3le";
+        traits.bit_width = 24;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+#else
+        traits.flags |= Pcm_IsLittle;
+#endif
+        traits.portable_alias = PcmSubformat_SInt18_3_Le;
+        traits.default_variant = PcmSubformat_SInt18_3;
+        traits.be_variant = PcmSubformat_SInt18_3_Be;
+        traits.le_variant = PcmSubformat_SInt18_3_Le;
+        break;
+
+    case PcmSubformat_UInt18_3:
+        traits.id = PcmSubformat_UInt18_3;
+        traits.name = "u18_3";
+        traits.bit_width = 24;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.portable_alias = PcmSubformat_UInt18_3_Be;
+#else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.portable_alias = PcmSubformat_UInt18_3_Le;
+#endif
+        traits.default_variant = PcmSubformat_UInt18_3;
+        traits.be_variant = PcmSubformat_UInt18_3_Be;
+        traits.le_variant = PcmSubformat_UInt18_3_Le;
+        break;
+
+    case PcmSubformat_UInt18_3_Be:
+        traits.id = PcmSubformat_UInt18_3_Be;
+        traits.name = "u18_3be";
+        traits.bit_width = 24;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+#else
+        traits.flags |= Pcm_IsBig;
+#endif
+        traits.portable_alias = PcmSubformat_UInt18_3_Be;
+        traits.default_variant = PcmSubformat_UInt18_3;
+        traits.be_variant = PcmSubformat_UInt18_3_Be;
+        traits.le_variant = PcmSubformat_UInt18_3_Le;
+        break;
+
+    case PcmSubformat_UInt18_3_Le:
+        traits.id = PcmSubformat_UInt18_3_Le;
+        traits.name = "u18_3le";
+        traits.bit_width = 24;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+#else
+        traits.flags |= Pcm_IsLittle;
+#endif
+        traits.portable_alias = PcmSubformat_UInt18_3_Le;
+        traits.default_variant = PcmSubformat_UInt18_3;
+        traits.be_variant = PcmSubformat_UInt18_3_Be;
+        traits.le_variant = PcmSubformat_UInt18_3_Le;
+        break;
+
+    case PcmSubformat_SInt18_4:
+        traits.id = PcmSubformat_SInt18_4;
+        traits.name = "s18_4";
+        traits.bit_width = 32;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.portable_alias = PcmSubformat_SInt18_4_Be;
+#else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.portable_alias = PcmSubformat_SInt18_4_Le;
+#endif
+        traits.default_variant = PcmSubformat_SInt18_4;
+        traits.be_variant = PcmSubformat_SInt18_4_Be;
+        traits.le_variant = PcmSubformat_SInt18_4_Le;
+        break;
+
+    case PcmSubformat_SInt18_4_Be:
+        traits.id = PcmSubformat_SInt18_4_Be;
+        traits.name = "s18_4be";
+        traits.bit_width = 32;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+#else
+        traits.flags |= Pcm_IsBig;
+#endif
+        traits.portable_alias = PcmSubformat_SInt18_4_Be;
+        traits.default_variant = PcmSubformat_SInt18_4;
+        traits.be_variant = PcmSubformat_SInt18_4_Be;
+        traits.le_variant = PcmSubformat_SInt18_4_Le;
+        break;
+
+    case PcmSubformat_SInt18_4_Le:
+        traits.id = PcmSubformat_SInt18_4_Le;
+        traits.name = "s18_4le";
+        traits.bit_width = 32;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+#else
+        traits.flags |= Pcm_IsLittle;
+#endif
+        traits.portable_alias = PcmSubformat_SInt18_4_Le;
+        traits.default_variant = PcmSubformat_SInt18_4;
+        traits.be_variant = PcmSubformat_SInt18_4_Be;
+        traits.le_variant = PcmSubformat_SInt18_4_Le;
+        break;
+
+    case PcmSubformat_UInt18_4:
+        traits.id = PcmSubformat_UInt18_4;
+        traits.name = "u18_4";
+        traits.bit_width = 32;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.portable_alias = PcmSubformat_UInt18_4_Be;
+#else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.portable_alias = PcmSubformat_UInt18_4_Le;
+#endif
+        traits.default_variant = PcmSubformat_UInt18_4;
+        traits.be_variant = PcmSubformat_UInt18_4_Be;
+        traits.le_variant = PcmSubformat_UInt18_4_Le;
+        break;
+
+    case PcmSubformat_UInt18_4_Be:
+        traits.id = PcmSubformat_UInt18_4_Be;
+        traits.name = "u18_4be";
+        traits.bit_width = 32;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+#else
+        traits.flags |= Pcm_IsBig;
+#endif
+        traits.portable_alias = PcmSubformat_UInt18_4_Be;
+        traits.default_variant = PcmSubformat_UInt18_4;
+        traits.be_variant = PcmSubformat_UInt18_4_Be;
+        traits.le_variant = PcmSubformat_UInt18_4_Le;
+        break;
+
+    case PcmSubformat_UInt18_4_Le:
+        traits.id = PcmSubformat_UInt18_4_Le;
+        traits.name = "u18_4le";
+        traits.bit_width = 32;
+        traits.bit_depth = 18;
+        traits.flags = Pcm_IsInteger;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+#else
+        traits.flags |= Pcm_IsLittle;
+#endif
+        traits.portable_alias = PcmSubformat_UInt18_4_Le;
+        traits.default_variant = PcmSubformat_UInt18_4;
+        traits.be_variant = PcmSubformat_UInt18_4_Be;
+        traits.le_variant = PcmSubformat_UInt18_4_Le;
+        break;
+
+    case PcmSubformat_SInt20:
+        traits.id = PcmSubformat_SInt20;
+        traits.name = "s20";
+        traits.bit_width = 20;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.portable_alias = PcmSubformat_SInt20_Be;
+#else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.portable_alias = PcmSubformat_SInt20_Le;
+#endif
+        traits.default_variant = PcmSubformat_SInt20;
+        traits.be_variant = PcmSubformat_SInt20_Be;
+        traits.le_variant = PcmSubformat_SInt20_Le;
+        break;
+
+    case PcmSubformat_SInt20_Be:
+        traits.id = PcmSubformat_SInt20_Be;
+        traits.name = "s20_be";
+        traits.bit_width = 20;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+#else
+        traits.flags |= Pcm_IsBig;
+#endif
+        traits.portable_alias = PcmSubformat_SInt20_Be;
+        traits.default_variant = PcmSubformat_SInt20;
+        traits.be_variant = PcmSubformat_SInt20_Be;
+        traits.le_variant = PcmSubformat_SInt20_Le;
+        break;
+
+    case PcmSubformat_SInt20_Le:
+        traits.id = PcmSubformat_SInt20_Le;
+        traits.name = "s20_le";
+        traits.bit_width = 20;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+#else
+        traits.flags |= Pcm_IsLittle;
+#endif
+        traits.portable_alias = PcmSubformat_SInt20_Le;
+        traits.default_variant = PcmSubformat_SInt20;
+        traits.be_variant = PcmSubformat_SInt20_Be;
+        traits.le_variant = PcmSubformat_SInt20_Le;
+        break;
+
+    case PcmSubformat_UInt20:
+        traits.id = PcmSubformat_UInt20;
+        traits.name = "u20";
+        traits.bit_width = 20;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.portable_alias = PcmSubformat_UInt20_Be;
+#else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.portable_alias = PcmSubformat_UInt20_Le;
+#endif
+        traits.default_variant = PcmSubformat_UInt20;
+        traits.be_variant = PcmSubformat_UInt20_Be;
+        traits.le_variant = PcmSubformat_UInt20_Le;
+        break;
+
+    case PcmSubformat_UInt20_Be:
+        traits.id = PcmSubformat_UInt20_Be;
+        traits.name = "u20_be";
+        traits.bit_width = 20;
+        traits.bit_depth = 20;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+#else
+        traits.flags |= Pcm_IsBig;
+#endif
+        traits.portable_alias = PcmSubformat_UInt20_Be;
+        traits.default_variant = PcmSubformat_UInt20;
+        traits.be_variant = PcmSubformat_UInt20_Be;
+        traits.le_variant = PcmSubformat_UInt20_Le;
+        break;
+
+    case PcmSubformat_UInt20_Le:
+        traits.id = PcmSubformat_UInt20_Le;
+        traits.name = "u20_le";
         traits.bit_width = 20;
         traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked;
@@ -5110,29 +5134,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_UInt20_Le;
-        traits.default_variant = PcmFormat_UInt20;
-        traits.be_variant = PcmFormat_UInt20_Be;
-        traits.le_variant = PcmFormat_UInt20_Le;
+        traits.portable_alias = PcmSubformat_UInt20_Le;
+        traits.default_variant = PcmSubformat_UInt20;
+        traits.be_variant = PcmSubformat_UInt20_Be;
+        traits.le_variant = PcmSubformat_UInt20_Le;
         break;
 
-    case PcmFormat_SInt20_3:
+    case PcmSubformat_SInt20_3:
+        traits.id = PcmSubformat_SInt20_3;
+        traits.name = "s20_3";
         traits.bit_width = 24;
         traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_SInt20_3_Be;
+        traits.portable_alias = PcmSubformat_SInt20_3_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_SInt20_3_Le;
+        traits.portable_alias = PcmSubformat_SInt20_3_Le;
 #endif
-        traits.default_variant = PcmFormat_SInt20_3;
-        traits.be_variant = PcmFormat_SInt20_3_Be;
-        traits.le_variant = PcmFormat_SInt20_3_Le;
+        traits.default_variant = PcmSubformat_SInt20_3;
+        traits.be_variant = PcmSubformat_SInt20_3_Be;
+        traits.le_variant = PcmSubformat_SInt20_3_Le;
         break;
 
-    case PcmFormat_SInt20_3_Be:
+    case PcmSubformat_SInt20_3_Be:
+        traits.id = PcmSubformat_SInt20_3_Be;
+        traits.name = "s20_3be";
         traits.bit_width = 24;
         traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
@@ -5141,13 +5169,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_SInt20_3_Be;
-        traits.default_variant = PcmFormat_SInt20_3;
-        traits.be_variant = PcmFormat_SInt20_3_Be;
-        traits.le_variant = PcmFormat_SInt20_3_Le;
+        traits.portable_alias = PcmSubformat_SInt20_3_Be;
+        traits.default_variant = PcmSubformat_SInt20_3;
+        traits.be_variant = PcmSubformat_SInt20_3_Be;
+        traits.le_variant = PcmSubformat_SInt20_3_Le;
         break;
 
-    case PcmFormat_SInt20_3_Le:
+    case PcmSubformat_SInt20_3_Le:
+        traits.id = PcmSubformat_SInt20_3_Le;
+        traits.name = "s20_3le";
         traits.bit_width = 24;
         traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
@@ -5156,29 +5186,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_SInt20_3_Le;
-        traits.default_variant = PcmFormat_SInt20_3;
-        traits.be_variant = PcmFormat_SInt20_3_Be;
-        traits.le_variant = PcmFormat_SInt20_3_Le;
+        traits.portable_alias = PcmSubformat_SInt20_3_Le;
+        traits.default_variant = PcmSubformat_SInt20_3;
+        traits.be_variant = PcmSubformat_SInt20_3_Be;
+        traits.le_variant = PcmSubformat_SInt20_3_Le;
         break;
 
-    case PcmFormat_UInt20_3:
+    case PcmSubformat_UInt20_3:
+        traits.id = PcmSubformat_UInt20_3;
+        traits.name = "u20_3";
         traits.bit_width = 24;
         traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_UInt20_3_Be;
+        traits.portable_alias = PcmSubformat_UInt20_3_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_UInt20_3_Le;
+        traits.portable_alias = PcmSubformat_UInt20_3_Le;
 #endif
-        traits.default_variant = PcmFormat_UInt20_3;
-        traits.be_variant = PcmFormat_UInt20_3_Be;
-        traits.le_variant = PcmFormat_UInt20_3_Le;
+        traits.default_variant = PcmSubformat_UInt20_3;
+        traits.be_variant = PcmSubformat_UInt20_3_Be;
+        traits.le_variant = PcmSubformat_UInt20_3_Le;
         break;
 
-    case PcmFormat_UInt20_3_Be:
+    case PcmSubformat_UInt20_3_Be:
+        traits.id = PcmSubformat_UInt20_3_Be;
+        traits.name = "u20_3be";
         traits.bit_width = 24;
         traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger;
@@ -5187,13 +5221,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_UInt20_3_Be;
-        traits.default_variant = PcmFormat_UInt20_3;
-        traits.be_variant = PcmFormat_UInt20_3_Be;
-        traits.le_variant = PcmFormat_UInt20_3_Le;
+        traits.portable_alias = PcmSubformat_UInt20_3_Be;
+        traits.default_variant = PcmSubformat_UInt20_3;
+        traits.be_variant = PcmSubformat_UInt20_3_Be;
+        traits.le_variant = PcmSubformat_UInt20_3_Le;
         break;
 
-    case PcmFormat_UInt20_3_Le:
+    case PcmSubformat_UInt20_3_Le:
+        traits.id = PcmSubformat_UInt20_3_Le;
+        traits.name = "u20_3le";
         traits.bit_width = 24;
         traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger;
@@ -5202,29 +5238,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_UInt20_3_Le;
-        traits.default_variant = PcmFormat_UInt20_3;
-        traits.be_variant = PcmFormat_UInt20_3_Be;
-        traits.le_variant = PcmFormat_UInt20_3_Le;
+        traits.portable_alias = PcmSubformat_UInt20_3_Le;
+        traits.default_variant = PcmSubformat_UInt20_3;
+        traits.be_variant = PcmSubformat_UInt20_3_Be;
+        traits.le_variant = PcmSubformat_UInt20_3_Le;
         break;
 
-    case PcmFormat_SInt20_4:
+    case PcmSubformat_SInt20_4:
+        traits.id = PcmSubformat_SInt20_4;
+        traits.name = "s20_4";
         traits.bit_width = 32;
         traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_SInt20_4_Be;
+        traits.portable_alias = PcmSubformat_SInt20_4_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_SInt20_4_Le;
+        traits.portable_alias = PcmSubformat_SInt20_4_Le;
 #endif
-        traits.default_variant = PcmFormat_SInt20_4;
-        traits.be_variant = PcmFormat_SInt20_4_Be;
-        traits.le_variant = PcmFormat_SInt20_4_Le;
+        traits.default_variant = PcmSubformat_SInt20_4;
+        traits.be_variant = PcmSubformat_SInt20_4_Be;
+        traits.le_variant = PcmSubformat_SInt20_4_Le;
         break;
 
-    case PcmFormat_SInt20_4_Be:
+    case PcmSubformat_SInt20_4_Be:
+        traits.id = PcmSubformat_SInt20_4_Be;
+        traits.name = "s20_4be";
         traits.bit_width = 32;
         traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
@@ -5233,13 +5273,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_SInt20_4_Be;
-        traits.default_variant = PcmFormat_SInt20_4;
-        traits.be_variant = PcmFormat_SInt20_4_Be;
-        traits.le_variant = PcmFormat_SInt20_4_Le;
+        traits.portable_alias = PcmSubformat_SInt20_4_Be;
+        traits.default_variant = PcmSubformat_SInt20_4;
+        traits.be_variant = PcmSubformat_SInt20_4_Be;
+        traits.le_variant = PcmSubformat_SInt20_4_Le;
         break;
 
-    case PcmFormat_SInt20_4_Le:
+    case PcmSubformat_SInt20_4_Le:
+        traits.id = PcmSubformat_SInt20_4_Le;
+        traits.name = "s20_4le";
         traits.bit_width = 32;
         traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
@@ -5248,29 +5290,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_SInt20_4_Le;
-        traits.default_variant = PcmFormat_SInt20_4;
-        traits.be_variant = PcmFormat_SInt20_4_Be;
-        traits.le_variant = PcmFormat_SInt20_4_Le;
+        traits.portable_alias = PcmSubformat_SInt20_4_Le;
+        traits.default_variant = PcmSubformat_SInt20_4;
+        traits.be_variant = PcmSubformat_SInt20_4_Be;
+        traits.le_variant = PcmSubformat_SInt20_4_Le;
         break;
 
-    case PcmFormat_UInt20_4:
+    case PcmSubformat_UInt20_4:
+        traits.id = PcmSubformat_UInt20_4;
+        traits.name = "u20_4";
         traits.bit_width = 32;
         traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_UInt20_4_Be;
+        traits.portable_alias = PcmSubformat_UInt20_4_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_UInt20_4_Le;
+        traits.portable_alias = PcmSubformat_UInt20_4_Le;
 #endif
-        traits.default_variant = PcmFormat_UInt20_4;
-        traits.be_variant = PcmFormat_UInt20_4_Be;
-        traits.le_variant = PcmFormat_UInt20_4_Le;
+        traits.default_variant = PcmSubformat_UInt20_4;
+        traits.be_variant = PcmSubformat_UInt20_4_Be;
+        traits.le_variant = PcmSubformat_UInt20_4_Le;
         break;
 
-    case PcmFormat_UInt20_4_Be:
+    case PcmSubformat_UInt20_4_Be:
+        traits.id = PcmSubformat_UInt20_4_Be;
+        traits.name = "u20_4be";
         traits.bit_width = 32;
         traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger;
@@ -5279,13 +5325,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_UInt20_4_Be;
-        traits.default_variant = PcmFormat_UInt20_4;
-        traits.be_variant = PcmFormat_UInt20_4_Be;
-        traits.le_variant = PcmFormat_UInt20_4_Le;
+        traits.portable_alias = PcmSubformat_UInt20_4_Be;
+        traits.default_variant = PcmSubformat_UInt20_4;
+        traits.be_variant = PcmSubformat_UInt20_4_Be;
+        traits.le_variant = PcmSubformat_UInt20_4_Le;
         break;
 
-    case PcmFormat_UInt20_4_Le:
+    case PcmSubformat_UInt20_4_Le:
+        traits.id = PcmSubformat_UInt20_4_Le;
+        traits.name = "u20_4le";
         traits.bit_width = 32;
         traits.bit_depth = 20;
         traits.flags = Pcm_IsInteger;
@@ -5294,29 +5342,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_UInt20_4_Le;
-        traits.default_variant = PcmFormat_UInt20_4;
-        traits.be_variant = PcmFormat_UInt20_4_Be;
-        traits.le_variant = PcmFormat_UInt20_4_Le;
+        traits.portable_alias = PcmSubformat_UInt20_4_Le;
+        traits.default_variant = PcmSubformat_UInt20_4;
+        traits.be_variant = PcmSubformat_UInt20_4_Be;
+        traits.le_variant = PcmSubformat_UInt20_4_Le;
         break;
 
-    case PcmFormat_SInt24:
+    case PcmSubformat_SInt24:
+        traits.id = PcmSubformat_SInt24;
+        traits.name = "s24";
         traits.bit_width = 24;
         traits.bit_depth = 24;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_SInt24_Be;
+        traits.portable_alias = PcmSubformat_SInt24_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_SInt24_Le;
+        traits.portable_alias = PcmSubformat_SInt24_Le;
 #endif
-        traits.default_variant = PcmFormat_SInt24;
-        traits.be_variant = PcmFormat_SInt24_Be;
-        traits.le_variant = PcmFormat_SInt24_Le;
+        traits.default_variant = PcmSubformat_SInt24;
+        traits.be_variant = PcmSubformat_SInt24_Be;
+        traits.le_variant = PcmSubformat_SInt24_Le;
         break;
 
-    case PcmFormat_SInt24_Be:
+    case PcmSubformat_SInt24_Be:
+        traits.id = PcmSubformat_SInt24_Be;
+        traits.name = "s24_be";
         traits.bit_width = 24;
         traits.bit_depth = 24;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
@@ -5325,13 +5377,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_SInt24_Be;
-        traits.default_variant = PcmFormat_SInt24;
-        traits.be_variant = PcmFormat_SInt24_Be;
-        traits.le_variant = PcmFormat_SInt24_Le;
+        traits.portable_alias = PcmSubformat_SInt24_Be;
+        traits.default_variant = PcmSubformat_SInt24;
+        traits.be_variant = PcmSubformat_SInt24_Be;
+        traits.le_variant = PcmSubformat_SInt24_Le;
         break;
 
-    case PcmFormat_SInt24_Le:
+    case PcmSubformat_SInt24_Le:
+        traits.id = PcmSubformat_SInt24_Le;
+        traits.name = "s24_le";
         traits.bit_width = 24;
         traits.bit_depth = 24;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
@@ -5340,29 +5394,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_SInt24_Le;
-        traits.default_variant = PcmFormat_SInt24;
-        traits.be_variant = PcmFormat_SInt24_Be;
-        traits.le_variant = PcmFormat_SInt24_Le;
+        traits.portable_alias = PcmSubformat_SInt24_Le;
+        traits.default_variant = PcmSubformat_SInt24;
+        traits.be_variant = PcmSubformat_SInt24_Be;
+        traits.le_variant = PcmSubformat_SInt24_Le;
         break;
 
-    case PcmFormat_UInt24:
+    case PcmSubformat_UInt24:
+        traits.id = PcmSubformat_UInt24;
+        traits.name = "u24";
         traits.bit_width = 24;
         traits.bit_depth = 24;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_UInt24_Be;
+        traits.portable_alias = PcmSubformat_UInt24_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_UInt24_Le;
+        traits.portable_alias = PcmSubformat_UInt24_Le;
 #endif
-        traits.default_variant = PcmFormat_UInt24;
-        traits.be_variant = PcmFormat_UInt24_Be;
-        traits.le_variant = PcmFormat_UInt24_Le;
+        traits.default_variant = PcmSubformat_UInt24;
+        traits.be_variant = PcmSubformat_UInt24_Be;
+        traits.le_variant = PcmSubformat_UInt24_Le;
         break;
 
-    case PcmFormat_UInt24_Be:
+    case PcmSubformat_UInt24_Be:
+        traits.id = PcmSubformat_UInt24_Be;
+        traits.name = "u24_be";
         traits.bit_width = 24;
         traits.bit_depth = 24;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
@@ -5371,13 +5429,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_UInt24_Be;
-        traits.default_variant = PcmFormat_UInt24;
-        traits.be_variant = PcmFormat_UInt24_Be;
-        traits.le_variant = PcmFormat_UInt24_Le;
+        traits.portable_alias = PcmSubformat_UInt24_Be;
+        traits.default_variant = PcmSubformat_UInt24;
+        traits.be_variant = PcmSubformat_UInt24_Be;
+        traits.le_variant = PcmSubformat_UInt24_Le;
         break;
 
-    case PcmFormat_UInt24_Le:
+    case PcmSubformat_UInt24_Le:
+        traits.id = PcmSubformat_UInt24_Le;
+        traits.name = "u24_le";
         traits.bit_width = 24;
         traits.bit_depth = 24;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
@@ -5386,29 +5446,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_UInt24_Le;
-        traits.default_variant = PcmFormat_UInt24;
-        traits.be_variant = PcmFormat_UInt24_Be;
-        traits.le_variant = PcmFormat_UInt24_Le;
+        traits.portable_alias = PcmSubformat_UInt24_Le;
+        traits.default_variant = PcmSubformat_UInt24;
+        traits.be_variant = PcmSubformat_UInt24_Be;
+        traits.le_variant = PcmSubformat_UInt24_Le;
         break;
 
-    case PcmFormat_SInt24_4:
+    case PcmSubformat_SInt24_4:
+        traits.id = PcmSubformat_SInt24_4;
+        traits.name = "s24_4";
         traits.bit_width = 32;
         traits.bit_depth = 24;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_SInt24_4_Be;
+        traits.portable_alias = PcmSubformat_SInt24_4_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_SInt24_4_Le;
+        traits.portable_alias = PcmSubformat_SInt24_4_Le;
 #endif
-        traits.default_variant = PcmFormat_SInt24_4;
-        traits.be_variant = PcmFormat_SInt24_4_Be;
-        traits.le_variant = PcmFormat_SInt24_4_Le;
+        traits.default_variant = PcmSubformat_SInt24_4;
+        traits.be_variant = PcmSubformat_SInt24_4_Be;
+        traits.le_variant = PcmSubformat_SInt24_4_Le;
         break;
 
-    case PcmFormat_SInt24_4_Be:
+    case PcmSubformat_SInt24_4_Be:
+        traits.id = PcmSubformat_SInt24_4_Be;
+        traits.name = "s24_4be";
         traits.bit_width = 32;
         traits.bit_depth = 24;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsAligned;
@@ -5417,13 +5481,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_SInt24_4_Be;
-        traits.default_variant = PcmFormat_SInt24_4;
-        traits.be_variant = PcmFormat_SInt24_4_Be;
-        traits.le_variant = PcmFormat_SInt24_4_Le;
+        traits.portable_alias = PcmSubformat_SInt24_4_Be;
+        traits.default_variant = PcmSubformat_SInt24_4;
+        traits.be_variant = PcmSubformat_SInt24_4_Be;
+        traits.le_variant = PcmSubformat_SInt24_4_Le;
         break;
 
-    case PcmFormat_SInt24_4_Le:
+    case PcmSubformat_SInt24_4_Le:
+        traits.id = PcmSubformat_SInt24_4_Le;
+        traits.name = "s24_4le";
         traits.bit_width = 32;
         traits.bit_depth = 24;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsAligned;
@@ -5432,29 +5498,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_SInt24_4_Le;
-        traits.default_variant = PcmFormat_SInt24_4;
-        traits.be_variant = PcmFormat_SInt24_4_Be;
-        traits.le_variant = PcmFormat_SInt24_4_Le;
+        traits.portable_alias = PcmSubformat_SInt24_4_Le;
+        traits.default_variant = PcmSubformat_SInt24_4;
+        traits.be_variant = PcmSubformat_SInt24_4_Be;
+        traits.le_variant = PcmSubformat_SInt24_4_Le;
         break;
 
-    case PcmFormat_UInt24_4:
+    case PcmSubformat_UInt24_4:
+        traits.id = PcmSubformat_UInt24_4;
+        traits.name = "u24_4";
         traits.bit_width = 32;
         traits.bit_depth = 24;
         traits.flags = Pcm_IsInteger | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_UInt24_4_Be;
+        traits.portable_alias = PcmSubformat_UInt24_4_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_UInt24_4_Le;
+        traits.portable_alias = PcmSubformat_UInt24_4_Le;
 #endif
-        traits.default_variant = PcmFormat_UInt24_4;
-        traits.be_variant = PcmFormat_UInt24_4_Be;
-        traits.le_variant = PcmFormat_UInt24_4_Le;
+        traits.default_variant = PcmSubformat_UInt24_4;
+        traits.be_variant = PcmSubformat_UInt24_4_Be;
+        traits.le_variant = PcmSubformat_UInt24_4_Le;
         break;
 
-    case PcmFormat_UInt24_4_Be:
+    case PcmSubformat_UInt24_4_Be:
+        traits.id = PcmSubformat_UInt24_4_Be;
+        traits.name = "u24_4be";
         traits.bit_width = 32;
         traits.bit_depth = 24;
         traits.flags = Pcm_IsInteger | Pcm_IsAligned;
@@ -5463,13 +5533,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_UInt24_4_Be;
-        traits.default_variant = PcmFormat_UInt24_4;
-        traits.be_variant = PcmFormat_UInt24_4_Be;
-        traits.le_variant = PcmFormat_UInt24_4_Le;
+        traits.portable_alias = PcmSubformat_UInt24_4_Be;
+        traits.default_variant = PcmSubformat_UInt24_4;
+        traits.be_variant = PcmSubformat_UInt24_4_Be;
+        traits.le_variant = PcmSubformat_UInt24_4_Le;
         break;
 
-    case PcmFormat_UInt24_4_Le:
+    case PcmSubformat_UInt24_4_Le:
+        traits.id = PcmSubformat_UInt24_4_Le;
+        traits.name = "u24_4le";
         traits.bit_width = 32;
         traits.bit_depth = 24;
         traits.flags = Pcm_IsInteger | Pcm_IsAligned;
@@ -5478,136 +5550,154 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_UInt24_4_Le;
-        traits.default_variant = PcmFormat_UInt24_4;
-        traits.be_variant = PcmFormat_UInt24_4_Be;
-        traits.le_variant = PcmFormat_UInt24_4_Le;
+        traits.portable_alias = PcmSubformat_UInt24_4_Le;
+        traits.default_variant = PcmSubformat_UInt24_4;
+        traits.be_variant = PcmSubformat_UInt24_4_Be;
+        traits.le_variant = PcmSubformat_UInt24_4_Le;
         break;
 
-    case PcmFormat_SInt32:
+    case PcmSubformat_SInt32:
+        traits.id = PcmSubformat_SInt32;
+        traits.name = "s32";
         traits.bit_width = 32;
         traits.bit_depth = 32;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_SInt32_Be;
+        traits.portable_alias = PcmSubformat_SInt32_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_SInt32_Le;
+        traits.portable_alias = PcmSubformat_SInt32_Le;
 #endif
-        traits.default_variant = PcmFormat_SInt32;
-        traits.be_variant = PcmFormat_SInt32_Be;
-        traits.le_variant = PcmFormat_SInt32_Le;
+        traits.default_variant = PcmSubformat_SInt32;
+        traits.be_variant = PcmSubformat_SInt32_Be;
+        traits.le_variant = PcmSubformat_SInt32_Le;
         break;
 
-    case PcmFormat_SInt32_Be:
+    case PcmSubformat_SInt32_Be:
+        traits.id = PcmSubformat_SInt32_Be;
+        traits.name = "s32_be";
         traits.bit_width = 32;
         traits.bit_depth = 32;
-        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-#else
-        traits.flags |= Pcm_IsBig;
-#endif
-        traits.portable_alias = PcmFormat_SInt32_Be;
-        traits.default_variant = PcmFormat_SInt32;
-        traits.be_variant = PcmFormat_SInt32_Be;
-        traits.le_variant = PcmFormat_SInt32_Le;
-        break;
-
-    case PcmFormat_SInt32_Le:
-        traits.bit_width = 32;
-        traits.bit_depth = 32;
-        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
-#if ROC_CPU_ENDIAN == ROC_CPU_LE
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-#else
-        traits.flags |= Pcm_IsLittle;
-#endif
-        traits.portable_alias = PcmFormat_SInt32_Le;
-        traits.default_variant = PcmFormat_SInt32;
-        traits.be_variant = PcmFormat_SInt32_Be;
-        traits.le_variant = PcmFormat_SInt32_Le;
-        break;
-
-    case PcmFormat_UInt32:
-        traits.bit_width = 32;
-        traits.bit_depth = 32;
-        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_UInt32_Be;
-#else
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_UInt32_Le;
-#endif
-        traits.default_variant = PcmFormat_UInt32;
-        traits.be_variant = PcmFormat_UInt32_Be;
-        traits.le_variant = PcmFormat_UInt32_Le;
-        break;
-
-    case PcmFormat_UInt32_Be:
-        traits.bit_width = 32;
-        traits.bit_depth = 32;
-        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-#else
-        traits.flags |= Pcm_IsBig;
-#endif
-        traits.portable_alias = PcmFormat_UInt32_Be;
-        traits.default_variant = PcmFormat_UInt32;
-        traits.be_variant = PcmFormat_UInt32_Be;
-        traits.le_variant = PcmFormat_UInt32_Le;
-        break;
-
-    case PcmFormat_UInt32_Le:
-        traits.bit_width = 32;
-        traits.bit_depth = 32;
-        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
-#if ROC_CPU_ENDIAN == ROC_CPU_LE
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-#else
-        traits.flags |= Pcm_IsLittle;
-#endif
-        traits.portable_alias = PcmFormat_UInt32_Le;
-        traits.default_variant = PcmFormat_UInt32;
-        traits.be_variant = PcmFormat_UInt32_Be;
-        traits.le_variant = PcmFormat_UInt32_Le;
-        break;
-
-    case PcmFormat_SInt64:
-        traits.bit_width = 64;
-        traits.bit_depth = 64;
-        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
-        traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_SInt64_Be;
-#else
-        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_SInt64_Le;
-#endif
-        traits.default_variant = PcmFormat_SInt64;
-        traits.be_variant = PcmFormat_SInt64_Be;
-        traits.le_variant = PcmFormat_SInt64_Le;
-        break;
-
-    case PcmFormat_SInt64_Be:
-        traits.bit_width = 64;
-        traits.bit_depth = 64;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_SInt64_Be;
-        traits.default_variant = PcmFormat_SInt64;
-        traits.be_variant = PcmFormat_SInt64_Be;
-        traits.le_variant = PcmFormat_SInt64_Le;
+        traits.portable_alias = PcmSubformat_SInt32_Be;
+        traits.default_variant = PcmSubformat_SInt32;
+        traits.be_variant = PcmSubformat_SInt32_Be;
+        traits.le_variant = PcmSubformat_SInt32_Le;
         break;
 
-    case PcmFormat_SInt64_Le:
+    case PcmSubformat_SInt32_Le:
+        traits.id = PcmSubformat_SInt32_Le;
+        traits.name = "s32_le";
+        traits.bit_width = 32;
+        traits.bit_depth = 32;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+#else
+        traits.flags |= Pcm_IsLittle;
+#endif
+        traits.portable_alias = PcmSubformat_SInt32_Le;
+        traits.default_variant = PcmSubformat_SInt32;
+        traits.be_variant = PcmSubformat_SInt32_Be;
+        traits.le_variant = PcmSubformat_SInt32_Le;
+        break;
+
+    case PcmSubformat_UInt32:
+        traits.id = PcmSubformat_UInt32;
+        traits.name = "u32";
+        traits.bit_width = 32;
+        traits.bit_depth = 32;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.portable_alias = PcmSubformat_UInt32_Be;
+#else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.portable_alias = PcmSubformat_UInt32_Le;
+#endif
+        traits.default_variant = PcmSubformat_UInt32;
+        traits.be_variant = PcmSubformat_UInt32_Be;
+        traits.le_variant = PcmSubformat_UInt32_Le;
+        break;
+
+    case PcmSubformat_UInt32_Be:
+        traits.id = PcmSubformat_UInt32_Be;
+        traits.name = "u32_be";
+        traits.bit_width = 32;
+        traits.bit_depth = 32;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+#else
+        traits.flags |= Pcm_IsBig;
+#endif
+        traits.portable_alias = PcmSubformat_UInt32_Be;
+        traits.default_variant = PcmSubformat_UInt32;
+        traits.be_variant = PcmSubformat_UInt32_Be;
+        traits.le_variant = PcmSubformat_UInt32_Le;
+        break;
+
+    case PcmSubformat_UInt32_Le:
+        traits.id = PcmSubformat_UInt32_Le;
+        traits.name = "u32_le";
+        traits.bit_width = 32;
+        traits.bit_depth = 32;
+        traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_LE
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+#else
+        traits.flags |= Pcm_IsLittle;
+#endif
+        traits.portable_alias = PcmSubformat_UInt32_Le;
+        traits.default_variant = PcmSubformat_UInt32;
+        traits.be_variant = PcmSubformat_UInt32_Be;
+        traits.le_variant = PcmSubformat_UInt32_Le;
+        break;
+
+    case PcmSubformat_SInt64:
+        traits.id = PcmSubformat_SInt64;
+        traits.name = "s64";
+        traits.bit_width = 64;
+        traits.bit_depth = 64;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.portable_alias = PcmSubformat_SInt64_Be;
+#else
+        traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.portable_alias = PcmSubformat_SInt64_Le;
+#endif
+        traits.default_variant = PcmSubformat_SInt64;
+        traits.be_variant = PcmSubformat_SInt64_Be;
+        traits.le_variant = PcmSubformat_SInt64_Le;
+        break;
+
+    case PcmSubformat_SInt64_Be:
+        traits.id = PcmSubformat_SInt64_Be;
+        traits.name = "s64_be";
+        traits.bit_width = 64;
+        traits.bit_depth = 64;
+        traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
+#if ROC_CPU_ENDIAN == ROC_CPU_BE
+        traits.flags |= Pcm_IsNative | Pcm_IsBig;
+#else
+        traits.flags |= Pcm_IsBig;
+#endif
+        traits.portable_alias = PcmSubformat_SInt64_Be;
+        traits.default_variant = PcmSubformat_SInt64;
+        traits.be_variant = PcmSubformat_SInt64_Be;
+        traits.le_variant = PcmSubformat_SInt64_Le;
+        break;
+
+    case PcmSubformat_SInt64_Le:
+        traits.id = PcmSubformat_SInt64_Le;
+        traits.name = "s64_le";
         traits.bit_width = 64;
         traits.bit_depth = 64;
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
@@ -5616,29 +5706,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_SInt64_Le;
-        traits.default_variant = PcmFormat_SInt64;
-        traits.be_variant = PcmFormat_SInt64_Be;
-        traits.le_variant = PcmFormat_SInt64_Le;
+        traits.portable_alias = PcmSubformat_SInt64_Le;
+        traits.default_variant = PcmSubformat_SInt64;
+        traits.be_variant = PcmSubformat_SInt64_Be;
+        traits.le_variant = PcmSubformat_SInt64_Le;
         break;
 
-    case PcmFormat_UInt64:
+    case PcmSubformat_UInt64:
+        traits.id = PcmSubformat_UInt64;
+        traits.name = "u64";
         traits.bit_width = 64;
         traits.bit_depth = 64;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_UInt64_Be;
+        traits.portable_alias = PcmSubformat_UInt64_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_UInt64_Le;
+        traits.portable_alias = PcmSubformat_UInt64_Le;
 #endif
-        traits.default_variant = PcmFormat_UInt64;
-        traits.be_variant = PcmFormat_UInt64_Be;
-        traits.le_variant = PcmFormat_UInt64_Le;
+        traits.default_variant = PcmSubformat_UInt64;
+        traits.be_variant = PcmSubformat_UInt64_Be;
+        traits.le_variant = PcmSubformat_UInt64_Le;
         break;
 
-    case PcmFormat_UInt64_Be:
+    case PcmSubformat_UInt64_Be:
+        traits.id = PcmSubformat_UInt64_Be;
+        traits.name = "u64_be";
         traits.bit_width = 64;
         traits.bit_depth = 64;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
@@ -5647,13 +5741,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_UInt64_Be;
-        traits.default_variant = PcmFormat_UInt64;
-        traits.be_variant = PcmFormat_UInt64_Be;
-        traits.le_variant = PcmFormat_UInt64_Le;
+        traits.portable_alias = PcmSubformat_UInt64_Be;
+        traits.default_variant = PcmSubformat_UInt64;
+        traits.be_variant = PcmSubformat_UInt64_Be;
+        traits.le_variant = PcmSubformat_UInt64_Le;
         break;
 
-    case PcmFormat_UInt64_Le:
+    case PcmSubformat_UInt64_Le:
+        traits.id = PcmSubformat_UInt64_Le;
+        traits.name = "u64_le";
         traits.bit_width = 64;
         traits.bit_depth = 64;
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
@@ -5662,29 +5758,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_UInt64_Le;
-        traits.default_variant = PcmFormat_UInt64;
-        traits.be_variant = PcmFormat_UInt64_Be;
-        traits.le_variant = PcmFormat_UInt64_Le;
+        traits.portable_alias = PcmSubformat_UInt64_Le;
+        traits.default_variant = PcmSubformat_UInt64;
+        traits.be_variant = PcmSubformat_UInt64_Be;
+        traits.le_variant = PcmSubformat_UInt64_Le;
         break;
 
-    case PcmFormat_Float32:
+    case PcmSubformat_Float32:
+        traits.id = PcmSubformat_Float32;
+        traits.name = "f32";
         traits.bit_width = 32;
         traits.bit_depth = 32;
         traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_Float32_Be;
+        traits.portable_alias = PcmSubformat_Float32_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_Float32_Le;
+        traits.portable_alias = PcmSubformat_Float32_Le;
 #endif
-        traits.default_variant = PcmFormat_Float32;
-        traits.be_variant = PcmFormat_Float32_Be;
-        traits.le_variant = PcmFormat_Float32_Le;
+        traits.default_variant = PcmSubformat_Float32;
+        traits.be_variant = PcmSubformat_Float32_Be;
+        traits.le_variant = PcmSubformat_Float32_Le;
         break;
 
-    case PcmFormat_Float32_Be:
+    case PcmSubformat_Float32_Be:
+        traits.id = PcmSubformat_Float32_Be;
+        traits.name = "f32_be";
         traits.bit_width = 32;
         traits.bit_depth = 32;
         traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
@@ -5693,13 +5793,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_Float32_Be;
-        traits.default_variant = PcmFormat_Float32;
-        traits.be_variant = PcmFormat_Float32_Be;
-        traits.le_variant = PcmFormat_Float32_Le;
+        traits.portable_alias = PcmSubformat_Float32_Be;
+        traits.default_variant = PcmSubformat_Float32;
+        traits.be_variant = PcmSubformat_Float32_Be;
+        traits.le_variant = PcmSubformat_Float32_Le;
         break;
 
-    case PcmFormat_Float32_Le:
+    case PcmSubformat_Float32_Le:
+        traits.id = PcmSubformat_Float32_Le;
+        traits.name = "f32_le";
         traits.bit_width = 32;
         traits.bit_depth = 32;
         traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
@@ -5708,29 +5810,33 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_Float32_Le;
-        traits.default_variant = PcmFormat_Float32;
-        traits.be_variant = PcmFormat_Float32_Be;
-        traits.le_variant = PcmFormat_Float32_Le;
+        traits.portable_alias = PcmSubformat_Float32_Le;
+        traits.default_variant = PcmSubformat_Float32;
+        traits.be_variant = PcmSubformat_Float32_Be;
+        traits.le_variant = PcmSubformat_Float32_Le;
         break;
 
-    case PcmFormat_Float64:
+    case PcmSubformat_Float64:
+        traits.id = PcmSubformat_Float64;
+        traits.name = "f64";
         traits.bit_width = 64;
         traits.bit_depth = 64;
         traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
-        traits.portable_alias = PcmFormat_Float64_Be;
+        traits.portable_alias = PcmSubformat_Float64_Be;
 #else
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
-        traits.portable_alias = PcmFormat_Float64_Le;
+        traits.portable_alias = PcmSubformat_Float64_Le;
 #endif
-        traits.default_variant = PcmFormat_Float64;
-        traits.be_variant = PcmFormat_Float64_Be;
-        traits.le_variant = PcmFormat_Float64_Le;
+        traits.default_variant = PcmSubformat_Float64;
+        traits.be_variant = PcmSubformat_Float64_Be;
+        traits.le_variant = PcmSubformat_Float64_Le;
         break;
 
-    case PcmFormat_Float64_Be:
+    case PcmSubformat_Float64_Be:
+        traits.id = PcmSubformat_Float64_Be;
+        traits.name = "f64_be";
         traits.bit_width = 64;
         traits.bit_depth = 64;
         traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
@@ -5739,13 +5845,15 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsBig;
 #endif
-        traits.portable_alias = PcmFormat_Float64_Be;
-        traits.default_variant = PcmFormat_Float64;
-        traits.be_variant = PcmFormat_Float64_Be;
-        traits.le_variant = PcmFormat_Float64_Le;
+        traits.portable_alias = PcmSubformat_Float64_Be;
+        traits.default_variant = PcmSubformat_Float64;
+        traits.be_variant = PcmSubformat_Float64_Be;
+        traits.le_variant = PcmSubformat_Float64_Le;
         break;
 
-    case PcmFormat_Float64_Le:
+    case PcmSubformat_Float64_Le:
+        traits.id = PcmSubformat_Float64_Le;
+        traits.name = "f64_le";
         traits.bit_width = 64;
         traits.bit_depth = 64;
         traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
@@ -5754,10 +5862,10 @@ PcmTraits pcm_format_traits(PcmFormat format) {
 #else
         traits.flags |= Pcm_IsLittle;
 #endif
-        traits.portable_alias = PcmFormat_Float64_Le;
-        traits.default_variant = PcmFormat_Float64;
-        traits.be_variant = PcmFormat_Float64_Be;
-        traits.le_variant = PcmFormat_Float64_Le;
+        traits.portable_alias = PcmSubformat_Float64_Le;
+        traits.default_variant = PcmSubformat_Float64;
+        traits.be_variant = PcmSubformat_Float64_Be;
+        traits.le_variant = PcmSubformat_Float64_Le;
         break;
 
     default:
@@ -5767,163 +5875,163 @@ PcmTraits pcm_format_traits(PcmFormat format) {
     return traits;
 }
 
-const char* pcm_format_to_str(PcmFormat format) {
+const char* pcm_subformat_to_str(PcmSubformat format) {
     switch (format) {
-    case PcmFormat_SInt8:
+    case PcmSubformat_SInt8:
         return "s8";
-    case PcmFormat_SInt8_Be:
+    case PcmSubformat_SInt8_Be:
         return "s8_be";
-    case PcmFormat_SInt8_Le:
+    case PcmSubformat_SInt8_Le:
         return "s8_le";
-    case PcmFormat_UInt8:
+    case PcmSubformat_UInt8:
         return "u8";
-    case PcmFormat_UInt8_Be:
+    case PcmSubformat_UInt8_Be:
         return "u8_be";
-    case PcmFormat_UInt8_Le:
+    case PcmSubformat_UInt8_Le:
         return "u8_le";
-    case PcmFormat_SInt16:
+    case PcmSubformat_SInt16:
         return "s16";
-    case PcmFormat_SInt16_Be:
+    case PcmSubformat_SInt16_Be:
         return "s16_be";
-    case PcmFormat_SInt16_Le:
+    case PcmSubformat_SInt16_Le:
         return "s16_le";
-    case PcmFormat_UInt16:
+    case PcmSubformat_UInt16:
         return "u16";
-    case PcmFormat_UInt16_Be:
+    case PcmSubformat_UInt16_Be:
         return "u16_be";
-    case PcmFormat_UInt16_Le:
+    case PcmSubformat_UInt16_Le:
         return "u16_le";
-    case PcmFormat_SInt18:
+    case PcmSubformat_SInt18:
         return "s18";
-    case PcmFormat_SInt18_Be:
+    case PcmSubformat_SInt18_Be:
         return "s18_be";
-    case PcmFormat_SInt18_Le:
+    case PcmSubformat_SInt18_Le:
         return "s18_le";
-    case PcmFormat_UInt18:
+    case PcmSubformat_UInt18:
         return "u18";
-    case PcmFormat_UInt18_Be:
+    case PcmSubformat_UInt18_Be:
         return "u18_be";
-    case PcmFormat_UInt18_Le:
+    case PcmSubformat_UInt18_Le:
         return "u18_le";
-    case PcmFormat_SInt18_3:
+    case PcmSubformat_SInt18_3:
         return "s18_3";
-    case PcmFormat_SInt18_3_Be:
+    case PcmSubformat_SInt18_3_Be:
         return "s18_3be";
-    case PcmFormat_SInt18_3_Le:
+    case PcmSubformat_SInt18_3_Le:
         return "s18_3le";
-    case PcmFormat_UInt18_3:
+    case PcmSubformat_UInt18_3:
         return "u18_3";
-    case PcmFormat_UInt18_3_Be:
+    case PcmSubformat_UInt18_3_Be:
         return "u18_3be";
-    case PcmFormat_UInt18_3_Le:
+    case PcmSubformat_UInt18_3_Le:
         return "u18_3le";
-    case PcmFormat_SInt18_4:
+    case PcmSubformat_SInt18_4:
         return "s18_4";
-    case PcmFormat_SInt18_4_Be:
+    case PcmSubformat_SInt18_4_Be:
         return "s18_4be";
-    case PcmFormat_SInt18_4_Le:
+    case PcmSubformat_SInt18_4_Le:
         return "s18_4le";
-    case PcmFormat_UInt18_4:
+    case PcmSubformat_UInt18_4:
         return "u18_4";
-    case PcmFormat_UInt18_4_Be:
+    case PcmSubformat_UInt18_4_Be:
         return "u18_4be";
-    case PcmFormat_UInt18_4_Le:
+    case PcmSubformat_UInt18_4_Le:
         return "u18_4le";
-    case PcmFormat_SInt20:
+    case PcmSubformat_SInt20:
         return "s20";
-    case PcmFormat_SInt20_Be:
+    case PcmSubformat_SInt20_Be:
         return "s20_be";
-    case PcmFormat_SInt20_Le:
+    case PcmSubformat_SInt20_Le:
         return "s20_le";
-    case PcmFormat_UInt20:
+    case PcmSubformat_UInt20:
         return "u20";
-    case PcmFormat_UInt20_Be:
+    case PcmSubformat_UInt20_Be:
         return "u20_be";
-    case PcmFormat_UInt20_Le:
+    case PcmSubformat_UInt20_Le:
         return "u20_le";
-    case PcmFormat_SInt20_3:
+    case PcmSubformat_SInt20_3:
         return "s20_3";
-    case PcmFormat_SInt20_3_Be:
+    case PcmSubformat_SInt20_3_Be:
         return "s20_3be";
-    case PcmFormat_SInt20_3_Le:
+    case PcmSubformat_SInt20_3_Le:
         return "s20_3le";
-    case PcmFormat_UInt20_3:
+    case PcmSubformat_UInt20_3:
         return "u20_3";
-    case PcmFormat_UInt20_3_Be:
+    case PcmSubformat_UInt20_3_Be:
         return "u20_3be";
-    case PcmFormat_UInt20_3_Le:
+    case PcmSubformat_UInt20_3_Le:
         return "u20_3le";
-    case PcmFormat_SInt20_4:
+    case PcmSubformat_SInt20_4:
         return "s20_4";
-    case PcmFormat_SInt20_4_Be:
+    case PcmSubformat_SInt20_4_Be:
         return "s20_4be";
-    case PcmFormat_SInt20_4_Le:
+    case PcmSubformat_SInt20_4_Le:
         return "s20_4le";
-    case PcmFormat_UInt20_4:
+    case PcmSubformat_UInt20_4:
         return "u20_4";
-    case PcmFormat_UInt20_4_Be:
+    case PcmSubformat_UInt20_4_Be:
         return "u20_4be";
-    case PcmFormat_UInt20_4_Le:
+    case PcmSubformat_UInt20_4_Le:
         return "u20_4le";
-    case PcmFormat_SInt24:
+    case PcmSubformat_SInt24:
         return "s24";
-    case PcmFormat_SInt24_Be:
+    case PcmSubformat_SInt24_Be:
         return "s24_be";
-    case PcmFormat_SInt24_Le:
+    case PcmSubformat_SInt24_Le:
         return "s24_le";
-    case PcmFormat_UInt24:
+    case PcmSubformat_UInt24:
         return "u24";
-    case PcmFormat_UInt24_Be:
+    case PcmSubformat_UInt24_Be:
         return "u24_be";
-    case PcmFormat_UInt24_Le:
+    case PcmSubformat_UInt24_Le:
         return "u24_le";
-    case PcmFormat_SInt24_4:
+    case PcmSubformat_SInt24_4:
         return "s24_4";
-    case PcmFormat_SInt24_4_Be:
+    case PcmSubformat_SInt24_4_Be:
         return "s24_4be";
-    case PcmFormat_SInt24_4_Le:
+    case PcmSubformat_SInt24_4_Le:
         return "s24_4le";
-    case PcmFormat_UInt24_4:
+    case PcmSubformat_UInt24_4:
         return "u24_4";
-    case PcmFormat_UInt24_4_Be:
+    case PcmSubformat_UInt24_4_Be:
         return "u24_4be";
-    case PcmFormat_UInt24_4_Le:
+    case PcmSubformat_UInt24_4_Le:
         return "u24_4le";
-    case PcmFormat_SInt32:
+    case PcmSubformat_SInt32:
         return "s32";
-    case PcmFormat_SInt32_Be:
+    case PcmSubformat_SInt32_Be:
         return "s32_be";
-    case PcmFormat_SInt32_Le:
+    case PcmSubformat_SInt32_Le:
         return "s32_le";
-    case PcmFormat_UInt32:
+    case PcmSubformat_UInt32:
         return "u32";
-    case PcmFormat_UInt32_Be:
+    case PcmSubformat_UInt32_Be:
         return "u32_be";
-    case PcmFormat_UInt32_Le:
+    case PcmSubformat_UInt32_Le:
         return "u32_le";
-    case PcmFormat_SInt64:
+    case PcmSubformat_SInt64:
         return "s64";
-    case PcmFormat_SInt64_Be:
+    case PcmSubformat_SInt64_Be:
         return "s64_be";
-    case PcmFormat_SInt64_Le:
+    case PcmSubformat_SInt64_Le:
         return "s64_le";
-    case PcmFormat_UInt64:
+    case PcmSubformat_UInt64:
         return "u64";
-    case PcmFormat_UInt64_Be:
+    case PcmSubformat_UInt64_Be:
         return "u64_be";
-    case PcmFormat_UInt64_Le:
+    case PcmSubformat_UInt64_Le:
         return "u64_le";
-    case PcmFormat_Float32:
+    case PcmSubformat_Float32:
         return "f32";
-    case PcmFormat_Float32_Be:
+    case PcmSubformat_Float32_Be:
         return "f32_be";
-    case PcmFormat_Float32_Le:
+    case PcmSubformat_Float32_Le:
         return "f32_le";
-    case PcmFormat_Float64:
+    case PcmSubformat_Float64:
         return "f64";
-    case PcmFormat_Float64_Be:
+    case PcmSubformat_Float64_Be:
         return "f64_be";
-    case PcmFormat_Float64_Le:
+    case PcmSubformat_Float64_Le:
         return "f64_le";
     default:
         break;
@@ -5931,332 +6039,332 @@ const char* pcm_format_to_str(PcmFormat format) {
     return NULL;
 }
 
-PcmFormat pcm_format_from_str(const char* str) {
+PcmSubformat pcm_subformat_from_str(const char* str) {
     if (!str) {
-        return PcmFormat_Invalid;
+        return PcmSubformat_Invalid;
     }
     if (str[0] == 'f') {
         if (str[1] == '3') {
             if (str[2] == '2') {
                 if (strcmp(str, "f32") == 0) {
-                    return PcmFormat_Float32;
+                    return PcmSubformat_Float32;
                 }
                 if (strcmp(str, "f32_be") == 0) {
-                    return PcmFormat_Float32_Be;
+                    return PcmSubformat_Float32_Be;
                 }
                 if (strcmp(str, "f32_le") == 0) {
-                    return PcmFormat_Float32_Le;
+                    return PcmSubformat_Float32_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
-            return PcmFormat_Invalid;
+            return PcmSubformat_Invalid;
         }
         if (str[1] == '6') {
             if (str[2] == '4') {
                 if (strcmp(str, "f64") == 0) {
-                    return PcmFormat_Float64;
+                    return PcmSubformat_Float64;
                 }
                 if (strcmp(str, "f64_be") == 0) {
-                    return PcmFormat_Float64_Be;
+                    return PcmSubformat_Float64_Be;
                 }
                 if (strcmp(str, "f64_le") == 0) {
-                    return PcmFormat_Float64_Le;
+                    return PcmSubformat_Float64_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
-            return PcmFormat_Invalid;
+            return PcmSubformat_Invalid;
         }
-        return PcmFormat_Invalid;
+        return PcmSubformat_Invalid;
     }
     if (str[0] == 's') {
         if (str[1] == '1') {
             if (str[2] == '6') {
                 if (strcmp(str, "s16") == 0) {
-                    return PcmFormat_SInt16;
+                    return PcmSubformat_SInt16;
                 }
                 if (strcmp(str, "s16_be") == 0) {
-                    return PcmFormat_SInt16_Be;
+                    return PcmSubformat_SInt16_Be;
                 }
                 if (strcmp(str, "s16_le") == 0) {
-                    return PcmFormat_SInt16_Le;
+                    return PcmSubformat_SInt16_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
             if (str[2] == '8') {
                 if (strcmp(str, "s18") == 0) {
-                    return PcmFormat_SInt18;
+                    return PcmSubformat_SInt18;
                 }
                 if (strcmp(str, "s18_be") == 0) {
-                    return PcmFormat_SInt18_Be;
+                    return PcmSubformat_SInt18_Be;
                 }
                 if (strcmp(str, "s18_le") == 0) {
-                    return PcmFormat_SInt18_Le;
+                    return PcmSubformat_SInt18_Le;
                 }
                 if (strcmp(str, "s18_3") == 0) {
-                    return PcmFormat_SInt18_3;
+                    return PcmSubformat_SInt18_3;
                 }
                 if (strcmp(str, "s18_3be") == 0) {
-                    return PcmFormat_SInt18_3_Be;
+                    return PcmSubformat_SInt18_3_Be;
                 }
                 if (strcmp(str, "s18_3le") == 0) {
-                    return PcmFormat_SInt18_3_Le;
+                    return PcmSubformat_SInt18_3_Le;
                 }
                 if (strcmp(str, "s18_4") == 0) {
-                    return PcmFormat_SInt18_4;
+                    return PcmSubformat_SInt18_4;
                 }
                 if (strcmp(str, "s18_4be") == 0) {
-                    return PcmFormat_SInt18_4_Be;
+                    return PcmSubformat_SInt18_4_Be;
                 }
                 if (strcmp(str, "s18_4le") == 0) {
-                    return PcmFormat_SInt18_4_Le;
+                    return PcmSubformat_SInt18_4_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
-            return PcmFormat_Invalid;
+            return PcmSubformat_Invalid;
         }
         if (str[1] == '2') {
             if (str[2] == '0') {
                 if (strcmp(str, "s20") == 0) {
-                    return PcmFormat_SInt20;
+                    return PcmSubformat_SInt20;
                 }
                 if (strcmp(str, "s20_be") == 0) {
-                    return PcmFormat_SInt20_Be;
+                    return PcmSubformat_SInt20_Be;
                 }
                 if (strcmp(str, "s20_le") == 0) {
-                    return PcmFormat_SInt20_Le;
+                    return PcmSubformat_SInt20_Le;
                 }
                 if (strcmp(str, "s20_3") == 0) {
-                    return PcmFormat_SInt20_3;
+                    return PcmSubformat_SInt20_3;
                 }
                 if (strcmp(str, "s20_3be") == 0) {
-                    return PcmFormat_SInt20_3_Be;
+                    return PcmSubformat_SInt20_3_Be;
                 }
                 if (strcmp(str, "s20_3le") == 0) {
-                    return PcmFormat_SInt20_3_Le;
+                    return PcmSubformat_SInt20_3_Le;
                 }
                 if (strcmp(str, "s20_4") == 0) {
-                    return PcmFormat_SInt20_4;
+                    return PcmSubformat_SInt20_4;
                 }
                 if (strcmp(str, "s20_4be") == 0) {
-                    return PcmFormat_SInt20_4_Be;
+                    return PcmSubformat_SInt20_4_Be;
                 }
                 if (strcmp(str, "s20_4le") == 0) {
-                    return PcmFormat_SInt20_4_Le;
+                    return PcmSubformat_SInt20_4_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
             if (str[2] == '4') {
                 if (strcmp(str, "s24") == 0) {
-                    return PcmFormat_SInt24;
+                    return PcmSubformat_SInt24;
                 }
                 if (strcmp(str, "s24_be") == 0) {
-                    return PcmFormat_SInt24_Be;
+                    return PcmSubformat_SInt24_Be;
                 }
                 if (strcmp(str, "s24_le") == 0) {
-                    return PcmFormat_SInt24_Le;
+                    return PcmSubformat_SInt24_Le;
                 }
                 if (strcmp(str, "s24_4") == 0) {
-                    return PcmFormat_SInt24_4;
+                    return PcmSubformat_SInt24_4;
                 }
                 if (strcmp(str, "s24_4be") == 0) {
-                    return PcmFormat_SInt24_4_Be;
+                    return PcmSubformat_SInt24_4_Be;
                 }
                 if (strcmp(str, "s24_4le") == 0) {
-                    return PcmFormat_SInt24_4_Le;
+                    return PcmSubformat_SInt24_4_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
-            return PcmFormat_Invalid;
+            return PcmSubformat_Invalid;
         }
         if (str[1] == '3') {
             if (str[2] == '2') {
                 if (strcmp(str, "s32") == 0) {
-                    return PcmFormat_SInt32;
+                    return PcmSubformat_SInt32;
                 }
                 if (strcmp(str, "s32_be") == 0) {
-                    return PcmFormat_SInt32_Be;
+                    return PcmSubformat_SInt32_Be;
                 }
                 if (strcmp(str, "s32_le") == 0) {
-                    return PcmFormat_SInt32_Le;
+                    return PcmSubformat_SInt32_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
-            return PcmFormat_Invalid;
+            return PcmSubformat_Invalid;
         }
         if (str[1] == '6') {
             if (str[2] == '4') {
                 if (strcmp(str, "s64") == 0) {
-                    return PcmFormat_SInt64;
+                    return PcmSubformat_SInt64;
                 }
                 if (strcmp(str, "s64_be") == 0) {
-                    return PcmFormat_SInt64_Be;
+                    return PcmSubformat_SInt64_Be;
                 }
                 if (strcmp(str, "s64_le") == 0) {
-                    return PcmFormat_SInt64_Le;
+                    return PcmSubformat_SInt64_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
-            return PcmFormat_Invalid;
+            return PcmSubformat_Invalid;
         }
         if (str[1] == '8') {
             if (strcmp(str, "s8") == 0) {
-                return PcmFormat_SInt8;
+                return PcmSubformat_SInt8;
             }
             if (strcmp(str, "s8_be") == 0) {
-                return PcmFormat_SInt8_Be;
+                return PcmSubformat_SInt8_Be;
             }
             if (strcmp(str, "s8_le") == 0) {
-                return PcmFormat_SInt8_Le;
+                return PcmSubformat_SInt8_Le;
             }
-            return PcmFormat_Invalid;
+            return PcmSubformat_Invalid;
         }
-        return PcmFormat_Invalid;
+        return PcmSubformat_Invalid;
     }
     if (str[0] == 'u') {
         if (str[1] == '1') {
             if (str[2] == '6') {
                 if (strcmp(str, "u16") == 0) {
-                    return PcmFormat_UInt16;
+                    return PcmSubformat_UInt16;
                 }
                 if (strcmp(str, "u16_be") == 0) {
-                    return PcmFormat_UInt16_Be;
+                    return PcmSubformat_UInt16_Be;
                 }
                 if (strcmp(str, "u16_le") == 0) {
-                    return PcmFormat_UInt16_Le;
+                    return PcmSubformat_UInt16_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
             if (str[2] == '8') {
                 if (strcmp(str, "u18") == 0) {
-                    return PcmFormat_UInt18;
+                    return PcmSubformat_UInt18;
                 }
                 if (strcmp(str, "u18_be") == 0) {
-                    return PcmFormat_UInt18_Be;
+                    return PcmSubformat_UInt18_Be;
                 }
                 if (strcmp(str, "u18_le") == 0) {
-                    return PcmFormat_UInt18_Le;
+                    return PcmSubformat_UInt18_Le;
                 }
                 if (strcmp(str, "u18_3") == 0) {
-                    return PcmFormat_UInt18_3;
+                    return PcmSubformat_UInt18_3;
                 }
                 if (strcmp(str, "u18_3be") == 0) {
-                    return PcmFormat_UInt18_3_Be;
+                    return PcmSubformat_UInt18_3_Be;
                 }
                 if (strcmp(str, "u18_3le") == 0) {
-                    return PcmFormat_UInt18_3_Le;
+                    return PcmSubformat_UInt18_3_Le;
                 }
                 if (strcmp(str, "u18_4") == 0) {
-                    return PcmFormat_UInt18_4;
+                    return PcmSubformat_UInt18_4;
                 }
                 if (strcmp(str, "u18_4be") == 0) {
-                    return PcmFormat_UInt18_4_Be;
+                    return PcmSubformat_UInt18_4_Be;
                 }
                 if (strcmp(str, "u18_4le") == 0) {
-                    return PcmFormat_UInt18_4_Le;
+                    return PcmSubformat_UInt18_4_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
-            return PcmFormat_Invalid;
+            return PcmSubformat_Invalid;
         }
         if (str[1] == '2') {
             if (str[2] == '0') {
                 if (strcmp(str, "u20") == 0) {
-                    return PcmFormat_UInt20;
+                    return PcmSubformat_UInt20;
                 }
                 if (strcmp(str, "u20_be") == 0) {
-                    return PcmFormat_UInt20_Be;
+                    return PcmSubformat_UInt20_Be;
                 }
                 if (strcmp(str, "u20_le") == 0) {
-                    return PcmFormat_UInt20_Le;
+                    return PcmSubformat_UInt20_Le;
                 }
                 if (strcmp(str, "u20_3") == 0) {
-                    return PcmFormat_UInt20_3;
+                    return PcmSubformat_UInt20_3;
                 }
                 if (strcmp(str, "u20_3be") == 0) {
-                    return PcmFormat_UInt20_3_Be;
+                    return PcmSubformat_UInt20_3_Be;
                 }
                 if (strcmp(str, "u20_3le") == 0) {
-                    return PcmFormat_UInt20_3_Le;
+                    return PcmSubformat_UInt20_3_Le;
                 }
                 if (strcmp(str, "u20_4") == 0) {
-                    return PcmFormat_UInt20_4;
+                    return PcmSubformat_UInt20_4;
                 }
                 if (strcmp(str, "u20_4be") == 0) {
-                    return PcmFormat_UInt20_4_Be;
+                    return PcmSubformat_UInt20_4_Be;
                 }
                 if (strcmp(str, "u20_4le") == 0) {
-                    return PcmFormat_UInt20_4_Le;
+                    return PcmSubformat_UInt20_4_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
             if (str[2] == '4') {
                 if (strcmp(str, "u24") == 0) {
-                    return PcmFormat_UInt24;
+                    return PcmSubformat_UInt24;
                 }
                 if (strcmp(str, "u24_be") == 0) {
-                    return PcmFormat_UInt24_Be;
+                    return PcmSubformat_UInt24_Be;
                 }
                 if (strcmp(str, "u24_le") == 0) {
-                    return PcmFormat_UInt24_Le;
+                    return PcmSubformat_UInt24_Le;
                 }
                 if (strcmp(str, "u24_4") == 0) {
-                    return PcmFormat_UInt24_4;
+                    return PcmSubformat_UInt24_4;
                 }
                 if (strcmp(str, "u24_4be") == 0) {
-                    return PcmFormat_UInt24_4_Be;
+                    return PcmSubformat_UInt24_4_Be;
                 }
                 if (strcmp(str, "u24_4le") == 0) {
-                    return PcmFormat_UInt24_4_Le;
+                    return PcmSubformat_UInt24_4_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
-            return PcmFormat_Invalid;
+            return PcmSubformat_Invalid;
         }
         if (str[1] == '3') {
             if (str[2] == '2') {
                 if (strcmp(str, "u32") == 0) {
-                    return PcmFormat_UInt32;
+                    return PcmSubformat_UInt32;
                 }
                 if (strcmp(str, "u32_be") == 0) {
-                    return PcmFormat_UInt32_Be;
+                    return PcmSubformat_UInt32_Be;
                 }
                 if (strcmp(str, "u32_le") == 0) {
-                    return PcmFormat_UInt32_Le;
+                    return PcmSubformat_UInt32_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
-            return PcmFormat_Invalid;
+            return PcmSubformat_Invalid;
         }
         if (str[1] == '6') {
             if (str[2] == '4') {
                 if (strcmp(str, "u64") == 0) {
-                    return PcmFormat_UInt64;
+                    return PcmSubformat_UInt64;
                 }
                 if (strcmp(str, "u64_be") == 0) {
-                    return PcmFormat_UInt64_Be;
+                    return PcmSubformat_UInt64_Be;
                 }
                 if (strcmp(str, "u64_le") == 0) {
-                    return PcmFormat_UInt64_Le;
+                    return PcmSubformat_UInt64_Le;
                 }
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
-            return PcmFormat_Invalid;
+            return PcmSubformat_Invalid;
         }
         if (str[1] == '8') {
             if (strcmp(str, "u8") == 0) {
-                return PcmFormat_UInt8;
+                return PcmSubformat_UInt8;
             }
             if (strcmp(str, "u8_be") == 0) {
-                return PcmFormat_UInt8_Be;
+                return PcmSubformat_UInt8_Be;
             }
             if (strcmp(str, "u8_le") == 0) {
-                return PcmFormat_UInt8_Le;
+                return PcmSubformat_UInt8_Le;
             }
-            return PcmFormat_Invalid;
+            return PcmSubformat_Invalid;
         }
-        return PcmFormat_Invalid;
+        return PcmSubformat_Invalid;
     }
-    return PcmFormat_Invalid;
+    return PcmSubformat_Invalid;
 }
 
 } // namespace audio

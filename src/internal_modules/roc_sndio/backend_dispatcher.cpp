@@ -17,41 +17,28 @@ namespace sndio {
 
 namespace {
 
-DriverType select_driver_type(const address::IoUri& uri) {
-    if (uri.is_file()) {
-        return DriverType_File;
-    } else {
-        return DriverType_Device;
-    }
-}
-
-const char* select_driver_name(const address::IoUri& uri, const char* force_format) {
-    if (uri.is_file()) {
-        if (force_format && *force_format) {
-            // use specific file driver
-            return force_format;
-        }
-        // auto-detect file driver
-        return NULL;
-    }
-
-    // use specific device driver
-    return uri.scheme();
-}
-
 bool match_driver(const DriverInfo& driver_info,
-                  const char* driver_name,
-                  DriverType driver_type,
-                  unsigned driver_flags) {
-    if (driver_name != NULL && strcmp(driver_info.name, driver_name) != 0) {
+                  unsigned driver_flags,
+                  const char* driver_name) {
+    if (driver_name && strcmp(driver_info.driver_name, driver_name) != 0) {
         return false;
     }
 
-    if (driver_info.type != driver_type) {
+    if ((driver_info.driver_flags & driver_flags) != driver_flags) {
         return false;
     }
 
-    if ((driver_info.flags & driver_flags) == 0) {
+    return true;
+}
+
+bool match_format(const FormatInfo& format_info,
+                  unsigned driver_flags,
+                  const char* format_name) {
+    if (format_name && strcmp(format_info.format_name, format_name) != 0) {
+        return false;
+    }
+
+    if ((format_info.driver_flags & driver_flags) != driver_flags) {
         return false;
     }
 
@@ -104,20 +91,19 @@ BackendDispatcher::open_default_source(const IoConfig& io_config,
 }
 
 status::StatusCode BackendDispatcher::open_sink(const address::IoUri& uri,
-                                                const char* force_format,
                                                 const IoConfig& io_config,
                                                 core::ScopedPtr<ISink>& result) {
     if (!uri.is_valid()) {
         roc_panic("backend dispatcher: invalid uri");
     }
 
-    const DriverType driver_type = select_driver_type(uri);
-    const char* driver_name = select_driver_name(uri, force_format);
+    const char* driver = uri.scheme();
+    const char* path = uri.path();
 
     IDevice* device = NULL;
 
-    const status::StatusCode code = open_device_(
-        DeviceType_Sink, driver_type, driver_name, uri.path(), io_config, &device);
+    const status::StatusCode code =
+        open_file_or_device_(DeviceType_Sink, driver, path, io_config, &device);
     if (code != status::StatusOK) {
         return code;
     }
@@ -130,20 +116,19 @@ status::StatusCode BackendDispatcher::open_sink(const address::IoUri& uri,
 }
 
 status::StatusCode BackendDispatcher::open_source(const address::IoUri& uri,
-                                                  const char* force_format,
                                                   const IoConfig& io_config,
                                                   core::ScopedPtr<ISource>& result) {
     if (!uri.is_valid()) {
         roc_panic("backend dispatcher: invalid uri");
     }
 
-    const DriverType driver_type = select_driver_type(uri);
-    const char* driver_name = select_driver_name(uri, force_format);
+    const char* driver = uri.scheme();
+    const char* path = uri.path();
 
     IDevice* device = NULL;
 
-    const status::StatusCode code = open_device_(
-        DeviceType_Source, driver_type, driver_name, uri.path(), io_config, &device);
+    const status::StatusCode code =
+        open_file_or_device_(DeviceType_Source, driver, path, io_config, &device);
     if (code != status::StatusOK) {
         return code;
     }
@@ -162,20 +147,11 @@ bool BackendDispatcher::get_supported_schemes(core::StringList& result) {
     for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {
         const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);
 
-        // every device driver has its own scheme
-        if (driver_info.type == DriverType_Device) {
-            if (result.find(driver_info.name)) {
-                continue;
-            }
-            if (!result.push_back(driver_info.name)) {
+        if (!result.find(driver_info.driver_name)) {
+            if (!result.push_back(driver_info.driver_name)) {
                 return false;
             }
         }
-    }
-
-    // all file drivers has a single "file" scheme
-    if (!result.push_back("file")) {
-        return false;
     }
 
     return true;
@@ -184,16 +160,42 @@ bool BackendDispatcher::get_supported_schemes(core::StringList& result) {
 bool BackendDispatcher::get_supported_formats(core::StringList& result) {
     result.clear();
 
-    for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {
-        const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);
+    for (size_t n = 0; n < BackendMap::instance().num_formats(); n++) {
+        const FormatInfo& format_info = BackendMap::instance().nth_format(n);
 
-        if (driver_info.type == DriverType_File) {
-            if (result.find(driver_info.name)) {
-                continue;
-            }
-            if (!result.push_back(driver_info.name)) {
+        if (!result.find(format_info.format_name)) {
+            if (!result.push_back(format_info.format_name)) {
                 return false;
             }
+        }
+    }
+
+    return true;
+}
+
+bool BackendDispatcher::get_supported_subformat_groups(core::StringList& result) {
+    result.clear();
+
+    for (size_t n = 0; n < BackendMap::instance().num_backends(); n++) {
+        IBackend& backend = BackendMap::instance().nth_backend(n);
+
+        if (!backend.discover_subformat_groups(result)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool BackendDispatcher::get_supported_subformats(const char* group,
+                                                 core::StringList& result) {
+    result.clear();
+
+    for (size_t n = 0; n < BackendMap::instance().num_backends(); n++) {
+        IBackend& backend = BackendMap::instance().nth_backend(n);
+
+        if (!backend.discover_subformats(group, result)) {
+            return false;
         }
     }
 
@@ -203,102 +205,177 @@ bool BackendDispatcher::get_supported_formats(core::StringList& result) {
 status::StatusCode BackendDispatcher::open_default_device_(DeviceType device_type,
                                                            const IoConfig& io_config,
                                                            IDevice** result) {
-    const unsigned driver_flags =
-        unsigned(DriverFlag_IsDefault
-                 | (device_type == DeviceType_Sink ? DriverFlag_SupportsSink
-                                                   : DriverFlag_SupportsSource));
+    roc_panic_if(!result);
 
     status::StatusCode code = status::StatusNoDriver;
+
+    // Try all drivers with Driver_DefaultDevice flag.
+    const unsigned driver_flags = Driver_Device | Driver_DefaultDevice
+        | (device_type == DeviceType_Sink ? Driver_SupportsSink : Driver_SupportsSource);
 
     for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {
         const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);
 
-        if (!match_driver(driver_info, NULL, DriverType_Device, driver_flags)) {
+        if (!match_driver(driver_info, driver_flags, NULL)) {
             continue;
         }
 
-        code = driver_info.backend->open_device(device_type, DriverType_Device,
-                                                driver_info.name, "default", io_config,
+        code = driver_info.backend->open_device(device_type, driver_info.driver_name,
+                                                "default", io_config, frame_factory_,
+                                                arena_, result);
+
+        if (code == status::StatusOK) {
+            return code;
+        }
+
+        if (code == status::StatusNoDriver) {
+            continue;
+        }
+
+        break;
+    }
+
+    roc_log(LogError, "backend dispatcher: failed to open default device: status=%s",
+            status::code_to_str(code));
+
+    return code;
+}
+
+status::StatusCode BackendDispatcher::open_file_or_device_(DeviceType device_type,
+                                                           const char* driver,
+                                                           const char* path,
+                                                           const IoConfig& io_config,
+                                                           IDevice** result) {
+    roc_panic_if(!driver);
+    roc_panic_if(!path);
+    roc_panic_if(!result);
+
+    if (strcmp(driver, "file") == 0) {
+        if (io_config.latency != 0) {
+            roc_log(LogError,
+                    "backend dispatcher: it's not possible to specify io latency"
+                    " for files");
+            return status::StatusBadConfig;
+        }
+
+        if (device_type == DeviceType_Sink && strcmp(path, "-") == 0
+            && !io_config.sample_spec.has_format()) {
+            roc_log(
+                LogError,
+                "backend dispatcher: when output file is \"-\", format must be specified"
+                " explicitly via io encoding");
+            return status::StatusBadConfig;
+        }
+
+        return open_file_(device_type, driver, path, io_config, result);
+    }
+
+    return open_device_(device_type, driver, path, io_config, result);
+}
+
+status::StatusCode BackendDispatcher::open_device_(DeviceType device_type,
+                                                   const char* driver,
+                                                   const char* path,
+                                                   const IoConfig& io_config,
+                                                   IDevice** result) {
+    status::StatusCode code = status::StatusNoDriver;
+
+    const unsigned driver_flags = Driver_Device
+        | (device_type == DeviceType_Sink ? Driver_SupportsSink : Driver_SupportsSource);
+
+    // We're opening device, driver defines device type (pulseaudio, alsa, etc).
+    // Try backends which support matching driver.
+    for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {
+        const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);
+
+        if (!match_driver(driver_info, driver_flags, driver)) {
+            continue;
+        }
+
+        code = driver_info.backend->open_device(device_type, driver, path, io_config,
                                                 frame_factory_, arena_, result);
 
         if (code == status::StatusOK) {
             return code;
         }
 
-        if (code != status::StatusNoDriver) {
-            roc_log(LogDebug,
-                    "backend dispatcher: got error from driver:"
-                    " driver=%s status=%s",
-                    driver_info.name, status::code_to_str(code));
+        if (code == status::StatusNoDriver) {
+            // No error, backend just doesn't support driver.
+            continue;
         }
+
+        break;
     }
 
-    roc_log(LogError, "backend dispatcher: failed to open default %s: status=%s",
-            device_type_to_str(device_type), status::code_to_str(code));
+    roc_log(LogError,
+            "backend dispatcher: failed to open device:"
+            " device_type=%s driver=%s path=%s status=%s",
+            device_type_to_str(device_type), driver, path, status::code_to_str(code));
 
     return code;
 }
 
-status::StatusCode BackendDispatcher::open_device_(DeviceType device_type,
-                                                   DriverType driver_type,
-                                                   const char* driver_name,
-                                                   const char* path,
-                                                   const IoConfig& io_config,
-                                                   IDevice** result) {
-    const unsigned driver_flags =
-        (device_type == DeviceType_Sink ? DriverFlag_SupportsSink
-                                        : DriverFlag_SupportsSource);
-
+status::StatusCode BackendDispatcher::open_file_(DeviceType device_type,
+                                                 const char* driver,
+                                                 const char* path,
+                                                 const IoConfig& io_config,
+                                                 IDevice** result) {
     status::StatusCode code = status::StatusNoDriver;
 
-    if (driver_name != NULL) {
-        for (size_t n = 0; n < BackendMap::instance().num_drivers(); n++) {
-            const DriverInfo& driver_info = BackendMap::instance().nth_driver(n);
+    const unsigned driver_flags = Driver_File
+        | (device_type == DeviceType_Sink ? Driver_SupportsSink : Driver_SupportsSource);
 
-            if (!match_driver(driver_info, driver_name, driver_type, driver_flags)) {
+    if (io_config.sample_spec.has_format()) {
+        // We're opening file and format is specified explicitly (wav, flac, etc).
+        // Try backends which support requested format.
+        for (size_t n = 0; n < BackendMap::instance().num_formats(); n++) {
+            const FormatInfo& format_info = BackendMap::instance().nth_format(n);
+
+            if (!match_format(format_info, driver_flags,
+                              io_config.sample_spec.format_name())) {
                 continue;
             }
 
-            code = driver_info.backend->open_device(device_type, driver_type,
-                                                    driver_info.name, path, io_config,
+            code = format_info.backend->open_device(device_type, driver, path, io_config,
                                                     frame_factory_, arena_, result);
 
             if (code == status::StatusOK) {
                 return code;
             }
 
-            if (code != status::StatusNoDriver) {
-                roc_log(LogDebug,
-                        "backend dispatcher: got error from driver:"
-                        " driver=%s status=%s",
-                        driver_info.name, status::code_to_str(code));
+            if (code == status::StatusNoDriver || code == status::StatusNoFormat) {
+                // No error, backend just doesn't support driver or format.
+                continue;
             }
+
+            break;
         }
     } else {
+        // We're opening file and format is omitted.
+        // Try all backends.
         for (size_t n = 0; n < BackendMap::instance().num_backends(); n++) {
             IBackend& backend = BackendMap::instance().nth_backend(n);
 
-            code = backend.open_device(device_type, driver_type, NULL, path, io_config,
+            code = backend.open_device(device_type, driver, path, io_config,
                                        frame_factory_, arena_, result);
 
             if (code == status::StatusOK) {
                 return code;
             }
 
-            if (code != status::StatusNoDriver) {
-                roc_log(LogDebug,
-                        "backend dispatcher: got error from backend:"
-                        " backend=%s status=%s",
-                        backend.name(), status::code_to_str(code));
+            if (code == status::StatusNoDriver || code == status::StatusNoFormat) {
+                // No error, backend just doesn't support driver or format.
+                continue;
             }
+
+            break;
         }
     }
 
     roc_log(LogError,
-            "backend dispatcher: failed to open %s:"
-            " driver_type=%s driver_name=%s path=%s status=%s",
-            device_type_to_str(device_type), driver_type_to_str(driver_type), driver_name,
-            path, status::code_to_str(code));
+            "backend dispatcher: failed to open file:"
+            " device_type=%s driver=%s path=%s status=%s",
+            device_type_to_str(device_type), driver, path, status::code_to_str(code));
 
     return code;
 }

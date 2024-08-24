@@ -46,7 +46,7 @@ TEST_GROUP(timestamp_extractor) {};
 TEST(timestamp_extractor, single_write) {
     // 1 second = 1000 samples
     const audio::SampleSpec sample_spec =
-        audio::SampleSpec(1000, audio::Sample_RawFormat, audio::ChanLayout_Surround,
+        audio::SampleSpec(1000, audio::PcmSubformat_Raw, audio::ChanLayout_Surround,
                           audio::ChanOrder_Smpte, 0x1);
 
     const core::nanoseconds_t cts = 1691499037871419405;
@@ -84,7 +84,7 @@ TEST(timestamp_extractor, single_write) {
 TEST(timestamp_extractor, forward_error) {
     // 1 second = 1000 samples
     const audio::SampleSpec sample_spec =
-        audio::SampleSpec(1000, audio::Sample_RawFormat, audio::ChanLayout_Surround,
+        audio::SampleSpec(1000, audio::PcmSubformat_Raw, audio::ChanLayout_Surround,
                           audio::ChanOrder_Smpte, 0x1);
 
     const status::StatusCode status_list[] = {

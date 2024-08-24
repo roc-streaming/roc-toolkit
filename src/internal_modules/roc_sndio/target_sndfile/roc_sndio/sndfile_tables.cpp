@@ -33,7 +33,8 @@ enum {
 
 } // namespace
 
-SndfileDriverInfo sndfile_driver_remap[ROC_ARRAY_SIZE(sndfile_driver_remap)] = {
+SndfileFormatInfo sndfile_format_remap[ROC_ARRAY_SIZE(sndfile_format_remap)] = {
+    { "pcm", NULL, SF_FORMAT_RAW },
     { "ogg", ".ogg", SF_FORMAT_OGG },
     { "mp1", ".mp1", SF_FORMAT_MPEG | SF_FORMAT_MPEG_LAYER_I },
     { "mp2", ".mp2", SF_FORMAT_MPEG | SF_FORMAT_MPEG_LAYER_II },
@@ -44,8 +45,36 @@ SndfileDriverInfo sndfile_driver_remap[ROC_ARRAY_SIZE(sndfile_driver_remap)] = {
     { "wavex", NULL, SF_FORMAT_WAVEX },
 };
 
+SndfileSubformatInfo sndfile_subformat_map[ROC_ARRAY_SIZE(sndfile_subformat_map)] = {
+    // lpcm
+    { "lpcm", "ulaw", SF_FORMAT_ULAW },
+    { "lpcm", "alaw", SF_FORMAT_ALAW },
+    // dpcm
+    { "dpcm", "d8", SF_FORMAT_DPCM_8 },
+    { "dpcm", "d16", SF_FORMAT_DPCM_16 },
+    // adpcm
+    { "adpcm", "adpcm_ima", SF_FORMAT_IMA_ADPCM },
+    { "adpcm", "adpcm_ms", SF_FORMAT_MS_ADPCM },
+    { "adpcm", "adpcm_vox", SF_FORMAT_VOX_ADPCM },
+    // dwvw
+    { "dwvw", "dwvw12", SF_FORMAT_DWVW_12 },
+    { "dwvw", "dwvw16", SF_FORMAT_DWVW_16 },
+    { "dwvw", "dwvw24", SF_FORMAT_DWVW_24 },
+    // g72x
+    { "g72x", "g721_32", SF_FORMAT_G721_32 },
+    { "g72x", "g723_24", SF_FORMAT_G723_24 },
+    { "g72x", "g723_40", SF_FORMAT_G723_40 },
+    // ogg
+    { "ogg", "vorbis", SF_FORMAT_VORBIS },
+    { "ogg", "opus", SF_FORMAT_OPUS },
+};
+
+int sndfile_explicit_formats[ROC_ARRAY_SIZE(sndfile_explicit_formats)] = {
+    SF_FORMAT_RAW, // pcm
+};
+
 int sndfile_default_subformats[ROC_ARRAY_SIZE(sndfile_default_subformats)] = {
-    // at least one of the PCM sub-formats is supported by almost every major format
+    // most major formats supports at least one PCM or DPCM sub-format
     SF_FORMAT_PCM_24,
     SF_FORMAT_PCM_16,
     SF_FORMAT_DPCM_16,

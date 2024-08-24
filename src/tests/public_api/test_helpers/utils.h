@@ -18,8 +18,6 @@ namespace {
 enum {
     MaxBufSize = 5120,
 
-    SampleRate = 44100,
-
     SourcePackets = 10,
     RepairPackets = 7,
 

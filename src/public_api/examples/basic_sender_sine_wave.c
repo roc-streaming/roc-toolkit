@@ -81,8 +81,9 @@ int main() {
     memset(&sender_config, 0, sizeof(sender_config));
 
     /* Setup frame format that we want to write to sender. */
+    sender_config.frame_encoding.format = ROC_FORMAT_PCM;
+    sender_config.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
     sender_config.frame_encoding.rate = MY_SAMPLE_RATE;
-    sender_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
     sender_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
     /* Setup network packets format that sender should generate. */

@@ -24,14 +24,15 @@ namespace core {
 //! Dynamic list of strings.
 //!
 //! Strings are stored in a continuous dynamically-growing array.
-//! Each string is stored in a block with a header and footer,
-//! which both store block length. This allow fast iteration
-//! in both directions.
+//! Each string is stored in a block with a header which holds offsets to previous
+//! and next blocks, forming a linked list. This allows implementing bidirectional
+//! iteration and sorting. Using offsets instead of pointers is needed to avoid
+//! pointer invalidation after reallocation.
 //!
 //! @code
-//!  ++--------+--------+---------+--------++-----------
-//!  || Header | string | padding | Footer || Header ...
-//!  ++--------+--------+---------+--------++-----------
+//!  ++--------+--------+---------++-----------
+//!  || Header | string | padding || Header ...
+//!  ++--------+--------+---------++-----------
 //! @endcode
 class StringList : public NonCopyable<> {
 public:
@@ -95,31 +96,54 @@ public:
     //! Find string in the list.
     //! @returns
     //!  the string in the list or NULL if it is not found.
-    ROC_ATTR_NODISCARD const char* find(const char* str);
+    const char* find(const char* str);
 
     //! Find string in the list.
     //! @returns
     //!  the string in the list or NULL if it is not found.
-    ROC_ATTR_NODISCARD const char* find(const char* str_begin, const char* str_end);
+    const char* find(const char* str_begin, const char* str_end);
+
+    //! String comparison algorithm.
+    enum Order {
+        //! Sort in lexicographic order.
+        //! Assumes ASCII.
+        OrderLexical,
+        //! Sort in natural order.
+        //! Assumes ASCII.
+        OrderNatural,
+    };
+
+    //! Sort list of strings according to specified order.
+    void sort(Order order);
 
 private:
     enum { MinCapacity = 128 };
 
+    typedef uint32_t offset_t;
+
     struct Header {
-        uint32_t len;
+        // offsets of next and previous elements in memory
+        offset_t next_off;
+        offset_t prev_off;
+        // len of this block, including header and padding
+        offset_t blk_len;
+        // null-terminated string
         char str[];
     };
 
-    struct Footer {
-        uint32_t len;
-    };
+    void swap_(offset_t x_off, Header* x_header, offset_t y_off, Header* y_header);
+
+    offset_t to_offset_(const Header* header) const;
+    const Header* from_offset_(offset_t off) const;
+    Header* from_offset_(offset_t off);
 
     void check_member_(const char* str) const;
+
     bool grow_(size_t size);
 
-    core::Array<char> data_;
-    Header* front_;
-    Header* back_;
+    core::Array<char> memory_;
+    offset_t head_off_;
+    offset_t tail_off_;
     size_t size_;
 };
 

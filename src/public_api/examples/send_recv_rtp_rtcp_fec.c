@@ -48,8 +48,9 @@ static void* receiver_loop(void* arg) {
     roc_receiver_config receiver_config;
     memset(&receiver_config, 0, sizeof(receiver_config));
 
+    receiver_config.frame_encoding.format = ROC_FORMAT_PCM;
+    receiver_config.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
     receiver_config.frame_encoding.rate = MY_SAMPLE_RATE;
-    receiver_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
     receiver_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
     /* Make read operation blocking as we don't have our own clock. */
@@ -130,8 +131,9 @@ static void sender_loop(roc_context* context) {
     roc_sender_config sender_config;
     memset(&sender_config, 0, sizeof(sender_config));
 
+    sender_config.frame_encoding.format = ROC_FORMAT_PCM;
+    sender_config.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
     sender_config.frame_encoding.rate = MY_SAMPLE_RATE;
-    sender_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
     sender_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
     /* Enable Reed-Solomon FEC scheme because we use ROC_PROTO_RTP_RS8M_SOURCE

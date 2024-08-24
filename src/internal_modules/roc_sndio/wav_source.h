@@ -31,14 +31,12 @@ public:
     //! Initialize.
     WavSource(audio::FrameFactory& frame_factory,
               core::IArena& arena,
-              const IoConfig& io_config);
+              const IoConfig& io_config,
+              const char* path);
     ~WavSource();
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
-
-    //! Open source.
-    ROC_ATTR_NODISCARD status::StatusCode open(const char* device);
 
     //! Get device type.
     virtual DeviceType type() const;
@@ -51,6 +49,9 @@ public:
 
     //! Get sample specification of the source.
     virtual audio::SampleSpec sample_spec() const;
+
+    //! Get recommended frame length of the source.
+    virtual core::nanoseconds_t frame_length() const;
 
     //! Check if the source supports state updates.
     virtual bool has_state() const;
@@ -87,8 +88,8 @@ private:
 
     audio::SampleSpec sample_spec_;
 
-    drwav wav_;
-    bool file_opened_;
+    FILE* input_file_;
+    drwav wav_decoder_;
     bool eof_;
 
     status::StatusCode init_status_;

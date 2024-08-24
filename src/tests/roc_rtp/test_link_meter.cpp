@@ -41,7 +41,7 @@ packet::PacketFactory packet_factory(arena, PacketSz);
 EncodingMap encoding_map(arena);
 
 audio::SampleSpec sample_spec(SampleRate,
-                              audio::Sample_RawFormat,
+                              audio::PcmSubformat_Raw,
                               audio::ChanLayout_Surround,
                               audio::ChanOrder_Smpte,
                               ChMask);

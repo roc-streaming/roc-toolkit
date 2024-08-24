@@ -60,9 +60,9 @@ SpeexResampler::SpeexResampler(const ResamplerConfig& config,
     , in_latency_diff_(0)
     , report_limiter_(LogReportInterval)
     , init_status_(status::NoStatus) {
-    if (!in_spec.is_valid() || !out_spec.is_valid() || !in_spec.is_raw()
+    if (!in_spec.is_complete() || !out_spec.is_complete() || !in_spec.is_raw()
         || !out_spec.is_raw()) {
-        roc_panic("speex resampler: required valid sample specs with raw format:"
+        roc_panic("speex resampler: required complete sample specs with raw format:"
                   " in_spec=%s out_spec=%s",
                   sample_spec_to_str(in_spec).c_str(),
                   sample_spec_to_str(out_spec).c_str());

@@ -39,11 +39,11 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
     if (config_.input_sample_spec.channel_set()
         != config_.output_sample_spec.channel_set()) {
         const audio::SampleSpec from_spec(config_.output_sample_spec.sample_rate(),
-                                          audio::Sample_RawFormat,
+                                          audio::PcmSubformat_Raw,
                                           config_.input_sample_spec.channel_set());
 
         const audio::SampleSpec to_spec(config_.output_sample_spec.sample_rate(),
-                                        audio::Sample_RawFormat,
+                                        audio::PcmSubformat_Raw,
                                         config_.output_sample_spec.channel_set());
 
         channel_mapper_writer_.reset(
@@ -58,11 +58,11 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
     if (config_.input_sample_spec.sample_rate()
         != config_.output_sample_spec.sample_rate()) {
         const audio::SampleSpec from_spec(config_.input_sample_spec.sample_rate(),
-                                          audio::Sample_RawFormat,
+                                          audio::PcmSubformat_Raw,
                                           config_.input_sample_spec.channel_set());
 
         const audio::SampleSpec to_spec(config_.output_sample_spec.sample_rate(),
-                                        audio::Sample_RawFormat,
+                                        audio::PcmSubformat_Raw,
                                         config_.input_sample_spec.channel_set());
 
         resampler_.reset(processor_map.new_resampler(config_.resampler, from_spec,
@@ -114,6 +114,10 @@ sndio::ISource* TranscoderSink::to_source() {
 
 audio::SampleSpec TranscoderSink::sample_spec() const {
     return config_.output_sample_spec;
+}
+
+core::nanoseconds_t TranscoderSink::frame_length() const {
+    return 0;
 }
 
 bool TranscoderSink::has_state() const {

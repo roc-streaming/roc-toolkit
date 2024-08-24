@@ -49,7 +49,7 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
     {
         const audio::SampleSpec inout_spec(
             source_config_.common.output_sample_spec.sample_rate(),
-            audio::Sample_RawFormat,
+            audio::PcmSubformat_Raw,
             source_config_.common.output_sample_spec.channel_set());
 
         mixer_.reset(new (mixer_) audio::Mixer(inout_spec, true, frame_factory_, arena));
@@ -62,7 +62,7 @@ ReceiverSource::ReceiverSource(const ReceiverSourceConfig& source_config,
     if (!source_config_.common.output_sample_spec.is_raw()) {
         const audio::SampleSpec in_spec(
             source_config_.common.output_sample_spec.sample_rate(),
-            audio::Sample_RawFormat,
+            audio::PcmSubformat_Raw,
             source_config_.common.output_sample_spec.channel_set());
 
         pcm_mapper_.reset(new (pcm_mapper_) audio::PcmMapperReader(
@@ -191,6 +191,10 @@ sndio::ISource* ReceiverSource::to_source() {
 
 audio::SampleSpec ReceiverSource::sample_spec() const {
     return source_config_.common.output_sample_spec;
+}
+
+core::nanoseconds_t ReceiverSource::frame_length() const {
+    return 0;
 }
 
 bool ReceiverSource::has_state() const {

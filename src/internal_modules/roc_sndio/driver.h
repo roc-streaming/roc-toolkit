@@ -7,7 +7,7 @@
  */
 
 //! @file roc_sndio/driver.h
-//! @brief Driver types.
+//! @brief Driver information.
 
 #ifndef ROC_SNDIO_DRIVER_H_
 #define ROC_SNDIO_DRIVER_H_
@@ -21,71 +21,96 @@ namespace sndio {
 class IBackend;
 
 //! Maximum number of drivers.
-static const size_t MaxDrivers = 128;
+static const size_t MaxDrivers = 16;
 
-//! Driver type.
-enum DriverType {
-    //! Invalid type.
-    DriverType_Invalid,
-
-    //! Driver for audio files.
-    DriverType_File,
-
-    //! Driver for audio devices.
-    DriverType_Device
-};
+//! Maximum number of file formats.
+static const size_t MaxFormats = 128;
 
 //! Driver flags.
 enum DriverFlags {
+    //! This is driver for audio files.
+    Driver_File = (1 << 0),
+
+    //! This is driver for audio devices.
+    Driver_Device = (1 << 1),
+
     //! Driver is used if no file or device is specified.
-    DriverFlag_IsDefault = (1 << 0),
+    Driver_DefaultDevice = (1 << 2),
 
     //! Driver supports sources (input).
-    DriverFlag_SupportsSource = (1 << 1),
+    Driver_SupportsSource = (1 << 3),
 
     //! Driver supports sinks (output).
-    DriverFlag_SupportsSink = (1 << 2)
+    Driver_SupportsSink = (1 << 4)
 };
 
-//! Driver information.
+//! Information about driver.
 struct DriverInfo {
     //! Driver name.
-    char name[20];
-
-    //! Driver type.
-    DriverType type;
+    char driver_name[12];
 
     //! Driver flags.
-    unsigned int flags;
+    unsigned int driver_flags;
 
-    //! Backend the driver uses.
+    //! Associated backend.
     IBackend* backend;
 
     //! Initialize.
-    DriverInfo()
-        : type(DriverType_Invalid)
-        , flags(0)
-        , backend(NULL) {
-        strcpy(name, "");
+    DriverInfo() {
+        strcpy(driver_name, "");
+        driver_flags = 0;
+        backend = NULL;
     }
 
     //! Initialize.
-    DriverInfo(const char* driver_name,
-               DriverType driver_type,
-               unsigned int driver_flags,
-               IBackend* driver_backend)
-        : type(driver_type)
-        , flags(driver_flags)
-        , backend(driver_backend) {
-        if (!driver_name || strlen(driver_name) > sizeof(name) - 1) {
+    DriverInfo(const char* p_driver_name,
+               unsigned int p_driver_flags,
+               IBackend* p_backend) {
+        if (!p_driver_name || strlen(p_driver_name) > sizeof(driver_name) - 1) {
             roc_panic("invalid driver name");
         }
-        strcpy(name, driver_name);
+        strcpy(driver_name, p_driver_name);
+        driver_flags = p_driver_flags;
+        backend = p_backend;
     }
 };
 
-//! Convert driver type to string.
-const char* driver_type_to_str(DriverType type);
+//! Information about format supported by "file" driver.
+struct FormatInfo {
+    //! Driver name.
+    char driver_name[12];
+
+    //! Driver flags.
+    unsigned int driver_flags;
+
+    //! Format name.
+    char format_name[12];
+
+    //! Associated backend.
+    IBackend* backend;
+
+    //! Initialize.
+    FormatInfo() {
+        strcpy(driver_name, "");
+        driver_flags = 0;
+        strcpy(format_name, "");
+        backend = NULL;
+    }
+
+    //! Initialize.
+    FormatInfo(const char* p_driver_name,
+               const char* p_format_name,
+               unsigned int p_driver_flags,
+               IBackend* p_backend) {
+        if (!p_format_name || strlen(p_format_name) > sizeof(format_name) - 1) {
+            roc_panic("invalid format name");
+        }
+        strcpy(driver_name, p_driver_name);
+        driver_flags = p_driver_flags;
+        strcpy(format_name, p_format_name);
+        backend = p_backend;
+    }
+};
 
 } // namespace sndio
 } // namespace roc

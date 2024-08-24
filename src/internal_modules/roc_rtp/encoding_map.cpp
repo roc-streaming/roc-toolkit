@@ -7,9 +7,9 @@
  */
 
 #include "roc_rtp/encoding_map.h"
+#include "roc_audio/format.h"
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
-#include "roc_audio/sample_format.h"
 #include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/panic.h"
 #include "roc_status/code_to_str.h"
@@ -24,7 +24,7 @@ EncodingMap::EncodingMap(core::IArena& arena)
         Encoding enc;
         enc.payload_type = PayloadType_L16_Mono;
         enc.sample_spec = audio::SampleSpec(
-            44100, audio::PcmFormat_SInt16_Be, audio::ChanLayout_Surround,
+            44100, audio::PcmSubformat_SInt16_Be, audio::ChanLayout_Surround,
             audio::ChanOrder_Smpte, audio::ChanMask_Surround_Mono);
         enc.packet_flags = packet::Packet::FlagAudio;
 
@@ -34,7 +34,7 @@ EncodingMap::EncodingMap(core::IArena& arena)
         Encoding enc;
         enc.payload_type = PayloadType_L16_Stereo;
         enc.sample_spec = audio::SampleSpec(
-            44100, audio::PcmFormat_SInt16_Be, audio::ChanLayout_Surround,
+            44100, audio::PcmSubformat_SInt16_Be, audio::ChanLayout_Surround,
             audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo);
         enc.packet_flags = packet::Packet::FlagAudio;
 
@@ -80,7 +80,36 @@ status::StatusCode EncodingMap::register_encoding(Encoding enc) {
         return status::StatusBadArg;
     }
 
-    if (!enc.sample_spec.is_valid()) {
+    if (enc.sample_spec.format() == audio::Format_Invalid) {
+        roc_log(LogError,
+                "encoding map: failed to register encoding:"
+                " missing format");
+        return status::StatusBadArg;
+    }
+
+    if (enc.sample_spec.format() == audio::Format_Pcm
+        && enc.sample_spec.pcm_subformat() == audio::PcmSubformat_Invalid) {
+        roc_log(LogError,
+                "encoding map: failed to register encoding:"
+                " missing sub-format");
+        return status::StatusBadArg;
+    }
+
+    if (enc.sample_spec.sample_rate() == 0) {
+        roc_log(LogError,
+                "encoding map: failed to register encoding:"
+                " missing rate");
+        return status::StatusBadArg;
+    }
+
+    if (!enc.sample_spec.channel_set().is_valid()) {
+        roc_log(LogError,
+                "encoding map: failed to register encoding:"
+                " missing channels");
+        return status::StatusBadArg;
+    }
+
+    if (!enc.sample_spec.is_complete()) {
         roc_log(LogError,
                 "encoding map: failed to register encoding:"
                 " invalid encoding parameters");
@@ -133,8 +162,8 @@ void EncodingMap::resolve_codecs_(Encoding& enc) {
         return;
     }
 
-    switch (enc.sample_spec.sample_format()) {
-    case audio::SampleFormat_Pcm:
+    switch (enc.sample_spec.format()) {
+    case audio::Format_Pcm:
         if (!enc.new_encoder) {
             enc.new_encoder = &audio::PcmEncoder::construct;
         }
@@ -143,7 +172,7 @@ void EncodingMap::resolve_codecs_(Encoding& enc) {
         }
         break;
 
-    case audio::SampleFormat_Invalid:
+    default:
         break;
     }
 }

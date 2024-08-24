@@ -64,6 +64,10 @@ public:
     //! Frame written to or read from the device should use this specification.
     virtual audio::SampleSpec sample_spec() const = 0;
 
+    //! Get recommended frame length of the device.
+    //! Frames written to or read from the device are recommended to have this size.
+    virtual core::nanoseconds_t frame_length() const = 0;
+
     //! Check if the device supports state updates.
     //! @remarks
     //!  If true, state() returns current state, and pause() and resume()

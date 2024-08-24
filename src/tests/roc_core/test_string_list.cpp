@@ -255,15 +255,15 @@ TEST(string_list, exponential_growth) {
     int num_reallocs = 0;
 
     int expected_reallocs[] = {
-        1, 1, 1,                               //
-        2, 2, 2,                               //
-        3, 3, 3, 3, 3, 3,                      //
-        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, //
-        5, 5, 5, 5, 5, 5, 5                    //
+        1, 1,                            //
+        2, 2, 2,                         //
+        3, 3, 3, 3, 3,                   //
+        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, //
+        5, 5, 5, 5, 5                    //
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(expected_reallocs); n++) {
-        CHECK(sl.push_back("123456789abcdef,123456789abcdef"));
+        CHECK(sl.push_back("123456789abcd,123456789abcd"));
 
         if (prev_front != sl.front()) {
             num_reallocs++;

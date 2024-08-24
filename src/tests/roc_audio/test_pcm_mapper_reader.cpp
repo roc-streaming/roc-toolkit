@@ -8,8 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_audio/pcm_format.h"
 #include "roc_audio/pcm_mapper_reader.h"
+#include "roc_audio/pcm_subformat.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/time.h"
@@ -206,9 +206,9 @@ TEST_GROUP(pcm_mapper_reader) {};
 TEST(pcm_mapper_reader, mono_raw_to_raw) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+    const SampleSpec in_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<sample_t> count_reader(in_spec, 0.001f);
@@ -231,9 +231,9 @@ TEST(pcm_mapper_reader, mono_raw_to_raw) {
 TEST(pcm_mapper_reader, mono_s16_to_raw) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<int16_t> count_reader(in_spec, 100);
@@ -256,9 +256,9 @@ TEST(pcm_mapper_reader, mono_s16_to_raw) {
 TEST(pcm_mapper_reader, mono_raw_to_s16) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+    const SampleSpec in_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround,
+    const SampleSpec out_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<sample_t> count_reader(in_spec, 0.001f);
@@ -281,9 +281,9 @@ TEST(pcm_mapper_reader, mono_raw_to_s16) {
 TEST(pcm_mapper_reader, stereo_s16_to_raw) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     CountReader<int16_t> count_reader(in_spec, 100);
@@ -306,9 +306,9 @@ TEST(pcm_mapper_reader, stereo_s16_to_raw) {
 TEST(pcm_mapper_reader, stereo_raw_to_s16) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+    const SampleSpec in_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround,
+    const SampleSpec out_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     CountReader<sample_t> count_reader(in_spec, 0.001f);
@@ -336,9 +336,9 @@ TEST(pcm_mapper_reader, big_read_s16_to_raw) {
         MaxFrameSz = MaxBytes / ROC_MAX(sizeof(int16_t), sizeof(sample_t))
     };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<int16_t> count_reader(in_spec, 10);
@@ -370,9 +370,9 @@ TEST(pcm_mapper_reader, big_read_raw_to_s16) {
         MaxFrameSz = MaxBytes / ROC_MAX(sizeof(int16_t), sizeof(sample_t))
     };
 
-    const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+    const SampleSpec in_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround,
+    const SampleSpec out_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<sample_t> count_reader(in_spec, 0.001f);
@@ -401,9 +401,9 @@ TEST(pcm_mapper_reader, big_read_raw_to_s16) {
 TEST(pcm_mapper_reader, forward_flags) {
     enum { MaxFrameSz = MaxBytes / sizeof(sample_t) };
 
-    const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+    const SampleSpec in_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaReader meta_reader(in_spec);
@@ -428,9 +428,9 @@ TEST(pcm_mapper_reader, forward_flags) {
 TEST(pcm_mapper_reader, forward_capture_timestamp) {
     enum { MaxFrameSz = MaxBytes / sizeof(sample_t) };
 
-    const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+    const SampleSpec in_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaReader meta_reader(in_spec);
@@ -455,9 +455,9 @@ TEST(pcm_mapper_reader, forward_capture_timestamp) {
 TEST(pcm_mapper_reader, forward_mode) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaReader meta_reader(in_spec);
@@ -481,9 +481,9 @@ TEST(pcm_mapper_reader, forward_mode) {
 TEST(pcm_mapper_reader, forward_error) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaReader meta_reader(in_spec);
@@ -507,9 +507,9 @@ TEST(pcm_mapper_reader, forward_error) {
 TEST(pcm_mapper_reader, forward_partial) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     CountReader<int16_t> count_reader(in_spec, 100);
@@ -531,9 +531,9 @@ TEST(pcm_mapper_reader, forward_partial) {
 TEST(pcm_mapper_reader, preallocated_buffer) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     const size_t buffer_list[] = {

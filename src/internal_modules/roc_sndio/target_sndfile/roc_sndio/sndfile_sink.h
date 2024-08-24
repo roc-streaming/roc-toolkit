@@ -12,14 +12,14 @@
 #ifndef ROC_SNDIO_SNDFILE_SINK_H_
 #define ROC_SNDIO_SNDFILE_SINK_H_
 
-#include <sndfile.h>
-
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_sndio/io_config.h"
 #include "roc_sndio/isink.h"
+
+#include <sndfile.h>
 
 namespace roc {
 namespace sndio {
@@ -33,14 +33,12 @@ public:
     //! Initialize.
     SndfileSink(audio::FrameFactory& frame_factory,
                 core::IArena& arena,
-                const IoConfig& io_config);
+                const IoConfig& io_config,
+                const char* path);
     ~SndfileSink();
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
-
-    //! Open sink.
-    ROC_ATTR_NODISCARD status::StatusCode open(const char* driver, const char* path);
 
     //! Get device type.
     virtual DeviceType type() const;
@@ -53,6 +51,9 @@ public:
 
     //! Get sample specification of the sink.
     virtual audio::SampleSpec sample_spec() const;
+
+    //! Get recommended frame length of the sink.
+    virtual core::nanoseconds_t frame_length() const;
 
     //! Check if the sink supports state updates.
     virtual bool has_state() const;
@@ -76,14 +77,14 @@ public:
     virtual void dispose();
 
 private:
-    status::StatusCode open_(const char* driver, const char* path);
+    status::StatusCode open_(const char* path);
     status::StatusCode close_();
 
     SNDFILE* file_;
     SF_INFO file_info_;
 
-    audio::SampleSpec sample_spec_;
-    int requested_subformat_;
+    audio::SampleSpec frame_spec_;
+    audio::SampleSpec file_spec_;
 
     status::StatusCode init_status_;
 };

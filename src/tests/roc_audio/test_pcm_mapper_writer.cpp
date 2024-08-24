@@ -8,8 +8,8 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_audio/pcm_format.h"
 #include "roc_audio/pcm_mapper_writer.h"
+#include "roc_audio/pcm_subformat.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/time.h"
@@ -191,9 +191,9 @@ TEST_GROUP(pcm_mapper_writer) {};
 TEST(pcm_mapper_writer, mono_raw_to_raw) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+    const SampleSpec in_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     BufferWriter<sample_t> buf_writer(out_spec);
@@ -214,9 +214,9 @@ TEST(pcm_mapper_writer, mono_raw_to_raw) {
 TEST(pcm_mapper_writer, mono_s16_to_raw) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     BufferWriter<sample_t> buf_writer(out_spec);
@@ -237,9 +237,9 @@ TEST(pcm_mapper_writer, mono_s16_to_raw) {
 TEST(pcm_mapper_writer, mono_raw_to_s16) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+    const SampleSpec in_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround,
+    const SampleSpec out_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     BufferWriter<int16_t> buf_writer(out_spec);
@@ -260,9 +260,9 @@ TEST(pcm_mapper_writer, mono_raw_to_s16) {
 TEST(pcm_mapper_writer, stereo_s16_to_raw) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Stereo);
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     BufferWriter<sample_t> buf_writer(out_spec);
@@ -283,9 +283,9 @@ TEST(pcm_mapper_writer, stereo_s16_to_raw) {
 TEST(pcm_mapper_writer, stereo_raw_to_s16) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+    const SampleSpec in_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround,
+    const SampleSpec out_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     BufferWriter<int16_t> buf_writer(out_spec);
@@ -308,9 +308,9 @@ TEST(pcm_mapper_writer, stereo_raw_to_s16) {
 TEST(pcm_mapper_writer, big_write_s16_to_raw) {
     enum { IterCount = 20, SplitCount = 5, MaxFrameSz = MaxBytes / sizeof(sample_t) };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     BufferWriter<sample_t> buf_writer(out_spec);
@@ -335,9 +335,9 @@ TEST(pcm_mapper_writer, big_write_s16_to_raw) {
 TEST(pcm_mapper_writer, big_write_raw_to_s16) {
     enum { IterCount = 20, SplitCount = 5, MaxFrameSz = MaxBytes / sizeof(int16_t) };
 
-    const SampleSpec in_spec(Rate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte,
+    const SampleSpec in_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte,
                              ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround,
+    const SampleSpec out_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     BufferWriter<int16_t> buf_writer(out_spec);
@@ -363,9 +363,9 @@ TEST(pcm_mapper_writer, big_write_raw_to_s16) {
 TEST(pcm_mapper_writer, forward_flags) {
     enum { MaxFrameSz = MaxBytes / sizeof(int16_t) };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaWriter meta_writer(out_spec);
@@ -391,9 +391,9 @@ TEST(pcm_mapper_writer, forward_flags) {
 TEST(pcm_mapper_writer, forward_capture_timestamp) {
     enum { MaxFrameSz = MaxBytes / sizeof(int16_t) };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaWriter meta_writer(out_spec);
@@ -419,9 +419,9 @@ TEST(pcm_mapper_writer, forward_capture_timestamp) {
 TEST(pcm_mapper_writer, forward_error) {
     enum { FrameSz = MaxBytes / 10 };
 
-    const SampleSpec in_spec(Rate, PcmFormat_SInt16, ChanLayout_Surround, ChanOrder_Smpte,
-                             ChanMask_Surround_Mono);
-    const SampleSpec out_spec(Rate, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(Rate, PcmSubformat_SInt16, ChanLayout_Surround,
+                             ChanOrder_Smpte, ChanMask_Surround_Mono);
+    const SampleSpec out_spec(Rate, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     MetaWriter meta_writer(out_spec);

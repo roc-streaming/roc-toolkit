@@ -14,7 +14,7 @@ namespace test {
 static SampleInfo sample_pcm_sint8_le = {
   /* name */ "pcm_sint8_le",
 
-  /* format */ PcmFormat_SInt8_Le,
+  /* format */ PcmSubformat_SInt8_Le,
 
   /* num_samples */ 240,
   /* samples     */ {

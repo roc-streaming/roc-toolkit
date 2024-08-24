@@ -20,8 +20,8 @@ BeepPlc::BeepPlc(const PlcConfig& config,
     : IPlc(arena)
     , sample_spec_(sample_spec)
     , signal_pos_(0) {
-    if (!sample_spec_.is_valid() || !sample_spec_.is_raw()) {
-        roc_panic("beep plc: required valid sample specs with raw format: spec=%s",
+    if (!sample_spec_.is_complete() || !sample_spec_.is_raw()) {
+        roc_panic("beep plc: required complete sample specs with raw format: spec=%s",
                   sample_spec_to_str(sample_spec_).c_str());
     }
 }

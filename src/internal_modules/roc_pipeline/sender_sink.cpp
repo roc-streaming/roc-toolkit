@@ -48,7 +48,7 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
 
     {
         const audio::SampleSpec inout_spec(sink_config_.input_sample_spec.sample_rate(),
-                                           audio::Sample_RawFormat,
+                                           audio::PcmSubformat_Raw,
                                            sink_config_.input_sample_spec.channel_set());
 
         fanout_.reset(new (fanout_) audio::Fanout(inout_spec, frame_factory_, arena_));
@@ -60,7 +60,7 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
 
     if (!sink_config_.input_sample_spec.is_raw()) {
         const audio::SampleSpec out_spec(sink_config_.input_sample_spec.sample_rate(),
-                                         audio::Sample_RawFormat,
+                                         audio::PcmSubformat_Raw,
                                          sink_config_.input_sample_spec.channel_set());
 
         pcm_mapper_.reset(new (pcm_mapper_) audio::PcmMapperWriter(
@@ -190,6 +190,10 @@ sndio::ISource* SenderSink::to_source() {
 
 audio::SampleSpec SenderSink::sample_spec() const {
     return sink_config_.input_sample_spec;
+}
+
+core::nanoseconds_t SenderSink::frame_length() const {
+    return 0;
 }
 
 bool SenderSink::has_state() const {

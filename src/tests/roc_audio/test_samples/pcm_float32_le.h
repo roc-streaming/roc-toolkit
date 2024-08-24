@@ -14,7 +14,7 @@ namespace test {
 static SampleInfo sample_pcm_float32_le = {
   /* name */ "pcm_float32_le",
 
-  /* format */ PcmFormat_Float32_Le,
+  /* format */ PcmSubformat_Float32_Le,
 
   /* num_samples */ 240,
   /* samples     */ {

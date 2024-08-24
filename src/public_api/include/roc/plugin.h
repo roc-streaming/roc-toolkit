@@ -104,8 +104,8 @@ enum {
  *    arbitrary values, unless it's known that only certain packet encoding
  *    may be used by sender
  *
- *  - \c format is always \ref ROC_FORMAT_PCM_FLOAT32, PLC plugin doesn't
- *    need to support other formats
+ *  - \c format is always \ref ROC_FORMAT_PCM and \c subformat is \ref
+ *    ROC_SUBFORMAT_PCM_FLOAT32. Plugin doesn't need to support other formats.
  *
  * **Registration**
  *

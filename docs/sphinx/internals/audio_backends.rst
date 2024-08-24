@@ -45,7 +45,7 @@ The job of ``roc-send`` and ``roc-recv`` is thus to open a source and a sink and
 
 - in ``roc-recv``, ``ISource`` is implemented by receiver pipeline from ``roc_pipeline``, and ``ISink`` is implemented by device or file from ``roc_sndio``
 
-The task of transferring sound from ``ISource`` to ``ISink`` is implemented in `sndio::Pump <https://roc-streaming.org/toolkit/doxygen/classroc_1_1sndio_1_1Pump.html>`_ class, which works uniformly with any pair of source and sink, being it file, device, or pipeline.
+The task of transferring sound from ``ISource`` to ``ISink`` is implemented in `sndio::IoPump <https://roc-streaming.org/toolkit/doxygen/classroc_1_1sndio_1_1IoPump.html>`_ class, which works uniformly with any pair of source and sink, being it file, device, or pipeline.
 
 Backends and drivers
 ====================
@@ -58,7 +58,7 @@ For example, SoxBackend (backend that implements audio I/O using SoX library) im
 
 When user asks backend dispatcher to open sink or source, user specifies I/O URI and, for files, optional file format (i.e. driver name). Backend dispatcher then finds backend which is able to handle given device or file and asks it to create its implementation of ``ISource`` or ``ISink``.
 
-To help backend dispatcher with making decision, backends provide **driver information** about every available driver:
+To help backend dispatcher with making decision, backends provide **driver information** (`DriverInfo <https://roc-streaming.org/toolkit/doxygen/classroc_1_1sndio_1_1DriverInfo.html>`_) about every available driver:
 
 * *driver name* -- short unique string, for devices same as URI scheme (e.g. ``alsa``), for files usually same as file extension (e.g. ``mp3``)
 * *driver type* -- whether it's device or file driver

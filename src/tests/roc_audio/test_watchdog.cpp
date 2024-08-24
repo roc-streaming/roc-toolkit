@@ -36,7 +36,7 @@ enum {
 const sample_t magic_sample = 42;
 
 const SampleSpec sample_spec(
-    SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
+    SampleRate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
 core::HeapArena arena;
 FrameFactory frame_factory(arena, MaxBufSize * sizeof(sample_t));

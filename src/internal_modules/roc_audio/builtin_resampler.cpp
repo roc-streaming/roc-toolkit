@@ -145,9 +145,9 @@ BuiltinResampler::BuiltinResampler(const ResamplerConfig& config,
     , qt_dt_(0)
     , cutoff_freq_(0.9f)
     , init_status_(status::NoStatus) {
-    if (!in_spec_.is_valid() || !out_spec_.is_valid() || !in_spec_.is_raw()
+    if (!in_spec_.is_complete() || !out_spec_.is_complete() || !in_spec_.is_raw()
         || !out_spec_.is_raw()) {
-        roc_panic("builtin resampler: required valid sample specs with raw format:"
+        roc_panic("builtin resampler: required complete sample specs with raw format:"
                   " in_spec=%s out_spec=%s",
                   sample_spec_to_str(in_spec_).c_str(),
                   sample_spec_to_str(out_spec_).c_str());

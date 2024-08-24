@@ -26,6 +26,7 @@ namespace api {
 namespace {
 
 enum {
+    SampleRate = 44100,
     NoFlags = 0,
     FlagLosses = (1 << 0),
 };
@@ -46,23 +47,23 @@ TEST_GROUP(loopback_encoder_2_decoder) {
         CHECK(context);
 
         memset(&sender_conf, 0, sizeof(sender_conf));
-        sender_conf.frame_encoding.rate = test::SampleRate;
-        sender_conf.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+        sender_conf.frame_encoding.format = ROC_FORMAT_PCM;
+        sender_conf.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
+        sender_conf.frame_encoding.rate = SampleRate;
         sender_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
         sender_conf.packet_encoding = ROC_PACKET_ENCODING_AVP_L16_STEREO;
-        sender_conf.packet_length =
-            test::PacketSamples * 1000000000ull / test::SampleRate;
+        sender_conf.packet_length = test::PacketSamples * 1000000000ull / SampleRate;
         sender_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
         memset(&receiver_conf, 0, sizeof(receiver_conf));
-        receiver_conf.frame_encoding.rate = test::SampleRate;
-        receiver_conf.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+        receiver_conf.frame_encoding.format = ROC_FORMAT_PCM;
+        receiver_conf.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
+        receiver_conf.frame_encoding.rate = SampleRate;
         receiver_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
         receiver_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
         receiver_conf.latency_tuner_profile = ROC_LATENCY_TUNER_PROFILE_INTACT;
-        receiver_conf.target_latency = test::Latency * 1000000000ull / test::SampleRate;
-        receiver_conf.no_playback_timeout =
-            test::Timeout * 1000000000ull / test::SampleRate;
+        receiver_conf.target_latency = test::Latency * 1000000000ull / SampleRate;
+        receiver_conf.no_playback_timeout = test::Timeout * 1000000000ull / SampleRate;
     }
 
     void teardown() {

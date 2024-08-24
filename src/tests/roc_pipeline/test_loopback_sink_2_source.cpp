@@ -50,10 +50,10 @@ namespace {
 const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;
 const audio::ChannelMask Chans_Stereo = audio::ChanMask_Surround_Stereo;
 
-const audio::PcmFormat Format_Raw = audio::Sample_RawFormat;
-const audio::PcmFormat Format_S16_Be = audio::PcmFormat_SInt16_Be;
-const audio::PcmFormat Format_S16_Ne = audio::PcmFormat_SInt16;
-const audio::PcmFormat Format_S32_Ne = audio::PcmFormat_SInt32;
+const audio::PcmSubformat Format_Raw = audio::PcmSubformat_Raw;
+const audio::PcmSubformat Format_S16_Be = audio::PcmSubformat_SInt16_Be;
+const audio::PcmSubformat Format_S16_Ne = audio::PcmSubformat_SInt16;
+const audio::PcmSubformat Format_S32_Ne = audio::PcmSubformat_SInt32;
 
 const rtp::PayloadType PayloadType_Ch1 = rtp::PayloadType_L16_Mono;
 const rtp::PayloadType PayloadType_Ch2 = rtp::PayloadType_L16_Stereo;
@@ -244,14 +244,14 @@ private:
 };
 
 SenderSinkConfig make_sender_config(int flags,
-                                    audio::PcmFormat frame_format,
+                                    audio::PcmSubformat frame_format,
                                     audio::ChannelMask frame_channels,
                                     audio::ChannelMask packet_channels) {
     SenderSinkConfig config;
 
+    config.input_sample_spec.set_format(audio::Format_Pcm);
+    config.input_sample_spec.set_pcm_subformat(frame_format);
     config.input_sample_spec.set_sample_rate(SampleRate);
-    config.input_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
-    config.input_sample_spec.set_pcm_format(frame_format);
     config.input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
     config.input_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
     config.input_sample_spec.channel_set().set_mask(frame_channels);
@@ -291,14 +291,14 @@ SenderSinkConfig make_sender_config(int flags,
     return config;
 }
 
-ReceiverSourceConfig make_receiver_config(audio::PcmFormat frame_format,
+ReceiverSourceConfig make_receiver_config(audio::PcmSubformat frame_format,
                                           audio::ChannelMask frame_channels,
                                           audio::ChannelMask packet_channels) {
     ReceiverSourceConfig config;
 
+    config.common.output_sample_spec.set_format(audio::Format_Pcm);
+    config.common.output_sample_spec.set_pcm_subformat(frame_format);
     config.common.output_sample_spec.set_sample_rate(SampleRate);
-    config.common.output_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
-    config.common.output_sample_spec.set_pcm_format(frame_format);
     config.common.output_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
     config.common.output_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
     config.common.output_sample_spec.channel_set().set_mask(frame_channels);
@@ -356,7 +356,7 @@ bool is_fec_supported(int flags) {
 
 void write_samples(test::FrameWriter& frame_writer,
                    size_t n_samples,
-                   audio::PcmFormat frame_format,
+                   audio::PcmSubformat frame_format,
                    const audio::SampleSpec& sample_spec,
                    core::nanoseconds_t base_cts) {
     if (frame_format == Format_Raw) {
@@ -373,7 +373,7 @@ void write_samples(test::FrameWriter& frame_writer,
 void read_samples(test::FrameReader& frame_reader,
                   size_t n_samples,
                   size_t n_sessions,
-                  audio::PcmFormat frame_format,
+                  audio::PcmSubformat frame_format,
                   const audio::SampleSpec& sample_spec,
                   core::nanoseconds_t base_cts) {
     if (frame_format == Format_Raw) {
@@ -473,7 +473,7 @@ void check_metrics(ReceiverSlot& receiver,
 
 void send_receive(int flags,
                   size_t num_sessions,
-                  audio::PcmFormat frame_format,
+                  audio::PcmSubformat frame_format,
                   audio::ChannelMask frame_channels,
                   audio::ChannelMask packet_channels) {
     packet::FifoQueue sender_outbound_queue;

@@ -29,22 +29,21 @@ namespace sndio {
 
 //! SoX source.
 //! @remarks
-//!  Reads samples from input file or device.
-//!  Supports multiple drivers for different file types and audio systems.
+//!  Reads samples from input device.
+//!  Supports multiple drivers for different audio systems.
+//!  Does not support files.
 class SoxSource : public ISource, private core::NonCopyable<> {
 public:
     //! Initialize.
     SoxSource(audio::FrameFactory& frame_factory,
               core::IArena& arena,
               const IoConfig& io_config,
-              DriverType driver_type);
+              const char* driver,
+              const char* path);
     ~SoxSource();
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
-
-    //! Open sink.
-    ROC_ATTR_NODISCARD status::StatusCode open(const char* driver, const char* path);
 
     //! Get device type.
     virtual DeviceType type() const;
@@ -57,6 +56,9 @@ public:
 
     //! Get sample specification of the source.
     virtual audio::SampleSpec sample_spec() const;
+
+    //! Get recommended frame length of the source.
+    virtual core::nanoseconds_t frame_length() const;
 
     //! Check if the source supports state updates.
     virtual bool has_state() const;
@@ -99,24 +101,23 @@ private:
     status::StatusCode init_buffer_();
 
     status::StatusCode open_();
-    status::StatusCode seek_(uint64_t offset);
     status::StatusCode close_();
 
     audio::FrameFactory& frame_factory_;
 
-    const DriverType driver_type_;
-    core::StringBuffer driver_name_;
-    core::StringBuffer input_name_;
+    core::StringBuffer driver_;
+    core::StringBuffer path_;
 
     core::Array<sox_sample_t> buffer_;
     size_t buffer_size_;
     core::nanoseconds_t frame_length_;
-    audio::SampleSpec sample_spec_;
+
+    audio::SampleSpec frame_spec_;
+    audio::SampleSpec in_spec_;
 
     sox_format_t* input_;
     sox_signalinfo_t in_signal_;
 
-    bool eof_;
     bool paused_;
 
     status::StatusCode init_status_;

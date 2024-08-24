@@ -37,14 +37,12 @@ public:
     PulseaudioDevice(audio::FrameFactory& frame_factory,
                      core::IArena& arena,
                      const IoConfig& io_config,
-                     DeviceType device_type);
+                     DeviceType device_type,
+                     const char* device);
     ~PulseaudioDevice();
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
-
-    //! Open device.
-    ROC_ATTR_NODISCARD status::StatusCode open(const char* device);
 
     //! Get device type.
     virtual DeviceType type() const;
@@ -57,6 +55,9 @@ public:
 
     //! Get sample specification of the device.
     virtual audio::SampleSpec sample_spec() const;
+
+    //! Get recommended frame length of the device.
+    virtual core::nanoseconds_t frame_length() const;
 
     //! Check if the device supports state updates.
     virtual bool has_state() const;

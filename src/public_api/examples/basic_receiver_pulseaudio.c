@@ -66,8 +66,9 @@ int main() {
     memset(&receiver_config, 0, sizeof(receiver_config));
 
     /* Setup frame format that we want to read from receiver. */
+    receiver_config.frame_encoding.format = ROC_FORMAT_PCM;
+    receiver_config.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
     receiver_config.frame_encoding.rate = MY_SAMPLE_RATE;
-    receiver_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
     receiver_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
     /* Use user-provided clock.

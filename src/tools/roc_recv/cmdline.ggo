@@ -15,7 +15,6 @@ section "Operation options"
 section "Output options"
 
     option "output" o "Output file or device URI" typestr="IO_URI" string optional
-    option "output-format" - "Force output file format" typestr="FILE_FORMAT" string optional
 
     option "io-encoding" - "Output device encoding" typestr="IO_ENCODING" string optional
     option "io-latency" - "Output device latency, TIME units" typestr="TIME"string optional
@@ -24,10 +23,8 @@ section "Output options"
 section "Backup input options"
 
     option "backup" -
-        "Backup file or device URI (used as input when there are no connections)"
+        "Backup file URI (used as input when there are no connections)"
         typestr="IO_URI" string optional
-    option "backup-format" - "Force backup file format"
-        typestr="FILE_FORMAT" string optional
 
 section "Network options"
 
@@ -96,25 +93,29 @@ section "Debugging options"
         typestr="PATH" string optional
 
 text "
-IO_URI is a device or file URI:
-  pulse://default; pulse://alsa_input.pci-0000_00_1f.3.analog-stereo
-  file:///home/user/test.wav; file:./test.wav; file:-
+IO_URI is output device or file URI in forms:
+    <driver>://<device>; file://<path>; file:<path>
+  Examples:
+    alsa://default; pulse://alsa_input.pci-0000_00_1f.3.analog-stereo
+    file:///home/user/test.wav; file:./test.wav; file:-
   (use '<driver>://default' for default device, 'file://-' for stdout)
 
-IO_ENCODING is device or file encoding in form <format>/<rate>/<channels>:
-  s16/44100/mono; f32/48000/stereo; -/-/mono
+IO_ENCODING is output device or file encoding in form:
+     <format>[@<subformat>]/<rate>/<channels>
+  Examples:
+    pcm@s16/44100/mono; wav/48000/stereo; -/-/mono
   (any component may be '-' to use default value)
 
-FILE_FORMAT is file format name:
-  wav; ogg; mp3
-  (useful when format can't be auto-detected)
+NET_URI is network endpoint URI in form:
+    <protocol>://<host>[:<port>][/<path>][?<query>]
+  Examples:
+    rtp://0.0.0.0:10001; rtp+rs8m://127.0.0.1:10001; rs8m://[::1]:10001
 
-NET_URI is a network endpoint URI:
-  rtp://0.0.0.0:10001; rtp+rs8m://127.0.0.1:10001; rs8m://[::1]:10001
-
-PKT_ENCODING is media packets encoding in form <id>:<format>/<rate>/<channels>:
-  101:s16/44100/mono; 102:f32/48000/stereo
-  (numeric id is arbitrary number in range 100..127 that should be used
+PKT_ENCODING is media packets encoding in form:
+    <id>:<format>[@<subformat>]/<rate>/<channels>:
+  Examples:
+    101:pcm@s16/44100/mono; 102:flac@s24/48000/stereo
+  (numeric id is arbitrary number in range 100..127 that should be same
   on both sender and receiver to identify encoding)
 
 TIME defines duration using a number with mandatory suffix:

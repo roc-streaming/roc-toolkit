@@ -38,7 +38,7 @@ namespace pipeline {
 
 //! Default sample specification.
 static const audio::SampleSpec DefaultSampleSpec(44100,
-                                                 audio::Sample_RawFormat,
+                                                 audio::PcmSubformat_Raw,
                                                  audio::ChanLayout_Surround,
                                                  audio::ChanOrder_Smpte,
                                                  audio::ChanMask_Surround_Stereo);

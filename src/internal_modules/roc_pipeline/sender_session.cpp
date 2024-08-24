@@ -144,7 +144,7 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
     {
         const audio::SampleSpec in_spec(pkt_encoding->sample_spec.sample_rate(),
-                                        audio::Sample_RawFormat,
+                                        audio::PcmSubformat_Raw,
                                         pkt_encoding->sample_spec.channel_set());
 
         packetizer_.reset(new (packetizer_) audio::Packetizer(
@@ -159,11 +159,11 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
     if (pkt_encoding->sample_spec.channel_set()
         != sink_config_.input_sample_spec.channel_set()) {
         const audio::SampleSpec in_spec(pkt_encoding->sample_spec.sample_rate(),
-                                        audio::Sample_RawFormat,
+                                        audio::PcmSubformat_Raw,
                                         sink_config_.input_sample_spec.channel_set());
 
         const audio::SampleSpec out_spec(pkt_encoding->sample_spec.sample_rate(),
-                                         audio::Sample_RawFormat,
+                                         audio::PcmSubformat_Raw,
                                          pkt_encoding->sample_spec.channel_set());
 
         channel_mapper_writer_.reset(
@@ -179,11 +179,11 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         || pkt_encoding->sample_spec.sample_rate()
             != sink_config_.input_sample_spec.sample_rate()) {
         const audio::SampleSpec in_spec(sink_config_.input_sample_spec.sample_rate(),
-                                        audio::Sample_RawFormat,
+                                        audio::PcmSubformat_Raw,
                                         sink_config_.input_sample_spec.channel_set());
 
         const audio::SampleSpec out_spec(pkt_encoding->sample_spec.sample_rate(),
-                                         audio::Sample_RawFormat,
+                                         audio::PcmSubformat_Raw,
                                          sink_config_.input_sample_spec.channel_set());
 
         resampler_.reset(processor_map_.new_resampler(sink_config_.resampler, in_spec,
@@ -206,7 +206,7 @@ SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
     {
         const audio::SampleSpec inout_spec(sink_config_.input_sample_spec.sample_rate(),
-                                           audio::Sample_RawFormat,
+                                           audio::PcmSubformat_Raw,
                                            sink_config_.input_sample_spec.channel_set());
 
         feedback_monitor_.reset(new (feedback_monitor_) audio::FeedbackMonitor(

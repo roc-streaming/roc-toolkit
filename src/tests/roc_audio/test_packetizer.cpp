@@ -44,10 +44,10 @@ const core::nanoseconds_t PacketDuration = SamplesPerPacket * core::Second / Sam
 const core::nanoseconds_t Now = 1691499037871419405;
 
 const SampleSpec frame_spec(
-    SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
+    SampleRate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
 const SampleSpec packet_spec(
-    SampleRate, PcmFormat_SInt16_Be, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
+    SampleRate, PcmSubformat_SInt16_Be, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
 core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, MaxBufSize);

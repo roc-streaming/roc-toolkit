@@ -30,8 +30,9 @@ TEST_GROUP(sender) {
         CHECK(context);
 
         memset(&sender_config, 0, sizeof(sender_config));
+        sender_config.frame_encoding.format = ROC_FORMAT_PCM;
+        sender_config.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
         sender_config.frame_encoding.rate = 44100;
-        sender_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
         sender_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
         sender_config.packet_encoding = ROC_PACKET_ENCODING_AVP_L16_STEREO;
         sender_config.fec_encoding = ROC_FEC_ENCODING_DISABLE;

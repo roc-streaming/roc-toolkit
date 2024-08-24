@@ -47,6 +47,10 @@ public:
         return audio::SampleSpec();
     }
 
+    core::nanoseconds_t frame_length() const {
+        return 0;
+    }
+
     virtual bool has_state() const {
         return false;
     }

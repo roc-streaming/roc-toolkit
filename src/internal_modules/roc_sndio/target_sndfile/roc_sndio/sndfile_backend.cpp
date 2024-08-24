@@ -25,78 +25,121 @@ const char* SndfileBackend::name() const {
     return "sndfile";
 }
 
-void SndfileBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list) {
-    SF_FORMAT_INFO format_info;
-    int total_number_of_drivers = 0;
+bool SndfileBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& result) {
+    if (!result.push_back(DriverInfo(
+            "file", Driver_File | Driver_SupportsSink | Driver_SupportsSource, this))) {
+        return false;
+    }
+    return true;
+}
 
-    if (int err = sf_command(NULL, SFC_GET_FORMAT_MAJOR_COUNT, &total_number_of_drivers,
+bool SndfileBackend::discover_formats(core::Array<FormatInfo, MaxFormats>& result) {
+    SF_FORMAT_INFO format_info;
+    int major_format_count = 0;
+
+    if (int err = sf_command(NULL, SFC_GET_FORMAT_MAJOR_COUNT, &major_format_count,
                              sizeof(int))) {
-        roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR_COUNT) failed: %s",
-                  sf_error_number(err));
+        roc_log(LogError,
+                "sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR_COUNT) failed: %s",
+                sf_error_number(err));
+        return false;
     }
 
-    for (int format_index = 0; format_index < total_number_of_drivers; format_index++) {
-        format_info.format = format_index;
+    for (int fmt_index = 0; fmt_index < major_format_count; fmt_index++) {
+        format_info.format = fmt_index;
         if (int err = sf_command(NULL, SFC_GET_FORMAT_MAJOR, &format_info,
                                  sizeof(format_info))) {
-            roc_panic("sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR) failed: %s",
-                      sf_error_number(err));
+            roc_log(LogError,
+                    "sndfile backend: sf_command(SFC_GET_FORMAT_MAJOR) failed: %s",
+                    sf_error_number(err));
+            return false;
         }
 
-        const char* driver = format_info.extension;
+        // Format name = file extension.
+        const char* format_name = format_info.extension;
 
-        for (size_t map_index = 0; map_index < ROC_ARRAY_SIZE(sndfile_driver_remap);
+        for (size_t map_index = 0; map_index < ROC_ARRAY_SIZE(sndfile_format_remap);
              map_index++) {
-            if ((sndfile_driver_remap[map_index].format_mask & SF_FORMAT_TYPEMASK)
+            if ((sndfile_format_remap[map_index].format_mask & SF_FORMAT_TYPEMASK)
                 == format_info.format) {
-                driver = sndfile_driver_remap[map_index].driver_name;
+                // Some format names are remapped.
+                format_name = sndfile_format_remap[map_index].name;
             }
         }
 
-        if (!driver_list.push_back(
-                DriverInfo(driver, DriverType_File,
-                           DriverFlag_SupportsSource | DriverFlag_SupportsSink, this))) {
-            roc_panic("sndfile backend: allocation failed");
+        if (!result.push_back(FormatInfo(
+                "file", format_name,
+                Driver_File | Driver_SupportsSource | Driver_SupportsSink, this))) {
+            roc_log(LogError, "sndfile backend: allocation failed");
+            return false;
         }
     }
+
+    return true;
+}
+
+bool SndfileBackend::discover_subformat_groups(core::StringList& result) {
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(sndfile_subformat_map); n++) {
+        if (result.find(sndfile_subformat_map[n].group)) {
+            continue;
+        }
+        if (!result.push_back(sndfile_subformat_map[n].group)) {
+            roc_log(LogError, "sndfile backend: allocation failed");
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool SndfileBackend::discover_subformats(const char* group, core::StringList& result) {
+    roc_panic_if(!group);
+
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(sndfile_subformat_map); n++) {
+        if (strcmp(sndfile_subformat_map[n].group, group) != 0) {
+            continue;
+        }
+        if (result.find(sndfile_subformat_map[n].name)) {
+            continue;
+        }
+        if (!result.push_back(sndfile_subformat_map[n].name)) {
+            roc_log(LogError, "sndfile backend: allocation failed");
+            return false;
+        }
+    }
+
+    return true;
 }
 
 status::StatusCode SndfileBackend::open_device(DeviceType device_type,
-                                               DriverType driver_type,
                                                const char* driver,
                                                const char* path,
                                                const IoConfig& io_config,
                                                audio::FrameFactory& frame_factory,
                                                core::IArena& arena,
                                                IDevice** result) {
-    if (driver_type != DriverType_File) {
+    roc_panic_if(!driver);
+    roc_panic_if(!path);
+
+    if (strcmp(driver, "file") != 0) {
+        // Not file://, go to next backend.
         return status::StatusNoDriver;
     }
 
     switch (device_type) {
     case DeviceType_Sink: {
         core::ScopedPtr<SndfileSink> sink(
-            new (arena) SndfileSink(frame_factory, arena, io_config));
+            new (arena) SndfileSink(frame_factory, arena, io_config, path));
 
         if (!sink) {
-            roc_log(LogDebug, "sndfile backend: can't allocate sink: driver=%s path=%s",
-                    driver, path);
+            roc_log(LogDebug, "sndfile backend: can't allocate sink: path=%s", path);
             return status::StatusNoMem;
         }
 
         if (sink->init_status() != status::StatusOK) {
-            roc_log(LogDebug,
-                    "sndfile backend: can't initialize sink: driver=%s path=%s status=%s",
-                    driver, path, status::code_to_str(sink->init_status()));
+            roc_log(LogDebug, "sndfile backend: can't open sink: path=%s status=%s", path,
+                    status::code_to_str(sink->init_status()));
             return sink->init_status();
-        }
-
-        const status::StatusCode code = sink->open(driver, path);
-        if (code != status::StatusOK) {
-            roc_log(LogDebug,
-                    "sndfile backend: can't open sink: driver=%s path=%s status=%s",
-                    driver, path, status::code_to_str(code));
-            return code;
         }
 
         *result = sink.hijack();
@@ -105,36 +148,22 @@ status::StatusCode SndfileBackend::open_device(DeviceType device_type,
 
     case DeviceType_Source: {
         core::ScopedPtr<SndfileSource> source(
-            new (arena) SndfileSource(frame_factory, arena, io_config));
+            new (arena) SndfileSource(frame_factory, arena, io_config, path));
 
         if (!source) {
-            roc_log(LogDebug, "sndfile backend: can't allocate source: driver=%s path=%s",
-                    driver, path);
+            roc_log(LogDebug, "sndfile backend: can't allocate source: path=%s", path);
             return status::StatusNoMem;
         }
 
         if (source->init_status() != status::StatusOK) {
-            roc_log(
-                LogDebug,
-                "sndfile backend: can't initialize source: driver=%s path=%s status=%s",
-                driver, path, status::code_to_str(source->init_status()));
+            roc_log(LogDebug, "sndfile backend: can't open source: path=%s status=%s",
+                    path, status::code_to_str(source->init_status()));
             return source->init_status();
-        }
-
-        const status::StatusCode code = source->open(driver, path);
-        if (code != status::StatusOK) {
-            roc_log(LogDebug,
-                    "sndfile backend: can't open source: driver=%s path=%s status=%s",
-                    driver, path, status::code_to_str(code));
-            return code;
         }
 
         *result = source.hijack();
         return status::StatusOK;
     } break;
-
-    default:
-        break;
     }
 
     roc_panic("sndfile backend: invalid device type");

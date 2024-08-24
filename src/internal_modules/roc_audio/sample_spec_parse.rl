@@ -109,6 +109,50 @@ bool parse_sample_rate(const char* str, size_t str_len, size_t& result) {
     return true;
 }
 
+bool parse_format(const char* str, SampleSpec& sample_spec) {
+    const Format fmt = format_from_str(str);
+
+    if (fmt != Format_Invalid) {
+        sample_spec.set_format(fmt);
+        return true;
+    }
+
+    if (sample_spec.set_custom_format(str)) {
+        return true;
+    }
+
+    return false;
+}
+
+bool parse_subformat(const char* str, SampleSpec& sample_spec) {
+    switch (sample_spec.format()) {
+    case Format_Pcm:
+    case Format_Wav:
+    case Format_Custom: {
+        const PcmSubformat pcm_fmt = pcm_subformat_from_str(str);
+
+        if (pcm_fmt != PcmSubformat_Invalid) {
+            // This is PCM sub-format.
+            sample_spec.set_pcm_subformat(pcm_fmt);
+            return true;
+        }
+
+        if (sample_spec.format() != Format_Pcm) {
+            // This is custom sub-format. Allow only if format is not PCM.
+            if (sample_spec.set_custom_subformat(str)) {
+                return true;
+            }
+        }
+    } break;
+
+    case Format_Invalid:
+    case Format_Max:
+        break;
+    }
+
+    return false;
+}
+
 bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
     if (!str) {
         roc_log(LogError, "parse sample spec: input string is null");
@@ -142,7 +186,8 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
         action set_surround_mask {
             ChannelMask ch_mask = 0;
             if (!parse_surround_mask(start_p, p - start_p, ch_mask)) {
-                roc_log(LogError, "parse sample spec: invalid channel mask name");
+                roc_log(LogError, "parse sample spec: invalid channel mask name '%.*s' in '%s'",
+                    int(p - start_p), start_p, str);
                 return false;
             }
             sample_spec.channel_set().set_mask(ch_mask);
@@ -151,7 +196,8 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
         action set_surround_channel {
             ChannelPosition ch_pos = ChanPos_Max;
             if (!parse_surround_channel(start_p, p - start_p, ch_pos)) {
-                roc_log(LogError, "parse sample spec: invalid channel name");
+                roc_log(LogError, "parse sample spec: invalid channel name '%.*s' in '%s'",
+                    int(p - start_p), start_p, str);
                 return false;
             }
             sample_spec.channel_set().toggle_channel(ch_pos, true);
@@ -165,8 +211,9 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
         action set_mtr_number {
             size_t ch_pos = 0;
             if (!parse_multitrack_channel(start_p, p - start_p, ch_pos)) {
-                roc_log(LogError, "parse sample spec: invalid channel number,"
+                roc_log(LogError, "parse sample spec: invalid channel number '%.*s' in '%s',"
                     " should be integer in range [0; %d]",
+                    int(p - start_p), start_p, str,
                     (int)ChannelSet::max_channels() - 1);
                 return false;
             }
@@ -175,8 +222,9 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
 
         action set_mtr_range_begin {
             if (!parse_multitrack_channel(start_p, p - start_p, mtr_range_begin)) {
-                roc_log(LogError, "parse sample spec: invalid channel number,"
+                roc_log(LogError, "parse sample spec: invalid channel number '%.*s',"
                     " should be integer in range [0; %d]",
+                    int(p - start_p), start_p,
                     (int)ChannelSet::max_channels() - 1);
                 return false;
             }
@@ -184,8 +232,9 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
 
         action set_mtr_range_end {
             if (!parse_multitrack_channel(start_p, p - start_p, mtr_range_end)) {
-                roc_log(LogError, "parse sample spec: invalid channel number,"
+                roc_log(LogError, "parse sample spec: invalid channel number '%.*s' in '%s',"
                     " should be integer in range [0; %d]",
+                    int(p - start_p), start_p, str,
                     (int)ChannelSet::max_channels() - 1);
                 return false;
             }
@@ -198,7 +247,8 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
 
         action set_mtr_mask {
             if (!parse_multitrack_mask(start_p, p - start_p, sample_spec.channel_set())) {
-                roc_log(LogError, "parse sample spec: invalid channel mask");
+                roc_log(LogError, "parse sample spec: invalid channel mask '%.*s' in '%s'",
+                    int(p - start_p), start_p, str);
                 return false;
             }
         }
@@ -209,21 +259,40 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
         }
 
         action set_format {
-            char str[16] = {};
-            strncat(str, start_p, p - start_p);
-            PcmFormat pcm_fmt = pcm_format_from_str(str);
-            if (pcm_fmt == PcmFormat_Invalid) {
-                roc_log(LogError, "parse sample spec: invalid sample format");
+            char buf[16] = {};
+            if (p - start_p > sizeof(buf) - 1) {
+                roc_log(LogError, "parse sample spec: invalid format '%.*s' in '%s'",
+                    int(p - start_p), start_p, str);
                 return false;
             }
-            sample_spec.set_sample_format(SampleFormat_Pcm);
-            sample_spec.set_pcm_format(pcm_fmt);
+            strncat(buf, start_p, p - start_p);
+            if (!parse_format(buf, sample_spec)) {
+                roc_log(LogError, "parse sample spec: invalid format '%.*s' in '%s'",
+                    int(p - start_p), start_p, str);
+                return false;
+            }
+        }
+
+        action set_subformat {
+            char buf[16] = {};
+            if (p - start_p > sizeof(buf) - 1) {
+                roc_log(LogError, "parse sample spec: invalid subformat '%.*s' in '%s'",
+                    int(p - start_p), start_p, str);
+                return false;
+            }
+            strncat(buf, start_p, p - start_p);
+            if (!parse_subformat(buf, sample_spec)) {
+                roc_log(LogError, "parse sample spec: invalid subformat '%.*s' in '%s'",
+                    int(p - start_p), start_p, str);
+                return false;
+            }
         }
 
         action set_rate {
             size_t rate = 0;
             if (!parse_sample_rate(start_p, p - start_p, rate)) {
-                roc_log(LogError, "parse sample spec: invalid sample rate");
+                roc_log(LogError, "parse sample spec: invalid sample rate '%.*s' in '%s'",
+                    int(p - start_p), start_p, str);
                 return false;
             }
             sample_spec.set_sample_rate(rate);
@@ -248,11 +317,12 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
         mtr = (mtr_mask | mtr_list) %set_mtr;
 
         format = [a-z0-9_]+ >start_token %set_format;
+        subformat = [a-z0-9_]+ >start_token %set_subformat;
         rate = [0-9]+ >start_token %set_rate;
         channels_DISABLED = surround | mtr;
         channels = ('stereo' | 'mono') >start_token %set_surround_mask %set_surround;
 
-        main := ( ('-' | format) '/' ('-' | rate) '/' ('-' | channels) )
+        main := ( ('-' | format ('@' subformat)?) '/' ('-' | rate) '/' ('-' | channels) )
                 %{ success = true; }
                 ;
 
@@ -262,9 +332,27 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
 
     if (!success) {
         roc_log(LogError,
-                "parse sample spec: expected 'FORMAT/RATE/CHANNELS', got '%s'",
-                str);
+                "parse sample spec: expected '<format>[@<subformat>]/<rate>/<channels>',"
+                " got '%s'", str);
         return false;
+    }
+
+    return true;
+}
+
+bool validate_sample_spec(const SampleSpec& sample_spec) {
+    switch (sample_spec.format()) {
+    case Format_Pcm:
+        if (!sample_spec.has_subformat()) {
+            roc_log(LogError, "parse sample spec: subformat required when format is pcm");
+            return false;
+        }
+        break;
+
+    case Format_Invalid:
+    case Format_Custom:
+    case Format_Max:
+        break;
     }
 
     return true;
@@ -273,7 +361,7 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
 } // namespace
 
 bool parse_sample_spec(const char* str, SampleSpec& result) {
-    if (!parse_sample_spec_imp(str, result)) {
+    if (!parse_sample_spec_imp(str, result) || !validate_sample_spec(result)) {
         result.clear();
         return false;
     }

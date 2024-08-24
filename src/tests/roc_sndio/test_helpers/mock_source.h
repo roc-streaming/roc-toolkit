@@ -22,8 +22,8 @@ namespace test {
 
 class MockSource : public ISource {
 public:
-    MockSource(audio::FrameFactory& frame_factory,
-               const audio::SampleSpec& sample_spec,
+    MockSource(const audio::SampleSpec& sample_spec,
+               audio::FrameFactory& frame_factory,
                core::IArena& arena)
         : IDevice(arena)
         , ISource(arena)
@@ -46,7 +46,11 @@ public:
     }
 
     virtual audio::SampleSpec sample_spec() const {
-        return audio::SampleSpec();
+        return sample_spec_;
+    }
+
+    core::nanoseconds_t frame_length() const {
+        return 0;
     }
 
     virtual bool has_state() const {
@@ -97,24 +101,24 @@ public:
             frame, sample_spec_.stream_timestamp_2_bytes(duration)));
 
         frame.set_raw(true);
-        frame.set_duration(duration);
 
-        size_t ns = frame.num_raw_samples();
-        if (ns > size_ - pos_) {
-            ns = size_ - pos_;
+        size_t n_samples = frame.num_raw_samples();
+        if (n_samples > size_ - pos_) {
+            n_samples = size_ - pos_;
         }
 
-        if (ns > 0) {
-            memcpy(frame.raw_samples(), samples_ + pos_, ns * sizeof(audio::sample_t));
-            pos_ += ns;
+        if (n_samples == 0) {
+            return status::StatusFinish;
         }
 
-        if (ns < frame.num_raw_samples()) {
-            memset(frame.raw_samples() + ns, 0,
-                   (frame.num_raw_samples() - ns) * sizeof(audio::sample_t));
-        }
+        memcpy(frame.raw_samples(), samples_ + pos_, n_samples * sizeof(audio::sample_t));
+        pos_ += n_samples;
 
-        return status::StatusOK;
+        frame.set_num_raw_samples(n_samples);
+        frame.set_duration((packet::stream_timestamp_t)n_samples
+                           / sample_spec_.num_channels());
+
+        return frame.duration() == duration ? status::StatusOK : status::StatusPart;
     }
 
     virtual status::StatusCode close() {

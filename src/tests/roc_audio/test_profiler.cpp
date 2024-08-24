@@ -31,7 +31,7 @@ const int SampleRate = 5000; // 50 samples / chunk
 const int ChannelMask = 0x1;
 
 const SampleSpec sample_spec(
-    SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChannelMask);
+    SampleRate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte, ChannelMask);
 
 const ProfilerConfig profiler_config(50 * core::Millisecond, 10 * core::Millisecond);
 

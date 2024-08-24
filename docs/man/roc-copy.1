@@ -57,17 +57,14 @@ List supported protocols, formats, etc.
 .SS I/O options
 .INDENT 0.0
 .TP
-.BI \-i\fP,\fB  \-\-input\fB= FILE_URI
+.BI \-i\fP,\fB  \-\-input\fB= IO_URI
 Input file URI
 .TP
-.BI \-\-input\-format\fB= FILE_FORMAT
-Force input file format
+.BI \-\-input\-encoding\fB= IO_ENCODING
+Input file encoding
 .TP
-.BI \-o\fP,\fB  \-\-output\fB= FILE_URI
+.BI \-o\fP,\fB  \-\-output\fB= IO_URI
 Output file URI
-.TP
-.BI \-\-output\-format\fB= FILE_FORMAT
-Force output file format
 .TP
 .BI \-\-output\-encoding\fB= IO_ENCODING
 Output file encoding
@@ -91,11 +88,11 @@ Resampler profile  (possible values=\(dqlow\(dq, \(dqmedium\(dq, \(dqhigh\(dq de
 Enable self\-profiling  (default=off)
 .UNINDENT
 .SH DETAILS
-.SS File URI
+.SS I/O URI
 .sp
 \fB\-\-input\fP and \fB\-\-output\fP options define input / output file URI.
 .sp
-\fIFILE_URI\fP should have one of the following forms:
+\fIIO_URI\fP should have one of the following forms:
 .INDENT 0.0
 .IP \(bu 2
 \fBfile:///<abs>/<path>\fP \-\- absolute file path
@@ -129,11 +126,48 @@ The list of supported file formats can be retrieved using \fB\-\-list\-supported
 .sp
 If the \fB\-\-output\fP is omitted, the conversion results are discarded.
 .sp
-The \fB\-\-input\-format\fP and \fB\-\-output\-format\fP options can be used to force the file format. If the option is omitted, the file format is auto\-detected. This option is always required for stdin or stdout.
-.sp
 The path component of the provided URI is \fI\%percent\-decoded\fP\&. For convenience, unencoded characters are allowed as well, except that \fB%\fP should be always encoded as \fB%25\fP\&.
 .sp
 For example, the file named \fB/foo/bar%/[baz]\fP may be specified using either of the following URIs: \fBfile:///foo%2Fbar%25%2F%5Bbaz%5D\fP and \fBfile:///foo/bar%25/[baz]\fP\&.
+.SS I/O encoding
+.sp
+\fB\-\-input\-encoding\fP and \fB\-\-output\-encoding\fP options allow to explicitly specify encoding of the input or output file.
+.sp
+This option is useful when file encoding can\(aqt be detected automatically (e.g. file doesn\(aqt have extension or uses header\-less format like raw PCM).
+.sp
+\fIIO_ENCODING\fP should have the following form:
+.sp
+\fB<format>[@<subformat>]/<rate>/<channels>\fP
+.sp
+Where:
+.INDENT 0.0
+.IP \(bu 2
+\fBformat\fP defines container format, e.g. \fBpcm\fP (raw samples), \fBwav\fP, \fBogg\fP
+.IP \(bu 2
+\fBsubformat\fP is optional format\-dependent codec, e.g. \fBs16\fP for \fBpcm\fP or \fBwav\fP, and \fBvorbis\fP for \fBogg\fP
+.IP \(bu 2
+\fBrate\fP defines sample rate in Hertz (number of samples per second), e.g. \fB48000\fP
+.IP \(bu 2
+\fBchannels\fP defines channel layout, e.g. \fBmono\fP or \fBstereo\fP
+.UNINDENT
+.sp
+\fBformat\fP, \fBrate\fP, and \fBchannels\fP may be set to special value \fB\-\fP, which means using default value for input device, or auto\-detect value for input file.
+.sp
+Whether \fBsubformat\fP is required, allowed, and what values are accepted, depends on \fBformat\fP\&.
+.sp
+Examples:
+.INDENT 0.0
+.IP \(bu 2
+\fBpcm@s16/44100/mono\fP \-\- PCM, 16\-bit native\-endian integers, 44.1KHz, 1 channel
+.IP \(bu 2
+\fBpcm@f32_le/48000/stereo\fP \-\- PCM, 32\-bit little\-endian floats, 48KHz, 2 channels
+.IP \(bu 2
+\fBwav/\-/\-\fP \-\- WAV file, auto\-detect sub\-format, rate, channels
+.IP \(bu 2
+\fBflac\-/\-/\-\fP \-\- FLAC file, auto\-detect sub\-format, rate, channels
+.UNINDENT
+.sp
+The list of supported formats, sub\-formats, and channel layouts can be retrieved using \fB\-\-list\-supported\fP option.
 .SS Time units
 .sp
 \fITIME\fP defines duration with nanosecond precision.
@@ -150,7 +184,7 @@ Convert sample rate to 24\-bit 48k stereo:
 .sp
 .nf
 .ft C
-$ roc\-copy \-vv \-\-io\-encoding s24/48000/stereo \-i file:input.wav \-o file:output.wav
+$ roc\-copy \-vv \-i file:input.wav \-o file:output.wav \-\-output\-encoding wav@s24/48000/stereo
 .ft P
 .fi
 .UNINDENT
@@ -162,7 +196,7 @@ Same, but drop output results instead of writing to file (useful for benchmarkin
 .sp
 .nf
 .ft C
-$ roc\-copy \-vv \-\-io\-encoding s24/48000/stereo \-i file:input.wav
+$ roc\-copy \-vv \-i file:input.wav \-\-output\-encoding pcm@s24/48000/stereo
 .ft P
 .fi
 .UNINDENT
@@ -174,8 +208,8 @@ Input from stdin, output to stdout:
 .sp
 .nf
 .ft C
-$ roc\-copy \-vv \-\-input\-format=wav \-i file:\- \e
-    \-\-output\-format=wav \-o file:\- >./output.wav <./input.wav
+$ roc\-copy \-vv \-\-input\-encoding=wav/\-/\- \-i file:\- \e
+    \-\-output\-encoding=wav/\-/\- \-o file:\- >./output.wav <./input.wav
 .ft P
 .fi
 .UNINDENT

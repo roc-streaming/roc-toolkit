@@ -202,8 +202,9 @@ int main() {
 
     /* Setup frame encoding that we read from receiver.
      * Note that this encoding is different from the encoding used by PLC plugin. */
+    receiver_config.frame_encoding.format = ROC_FORMAT_PCM;
+    receiver_config.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
     receiver_config.frame_encoding.rate = MY_SAMPLE_RATE;
-    receiver_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
     receiver_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
 
     /* Enable PLC plugin. */

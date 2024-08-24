@@ -87,6 +87,9 @@ public:
     //! Get sample specification of the sink.
     virtual audio::SampleSpec sample_spec() const;
 
+    //! Get recommended frame length of the sink.
+    virtual core::nanoseconds_t frame_length() const;
+
     //! Check if the sink supports state updates.
     virtual bool has_state() const;
 

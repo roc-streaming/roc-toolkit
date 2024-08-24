@@ -24,34 +24,48 @@ const char* PulseaudioBackend::name() const {
     return "pulseaudio";
 }
 
-void PulseaudioBackend::discover_drivers(
-    core::Array<DriverInfo, MaxDrivers>& driver_list) {
-    if (!driver_list.push_back(DriverInfo("pulse", DriverType_Device,
-                                          DriverFlag_IsDefault | DriverFlag_SupportsSink
-                                              | DriverFlag_SupportsSource,
-                                          this))) {
-        roc_panic("pulseaudio backend: can't add driver");
+bool PulseaudioBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& result) {
+    if (!result.push_back(DriverInfo("pulse",
+                                     Driver_Device | Driver_DefaultDevice
+                                         | Driver_SupportsSink | Driver_SupportsSource,
+                                     this))) {
+        return false;
     }
+    return true;
+}
+
+bool PulseaudioBackend::discover_formats(core::Array<FormatInfo, MaxFormats>& result) {
+    // no formats except pcm
+    return true;
+}
+
+bool PulseaudioBackend::discover_subformat_groups(core::StringList& result) {
+    // no sub-formats except pcm
+    return true;
+}
+
+bool PulseaudioBackend::discover_subformats(const char* group, core::StringList& result) {
+    // no sub-formats except pcm
+    return true;
 }
 
 status::StatusCode PulseaudioBackend::open_device(DeviceType device_type,
-                                                  DriverType driver_type,
                                                   const char* driver,
                                                   const char* path,
                                                   const IoConfig& io_config,
                                                   audio::FrameFactory& frame_factory,
                                                   core::IArena& arena,
                                                   IDevice** result) {
-    if (driver_type != DriverType_Device) {
-        return status::StatusNoDriver;
-    }
+    roc_panic_if(!driver);
+    roc_panic_if(!path);
 
-    if (driver && strcmp(driver, "pulse") != 0) {
+    if (strcmp(driver, "pulse") != 0) {
+        // Not pulse://, go to next backend.
         return status::StatusNoDriver;
     }
 
     core::ScopedPtr<PulseaudioDevice> device(
-        new (arena) PulseaudioDevice(frame_factory, arena, io_config, device_type));
+        new (arena) PulseaudioDevice(frame_factory, arena, io_config, device_type, path));
 
     if (!device) {
         roc_log(LogDebug, "pulseaudio backend: can't allocate device: path=%s", path);
@@ -59,17 +73,9 @@ status::StatusCode PulseaudioBackend::open_device(DeviceType device_type,
     }
 
     if (device->init_status() != status::StatusOK) {
-        roc_log(LogDebug,
-                "pulseaudio backend: can't initialize device: path=%s status=%s", path,
-                status::code_to_str(device->init_status()));
-        return device->init_status();
-    }
-
-    const status::StatusCode code = device->open(path);
-    if (code != status::StatusOK) {
         roc_log(LogDebug, "pulseaudio backend: can't open device: path=%s status=%s",
-                path, status::code_to_str(code));
-        return code;
+                path, status::code_to_str(device->init_status()));
+        return device->init_status();
     }
 
     *result = device.hijack();

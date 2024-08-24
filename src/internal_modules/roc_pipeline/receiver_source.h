@@ -88,6 +88,9 @@ public:
     //! Get sample specification of the source.
     virtual audio::SampleSpec sample_spec() const;
 
+    //! Get recommended frame length of the source.
+    virtual core::nanoseconds_t frame_length() const;
+
     //! Check if the source supports state updates.
     virtual bool has_state() const;
 

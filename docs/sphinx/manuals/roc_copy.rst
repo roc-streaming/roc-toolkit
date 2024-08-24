@@ -31,10 +31,9 @@ General options
 I/O options
 -----------
 
--i, --input=FILE_URI           Input file URI
---input-format=FILE_FORMAT     Force input file format
--o, --output=FILE_URI          Output file URI
---output-format=FILE_FORMAT    Force output file format
+-i, --input=IO_URI             Input file URI
+--input-encoding=IO_ENCODING   Input file encoding
+-o, --output=IO_URI            Output file URI
 --output-encoding=IO_ENCODING  Output file encoding
 --io-frame-len=TIME            I/O frame length, TIME units
 
@@ -54,12 +53,12 @@ Debugging options
 DETAILS
 =======
 
-File URI
---------
+I/O URI
+-------
 
 ``--input`` and ``--output`` options define input / output file URI.
 
-*FILE_URI* should have one of the following forms:
+*IO_URI* should have one of the following forms:
 
 - ``file:///<abs>/<path>`` -- absolute file path
 - ``file://localhost/<abs>/<path>`` -- absolute file path (alternative form; only "localhost" host is supported)
@@ -80,11 +79,40 @@ The list of supported file formats can be retrieved using ``--list-supported`` o
 
 If the ``--output`` is omitted, the conversion results are discarded.
 
-The ``--input-format`` and ``--output-format`` options can be used to force the file format. If the option is omitted, the file format is auto-detected. This option is always required for stdin or stdout.
-
 The path component of the provided URI is `percent-decoded <https://en.wikipedia.org/wiki/Percent-encoding>`_. For convenience, unencoded characters are allowed as well, except that ``%`` should be always encoded as ``%25``.
 
 For example, the file named ``/foo/bar%/[baz]`` may be specified using either of the following URIs: ``file:///foo%2Fbar%25%2F%5Bbaz%5D`` and ``file:///foo/bar%25/[baz]``.
+
+I/O encoding
+------------
+
+``--input-encoding`` and ``--output-encoding`` options allow to explicitly specify encoding of the input or output file.
+
+This option is useful when file encoding can't be detected automatically (e.g. file doesn't have extension or uses header-less format like raw PCM).
+
+*IO_ENCODING* should have the following form:
+
+``<format>[@<subformat>]/<rate>/<channels>``
+
+Where:
+
+* ``format`` defines container format, e.g. ``pcm`` (raw samples), ``wav``, ``ogg``
+* ``subformat`` is optional format-dependent codec, e.g. ``s16`` for ``pcm`` or ``wav``, and ``vorbis`` for ``ogg``
+* ``rate`` defines sample rate in Hertz (number of samples per second), e.g. ``48000``
+* ``channels`` defines channel layout, e.g. ``mono`` or ``stereo``
+
+``format``, ``rate``, and ``channels`` may be set to special value ``-``, which means using default value for input device, or auto-detect value for input file.
+
+Whether ``subformat`` is required, allowed, and what values are accepted, depends on ``format``.
+
+Examples:
+
+* ``pcm@s16/44100/mono`` -- PCM, 16-bit native-endian integers, 44.1KHz, 1 channel
+* ``pcm@f32_le/48000/stereo`` -- PCM, 32-bit little-endian floats, 48KHz, 2 channels
+* ``wav/-/-`` -- WAV file, auto-detect sub-format, rate, channels
+* ``flac-/-/-`` -- FLAC file, auto-detect sub-format, rate, channels
+
+The list of supported formats, sub-formats, and channel layouts can be retrieved using ``--list-supported`` option.
 
 Time units
 ----------
@@ -101,20 +129,20 @@ Convert sample rate to 24-bit 48k stereo:
 
 .. code::
 
-    $ roc-copy -vv --io-encoding s24/48000/stereo -i file:input.wav -o file:output.wav
+    $ roc-copy -vv -i file:input.wav -o file:output.wav --output-encoding wav@s24/48000/stereo
 
 Same, but drop output results instead of writing to file (useful for benchmarking):
 
 .. code::
 
-    $ roc-copy -vv --io-encoding s24/48000/stereo -i file:input.wav
+    $ roc-copy -vv -i file:input.wav --output-encoding pcm@s24/48000/stereo
 
 Input from stdin, output to stdout:
 
 .. code::
 
-    $ roc-copy -vv --input-format=wav -i file:- \
-        --output-format=wav -o file:- >./output.wav <./input.wav
+    $ roc-copy -vv --input-encoding=wav/-/- -i file:- \
+        --output-encoding=wav/-/- -o file:- >./output.wav <./input.wav
 
 ENVIRONMENT
 ===========

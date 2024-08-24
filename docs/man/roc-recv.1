@@ -66,9 +66,6 @@ Exit when last connection is closed (default=off)
 .BI \-o\fP,\fB  \-\-output\fB= IO_URI
 Output file or device URI
 .TP
-.BI \-\-output\-format\fB= FILE_FORMAT
-Force output file format
-.TP
 .BI \-\-io\-encoding\fB= IO_ENCODING
 Output device encoding
 .TP
@@ -82,10 +79,7 @@ Output frame length, TIME units
 .INDENT 0.0
 .TP
 .BI \-\-backup\fB= IO_URI
-Backup file or device URI (used as input when there are no connections)
-.TP
-.BI \-\-backup\-format\fB= FILE_FORMAT
-Force backup file format
+Backup file URI (used as input when there are no connections)
 .UNINDENT
 .SS Network options
 .INDENT 0.0
@@ -221,8 +215,6 @@ The list of supported schemes and file formats can be retrieved using \fB\-\-lis
 If the \fB\-\-output\fP is omitted, default driver and device are selected.
 If the \fB\-\-backup\fP is omitted, no backup source is used.
 .sp
-The \fB\-\-output\-format\fP and \fB\-\-backup\-format\fP options can be used to force the output or backup file format. If the option is omitted, the file format is auto\-detected. The option is always required when the output or backup is stdout or stdin.
-.sp
 The path component of the provided URI is \fI\%percent\-decoded\fP\&. For convenience, unencoded characters are allowed as well, except that \fB%\fP should be always encoded as \fB%25\fP\&.
 .sp
 For example, the file named \fB/foo/bar%/[baz]\fP may be specified using either of the following URIs: \fBfile:///foo%2Fbar%25%2F%5Bbaz%5D\fP and \fBfile:///foo/bar%25/[baz]\fP\&.
@@ -234,31 +226,47 @@ This option is useful when device supports multiple encodings, or specific file 
 .sp
 \fIIO_ENCODING\fP should have the following form:
 .sp
-\fB<format>/<rate>/<channels>\fP
+\fB<format>[@<subformat>]/<rate>/<channels>\fP
 .sp
 Where:
 .INDENT 0.0
 .IP \(bu 2
-\fBformat\fP defines sample precision and binary representation, e.g. \fBs16_le\fP stands for little\-endian signed 16\-bit integers
+\fBformat\fP defines container format, e.g. \fBpcm\fP (raw samples), \fBwav\fP, \fBogg\fP
+.IP \(bu 2
+\fBsubformat\fP is optional format\-dependent codec, e.g. \fBs16\fP for \fBpcm\fP or \fBwav\fP, and \fBvorbis\fP for \fBogg\fP
 .IP \(bu 2
 \fBrate\fP defines sample rate in Hertz (number of samples per second), e.g. \fB48000\fP
 .IP \(bu 2
 \fBchannels\fP defines channel layout, e.g. \fBmono\fP or \fBstereo\fP
 .UNINDENT
 .sp
-Any component may be set to special value \fB\-\fP, which means use default value for the specified output device or file format.
+\fBformat\fP, \fBrate\fP, and \fBchannels\fP may be set to special value \fB\-\fP, which means using default value for the specified output device or file format.
+.sp
+Whether \fBsubformat\fP is required, allowed, and what values are accepted, depends on \fBformat\fP\&.
 .sp
 Examples:
 .INDENT 0.0
 .IP \(bu 2
-\fBs16/44100/mono\fP \-\- 16\-bit native\-endian integers, 44.1KHz, 1 channel
+\fBpcm@s16/44100/mono\fP \-\- PCM, 16\-bit native\-endian integers, 44.1KHz, 1 channel
 .IP \(bu 2
-\fBf32_le/48000/stereo\fP \-\- 32\-bit little\-endian floats, 48KHz, 2 channels
+\fBpcm@f32_le/48000/stereo\fP \-\- PCM, 32\-bit little\-endian floats, 48KHz, 2 channels
 .IP \(bu 2
-\fBs24_4be/\-/\-\fP \-\- 24\-bit PCM packed into 4\-byte big\-endian frames, default rate and channels
+\fBpcm@s24_4be/\-/\-\fP \-\- PCM, 24\-bit integers packed into 4\-byte big\-endian frames, default rate and channels
+.IP \(bu 2
+\fBwav/\-/\-\fP \-\- WAV, default sample width, rate, and channels
+.IP \(bu 2
+\fBwav@s24/\-/\-\fP \-\- WAV, 24\-bit samples, default rate and channels
+.IP \(bu 2
+\fBflac@s16/48000/stereo\fP \-\- FLAC, 16\-bit samples, 48KHz, 2 channels
+.IP \(bu 2
+\fBogg/48000/stereo\fP \-\- OGG, default codec, 48KHz, 2 channels
+.IP \(bu 2
+\fBogg@vorbis/48000/stereo\fP \-\- OGG, Vorbis codec, 48KHz, 2 channels
 .UNINDENT
 .sp
-The list of supported formats and channel layouts can be retrieved using \fB\-\-list\-supported\fP option.
+Devices (\fBpulse://\fP, \fBalsa://\fP, etc.) usually support only \fBpcm\fP format. Files (\fBfile://\fP) support a lot of different formats.
+.sp
+The list of supported formats, sub\-formats, and channel layouts can be retrieved using \fB\-\-list\-supported\fP option.
 .SS I/O latency and frame
 .sp
 \fB\-\-io\-latency\fP option defines I/O buffer size for the output device. It can\(aqt be used if output is a file.
@@ -323,26 +331,32 @@ Supported control protocols:
 .sp
 \fIPKT_ENCODING\fP is similar to \fIIO_ENCODING\fP, but adds numeric encoding identifier:
 .sp
-\fB<id>:<format>/<rate>/<channels>\fP
+\fB<id>:<format>[@<subformat>]/<rate>/<channels>\fP
 .sp
 Where:
 .INDENT 0.0
 .IP \(bu 2
 \fBid\fP is an arbitrary number in range 100..127, which should uniquely identify encoding on all related senders and receivers
 .IP \(bu 2
-\fBformat\fP defines sample precision and binary representation, e.g. \fBs16_le\fP stands for little\-endian signed 16\-bit integers
+\fBformat\fP defines container format, e.g. \fBpcm\fP (raw samples), \fBflac\fP
+.IP \(bu 2
+\fBsubformat\fP is optional format\-dependent codec, e.g. \fBs16\fP for \fBpcm\fP or \fBflac\fP
 .IP \(bu 2
 \fBrate\fP defines sample rate in Hertz (number of samples per second), e.g. \fB48000\fP
 .IP \(bu 2
 \fBchannels\fP defines channel layout, e.g. \fBmono\fP or \fBstereo\fP
 .UNINDENT
 .sp
+Whether \fBsubformat\fP is required, allowed, and what values are accepted, depends on \fBformat\fP\&.
+.sp
 Examples:
 .INDENT 0.0
 .IP \(bu 2
-\fB101:s16_be/44100/mono\fP \-\- 16\-bit big\-endian integers, 44.1KHz, 1 channel
+\fB101:pcm@s24/44100/mono\fP \-\- PCM, 24\-bit network\-endian integers, 44.1KHz, 1 channel
 .IP \(bu 2
-\fB102:f32_le/48000/stereo\fP \-\- 32\-bit little\-endian floats, 48KHz, 2 channels
+\fB102:pcm@f32/48000/stereo\fP \-\- PCM, 32\-bit network\-endian floats, 48KHz, 2 channels
+.IP \(bu 2
+\fB103:flac@s16/48000/stereo\fP \-\- FLAC, 16\-bit precision, 48KHz, 2 channels
 .UNINDENT
 .sp
 The list of supported formats and channel layouts can be retrieved using \fB\-\-list\-supported\fP option.
@@ -371,12 +385,12 @@ A few backends are available:
 .IP \(bu 2
 \fBspeex\fP \-\- fast, good\-quality, low\-precision resampler based on SpeexDSP
 .IP \(bu 2
-\fBspeexdec\fP \-\- very fast, medium\-quality, medium\-precision resampler combining SpeexDSP for base rate conversion with decimation for clock drift compensation
+\fBspeexdec\fP \-\- very fast, medium\-quality, medium\-precision resampler combining SpeexDSP for base rate conversion, and decimation for clock drift compensation
 .UNINDENT
 .sp
 Here, quality reflects potential distortions introduced by resampler, and precision reflects how accurately resampler can apply scaling and hence how accurately we can tune latency.
 .sp
-For very low latency or very low latency error, you usually need to use \fBbuiltin\fP backend. If those factors are not critical, you may use \fBspeex\fP resampler to reduce CPU usage. \fBspeexdec\fP backend is a compromise for situations when both CPU usage and latency are critical, and quality is less important.
+For very low or very precise latency, you usually need to use \fBbuiltin\fP backend. If those factors are not critical, you may use \fBspeex\fP resampler to reduce CPU usage. \fBspeexdec\fP backend is a compromise for situations when both CPU usage and latency are critical, and quality is less important.
 .sp
 If receiver\-side latency tuning is disabled (by default it\(aqs enabled), resampler precision is not relevant, and \fBspeex\fP is almost always the best choice.
 .SS Latency configuration
@@ -388,9 +402,9 @@ By default, latency tuning is performed on receiver side: \fB\-\-latency\-profil
 \fB\-\-target\-latency\fP option defines the latency value to maintain, as measured by the \fB\-\-latency\-backend\fP:
 .INDENT 0.0
 .IP \(bu 2
-If value is provided, \fBfixed latency\fP mode is activated. The latency starts from \fB\-\-target\-latency\fP and is kept close to that value.
+If value is provided, \fIfixed latency\fP mode is activated. The latency starts from \fB\-\-target\-latency\fP and is kept close to that value.
 .IP \(bu 2
-If option is omitted or set to \fBauto\fP, \fBadaptive latency\fP mode is activated. The latency is chosen dynamically. Initial latency is \fB\-\-start\-latency\fP, and the allowed range is \fB\-\-min\-latency\fP to \fB\-\-max\-latency\fP\&.
+If option is omitted or set to \fBauto\fP, \fIadaptive latency\fP mode is activated. The latency is chosen dynamically. Initial latency is \fB\-\-start\-latency\fP, and the allowed range is \fB\-\-min\-latency\fP to \fB\-\-max\-latency\fP\&.
 .UNINDENT
 .sp
 \fB\-\-latency\-tolerance\fP option defines maximum allowed deviation of the actual latency from the (current) target latency. If this limit is exceeded for some reason (typically due to poor network conditions), connection is restarted.
@@ -448,7 +462,7 @@ For UDP, it allows multiple processes to bind to the same address, which may be 
 Regardless of the option, \fBSO_REUSEADDR\fP is always disabled when binding to ephemeral port.
 .SS Backup audio
 .sp
-If \fB\-\-backup\fP option is given, it defines input audio device or file which will be played when there are no connected sessions. If it\(aqs not given, silence is played instead.
+If \fB\-\-backup\fP option is given, it defines input file to be played when there are no connected sessions. If it\(aqs not given, silence is played instead.
 .sp
 Backup file is restarted from the beginning each time when the last session disconnect. The playback of of the backup file is automatically looped.
 .SS Time and size units
@@ -529,7 +543,7 @@ $ roc\-recv \-vv \-s rtp+rs8m://225.1.2.3:10001 \-r rs8m://225.1.2.3:10002 \e
 .UNINDENT
 .UNINDENT
 .sp
-Bind two sets of source, repair, and control endpoints (six endpoints in total):
+Bind two sets (\(dqslots\(dq) of source, repair, and control endpoints (six endpoints in total):
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -600,7 +614,7 @@ Output to a file in WAV format (specify format manually):
 .sp
 .nf
 .ft C
-$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-o file:./output.file \-\-output\-format wav
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-o file:./output.1 \-\-io\-encoding wav/\-/\-
 .ft P
 .fi
 .UNINDENT
@@ -612,7 +626,7 @@ Output to stdout in WAV format:
 .sp
 .nf
 .ft C
-$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-o file:\- \-\-output\-format wav >./output.wav
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-o file:\- \-\-io\-encoding wav/\-/\- >./output.wav
 .ft P
 .fi
 .UNINDENT
@@ -650,7 +664,20 @@ Force specific encoding on the output device:
 .nf
 .ft C
 $ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
-    \-\-output alsa://hw:1,0 \-\-io\-encoding s32/48000/stereo
+    \-\-output alsa://hw:1,0 \-\-io\-encoding pcm@s32/48000/stereo
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Force specific encoding on the output file:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \e
+    \-\-output file:./output.flac \-\-io\-encoding flac@s24/48000/stereo
 .ft P
 .fi
 .UNINDENT
@@ -662,7 +689,7 @@ Use specific encoding for network packets:
 .sp
 .nf
 .ft C
-$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-\-packet\-encoding 101:s32/48000/stereo
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-\-packet\-encoding 101:pcm@s24/48000/stereo
 .ft P
 .fi
 .UNINDENT
@@ -672,7 +699,7 @@ $ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-\-packet\-encoding 101:s32/48000/
 .sp
 .nf
 .ft C
-$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-\-packet\-encoding 101:s32/48000/stereo
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-\-packet\-encoding 101:pcm@s24/48000/stereo
 .ft P
 .fi
 .UNINDENT

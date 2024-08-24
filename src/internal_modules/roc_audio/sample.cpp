@@ -8,7 +8,8 @@
 
 #include "roc_audio/sample.h"
 
-const roc::audio::PcmFormat roc::audio::Sample_RawFormat = roc::audio::PcmFormat_Float32;
+const roc::audio::PcmSubformat roc::audio::PcmSubformat_Raw =
+    roc::audio::PcmSubformat_Float32;
 
 const roc::audio::sample_t roc::audio::Sample_Min = -1;
 const roc::audio::sample_t roc::audio::Sample_Max = 1;

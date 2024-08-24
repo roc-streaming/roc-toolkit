@@ -26,7 +26,7 @@ namespace audio {
 //! PCM mapper writer.
 //! Maps frames to another PCM format and writes them to nested writer.
 //! @remarks
-//!  - Either input or output format must be raw samples (Sample_RawFormat).
+//!  - Either input or output format must be raw samples (PcmSubformat_Raw).
 //!  - Both input and output formats must be byte-aligned.
 class PcmMapperWriter : public IFrameWriter, public core::NonCopyable<> {
 public:

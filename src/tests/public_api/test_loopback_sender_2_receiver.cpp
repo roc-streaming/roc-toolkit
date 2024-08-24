@@ -31,11 +31,12 @@ TEST_GROUP(loopback_sender_2_receiver) {
         sample_step = 1. / 32768.;
     }
 
-    void init_config(unsigned flags, unsigned frame_chans, unsigned packet_chans,
-                     int encoding_id = 0) {
+    void init_config(unsigned flags, unsigned sample_rate, unsigned frame_chans,
+                     unsigned packet_chans, int encoding_id = 0) {
         memset(&sender_conf, 0, sizeof(sender_conf));
-        sender_conf.frame_encoding.rate = test::SampleRate;
-        sender_conf.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+        sender_conf.frame_encoding.format = ROC_FORMAT_PCM;
+        sender_conf.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
+        sender_conf.frame_encoding.rate = sample_rate;
 
         if (flags & test::FlagMultitrack) {
             sender_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_MULTITRACK;
@@ -67,8 +68,7 @@ TEST_GROUP(loopback_sender_2_receiver) {
             sender_conf.packet_encoding = (roc_packet_encoding)encoding_id;
         }
 
-        sender_conf.packet_length =
-            test::PacketSamples * 1000000000ull / test::SampleRate;
+        sender_conf.packet_length = test::PacketSamples * 1000000000ull / sample_rate;
         sender_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
         if (flags & test::FlagRS8M) {
@@ -84,8 +84,9 @@ TEST_GROUP(loopback_sender_2_receiver) {
         }
 
         memset(&receiver_conf, 0, sizeof(receiver_conf));
-        receiver_conf.frame_encoding.rate = test::SampleRate;
-        receiver_conf.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+        receiver_conf.frame_encoding.format = ROC_FORMAT_PCM;
+        receiver_conf.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
+        receiver_conf.frame_encoding.rate = sample_rate;
 
         if (flags & test::FlagMultitrack) {
             receiver_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_MULTITRACK;
@@ -105,9 +106,9 @@ TEST_GROUP(loopback_sender_2_receiver) {
 
         receiver_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
         receiver_conf.latency_tuner_profile = ROC_LATENCY_TUNER_PROFILE_INTACT;
-        receiver_conf.target_latency = test::Latency * 1000000000ull / test::SampleRate;
+        receiver_conf.target_latency = test::Latency * 1000000000ull / sample_rate;
         receiver_conf.no_playback_timeout =
-            test::Timeout * 1000000000ull / test::SampleRate;
+            test::Timeout * 1000000000ll / (long long)sample_rate;
     }
 
     bool is_rs8m_supported() {
@@ -120,9 +121,9 @@ TEST_GROUP(loopback_sender_2_receiver) {
 };
 
 TEST(loopback_sender_2_receiver, bare_rtp) {
-    enum { Flags = 0, FrameChans = 2, PacketChans = 2 };
+    enum { Flags = 0, SampleRate = 44100, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -143,9 +144,9 @@ TEST(loopback_sender_2_receiver, bare_rtp) {
 }
 
 TEST(loopback_sender_2_receiver, rtp_rtcp) {
-    enum { Flags = test::FlagRTCP, FrameChans = 2, PacketChans = 2 };
+    enum { Flags = test::FlagRTCP, SampleRate = 44100, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -170,9 +171,9 @@ TEST(loopback_sender_2_receiver, rs8m_without_losses) {
         return;
     }
 
-    enum { Flags = test::FlagRS8M, FrameChans = 2, PacketChans = 2 };
+    enum { Flags = test::FlagRS8M, SampleRate = 44100, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -199,11 +200,12 @@ TEST(loopback_sender_2_receiver, rs8m_with_losses) {
 
     enum {
         Flags = test::FlagRS8M | test::FlagLoseSomePkts,
+        SampleRate = 44100,
         FrameChans = 2,
         PacketChans = 2
     };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -233,9 +235,9 @@ TEST(loopback_sender_2_receiver, ldpc_without_losses) {
         return;
     }
 
-    enum { Flags = test::FlagLDPC, FrameChans = 2, PacketChans = 2 };
+    enum { Flags = test::FlagLDPC, SampleRate = 44100, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -262,11 +264,12 @@ TEST(loopback_sender_2_receiver, ldpc_with_losses) {
 
     enum {
         Flags = test::FlagLDPC | test::FlagLoseSomePkts,
+        SampleRate = 44100,
         FrameChans = 2,
         PacketChans = 2
     };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -292,9 +295,9 @@ TEST(loopback_sender_2_receiver, ldpc_with_losses) {
 }
 
 TEST(loopback_sender_2_receiver, separate_context) {
-    enum { Flags = 0, FrameChans = 2, PacketChans = 2 };
+    enum { Flags = 0, SampleRate = 44100, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context recv_context, send_context;
 
@@ -315,9 +318,9 @@ TEST(loopback_sender_2_receiver, separate_context) {
 }
 
 TEST(loopback_sender_2_receiver, multiple_senders_one_receiver_sequential) {
-    enum { Flags = 0, FrameChans = 2, PacketChans = 2 };
+    enum { Flags = 0, SampleRate = 44100, FrameChans = 2, PacketChans = 2 };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -350,9 +353,16 @@ TEST(loopback_sender_2_receiver, multiple_senders_one_receiver_sequential) {
 }
 
 TEST(loopback_sender_2_receiver, sender_slots) {
-    enum { Flags = 0, FrameChans = 2, PacketChans = 2, Slot1 = 1, Slot2 = 2 };
+    enum {
+        Flags = 0,
+        SampleRate = 44100,
+        FrameChans = 2,
+        PacketChans = 2,
+        Slot1 = 1,
+        Slot2 = 2
+    };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -384,9 +394,16 @@ TEST(loopback_sender_2_receiver, sender_slots) {
 }
 
 TEST(loopback_sender_2_receiver, receiver_slots_sequential) {
-    enum { Flags = 0, FrameChans = 2, PacketChans = 2, Slot1 = 1, Slot2 = 2 };
+    enum {
+        Flags = 0,
+        SampleRate = 44100,
+        FrameChans = 2,
+        PacketChans = 2,
+        Slot1 = 1,
+        Slot2 = 2
+    };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -420,9 +437,9 @@ TEST(loopback_sender_2_receiver, receiver_slots_sequential) {
 }
 
 TEST(loopback_sender_2_receiver, mono) {
-    enum { Flags = 0, FrameChans = 1, PacketChans = 1 };
+    enum { Flags = 0, SampleRate = 44100, FrameChans = 1, PacketChans = 1 };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -443,9 +460,9 @@ TEST(loopback_sender_2_receiver, mono) {
 }
 
 TEST(loopback_sender_2_receiver, stereo_mono_stereo) {
-    enum { Flags = 0, FrameChans = 2, PacketChans = 1 };
+    enum { Flags = 0, SampleRate = 44100, FrameChans = 2, PacketChans = 1 };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -466,9 +483,9 @@ TEST(loopback_sender_2_receiver, stereo_mono_stereo) {
 }
 
 TEST(loopback_sender_2_receiver, mono_stereo_mono) {
-    enum { Flags = 0, FrameChans = 1, PacketChans = 2 };
+    enum { Flags = 0, SampleRate = 44100, FrameChans = 1, PacketChans = 2 };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -488,19 +505,92 @@ TEST(loopback_sender_2_receiver, mono_stereo_mono) {
     sender.join();
 }
 
+TEST(loopback_sender_2_receiver, custom_encoding) {
+    enum {
+        Flags = 0,
+        SampleRate = 48000,
+        FrameChans = 1,
+        PacketChans = 2,
+        EncodingID = 100
+    };
+
+    init_config(Flags, SampleRate, FrameChans, PacketChans, EncodingID);
+
+    test::Context context;
+
+    context.register_custom_encoding(EncodingID, ROC_FORMAT_PCM,
+                                     ROC_SUBFORMAT_PCM_SINT24_BE, SampleRate,
+                                     ROC_CHANNEL_LAYOUT_STEREO);
+
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples, Flags);
+
+    receiver.bind();
+
+    test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
+                        Flags);
+
+    sender.connect(receiver.source_endpoint(), NULL, NULL);
+
+    CHECK(sender.start());
+    receiver.receive();
+    sender.stop();
+    sender.join();
+}
+
+TEST(loopback_sender_2_receiver, custom_encoding_separate_contextx) {
+    enum {
+        Flags = 0,
+        SampleRate = 48000,
+        FrameChans = 1,
+        PacketChans = 2,
+        EncodingID = 100
+    };
+
+    init_config(Flags, SampleRate, FrameChans, PacketChans, EncodingID);
+
+    test::Context recv_context;
+
+    recv_context.register_custom_encoding(EncodingID, ROC_FORMAT_PCM,
+                                          ROC_SUBFORMAT_PCM_SINT24_BE, SampleRate,
+                                          ROC_CHANNEL_LAYOUT_STEREO);
+
+    test::Receiver receiver(recv_context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples, Flags);
+
+    receiver.bind();
+
+    test::Context send_context;
+
+    send_context.register_custom_encoding(EncodingID, ROC_FORMAT_PCM,
+                                          ROC_SUBFORMAT_PCM_SINT24_BE, SampleRate,
+                                          ROC_CHANNEL_LAYOUT_STEREO);
+
+    test::Sender sender(send_context, sender_conf, sample_step, FrameChans,
+                        test::FrameSamples, Flags);
+
+    sender.connect(receiver.source_endpoint(), NULL, NULL);
+
+    CHECK(sender.start());
+    receiver.receive();
+    sender.stop();
+    sender.join();
+}
+
 TEST(loopback_sender_2_receiver, multitrack) {
     enum {
         Flags = test::FlagMultitrack,
+        SampleRate = 44100,
         FrameChans = 4,
         PacketChans = 4,
         EncodingID = 100
     };
 
-    init_config(Flags, FrameChans, PacketChans, EncodingID);
+    init_config(Flags, SampleRate, FrameChans, PacketChans, EncodingID);
 
     test::Context context;
 
-    context.register_multitrack_encoding(EncodingID, PacketChans);
+    context.register_multitrack_encoding(EncodingID, SampleRate, PacketChans);
 
     test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
                             test::FrameSamples, Flags);
@@ -521,17 +611,18 @@ TEST(loopback_sender_2_receiver, multitrack) {
 TEST(loopback_sender_2_receiver, multitrack_separate_contexts) {
     enum {
         Flags = test::FlagMultitrack,
+        SampleRate = 44100,
         FrameChans = 4,
         PacketChans = 4,
         EncodingID = 100
     };
 
-    init_config(Flags, FrameChans, PacketChans, EncodingID);
+    init_config(Flags, SampleRate, FrameChans, PacketChans, EncodingID);
 
     test::Context recv_context, send_context;
 
-    recv_context.register_multitrack_encoding(EncodingID, PacketChans);
-    send_context.register_multitrack_encoding(EncodingID, PacketChans);
+    recv_context.register_multitrack_encoding(EncodingID, SampleRate, PacketChans);
+    send_context.register_multitrack_encoding(EncodingID, SampleRate, PacketChans);
 
     test::Receiver receiver(recv_context, receiver_conf, sample_step, FrameChans,
                             test::FrameSamples, Flags);
@@ -553,12 +644,13 @@ TEST(loopback_sender_2_receiver, multitrack_separate_contexts) {
 TEST(loopback_sender_2_receiver, metrics_measurements) {
     enum {
         Flags = test::FlagNonStrict | test::FlagInfinite | test::FlagRTCP,
+        SampleRate = 44100,
         FrameChans = 2,
         PacketChans = 2,
         MaxSess = 10
     };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -651,12 +743,13 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
 TEST(loopback_sender_2_receiver, metrics_connections) {
     enum {
         Flags = test::FlagNonStrict | test::FlagInfinite | test::FlagRTCP,
+        SampleRate = 44100,
         FrameChans = 2,
         PacketChans = 2,
         MaxSess = 10
     };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 
@@ -757,6 +850,7 @@ TEST(loopback_sender_2_receiver, metrics_connections) {
 TEST(loopback_sender_2_receiver, metrics_connections_slots) {
     enum {
         Flags = test::FlagNonStrict | test::FlagInfinite | test::FlagRTCP,
+        SampleRate = 44100,
         FrameChans = 2,
         PacketChans = 2,
         MaxSess = 10,
@@ -764,7 +858,7 @@ TEST(loopback_sender_2_receiver, metrics_connections_slots) {
         Slot2 = 2
     };
 
-    init_config(Flags, FrameChans, PacketChans);
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
 
     test::Context context;
 

@@ -14,7 +14,7 @@ namespace test {
 static SampleInfo sample_pcm_sint32_be = {
   /* name */ "pcm_sint32_be",
 
-  /* format */ PcmFormat_SInt32_Be,
+  /* format */ PcmSubformat_SInt32_Be,
 
   /* num_samples */ 240,
   /* samples     */ {

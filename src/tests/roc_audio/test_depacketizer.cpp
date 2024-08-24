@@ -37,10 +37,10 @@ enum {
 };
 
 const SampleSpec frame_spec(
-    SampleRate, Sample_RawFormat, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
+    SampleRate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
 const SampleSpec packet_spec(
-    SampleRate, PcmFormat_SInt16_Be, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
+    SampleRate, PcmSubformat_SInt16_Be, ChanLayout_Surround, ChanOrder_Smpte, ChMask);
 
 const core::nanoseconds_t NsPerPacket =
     packet_spec.samples_per_chan_2_ns(SamplesPerPacket);

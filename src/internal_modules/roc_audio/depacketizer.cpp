@@ -42,8 +42,8 @@ Depacketizer::Depacketizer(packet::IReader& packet_reader,
     , rate_limiter_(LogInterval)
     , dumper_(dumper)
     , init_status_(status::NoStatus) {
-    roc_panic_if_msg(!sample_spec_.is_valid() || !sample_spec_.is_raw(),
-                     "depacketizer: required valid sample spec with raw format: %s",
+    roc_panic_if_msg(!sample_spec_.is_complete() || !sample_spec_.is_raw(),
+                     "depacketizer: required complete sample spec with raw format: %s",
                      sample_spec_to_str(sample_spec_).c_str());
 
     roc_log(LogDebug, "depacketizer: initializing: sample_rate=%lu n_channels=%lu",

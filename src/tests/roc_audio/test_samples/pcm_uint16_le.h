@@ -14,7 +14,7 @@ namespace test {
 static SampleInfo sample_pcm_uint16_le = {
   /* name */ "pcm_uint16_le",
 
-  /* format */ PcmFormat_UInt16_Le,
+  /* format */ PcmSubformat_UInt16_Le,
 
   /* num_samples */ 240,
   /* samples     */ {

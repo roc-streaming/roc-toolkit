@@ -11,7 +11,7 @@
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
-#include "roc_audio/pcm_format.h"
+#include "roc_audio/pcm_subformat.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
 
@@ -51,25 +51,25 @@ IFrameEncoder* new_encoder(size_t id) {
     switch (id) {
     case Codec_PCM_SInt16_1ch:
         return new (arena)
-            PcmEncoder(SampleSpec(SampleRate, PcmFormat_SInt16_Be, ChanLayout_Surround,
+            PcmEncoder(SampleSpec(SampleRate, PcmSubformat_SInt16_Be, ChanLayout_Surround,
                                   ChanOrder_Smpte, ChanMask_Surround_Mono),
                        arena);
 
     case Codec_PCM_SInt16_2ch:
         return new (arena)
-            PcmEncoder(SampleSpec(SampleRate, PcmFormat_SInt16_Be, ChanLayout_Surround,
+            PcmEncoder(SampleSpec(SampleRate, PcmSubformat_SInt16_Be, ChanLayout_Surround,
                                   ChanOrder_Smpte, ChanMask_Surround_Stereo),
                        arena);
 
     case Codec_PCM_SInt24_1ch:
         return new (arena)
-            PcmEncoder(SampleSpec(SampleRate, PcmFormat_SInt24_Be, ChanLayout_Surround,
+            PcmEncoder(SampleSpec(SampleRate, PcmSubformat_SInt24_Be, ChanLayout_Surround,
                                   ChanOrder_Smpte, ChanMask_Surround_Mono),
                        arena);
 
     case Codec_PCM_SInt24_2ch:
         return new (arena)
-            PcmEncoder(SampleSpec(SampleRate, PcmFormat_SInt24_Be, ChanLayout_Surround,
+            PcmEncoder(SampleSpec(SampleRate, PcmSubformat_SInt24_Be, ChanLayout_Surround,
                                   ChanOrder_Smpte, ChanMask_Surround_Stereo),
                        arena);
 
@@ -84,25 +84,25 @@ IFrameDecoder* new_decoder(size_t id) {
     switch (id) {
     case Codec_PCM_SInt16_1ch:
         return new (arena)
-            PcmDecoder(SampleSpec(SampleRate, PcmFormat_SInt16_Be, ChanLayout_Surround,
+            PcmDecoder(SampleSpec(SampleRate, PcmSubformat_SInt16_Be, ChanLayout_Surround,
                                   ChanOrder_Smpte, ChanMask_Surround_Mono),
                        arena);
 
     case Codec_PCM_SInt16_2ch:
         return new (arena)
-            PcmDecoder(SampleSpec(SampleRate, PcmFormat_SInt16_Be, ChanLayout_Surround,
+            PcmDecoder(SampleSpec(SampleRate, PcmSubformat_SInt16_Be, ChanLayout_Surround,
                                   ChanOrder_Smpte, ChanMask_Surround_Stereo),
                        arena);
 
     case Codec_PCM_SInt24_1ch:
         return new (arena)
-            PcmDecoder(SampleSpec(SampleRate, PcmFormat_SInt24_Be, ChanLayout_Surround,
+            PcmDecoder(SampleSpec(SampleRate, PcmSubformat_SInt24_Be, ChanLayout_Surround,
                                   ChanOrder_Smpte, ChanMask_Surround_Mono),
                        arena);
 
     case Codec_PCM_SInt24_2ch:
         return new (arena)
-            PcmDecoder(SampleSpec(SampleRate, PcmFormat_SInt24_Be, ChanLayout_Surround,
+            PcmDecoder(SampleSpec(SampleRate, PcmSubformat_SInt24_Be, ChanLayout_Surround,
                                   ChanOrder_Smpte, ChanMask_Surround_Stereo),
                        arena);
 

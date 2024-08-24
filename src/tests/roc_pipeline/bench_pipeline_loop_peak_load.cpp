@@ -279,7 +279,7 @@ public:
         : PipelineLoop(*this,
                        config,
                        audio::SampleSpec(SampleRate,
-                                         audio::Sample_RawFormat,
+                                         audio::PcmSubformat_Raw,
                                          audio::ChanLayout_Surround,
                                          audio::ChanOrder_Smpte,
                                          Chans),

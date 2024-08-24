@@ -7,8 +7,8 @@
  */
 
 #include "roc_audio/sample_spec.h"
-#include "roc_audio/pcm_format.h"
-#include "roc_audio/sample_format.h"
+#include "roc_audio/format.h"
+#include "roc_audio/pcm_subformat.h"
 #include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/panic.h"
@@ -62,145 +62,305 @@ core::nanoseconds_t nsamples_2_ns(const float n_samples, const size_t sample_rat
     return (core::nanoseconds_t)val;
 }
 
-PcmFormat get_pcm_portable_format(PcmFormat fmt) {
-    if (fmt == PcmFormat_Invalid) {
-        return PcmFormat_Invalid;
+PcmSubformat get_pcm_portable_format(PcmSubformat fmt) {
+    if (fmt == PcmSubformat_Invalid) {
+        return PcmSubformat_Invalid;
     }
 
-    const PcmTraits traits = pcm_format_traits(fmt);
+    const PcmTraits traits = pcm_subformat_traits(fmt);
     return traits.portable_alias;
 }
 
-size_t get_pcm_sample_width(PcmFormat fmt) {
-    if (fmt == PcmFormat_Invalid) {
+size_t get_pcm_sample_width(PcmSubformat fmt) {
+    if (fmt == PcmSubformat_Invalid) {
         return 0;
     }
 
-    const PcmTraits traits = pcm_format_traits(fmt);
+    const PcmTraits traits = pcm_subformat_traits(fmt);
     return traits.bit_width;
 }
 
 } // namespace
 
 SampleSpec::SampleSpec()
-    : sample_rate_(0)
-    , sample_fmt_(SampleFormat_Invalid)
-    , pcm_fmt_(PcmFormat_Invalid)
-    , pcm_width_(0)
+    : fmt_(Format_Invalid)
+    , has_subfmt_(false)
+    , pcm_subfmt_(PcmSubformat_Invalid)
+    , pcm_subfmt_width_(0)
+    , sample_rate_(0)
     , channel_set_() {
+    fmt_name_[0] = '\0';
+    subfmt_name_[0] = '\0';
 }
 
 SampleSpec::SampleSpec(const size_t sample_rate,
-                       const PcmFormat pcm_fmt,
+                       const PcmSubformat pcm_fmt,
                        const ChannelSet& channel_set)
-    : sample_rate_(0)
-    , sample_fmt_(SampleFormat_Invalid)
-    , pcm_fmt_(PcmFormat_Invalid)
-    , pcm_width_(0)
+    : fmt_(Format_Invalid)
+    , has_subfmt_(false)
+    , pcm_subfmt_(PcmSubformat_Invalid)
+    , pcm_subfmt_width_(0)
+    , sample_rate_(0)
     , channel_set_(channel_set) {
-    set_sample_format(SampleFormat_Pcm);
-    set_pcm_format(pcm_fmt);
+    fmt_name_[0] = '\0';
+    subfmt_name_[0] = '\0';
+
+    set_format(Format_Pcm);
+    set_pcm_subformat(pcm_fmt);
     set_sample_rate(sample_rate);
 
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to construct invalid spec: %s",
+    roc_panic_if_msg(!is_complete(),
+                     "sample spec: attempt to construct incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 }
 
 SampleSpec::SampleSpec(const size_t sample_rate,
-                       const PcmFormat pcm_fmt,
+                       const PcmSubformat pcm_fmt,
                        const ChannelLayout channel_layout,
                        ChannelOrder channel_order,
                        const ChannelMask channel_mask)
-    : sample_rate_(0)
-    , sample_fmt_(SampleFormat_Invalid)
-    , pcm_fmt_(PcmFormat_Invalid)
-    , pcm_width_(0)
+    : fmt_(Format_Invalid)
+    , has_subfmt_(false)
+    , pcm_subfmt_(PcmSubformat_Invalid)
+    , pcm_subfmt_width_(0)
+    , sample_rate_(0)
     , channel_set_(channel_layout, channel_order, channel_mask) {
-    set_sample_format(SampleFormat_Pcm);
-    set_pcm_format(pcm_fmt);
+    fmt_name_[0] = '\0';
+    subfmt_name_[0] = '\0';
+
+    set_format(Format_Pcm);
+    set_pcm_subformat(pcm_fmt);
     set_sample_rate(sample_rate);
 
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to construct invalid spec: %s",
+    roc_panic_if_msg(!is_complete(),
+                     "sample spec: attempt to construct incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 }
 
 bool SampleSpec::operator==(const SampleSpec& other) const {
-    return sample_fmt_ == other.sample_fmt_
-        && (sample_fmt_ != SampleFormat_Pcm
-            || get_pcm_portable_format(pcm_fmt_)
-                == get_pcm_portable_format(other.pcm_fmt_))
-        && sample_rate_ == other.sample_rate_ && channel_set_ == other.channel_set_;
+    // format
+    if (has_format() || other.has_format()) {
+        if (fmt_ != other.fmt_) {
+            return false;
+        }
+        if (fmt_ == Format_Custom && strcmp(fmt_name_, other.fmt_name_) != 0) {
+            return false;
+        }
+    }
+
+    // sub-format
+    if (has_subformat() || other.has_subformat()) {
+        if (pcm_subfmt_ != PcmSubformat_Invalid
+            || other.pcm_subfmt_ != PcmSubformat_Invalid) {
+            if (get_pcm_portable_format(pcm_subfmt_)
+                != get_pcm_portable_format(other.pcm_subfmt_)) {
+                return false;
+            }
+        } else {
+            if (strcmp(subfmt_name_, other.subfmt_name_) != 0) {
+                return false;
+            }
+        }
+    }
+
+    // rate, channels
+    if (sample_rate_ != other.sample_rate_) {
+        return false;
+    }
+    if (channel_set_ != other.channel_set_) {
+        return false;
+    }
+
+    return true;
 }
 
 bool SampleSpec::operator!=(const SampleSpec& other) const {
     return !(*this == other);
 }
 
-bool SampleSpec::is_valid() const {
-    return sample_fmt_ != SampleFormat_Invalid
-        && (sample_fmt_ != SampleFormat_Pcm || pcm_fmt_ != PcmFormat_Invalid)
-        && sample_rate_ != 0 && channel_set_.is_valid();
+bool SampleSpec::is_complete() const {
+    // format
+    if (!has_format()) {
+        return false;
+    }
+    if (!fmt_name_[0]) {
+        return false;
+    }
+
+    // sub-format
+    if (fmt_ == Format_Pcm) {
+        if (pcm_subfmt_ == PcmSubformat_Invalid) {
+            return false;
+        }
+    }
+    if (has_subformat()) {
+        if (!subfmt_name_[0]) {
+            return false;
+        }
+    }
+
+    // rate, channels
+    if (!has_sample_rate()) {
+        return false;
+    }
+    if (!has_channel_set()) {
+        return false;
+    }
+
+    return true;
 }
 
 bool SampleSpec::is_empty() const {
-    return sample_fmt_ == SampleFormat_Invalid && pcm_fmt_ == PcmFormat_Invalid
+    return fmt_ == Format_Invalid && !has_subfmt_ && pcm_subfmt_ == PcmSubformat_Invalid
         && sample_rate_ == 0 && channel_set_.num_channels() == 0;
 }
 
 bool SampleSpec::is_pcm() const {
-    return sample_fmt_ == SampleFormat_Pcm && pcm_fmt_ != PcmFormat_Invalid;
+    return fmt_ == Format_Pcm && pcm_subfmt_ != PcmSubformat_Invalid;
 }
 
 bool SampleSpec::is_raw() const {
-    return sample_fmt_ == SampleFormat_Pcm
-        && get_pcm_portable_format(pcm_fmt_) == get_pcm_portable_format(Sample_RawFormat);
+    return fmt_ == Format_Pcm
+        && get_pcm_portable_format(pcm_subfmt_)
+        == get_pcm_portable_format(PcmSubformat_Raw);
 }
 
 void SampleSpec::clear() {
-    sample_fmt_ = SampleFormat_Invalid;
-    pcm_fmt_ = PcmFormat_Invalid;
-    pcm_width_ = 0;
+    fmt_ = Format_Invalid;
+    fmt_name_[0] = '\0';
+
+    has_subfmt_ = false;
+    subfmt_name_[0] = '\0';
+    pcm_subfmt_ = PcmSubformat_Invalid;
+    pcm_subfmt_width_ = 0;
+
     sample_rate_ = 0;
     channel_set_.clear();
 }
 
-void SampleSpec::use_defaults(PcmFormat default_pcm_fmt,
+void SampleSpec::use_defaults(Format default_fmt,
+                              PcmSubformat default_pcm_fmt,
                               ChannelLayout default_channel_layout,
                               ChannelOrder default_channel_order,
                               ChannelMask default_channel_mask,
                               size_t default_sample_rate) {
-    if (sample_fmt_ == SampleFormat_Invalid && default_pcm_fmt != PcmFormat_Invalid) {
-        set_sample_format(SampleFormat_Pcm);
-        set_pcm_format(default_pcm_fmt);
+    if (!has_format() && default_fmt != Format_Invalid) {
+        set_format(default_fmt);
     }
-    if (!channel_set_.is_valid() && default_channel_layout != ChanLayout_None) {
+
+    if (!has_subformat() && default_pcm_fmt != PcmSubformat_Invalid) {
+        set_pcm_subformat(default_pcm_fmt);
+    }
+
+    if (!has_sample_rate() && default_sample_rate != 0) {
+        set_sample_rate(default_sample_rate);
+    }
+
+    if (!has_channel_set() && default_channel_layout != ChanLayout_None) {
         channel_set_.set_layout(default_channel_layout);
         channel_set_.set_order(default_channel_order);
         channel_set_.set_mask(default_channel_mask);
     }
-    if (sample_rate_ == 0 && default_sample_rate != 0) {
-        set_sample_rate(default_sample_rate);
+}
+
+bool SampleSpec::has_format() const {
+    return fmt_ != Format_Invalid;
+}
+
+Format SampleSpec::format() const {
+    return fmt_;
+}
+
+const char* SampleSpec::format_name() const {
+    return fmt_name_;
+}
+
+void SampleSpec::set_format(Format fmt) {
+    roc_panic_if_msg(fmt < Format_Invalid || fmt >= Format_Max,
+                     "sample spec: invalid format id");
+
+    if (fmt_ == fmt) {
+        return;
+    }
+
+    fmt_ = fmt;
+
+    if (fmt_ == Format_Invalid || fmt_ == Format_Custom) {
+        strcpy(fmt_name_, "");
+    } else {
+        strcpy(fmt_name_, format_to_str(fmt));
     }
 }
 
-SampleFormat SampleSpec::sample_format() const {
-    return sample_fmt_;
-}
+bool SampleSpec::set_custom_format(const char* name) {
+    roc_panic_if_msg(!name, "sample spec: invalid null string");
 
-void SampleSpec::set_sample_format(SampleFormat sample_fmt) {
-    sample_fmt_ = sample_fmt;
-}
-
-PcmFormat SampleSpec::pcm_format() const {
-    if (sample_fmt_ != SampleFormat_Pcm) {
-        return PcmFormat_Invalid;
+    const size_t name_len = strlen(name);
+    if (name_len == 0 || name_len >= MaxNameLen) {
+        return false;
     }
-    return pcm_fmt_;
+
+    fmt_ = Format_Custom;
+    strcpy(fmt_name_, name);
+
+    return true;
 }
 
-void SampleSpec::set_pcm_format(PcmFormat pcm_fmt) {
-    pcm_fmt_ = pcm_fmt;
-    pcm_width_ = get_pcm_sample_width(pcm_fmt);
+bool SampleSpec::has_subformat() const {
+    return has_subfmt_;
+}
+
+const char* SampleSpec::subformat_name() const {
+    return subfmt_name_;
+}
+
+PcmSubformat SampleSpec::pcm_subformat() const {
+    return pcm_subfmt_;
+}
+
+size_t SampleSpec::pcm_bit_width() const {
+    return pcm_subfmt_width_;
+}
+
+void SampleSpec::set_pcm_subformat(PcmSubformat pcm_fmt) {
+    roc_panic_if_msg(pcm_fmt < PcmSubformat_Invalid || pcm_fmt >= PcmSubformat_Max,
+                     "sample spec: invalid pcm format id");
+
+    if (pcm_subfmt_ == pcm_fmt) {
+        return;
+    }
+
+    pcm_subfmt_ = pcm_fmt;
+    pcm_subfmt_width_ = get_pcm_sample_width(pcm_fmt);
+
+    if (pcm_subfmt_ == PcmSubformat_Invalid) {
+        has_subfmt_ = false;
+        strcpy(subfmt_name_, "");
+    } else {
+        has_subfmt_ = true;
+        strcpy(subfmt_name_, pcm_subformat_to_str(pcm_subfmt_));
+    }
+}
+
+bool SampleSpec::set_custom_subformat(const char* name) {
+    roc_panic_if_msg(!name, "sample spec: string is null");
+
+    const size_t name_len = strlen(name);
+    if (name_len == 0 || name_len >= MaxNameLen) {
+        return false;
+    }
+
+    pcm_subfmt_ = PcmSubformat_Invalid;
+    pcm_subfmt_width_ = 0;
+
+    has_subfmt_ = true;
+    strcpy(subfmt_name_, name);
+
+    return true;
+}
+
+bool SampleSpec::has_sample_rate() const {
+    return sample_rate_ != 0;
 }
 
 size_t SampleSpec::sample_rate() const {
@@ -209,6 +369,14 @@ size_t SampleSpec::sample_rate() const {
 
 void SampleSpec::set_sample_rate(const size_t sample_rate) {
     sample_rate_ = sample_rate;
+}
+
+bool SampleSpec::has_channel_set() const {
+    return channel_set_.is_valid();
+}
+
+size_t SampleSpec::num_channels() const {
+    return channel_set_.num_channels();
 }
 
 const ChannelSet& SampleSpec::channel_set() const {
@@ -223,12 +391,8 @@ void SampleSpec::set_channel_set(const ChannelSet& channel_set) {
     channel_set_ = channel_set;
 }
 
-size_t SampleSpec::num_channels() const {
-    return channel_set_.num_channels();
-}
-
 size_t SampleSpec::ns_2_samples_per_chan(const core::nanoseconds_t ns_duration) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
     roc_panic_if_msg(ns_duration < 0, "sample spec: duration should not be negative");
@@ -237,21 +401,21 @@ size_t SampleSpec::ns_2_samples_per_chan(const core::nanoseconds_t ns_duration) 
 }
 
 core::nanoseconds_t SampleSpec::samples_per_chan_2_ns(const size_t n_samples) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
     return nsamples_2_ns((float)n_samples, sample_rate_);
 }
 
 core::nanoseconds_t SampleSpec::fract_samples_per_chan_2_ns(const float n_samples) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
     return nsamples_2_ns(n_samples, sample_rate_);
 }
 
 size_t SampleSpec::ns_2_samples_overall(const core::nanoseconds_t ns_duration) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
     roc_panic_if_msg(ns_duration < 0, "sample spec: duration should not be negative");
@@ -260,7 +424,7 @@ size_t SampleSpec::ns_2_samples_overall(const core::nanoseconds_t ns_duration) c
 }
 
 core::nanoseconds_t SampleSpec::samples_overall_2_ns(const size_t n_samples) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
     roc_panic_if_msg(n_samples % num_channels() != 0,
@@ -270,7 +434,7 @@ core::nanoseconds_t SampleSpec::samples_overall_2_ns(const size_t n_samples) con
 }
 
 core::nanoseconds_t SampleSpec::fract_samples_overall_2_ns(const float n_samples) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
     return nsamples_2_ns(n_samples / num_channels(), sample_rate_);
@@ -278,7 +442,7 @@ core::nanoseconds_t SampleSpec::fract_samples_overall_2_ns(const float n_samples
 
 packet::stream_timestamp_t
 SampleSpec::ns_2_stream_timestamp(const core::nanoseconds_t ns_duration) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
     roc_panic_if_msg(ns_duration < 0, "sample spec: duration should not be negative");
@@ -288,7 +452,7 @@ SampleSpec::ns_2_stream_timestamp(const core::nanoseconds_t ns_duration) const {
 
 core::nanoseconds_t
 SampleSpec::stream_timestamp_2_ns(const packet::stream_timestamp_t sts_duration) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
     return nsamples_2_ns((float)sts_duration, sample_rate_);
@@ -300,7 +464,7 @@ double SampleSpec::stream_timestamp_2_ms(packet::stream_timestamp_t sts_duration
 
 packet::stream_timestamp_diff_t
 SampleSpec::ns_2_stream_timestamp_delta(const core::nanoseconds_t ns_delta) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
     return ns_2_int_samples<packet::stream_timestamp_diff_t>(ns_delta, sample_rate_, 1);
@@ -308,7 +472,7 @@ SampleSpec::ns_2_stream_timestamp_delta(const core::nanoseconds_t ns_delta) cons
 
 core::nanoseconds_t SampleSpec::stream_timestamp_delta_2_ns(
     const packet::stream_timestamp_diff_t sts_delta) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
     return nsamples_2_ns((float)sts_delta, sample_rate_);
@@ -320,33 +484,31 @@ SampleSpec::stream_timestamp_delta_2_ms(packet::stream_timestamp_diff_t sts_delt
 }
 
 packet::stream_timestamp_t SampleSpec::bytes_2_stream_timestamp(size_t n_bytes) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
-    roc_panic_if_msg(sample_fmt_ != SampleFormat_Pcm,
-                     "sample spec: sample format is not pcm: %s",
+    roc_panic_if_msg(fmt_ != Format_Pcm, "sample spec: sample format is not pcm: %s",
                      sample_spec_to_str(*this).c_str());
 
-    roc_panic_if_msg(pcm_width_ % 8 != 0,
+    roc_panic_if_msg(pcm_subfmt_width_ % 8 != 0,
                      "sample spec: sample width is not byte-aligned: %s",
                      sample_spec_to_str(*this).c_str());
 
-    return n_bytes / (pcm_width_ / 8) / channel_set_.num_channels();
+    return n_bytes / (pcm_subfmt_width_ / 8) / channel_set_.num_channels();
 }
 
 size_t SampleSpec::stream_timestamp_2_bytes(packet::stream_timestamp_t duration) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
-    roc_panic_if_msg(sample_fmt_ != SampleFormat_Pcm,
-                     "sample spec: sample format is not pcm: %s",
+    roc_panic_if_msg(fmt_ != Format_Pcm, "sample spec: sample format is not pcm: %s",
                      sample_spec_to_str(*this).c_str());
 
-    roc_panic_if_msg(pcm_width_ % 8 != 0,
+    roc_panic_if_msg(pcm_subfmt_width_ % 8 != 0,
                      "sample spec: sample width is not byte-aligned: %s",
                      sample_spec_to_str(*this).c_str());
 
-    return duration * (pcm_width_ / 8) * channel_set_.num_channels();
+    return duration * (pcm_subfmt_width_ / 8) * channel_set_.num_channels();
 }
 
 core::nanoseconds_t SampleSpec::bytes_2_ns(size_t n_bytes) const {
@@ -358,7 +520,7 @@ size_t SampleSpec::ns_2_bytes(core::nanoseconds_t duration) const {
 }
 
 void SampleSpec::validate_frame(Frame& frame) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
     if (frame.num_bytes() == 0) {
@@ -399,10 +561,10 @@ void SampleSpec::validate_frame(Frame& frame) const {
 }
 
 bool SampleSpec::is_valid_frame_size(size_t n_bytes) {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
-    if (sample_fmt_ != SampleFormat_Pcm || pcm_width_ % 8 != 0) {
+    if (fmt_ != Format_Pcm || pcm_subfmt_width_ % 8 != 0) {
         return true;
     }
 
@@ -415,7 +577,7 @@ bool SampleSpec::is_valid_frame_size(size_t n_bytes) {
     roc_log(LogError,
             "sample spec: invalid frame buffer size: should be multiple of %u, got %lu"
             " (%u bytes per sample, %u channels)",
-            (unsigned)factor, (unsigned long)n_bytes, (unsigned)(pcm_width_ / 8),
+            (unsigned)factor, (unsigned long)n_bytes, (unsigned)(pcm_subfmt_width_ / 8),
             (unsigned)num_channels());
 
     return false;
@@ -424,7 +586,7 @@ bool SampleSpec::is_valid_frame_size(size_t n_bytes) {
 packet::stream_timestamp_t
 SampleSpec::cap_frame_duration(packet::stream_timestamp_t duration,
                                size_t buffer_size) const {
-    roc_panic_if_msg(!is_valid(), "sample spec: attempt to use invalid spec: %s",
+    roc_panic_if_msg(!is_complete(), "sample spec: attempt to use incomplete spec: %s",
                      sample_spec_to_str(*this).c_str());
 
     return std::min(duration, bytes_2_stream_timestamp(buffer_size));

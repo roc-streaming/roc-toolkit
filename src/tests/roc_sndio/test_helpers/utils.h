@@ -22,10 +22,10 @@ namespace test {
 namespace {
 
 bool backend_supports_format(IBackend& backend, core::IArena& arena, const char* format) {
-    core::Array<DriverInfo, MaxDrivers> driver_list(arena);
-    backend.discover_drivers(driver_list);
-    for (size_t n = 0; n < driver_list.size(); n++) {
-        if (strcmp(driver_list[n].name, format) == 0) {
+    core::Array<FormatInfo, MaxFormats> format_list(arena);
+    CHECK(backend.discover_formats(format_list));
+    for (size_t n = 0; n < format_list.size(); n++) {
+        if (strcmp(format_list[n].format_name, format) == 0) {
             return true;
         }
     }
@@ -36,15 +36,13 @@ void expect_open_sink(status::StatusCode expected_code,
                       IBackend& backend,
                       audio::FrameFactory& frame_factory,
                       core::IArena& arena,
-                      DriverType driver_type,
                       const char* driver,
                       const char* path,
                       const IoConfig& config,
                       core::ScopedPtr<ISink>& result) {
     IDevice* device = NULL;
-    const status::StatusCode code =
-        backend.open_device(DeviceType_Sink, driver_type, driver, path, config,
-                            frame_factory, arena, &device);
+    const status::StatusCode code = backend.open_device(
+        DeviceType_Sink, driver, path, config, frame_factory, arena, &device);
 
     if (code != expected_code) {
         char buf[1024] = {};
@@ -70,15 +68,13 @@ void expect_open_source(status::StatusCode expected_code,
                         IBackend& backend,
                         audio::FrameFactory& frame_factory,
                         core::IArena& arena,
-                        DriverType driver_type,
                         const char* driver,
                         const char* path,
                         const IoConfig& config,
                         core::ScopedPtr<ISource>& result) {
     IDevice* device = NULL;
-    const status::StatusCode code =
-        backend.open_device(DeviceType_Source, driver_type, driver, path, config,
-                            frame_factory, arena, &device);
+    const status::StatusCode code = backend.open_device(
+        DeviceType_Source, driver, path, config, frame_factory, arena, &device);
 
     if (code != expected_code) {
         char buf[1024] = {};

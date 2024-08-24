@@ -196,6 +196,8 @@ roc_config
 
 .. doxygenenum:: roc_format
 
+.. doxygenenum:: roc_subformat
+
 .. doxygenenum:: roc_channel_layout
 
 .. doxygenstruct:: roc_media_encoding

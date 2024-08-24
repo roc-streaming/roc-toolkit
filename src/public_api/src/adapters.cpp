@@ -13,7 +13,7 @@
 #include "roc_address/interface.h"
 #include "roc_audio/channel_defs.h"
 #include "roc_audio/freq_estimator.h"
-#include "roc_audio/pcm_format.h"
+#include "roc_audio/pcm_subformat.h"
 #include "roc_audio/resampler_config.h"
 #include "roc_core/attributes.h"
 #include "roc_core/log.h"
@@ -68,7 +68,7 @@ ROC_ATTR_NO_SANITIZE_UB
 bool sender_config_from_user(node::Context& context,
                              pipeline::SenderSinkConfig& out,
                              const roc_sender_config& in) {
-    if (!sample_spec_from_user(out.input_sample_spec, in.frame_encoding, false)) {
+    if (!sample_spec_from_user(out.input_sample_spec, in.frame_encoding)) {
         roc_log(LogError, "bad configuration: invalid roc_sender_config.frame_encoding");
         return false;
     }
@@ -182,7 +182,7 @@ ROC_ATTR_NO_SANITIZE_UB
 bool receiver_config_from_user(node::Context&,
                                pipeline::ReceiverSourceConfig& out,
                                const roc_receiver_config& in) {
-    if (!sample_spec_from_user(out.common.output_sample_spec, in.frame_encoding, false)) {
+    if (!sample_spec_from_user(out.common.output_sample_spec, in.frame_encoding)) {
         roc_log(LogError,
                 "bad configuration: invalid roc_receiver_config.frame_encoding");
         return false;
@@ -308,22 +308,17 @@ ROC_ATTR_NO_SANITIZE_UB bool interface_config_from_user(netio::UdpConfig& out,
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-bool sample_spec_from_user(audio::SampleSpec& out,
-                           const roc_media_encoding& in,
-                           bool is_network) {
+bool sample_spec_from_user(audio::SampleSpec& out, const roc_media_encoding& in) {
+    if (!sample_format_from_user(out, in)) {
+        return false;
+    }
+
     if (in.rate != 0) {
         out.set_sample_rate(in.rate);
     } else {
         roc_log(LogError,
                 "bad configuration: invalid roc_media_encoding.rate:"
                 " should be non-zero");
-        return false;
-    }
-
-    if (!sample_format_from_user(out, in.format, is_network)) {
-        roc_log(LogError,
-                "bad configuration: invalid roc_media_encoding.format:"
-                " should be valid enum value");
         return false;
     }
 
@@ -371,17 +366,19 @@ bool sample_spec_from_user(audio::SampleSpec& out,
 bool sample_spec_to_user(roc_media_encoding& out, const audio::SampleSpec& in) {
     memset(&out, 0, sizeof(out));
 
-    if (!in.is_valid()) {
+    if (!in.is_complete()) {
+        roc_log(LogError, "bad configuration: invalid sample spec");
+        return false;
+    }
+
+    if (!sample_format_to_user(out, in)) {
         return false;
     }
 
     out.rate = (unsigned int)in.sample_rate();
 
-    if (!sample_format_to_user(out.format, in)) {
-        return false;
-    }
-
     if (!channel_set_to_user(out.channels, out.tracks, in.channel_set())) {
+        roc_log(LogError, "bad configuration: unsupported channel set");
         return false;
     }
 
@@ -389,39 +386,274 @@ bool sample_spec_to_user(roc_media_encoding& out, const audio::SampleSpec& in) {
 }
 
 ROC_ATTR_NO_SANITIZE_UB
-bool sample_format_from_user(audio::SampleSpec& out, roc_format in, bool is_network) {
-    switch (enum_from_user(in)) {
-    case ROC_FORMAT_PCM_FLOAT32:
-        out.set_sample_format(audio::SampleFormat_Pcm);
-        // TODO(gh-608): use PcmFormat_Float32_Be instead of PcmFormat_SInt16_Be
-        out.set_pcm_format(is_network ? audio::PcmFormat_SInt16_Be
-                                      : audio::PcmFormat_Float32);
-        return true;
-    }
+bool sample_format_from_user(audio::SampleSpec& out, const roc_media_encoding& in) {
+    out.set_format(audio::Format_Invalid);
+    out.set_pcm_subformat(audio::PcmSubformat_Invalid);
 
-    return false;
-}
+    switch (enum_from_user(in.format)) {
+    case ROC_FORMAT_PCM: {
+        out.set_format(audio::Format_Pcm);
 
-bool sample_format_to_user(roc_format& out, const audio::SampleSpec& in) {
-    if (in.sample_format() != audio::SampleFormat_Pcm) {
-        return false;
-    }
+        switch (enum_from_user(in.subformat)) {
+            // s8
+        case ROC_SUBFORMAT_PCM_SINT8:
+            out.set_pcm_subformat(audio::PcmSubformat_SInt8);
+            break;
+            // u8
+        case ROC_SUBFORMAT_PCM_UINT8:
+            out.set_pcm_subformat(audio::PcmSubformat_UInt8);
+            break;
+            // s16
+        case ROC_SUBFORMAT_PCM_SINT16:
+            out.set_pcm_subformat(audio::PcmSubformat_SInt16);
+            break;
+        case ROC_SUBFORMAT_PCM_SINT16_LE:
+            out.set_pcm_subformat(audio::PcmSubformat_SInt16_Le);
+            break;
+        case ROC_SUBFORMAT_PCM_SINT16_BE:
+            out.set_pcm_subformat(audio::PcmSubformat_SInt16_Be);
+            break;
+            // u16
+        case ROC_SUBFORMAT_PCM_UINT16:
+            out.set_pcm_subformat(audio::PcmSubformat_UInt16);
+            break;
+        case ROC_SUBFORMAT_PCM_UINT16_LE:
+            out.set_pcm_subformat(audio::PcmSubformat_UInt16_Le);
+            break;
+        case ROC_SUBFORMAT_PCM_UINT16_BE:
+            out.set_pcm_subformat(audio::PcmSubformat_UInt16_Be);
+            break;
+            // s24
+        case ROC_SUBFORMAT_PCM_SINT24:
+            out.set_pcm_subformat(audio::PcmSubformat_SInt24);
+            break;
+        case ROC_SUBFORMAT_PCM_SINT24_LE:
+            out.set_pcm_subformat(audio::PcmSubformat_SInt24_Le);
+            break;
+        case ROC_SUBFORMAT_PCM_SINT24_BE:
+            out.set_pcm_subformat(audio::PcmSubformat_SInt24_Be);
+            break;
+            // u24
+        case ROC_SUBFORMAT_PCM_UINT24:
+            out.set_pcm_subformat(audio::PcmSubformat_UInt24);
+            break;
+        case ROC_SUBFORMAT_PCM_UINT24_LE:
+            out.set_pcm_subformat(audio::PcmSubformat_UInt24_Le);
+            break;
+        case ROC_SUBFORMAT_PCM_UINT24_BE:
+            out.set_pcm_subformat(audio::PcmSubformat_UInt24_Be);
+            break;
+            // s32
+        case ROC_SUBFORMAT_PCM_SINT32:
+            out.set_pcm_subformat(audio::PcmSubformat_SInt32);
+            break;
+        case ROC_SUBFORMAT_PCM_SINT32_LE:
+            out.set_pcm_subformat(audio::PcmSubformat_SInt32_Le);
+            break;
+        case ROC_SUBFORMAT_PCM_SINT32_BE:
+            out.set_pcm_subformat(audio::PcmSubformat_SInt32_Be);
+            break;
+            // u32
+        case ROC_SUBFORMAT_PCM_UINT32:
+            out.set_pcm_subformat(audio::PcmSubformat_UInt32);
+            break;
+        case ROC_SUBFORMAT_PCM_UINT32_LE:
+            out.set_pcm_subformat(audio::PcmSubformat_UInt32_Le);
+            break;
+        case ROC_SUBFORMAT_PCM_UINT32_BE:
+            out.set_pcm_subformat(audio::PcmSubformat_UInt32_Be);
+            break;
+            // s64
+        case ROC_SUBFORMAT_PCM_SINT64:
+            out.set_pcm_subformat(audio::PcmSubformat_SInt64);
+            break;
+        case ROC_SUBFORMAT_PCM_SINT64_LE:
+            out.set_pcm_subformat(audio::PcmSubformat_SInt64_Le);
+            break;
+        case ROC_SUBFORMAT_PCM_SINT64_BE:
+            out.set_pcm_subformat(audio::PcmSubformat_SInt64_Be);
+            break;
+            // u64
+        case ROC_SUBFORMAT_PCM_UINT64:
+            out.set_pcm_subformat(audio::PcmSubformat_UInt64);
+            break;
+        case ROC_SUBFORMAT_PCM_UINT64_LE:
+            out.set_pcm_subformat(audio::PcmSubformat_UInt64_Le);
+            break;
+        case ROC_SUBFORMAT_PCM_UINT64_BE:
+            out.set_pcm_subformat(audio::PcmSubformat_UInt64_Be);
+            break;
+            // f32
+        case ROC_SUBFORMAT_PCM_FLOAT32:
+            out.set_pcm_subformat(audio::PcmSubformat_Float32);
+            break;
+        case ROC_SUBFORMAT_PCM_FLOAT32_LE:
+            out.set_pcm_subformat(audio::PcmSubformat_Float32_Le);
+            break;
+        case ROC_SUBFORMAT_PCM_FLOAT32_BE:
+            out.set_pcm_subformat(audio::PcmSubformat_Float32_Be);
+            break;
+            // f64
+        case ROC_SUBFORMAT_PCM_FLOAT64:
+            out.set_pcm_subformat(audio::PcmSubformat_Float64);
+            break;
+        case ROC_SUBFORMAT_PCM_FLOAT64_LE:
+            out.set_pcm_subformat(audio::PcmSubformat_Float64_Le);
+            break;
+        case ROC_SUBFORMAT_PCM_FLOAT64_BE:
+            out.set_pcm_subformat(audio::PcmSubformat_Float64_Be);
+            break;
+        default:
+            roc_log(LogError,
+                    "bad configuration: invalid roc_media_encoding.subformat:"
+                    " ROC_FORMAT_PCM doesn't support specified subformat %d",
+                    (int)in.subformat);
+            return false;
+        }
 
-    const audio::PcmTraits traits = audio::pcm_format_traits(in.pcm_format());
-    if (!traits.has_flags(audio::Pcm_IsNative)) {
-        return false;
-    }
-
-    switch (traits.default_variant) {
-    case audio::PcmFormat_Float32:
-        out = ROC_FORMAT_PCM_FLOAT32;
-        return true;
+        break;
+    } break; // ROC_FORMAT_PCM
 
     default:
-        break;
+        roc_log(LogError,
+                "bad configuration: invalid roc_media_encoding.format:"
+                " should be enum value");
+        return false;
     }
 
-    return false;
+    return true;
+}
+
+bool sample_format_to_user(roc_media_encoding& out, const audio::SampleSpec& in) {
+    switch (in.format()) {
+    case audio::Format_Pcm: {
+        out.format = ROC_FORMAT_PCM;
+
+        switch (in.pcm_subformat()) {
+            // s8
+        case audio::PcmSubformat_SInt8:
+        case audio::PcmSubformat_SInt8_Le:
+        case audio::PcmSubformat_SInt8_Be:
+            out.subformat = ROC_SUBFORMAT_PCM_SINT8;
+            break;
+            // u8
+        case audio::PcmSubformat_UInt8:
+        case audio::PcmSubformat_UInt8_Le:
+        case audio::PcmSubformat_UInt8_Be:
+            out.subformat = ROC_SUBFORMAT_PCM_UINT8;
+            break;
+            // s16
+        case audio::PcmSubformat_SInt16:
+            out.subformat = ROC_SUBFORMAT_PCM_SINT16;
+            break;
+        case audio::PcmSubformat_SInt16_Le:
+            out.subformat = ROC_SUBFORMAT_PCM_SINT16_LE;
+            break;
+        case audio::PcmSubformat_SInt16_Be:
+            out.subformat = ROC_SUBFORMAT_PCM_SINT16_BE;
+            break;
+            // u16
+        case audio::PcmSubformat_UInt16:
+            out.subformat = ROC_SUBFORMAT_PCM_UINT16;
+            break;
+        case audio::PcmSubformat_UInt16_Le:
+            out.subformat = ROC_SUBFORMAT_PCM_UINT16_LE;
+            break;
+        case audio::PcmSubformat_UInt16_Be:
+            out.subformat = ROC_SUBFORMAT_PCM_UINT16_BE;
+            break;
+            // s24
+        case audio::PcmSubformat_SInt24:
+            out.subformat = ROC_SUBFORMAT_PCM_SINT24;
+            break;
+        case audio::PcmSubformat_SInt24_Le:
+            out.subformat = ROC_SUBFORMAT_PCM_SINT24_LE;
+            break;
+        case audio::PcmSubformat_SInt24_Be:
+            out.subformat = ROC_SUBFORMAT_PCM_SINT24_BE;
+            break;
+            // u24
+        case audio::PcmSubformat_UInt24:
+            out.subformat = ROC_SUBFORMAT_PCM_UINT24;
+            break;
+        case audio::PcmSubformat_UInt24_Le:
+            out.subformat = ROC_SUBFORMAT_PCM_UINT24_LE;
+            break;
+        case audio::PcmSubformat_UInt24_Be:
+            out.subformat = ROC_SUBFORMAT_PCM_UINT24_BE;
+            break;
+            // s32
+        case audio::PcmSubformat_SInt32:
+            out.subformat = ROC_SUBFORMAT_PCM_SINT32;
+            break;
+        case audio::PcmSubformat_SInt32_Le:
+            out.subformat = ROC_SUBFORMAT_PCM_SINT32_LE;
+            break;
+        case audio::PcmSubformat_SInt32_Be:
+            out.subformat = ROC_SUBFORMAT_PCM_SINT32_BE;
+            break;
+            // u32
+        case audio::PcmSubformat_UInt32:
+            out.subformat = ROC_SUBFORMAT_PCM_UINT32;
+            break;
+        case audio::PcmSubformat_UInt32_Le:
+            out.subformat = ROC_SUBFORMAT_PCM_UINT32_LE;
+            break;
+        case audio::PcmSubformat_UInt32_Be:
+            out.subformat = ROC_SUBFORMAT_PCM_UINT32_BE;
+            break;
+            // s64
+        case audio::PcmSubformat_SInt64:
+            out.subformat = ROC_SUBFORMAT_PCM_SINT64;
+            break;
+        case audio::PcmSubformat_SInt64_Le:
+            out.subformat = ROC_SUBFORMAT_PCM_SINT64_LE;
+            break;
+        case audio::PcmSubformat_SInt64_Be:
+            out.subformat = ROC_SUBFORMAT_PCM_SINT64_BE;
+            break;
+            // u64
+        case audio::PcmSubformat_UInt64:
+            out.subformat = ROC_SUBFORMAT_PCM_UINT64;
+            break;
+        case audio::PcmSubformat_UInt64_Le:
+            out.subformat = ROC_SUBFORMAT_PCM_UINT64_LE;
+            break;
+        case audio::PcmSubformat_UInt64_Be:
+            out.subformat = ROC_SUBFORMAT_PCM_UINT64_BE;
+            break;
+            // f32
+        case audio::PcmSubformat_Float32:
+            out.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
+            break;
+        case audio::PcmSubformat_Float32_Le:
+            out.subformat = ROC_SUBFORMAT_PCM_FLOAT32_LE;
+            break;
+        case audio::PcmSubformat_Float32_Be:
+            out.subformat = ROC_SUBFORMAT_PCM_FLOAT32_BE;
+            break;
+            // f64
+        case audio::PcmSubformat_Float64:
+            out.subformat = ROC_SUBFORMAT_PCM_FLOAT64;
+            break;
+        case audio::PcmSubformat_Float64_Le:
+            out.subformat = ROC_SUBFORMAT_PCM_FLOAT64_LE;
+            break;
+        case audio::PcmSubformat_Float64_Be:
+            out.subformat = ROC_SUBFORMAT_PCM_FLOAT64_BE;
+            break;
+        default:
+            roc_log(LogError, "bad configuration: unsupported pcm subformat");
+            return false;
+        }
+    } break; // audio::Format_Pcm
+
+    default:
+        roc_log(LogError, "bad configuration: unsupported sample format");
+        return false;
+    }
+
+    return true;
 }
 
 ROC_ATTR_NO_SANITIZE_UB

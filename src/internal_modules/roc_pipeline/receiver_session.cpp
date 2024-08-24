@@ -169,7 +169,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
     {
         const audio::SampleSpec out_spec(pkt_encoding->sample_spec.sample_rate(),
-                                         audio::Sample_RawFormat,
+                                         audio::PcmSubformat_Raw,
                                          pkt_encoding->sample_spec.channel_set());
 
         depacketizer_.reset(new (depacketizer_) audio::Depacketizer(
@@ -212,11 +212,11 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     if (pkt_encoding->sample_spec.channel_set()
         != common_config.output_sample_spec.channel_set()) {
         const audio::SampleSpec in_spec(pkt_encoding->sample_spec.sample_rate(),
-                                        audio::Sample_RawFormat,
+                                        audio::PcmSubformat_Raw,
                                         pkt_encoding->sample_spec.channel_set());
 
         const audio::SampleSpec out_spec(pkt_encoding->sample_spec.sample_rate(),
-                                         audio::Sample_RawFormat,
+                                         audio::PcmSubformat_Raw,
                                          common_config.output_sample_spec.channel_set());
 
         channel_mapper_reader_.reset(
@@ -232,11 +232,11 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
         || pkt_encoding->sample_spec.sample_rate()
             != common_config.output_sample_spec.sample_rate()) {
         const audio::SampleSpec in_spec(pkt_encoding->sample_spec.sample_rate(),
-                                        audio::Sample_RawFormat,
+                                        audio::PcmSubformat_Raw,
                                         common_config.output_sample_spec.channel_set());
 
         const audio::SampleSpec out_spec(common_config.output_sample_spec.sample_rate(),
-                                         audio::Sample_RawFormat,
+                                         audio::PcmSubformat_Raw,
                                          common_config.output_sample_spec.channel_set());
 
         resampler_.reset(processor_map.new_resampler(session_config.resampler, in_spec,
@@ -259,7 +259,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
 
     {
         const audio::SampleSpec inout_spec(
-            common_config.output_sample_spec.sample_rate(), audio::Sample_RawFormat,
+            common_config.output_sample_spec.sample_rate(), audio::PcmSubformat_Raw,
             common_config.output_sample_spec.channel_set());
 
         latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(

@@ -93,10 +93,15 @@ bool build_context_config(const gengetopt_args_info& args,
         }
     } else {
         audio::SampleSpec spec = io_config.sample_spec;
-        spec.use_defaults(audio::Sample_RawFormat, audio::ChanLayout_Surround,
-                          audio::ChanOrder_Smpte, audio::ChanMask_Surround_7_1_4, 48000);
-        context_config.max_packet_size = packet::Packet::approx_size(
-            spec.ns_2_samples_overall(io_config.frame_length));
+        spec.use_defaults(audio::Format_Pcm, audio::PcmSubformat_Raw,
+                          audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
+                          audio::ChanMask_Surround_7_1_4, 48000);
+        core::nanoseconds_t len = io_config.frame_length;
+        if (len == 0) {
+            len = 10 * core::Millisecond;
+        }
+        context_config.max_packet_size =
+            packet::Packet::approx_size(spec.ns_2_samples_overall(len));
     }
 
     if (args.max_frame_size_given) {
@@ -349,13 +354,6 @@ bool build_sender_config(const gengetopt_args_info& args,
             roc_log(LogError, "invalid --max-latency: should be > 0");
             return false;
         }
-        if (sender_config.latency.min_target_latency
-            > sender_config.latency.max_target_latency) {
-            roc_log(
-                LogError,
-                "incorrect --max-latency: should be greater or equal to --min-latency");
-            return false;
-        }
     }
 
     sender_config.enable_profiling = args.prof_flag;
@@ -367,7 +365,7 @@ bool build_sender_config(const gengetopt_args_info& args,
     sender_config.enable_cpu_clock = !input_source.has_clock();
     sender_config.input_sample_spec = input_source.sample_spec();
 
-    if (!sender_config.input_sample_spec.is_valid()) {
+    if (!sender_config.input_sample_spec.is_complete()) {
         roc_log(LogError,
                 "can't detect input encoding, try to set it "
                 "explicitly with --io-encoding option");
@@ -385,30 +383,16 @@ bool parse_input_uri(const gengetopt_args_info& args, address::IoUri& input_uri)
         }
     }
 
-    if (args.input_format_given) {
-        if (input_uri.is_valid() && !input_uri.is_file()) {
-            roc_log(LogError,
-                    "--input-format can't be used if --input is not a file URI");
-            return false;
-        }
-    } else {
-        if (input_uri.is_special_file()) {
-            roc_log(LogError, "--input-format should be specified if --input is \"-\"");
-            return false;
-        }
-    }
-
     return true;
 }
 
 bool open_input_source(sndio::BackendDispatcher& backend_dispatcher,
                        const sndio::IoConfig& io_config,
                        const address::IoUri& input_uri,
-                       const char* input_format,
                        core::ScopedPtr<sndio::ISource>& input_source) {
     if (input_uri.is_valid()) {
-        const status::StatusCode code = backend_dispatcher.open_source(
-            input_uri, input_format, io_config, input_source);
+        const status::StatusCode code =
+            backend_dispatcher.open_source(input_uri, io_config, input_source);
 
         if (code != status::StatusOK) {
             roc_log(LogError, "can't open --input file or device: status=%s",
@@ -605,12 +589,12 @@ int main(int argc, char** argv) {
     }
 
     core::ScopedPtr<sndio::ISource> input_source;
-    if (!open_input_source(backend_dispatcher, io_config, input_uri,
-                           args.input_format_arg, input_source)) {
+    if (!open_input_source(backend_dispatcher, io_config, input_uri, input_source)) {
         return 1;
     }
 
     io_config.sample_spec = input_source->sample_spec();
+    io_config.frame_length = input_source->frame_length();
 
     pipeline::SenderSinkConfig sender_config;
     if (!build_sender_config(args, sender_config, context, *input_source)) {

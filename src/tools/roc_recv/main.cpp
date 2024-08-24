@@ -105,10 +105,15 @@ bool build_context_config(const gengetopt_args_info& args,
         }
     } else {
         audio::SampleSpec spec = io_config.sample_spec;
-        spec.use_defaults(audio::Sample_RawFormat, audio::ChanLayout_Surround,
-                          audio::ChanOrder_Smpte, audio::ChanMask_Surround_7_1_4, 48000);
+        spec.use_defaults(audio::Format_Pcm, audio::PcmSubformat_Raw,
+                          audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
+                          audio::ChanMask_Surround_7_1_4, 48000);
+        core::nanoseconds_t len = io_config.frame_length;
+        if (len == 0) {
+            len = 10 * core::Millisecond;
+        }
         context_config.max_frame_size =
-            spec.ns_2_samples_overall(io_config.frame_length) * sizeof(audio::sample_t);
+            spec.ns_2_samples_overall(len) * sizeof(audio::sample_t);
     }
 
     return true;
@@ -293,13 +298,6 @@ bool build_receiver_config(const gengetopt_args_info& args,
             roc_log(LogError, "invalid --max-latency: should be > 0");
             return false;
         }
-        if (receiver_config.session_defaults.latency.min_target_latency
-            > receiver_config.session_defaults.latency.max_target_latency) {
-            roc_log(
-                LogError,
-                "incorrect --max-latency: should be greater or equal to --min-latency");
-            return false;
-        }
     }
 
     if (args.no_play_timeout_given) {
@@ -337,7 +335,7 @@ bool build_receiver_config(const gengetopt_args_info& args,
     receiver_config.common.enable_cpu_clock = !output_sink.has_clock();
     receiver_config.common.output_sample_spec = output_sink.sample_spec();
 
-    if (!receiver_config.common.output_sample_spec.is_valid()) {
+    if (!receiver_config.common.output_sample_spec.is_complete()) {
         roc_log(LogError,
                 "can't detect output encoding, try to set it"
                 " explicitly with --io-encoding option");
@@ -353,18 +351,11 @@ bool parse_output_uri(const gengetopt_args_info& args, address::IoUri& output_ur
             roc_log(LogError, "invalid --output file or device URI");
             return false;
         }
-    }
-
-    if (args.output_format_given) {
-        if (output_uri.is_valid() && !output_uri.is_file()) {
-            roc_log(LogError,
-                    "--output-format can't be used if --output is not a file URI");
-            return false;
-        }
-    } else {
         if (output_uri.is_special_file()) {
-            roc_log(LogError, "--output-format should be specified if --output is \"-\"");
-            return false;
+            if (!args.io_encoding_given) {
+                roc_log(LogError, "--io-encoding is required when --output is \"-\"");
+                return false;
+            }
         }
     }
 
@@ -374,11 +365,10 @@ bool parse_output_uri(const gengetopt_args_info& args, address::IoUri& output_ur
 bool open_output_sink(sndio::BackendDispatcher& backend_dispatcher,
                       const sndio::IoConfig& io_config,
                       const address::IoUri& output_uri,
-                      const char* output_format,
                       core::ScopedPtr<sndio::ISink>& output_sink) {
     if (output_uri.is_valid()) {
-        const status::StatusCode code = backend_dispatcher.open_sink(
-            output_uri, output_format, io_config, output_sink);
+        const status::StatusCode code =
+            backend_dispatcher.open_sink(output_uri, io_config, output_sink);
 
         if (code != status::StatusOK) {
             roc_log(LogError, "can't open --output file or device: status=%s",
@@ -401,21 +391,18 @@ bool open_output_sink(sndio::BackendDispatcher& backend_dispatcher,
 
 bool parse_backup_uri(const gengetopt_args_info& args, address::IoUri& backup_uri) {
     if (!address::parse_io_uri(args.backup_arg, backup_uri)) {
-        roc_log(LogError, "invalid --backup file or device URI");
+        roc_log(LogError, "invalid --backup URI: bad format");
         return false;
     }
 
-    if (args.backup_format_given) {
-        if (backup_uri.is_valid() && !backup_uri.is_file()) {
-            roc_log(LogError,
-                    "--backup-format can't be used if --backup is not a file URI");
-            return false;
-        }
-    } else {
-        if (backup_uri.is_special_file()) {
-            roc_log(LogError, "--backup-format should be specified if --backup is \"-\"");
-            return false;
-        }
+    if (!backup_uri.is_file()) {
+        roc_log(LogError, "invalid --backup URI: should be file");
+        return false;
+    }
+
+    if (backup_uri.is_special_file()) {
+        roc_log(LogError, "invalid --backup URI: can't be \"-\"");
+        return false;
     }
 
     return true;
@@ -424,10 +411,9 @@ bool parse_backup_uri(const gengetopt_args_info& args, address::IoUri& backup_ur
 bool open_backup_source(sndio::BackendDispatcher& backend_dispatcher,
                         const sndio::IoConfig& io_config,
                         const address::IoUri& backup_uri,
-                        const char* backup_format,
                         core::ScopedPtr<sndio::ISource>& backup_source) {
-    const status::StatusCode code = backend_dispatcher.open_source(
-        backup_uri, backup_format, io_config, backup_source);
+    const status::StatusCode code =
+        backend_dispatcher.open_source(backup_uri, io_config, backup_source);
 
     if (code != status::StatusOK) {
         roc_log(LogError, "can't open --backup file or device: status=%s",
@@ -452,11 +438,11 @@ bool open_backup_transcoder(
 
     transcoder_config.input_sample_spec =
         audio::SampleSpec(backup_source.sample_spec().sample_rate(),
-                          receiver_config.common.output_sample_spec.pcm_format(),
+                          receiver_config.common.output_sample_spec.pcm_subformat(),
                           receiver_config.common.output_sample_spec.channel_set());
     transcoder_config.output_sample_spec =
         audio::SampleSpec(receiver_config.common.output_sample_spec.sample_rate(),
-                          receiver_config.common.output_sample_spec.pcm_format(),
+                          receiver_config.common.output_sample_spec.pcm_subformat(),
                           receiver_config.common.output_sample_spec.channel_set());
 
     backup_transcoder.reset(new (context.arena()) pipeline::TranscoderSource(
@@ -665,12 +651,12 @@ int main(int argc, char** argv) {
     }
 
     core::ScopedPtr<sndio::ISink> output_sink;
-    if (!open_output_sink(backend_dispatcher, io_config, output_uri,
-                          args.output_format_arg, output_sink)) {
+    if (!open_output_sink(backend_dispatcher, io_config, output_uri, output_sink)) {
         return 1;
     }
 
     io_config.sample_spec = output_sink->sample_spec();
+    io_config.frame_length = output_sink->frame_length();
 
     pipeline::ReceiverSourceConfig receiver_config;
     if (!build_receiver_config(args, receiver_config, context, *output_sink)) {
@@ -687,7 +673,7 @@ int main(int argc, char** argv) {
         }
 
         if (!open_backup_source(backend_dispatcher, io_config, backup_uri,
-                                args.backup_format_arg, backup_source)) {
+                                backup_source)) {
             return 1;
         }
 

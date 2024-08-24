@@ -47,13 +47,11 @@ public:
 
     //! Create and open a sink.
     ROC_ATTR_NODISCARD status::StatusCode open_sink(const address::IoUri& uri,
-                                                    const char* force_format,
                                                     const IoConfig& io_config,
                                                     core::ScopedPtr<ISink>& result);
 
     //! Create and open a source.
     ROC_ATTR_NODISCARD status::StatusCode open_source(const address::IoUri& uri,
-                                                      const char* force_format,
                                                       const IoConfig& io_config,
                                                       core::ScopedPtr<ISource>& result);
 
@@ -63,17 +61,35 @@ public:
     //! Get all supported file formats.
     ROC_ATTR_NODISCARD bool get_supported_formats(core::StringList& result);
 
+    //! Get all groups of sub-formats.
+    ROC_ATTR_NODISCARD bool get_supported_subformat_groups(core::StringList& result);
+
+    //! Get all sub-formats in group.
+    ROC_ATTR_NODISCARD bool get_supported_subformats(const char* group,
+                                                     core::StringList& result);
+
 private:
     status::StatusCode open_default_device_(DeviceType device_type,
                                             const IoConfig& io_config,
                                             IDevice** result);
 
+    status::StatusCode open_file_or_device_(DeviceType device_type,
+                                            const char* driver,
+                                            const char* path,
+                                            const IoConfig& io_config,
+                                            IDevice** result);
+
     status::StatusCode open_device_(DeviceType device_type,
-                                    DriverType driver_type,
-                                    const char* driver_name,
+                                    const char* driver,
                                     const char* path,
                                     const IoConfig& io_config,
                                     IDevice** result);
+
+    status::StatusCode open_file_(DeviceType device_type,
+                                  const char* driver,
+                                  const char* path,
+                                  const IoConfig& io_config,
+                                  IDevice** result);
 
     audio::FrameFactory frame_factory_;
     core::IArena& arena_;

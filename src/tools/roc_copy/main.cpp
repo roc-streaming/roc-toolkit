@@ -120,8 +120,9 @@ bool build_transcoder_config(const gengetopt_args_info& args,
 
 size_t compute_max_frame_size(const sndio::IoConfig& io_config) {
     audio::SampleSpec spec = io_config.sample_spec;
-    spec.use_defaults(audio::Sample_RawFormat, audio::ChanLayout_Surround,
-                      audio::ChanOrder_Smpte, audio::ChanMask_Surround_7_1_4, 48000);
+    spec.use_defaults(audio::Format_Pcm, audio::PcmSubformat_Raw,
+                      audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
+                      audio::ChanMask_Surround_7_1_4, 48000);
 
     return spec.ns_2_samples_overall(io_config.frame_length) * sizeof(audio::sample_t);
 }
@@ -142,11 +143,6 @@ bool parse_input_uri(const gengetopt_args_info& args, address::IoUri& input_uri)
         return false;
     }
 
-    if (!args.input_format_given && input_uri.is_special_file()) {
-        roc_log(LogError, "--input-format should be specified if --input is \"-\"");
-        return false;
-    }
-
     return true;
 }
 
@@ -161,9 +157,11 @@ bool parse_output_uri(const gengetopt_args_info& args, address::IoUri& output_ur
         return false;
     }
 
-    if (!args.output_format_given && output_uri.is_special_file()) {
-        roc_log(LogError, "--output-format should be specified if --output is \"-\"");
-        return false;
+    if (output_uri.is_special_file()) {
+        if (!args.output_encoding_given) {
+            roc_log(LogError, "--output-encoding is required when --output is \"-\"");
+            return false;
+        }
     }
 
     return true;
@@ -172,10 +170,9 @@ bool parse_output_uri(const gengetopt_args_info& args, address::IoUri& output_ur
 bool open_input_source(sndio::BackendDispatcher& backend_dispatcher,
                        const sndio::IoConfig& io_config,
                        const address::IoUri& input_uri,
-                       const char* input_format,
                        core::ScopedPtr<sndio::ISource>& input_source) {
     const status::StatusCode code =
-        backend_dispatcher.open_source(input_uri, input_format, io_config, input_source);
+        backend_dispatcher.open_source(input_uri, io_config, input_source);
 
     if (code != status::StatusOK) {
         roc_log(LogError, "can't open --input file or device: status=%s",
@@ -194,10 +191,9 @@ bool open_input_source(sndio::BackendDispatcher& backend_dispatcher,
 bool open_output_sink(sndio::BackendDispatcher& backend_dispatcher,
                       const sndio::IoConfig& io_config,
                       const address::IoUri& output_uri,
-                      const char* output_format,
                       core::ScopedPtr<sndio::ISink>& output_sink) {
     const status::StatusCode code =
-        backend_dispatcher.open_sink(output_uri, output_format, io_config, output_sink);
+        backend_dispatcher.open_sink(output_uri, io_config, output_sink);
 
     if (code != status::StatusOK) {
         roc_log(LogError, "can't open --output file or device: status=%s",
@@ -258,12 +254,12 @@ int main(int argc, char** argv) {
     }
 
     core::ScopedPtr<sndio::ISource> input_source;
-    if (!open_input_source(backend_dispatcher, input_config, input_uri,
-                           args.input_format_arg, input_source)) {
+    if (!open_input_source(backend_dispatcher, input_config, input_uri, input_source)) {
         return 1;
     }
 
     input_config.sample_spec = input_source->sample_spec();
+    input_config.frame_length = input_source->frame_length();
 
     sndio::IoConfig output_config;
     if (!build_output_config(args, input_config, output_config)) {
@@ -280,7 +276,7 @@ int main(int argc, char** argv) {
     core::ScopedPtr<sndio::ISink> output_sink;
     if (args.output_given) {
         if (!open_output_sink(backend_dispatcher, output_config, output_uri,
-                              args.output_format_arg, output_sink)) {
+                              output_sink)) {
             return 1;
         }
         output_config.sample_spec = output_sink->sample_spec();

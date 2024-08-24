@@ -37,7 +37,7 @@ void print_backtrace_safe();
 //!  @p demangled_buf and @p demangled_size specify the buffer for demangled name.
 //!  When necessary, this function malloc()s or realloc()s @p demangled_buf and
 //!  updates @p demangled_size accordingly. The buffer may be NULL. The buffer may
-//!  be resused across several calls. The user should manually free() the buffer
+//!  be reused across several calls. The user should manually free() the buffer
 //!  when it's not needed anymore.
 //! @returns
 //!  demangled symbol or NULL if the symbol can't be demangled.

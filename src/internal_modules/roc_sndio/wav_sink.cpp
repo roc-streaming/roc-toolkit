@@ -7,8 +7,8 @@
  */
 
 #include "roc_sndio/wav_sink.h"
-#include "roc_audio/pcm_format.h"
-#include "roc_audio/sample_format.h"
+#include "roc_audio/format.h"
+#include "roc_audio/pcm_subformat.h"
 #include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/endian_ops.h"
 #include "roc_core/log.h"
@@ -18,71 +18,120 @@
 namespace roc {
 namespace sndio {
 
+namespace {
+
+bool has_extension(const char* path, const char* ext) {
+    size_t path_len = strlen(path);
+    size_t ext_len = strlen(ext);
+    if (ext_len > path_len) {
+        return false;
+    }
+    return strncmp(path + path_len - ext_len, ext, ext_len) == 0;
+}
+
+} // namespace
+
 WavSink::WavSink(audio::FrameFactory& frame_factory,
                  core::IArena& arena,
-                 const IoConfig& io_config)
+                 const IoConfig& io_config,
+                 const char* path)
     : IDevice(arena)
     , ISink(arena)
     , output_file_(NULL)
     , is_first_(true)
     , init_status_(status::NoStatus) {
-    if (io_config.latency != 0) {
-        roc_log(LogError, "wav sink: setting io latency not supported by backend");
-        init_status_ = status::StatusBadConfig;
-        return;
+    if (io_config.sample_spec.has_format()) {
+        if (io_config.sample_spec.format() != audio::Format_Wav) {
+            roc_log(LogDebug,
+                    "wav sink: requested format '%s' not supported by backend: spec=%s",
+                    io_config.sample_spec.format_name(),
+                    audio::sample_spec_to_str(io_config.sample_spec).c_str());
+            // Not a wav file, go to next backend.
+            init_status_ = status::StatusNoFormat;
+            return;
+        }
+    } else {
+        if (!has_extension(path, ".wav")) {
+            roc_log(
+                LogDebug,
+                "wav sink: requested file extension not supported by backend: path=%s",
+                path);
+            // Not a wav file, go to next backend.
+            init_status_ = status::StatusNoFormat;
+            return;
+        }
     }
 
-    sample_spec_ = io_config.sample_spec;
+    if (io_config.sample_spec.has_subformat()) {
+        if (io_config.sample_spec.pcm_subformat() == audio::PcmSubformat_Invalid) {
+            roc_log(LogError,
+                    "wav sink: invalid io encoding:"
+                    " <subformat> '%s' not allowed when <format> is 'wav':"
+                    " <subformat> must be pcm (like s16 or f32)",
+                    io_config.sample_spec.subformat_name());
+            init_status_ = status::StatusBadConfig;
+            return;
+        }
 
-    sample_spec_.use_defaults(audio::Sample_RawFormat, audio::ChanLayout_Surround,
-                              audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo,
-                              44100);
+        const audio::PcmTraits subfmt =
+            audio::pcm_subformat_traits(io_config.sample_spec.pcm_subformat());
 
-    if (!sample_spec_.is_pcm()) {
-        roc_log(LogError, "wav sink: unsupported format: must be pcm: spec=%s",
-                audio::sample_spec_to_str(sample_spec_).c_str());
-        init_status_ = status::StatusBadConfig;
-        return;
+        if (!subfmt.has_flags(audio::Pcm_IsSigned)) {
+            roc_log(LogError,
+                    "wav sink: invalid io encoding:"
+                    " <subformat> '%s' not allowed when <format> is 'wav':"
+                    " must be float (like f32) or signed integer (like s16)",
+                    io_config.sample_spec.subformat_name());
+            init_status_ = status::StatusBadConfig;
+            return;
+        }
+
+        if (!subfmt.has_flags(audio::Pcm_IsPacked | audio::Pcm_IsAligned)) {
+            roc_log(LogError,
+                    "wav sink: invalid io encoding:"
+                    " <subformat> '%s' not allowed when <format> is 'wav':"
+                    " must be packed (like s24, not s24_4) and byte-aligned"
+                    " (like s16, not s18)",
+                    io_config.sample_spec.subformat_name());
+            init_status_ = status::StatusBadConfig;
+            return;
+        }
+
+        if (io_config.sample_spec.pcm_subformat() != subfmt.default_variant
+            && io_config.sample_spec.pcm_subformat() != subfmt.le_variant) {
+            roc_log(LogError,
+                    "wav sink: invalid io encoding:"
+                    " <subformat> '%s' not allowed when <format> is 'wav':"
+                    " must be default-endian (like s16) or little-endian (like s16_le)",
+                    io_config.sample_spec.subformat_name());
+            init_status_ = status::StatusBadConfig;
+            return;
+        }
     }
 
-    const audio::PcmTraits fmt = audio::pcm_format_traits(sample_spec_.pcm_format());
+    file_spec_ = io_config.sample_spec;
+    file_spec_.use_defaults(audio::Format_Wav, audio::PcmSubformat_Raw,
+                            audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
+                            audio::ChanMask_Surround_Stereo, 44100);
 
-    if (!fmt.has_flags(audio::Pcm_IsSigned)) {
-        roc_log(LogError, "wav sink: unsupported format: must be signed: spec=%s",
-                audio::sample_spec_to_str(sample_spec_).c_str());
-        init_status_ = status::StatusBadConfig;
-        return;
-    }
+    const audio::PcmTraits subfmt =
+        audio::pcm_subformat_traits(file_spec_.pcm_subformat());
 
-    if (!fmt.has_flags(audio::Pcm_IsPacked | audio::Pcm_IsAligned)) {
-        roc_log(LogError,
-                "wav sink: unsupported format: must be packed and byte-aligned: spec=%s",
-                audio::sample_spec_to_str(sample_spec_).c_str());
-        init_status_ = status::StatusBadConfig;
-        return;
-    }
-
-    // WAV format is always little-endian.
-    if (sample_spec_.pcm_format() != fmt.default_variant
-        && sample_spec_.pcm_format() != fmt.le_variant) {
-        roc_log(LogError,
-                "wav sink: sample format must be default-endian (like s16) or"
-                " little-endian (like s16_le): spec=%s",
-                audio::sample_spec_to_str(sample_spec_).c_str());
-        init_status_ = status::StatusBadConfig;
-        return;
-    }
-
-    if (sample_spec_.pcm_format() == fmt.default_variant) {
-        sample_spec_.set_pcm_format(fmt.le_variant);
+    frame_spec_ = file_spec_;
+    frame_spec_.set_format(audio::Format_Pcm);
+    if (frame_spec_.pcm_subformat() == subfmt.default_variant) {
+        frame_spec_.set_pcm_subformat(subfmt.le_variant);
     }
 
     const uint16_t fmt_code =
-        fmt.has_flags(audio::Pcm_IsInteger) ? WAV_FORMAT_PCM : WAV_FORMAT_IEEE_FLOAT;
+        subfmt.has_flags(audio::Pcm_IsInteger) ? WAV_FORMAT_PCM : WAV_FORMAT_IEEE_FLOAT;
 
-    header_.reset(new (header_)
-                      WavHeader(fmt_code, fmt.bit_width, sample_spec_.sample_rate(),
-                                sample_spec_.num_channels()));
+    header_.reset(new (header_) WavHeader(
+        fmt_code, subfmt.bit_width, file_spec_.sample_rate(), file_spec_.num_channels()));
+
+    if ((init_status_ = open_(path)) != status::StatusOK) {
+        return;
+    }
 
     init_status_ = status::StatusOK;
 }
@@ -96,10 +145,6 @@ WavSink::~WavSink() {
 
 status::StatusCode WavSink::init_status() const {
     return init_status_;
-}
-
-status::StatusCode WavSink::open(const char* path) {
-    return open_(path);
 }
 
 DeviceType WavSink::type() const {
@@ -119,7 +164,11 @@ audio::SampleSpec WavSink::sample_spec() const {
         roc_panic("wav sink: not opened");
     }
 
-    return sample_spec_;
+    return frame_spec_;
+}
+
+core::nanoseconds_t WavSink::frame_length() const {
+    return 0;
 }
 
 bool WavSink::has_state() const {
@@ -138,6 +187,8 @@ status::StatusCode WavSink::write(audio::Frame& frame) {
     if (!output_file_) {
         roc_panic("wav sink: not opened");
     }
+
+    frame_spec_.validate_frame(frame);
 
     if (is_first_) {
         const WavHeader::WavHeaderData& wav_header = header_->update_and_get_header(0);
@@ -204,24 +255,20 @@ void WavSink::dispose() {
 }
 
 status::StatusCode WavSink::open_(const char* path) {
-    if (output_file_) {
-        roc_panic("wav sink: already opened");
+    roc_log(LogDebug, "wav sink: opening: path=%s", path);
+
+    if (strcmp(path, "-") == 0) {
+        output_file_ = stdout;
+    } else {
+        if (!(output_file_ = fopen(path, "wb"))) {
+            roc_log(LogDebug, "wav sink: can't open output file: %s",
+                    core::errno_to_str(errno).c_str());
+            return status::StatusErrFile;
+        }
     }
 
-    output_file_ = fopen(path, "w");
-
-    if (!output_file_) {
-        roc_log(LogDebug, "wav sink: can't open output file: %s",
-                core::errno_to_str(errno).c_str());
-        return status::StatusErrFile;
-    }
-
-    roc_log(LogInfo,
-            "wav sink: opened output file:"
-            " path=%s out_bits=%lu out_rate=%lu out_ch=%lu",
-            path, (unsigned long)header_->bits_per_sample(),
-            (unsigned long)header_->sample_rate(),
-            (unsigned long)header_->num_channels());
+    roc_log(LogInfo, "wav sink: opened output file: %s",
+            audio::sample_spec_to_str(file_spec_).c_str());
 
     return status::StatusOK;
 }
@@ -233,13 +280,17 @@ status::StatusCode WavSink::close_() {
 
     roc_log(LogDebug, "wav sink: closing output file");
 
-    const int err = fclose(output_file_);
-    output_file_ = NULL;
+    if (output_file_ == stdout) {
+        output_file_ = NULL;
+    } else {
+        const int err = fclose(output_file_);
+        output_file_ = NULL;
 
-    if (err != 0) {
-        roc_log(LogError, "wav sink: can't properly close output file: %s",
-                core::errno_to_str(errno).c_str());
-        return status::StatusErrFile;
+        if (err != 0) {
+            roc_log(LogError, "wav sink: can't properly close output file: %s",
+                    core::errno_to_str(errno).c_str());
+            return status::StatusErrFile;
+        }
     }
 
     return status::StatusOK;

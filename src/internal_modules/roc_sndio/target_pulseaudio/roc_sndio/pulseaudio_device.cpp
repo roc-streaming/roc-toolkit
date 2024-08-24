@@ -8,8 +8,8 @@
 
 #include "roc_sndio/pulseaudio_device.h"
 #include "roc_audio/channel_defs.h"
+#include "roc_audio/format.h"
 #include "roc_audio/sample.h"
-#include "roc_audio/sample_format.h"
 #include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -27,86 +27,90 @@ const core::nanoseconds_t ReportInterval = 10 * core::Second;
 // 40ms or 20ms, and sometimes even 10ms
 const core::nanoseconds_t DefaultLatency = core::Millisecond * 60;
 
+// 10ms is rather high, but works well even on cheap sound cards and CPUs.
+// Usually you can use much lower values.
+const core::nanoseconds_t DefaultFrameLength = 10 * core::Millisecond;
+
 const core::nanoseconds_t MinTimeout = core::Millisecond * 50;
 const core::nanoseconds_t MaxTimeout = core::Second * 2;
 
-audio::PcmFormat from_pulse_format(pa_sample_format fmt) {
+audio::PcmSubformat from_pulse_format(pa_sample_format fmt) {
     switch (fmt) {
     case PA_SAMPLE_U8:
-        return audio::PcmFormat_UInt8;
+        return audio::PcmSubformat_UInt8;
 
     case PA_SAMPLE_S16LE:
-        return audio::PcmFormat_SInt16_Le;
+        return audio::PcmSubformat_SInt16_Le;
     case PA_SAMPLE_S16BE:
-        return audio::PcmFormat_SInt16_Be;
+        return audio::PcmSubformat_SInt16_Be;
 
     case PA_SAMPLE_S24LE:
-        return audio::PcmFormat_SInt24_Le;
+        return audio::PcmSubformat_SInt24_Le;
     case PA_SAMPLE_S24BE:
-        return audio::PcmFormat_SInt24_Be;
+        return audio::PcmSubformat_SInt24_Be;
 
     case PA_SAMPLE_S24_32LE:
-        return audio::PcmFormat_SInt24_4_Le;
+        return audio::PcmSubformat_SInt24_4_Le;
     case PA_SAMPLE_S24_32BE:
-        return audio::PcmFormat_SInt24_4_Be;
+        return audio::PcmSubformat_SInt24_4_Be;
 
     case PA_SAMPLE_S32LE:
-        return audio::PcmFormat_SInt32_Le;
+        return audio::PcmSubformat_SInt32_Le;
     case PA_SAMPLE_S32BE:
-        return audio::PcmFormat_SInt32_Be;
+        return audio::PcmSubformat_SInt32_Be;
 
     case PA_SAMPLE_FLOAT32LE:
-        return audio::PcmFormat_Float32_Le;
+        return audio::PcmSubformat_Float32_Le;
     case PA_SAMPLE_FLOAT32BE:
-        return audio::PcmFormat_Float32_Be;
+        return audio::PcmSubformat_Float32_Be;
 
     default:
         break;
     }
 
-    return audio::PcmFormat_Invalid;
+    return audio::PcmSubformat_Invalid;
 }
 
-pa_sample_format to_pulse_format(audio::PcmFormat fmt) {
+pa_sample_format to_pulse_format(audio::PcmSubformat fmt) {
     switch (fmt) {
-    case audio::PcmFormat_UInt8:
-    case audio::PcmFormat_UInt8_Le:
-    case audio::PcmFormat_UInt8_Be:
+    case audio::PcmSubformat_UInt8:
+    case audio::PcmSubformat_UInt8_Le:
+    case audio::PcmSubformat_UInt8_Be:
         return PA_SAMPLE_U8;
 
-    case audio::PcmFormat_SInt16:
+    case audio::PcmSubformat_SInt16:
         return PA_SAMPLE_S16NE;
-    case audio::PcmFormat_SInt16_Le:
+    case audio::PcmSubformat_SInt16_Le:
         return PA_SAMPLE_S16LE;
-    case audio::PcmFormat_SInt16_Be:
+    case audio::PcmSubformat_SInt16_Be:
         return PA_SAMPLE_S16BE;
 
-    case audio::PcmFormat_SInt24:
+    case audio::PcmSubformat_SInt24:
         return PA_SAMPLE_S24NE;
-    case audio::PcmFormat_SInt24_Le:
+    case audio::PcmSubformat_SInt24_Le:
         return PA_SAMPLE_S24LE;
-    case audio::PcmFormat_SInt24_Be:
+    case audio::PcmSubformat_SInt24_Be:
         return PA_SAMPLE_S24BE;
 
-    case audio::PcmFormat_SInt24_4:
+    case audio::PcmSubformat_SInt24_4:
         return PA_SAMPLE_S24_32NE;
-    case audio::PcmFormat_SInt24_4_Le:
+    case audio::PcmSubformat_SInt24_4_Le:
         return PA_SAMPLE_S24_32LE;
-    case audio::PcmFormat_SInt24_4_Be:
+    case audio::PcmSubformat_SInt24_4_Be:
         return PA_SAMPLE_S24_32BE;
 
-    case audio::PcmFormat_SInt32:
+    case audio::PcmSubformat_SInt32:
         return PA_SAMPLE_S32NE;
-    case audio::PcmFormat_SInt32_Le:
+    case audio::PcmSubformat_SInt32_Le:
         return PA_SAMPLE_S32LE;
-    case audio::PcmFormat_SInt32_Be:
+    case audio::PcmSubformat_SInt32_Be:
         return PA_SAMPLE_S32BE;
 
-    case audio::PcmFormat_Float32:
+    case audio::PcmSubformat_Float32:
         return PA_SAMPLE_FLOAT32NE;
-    case audio::PcmFormat_Float32_Le:
+    case audio::PcmSubformat_Float32_Le:
         return PA_SAMPLE_FLOAT32LE;
-    case audio::PcmFormat_Float32_Be:
+    case audio::PcmSubformat_Float32_Be:
         return PA_SAMPLE_FLOAT32BE;
 
     default:
@@ -121,7 +125,8 @@ pa_sample_format to_pulse_format(audio::PcmFormat fmt) {
 PulseaudioDevice::PulseaudioDevice(audio::FrameFactory& frame_factory,
                                    core::IArena& arena,
                                    const IoConfig& io_config,
-                                   DeviceType device_type)
+                                   DeviceType device_type,
+                                   const char* device)
     : IDevice(arena)
     , ISink(arena)
     , ISource(arena)
@@ -148,14 +153,24 @@ PulseaudioDevice::PulseaudioDevice(audio::FrameFactory& frame_factory,
     , timer_deadline_ns_(0)
     , rate_limiter_(ReportInterval)
     , init_status_(status::NoStatus) {
-    if (sample_spec_.sample_format() != audio::SampleFormat_Invalid
-        && (sample_spec_.sample_format() != audio::SampleFormat_Pcm
-            || to_pulse_format(sample_spec_.pcm_format()) == PA_SAMPLE_INVALID)) {
+    if (io_config.sample_spec.has_format()
+        && io_config.sample_spec.format() != audio::Format_Pcm) {
         roc_log(LogError,
-                "pulseaudio %s: requested sample format not supported by backend:"
-                " sample_spec=%s",
-                device_type_to_str(device_type_),
-                audio::sample_spec_to_str(sample_spec_).c_str());
+                "pulseaudio %s: invalid io encoding:"
+                " <format> '%s' not supported by backend: spec=%s",
+                device_type_to_str(device_type_), io_config.sample_spec.format_name(),
+                audio::sample_spec_to_str(io_config.sample_spec).c_str());
+        init_status_ = status::StatusBadConfig;
+        return;
+    }
+
+    if (io_config.sample_spec.has_subformat()
+        && to_pulse_format(io_config.sample_spec.pcm_subformat()) == PA_SAMPLE_INVALID) {
+        roc_log(LogError,
+                "pulseaudio %s: invalid io encoding:"
+                " <subformat> '%s' not supported by backend: spec=%s",
+                device_type_to_str(device_type_), io_config.sample_spec.format_name(),
+                audio::sample_spec_to_str(io_config.sample_spec).c_str());
         init_status_ = status::StatusBadConfig;
         return;
     }
@@ -176,6 +191,21 @@ PulseaudioDevice::PulseaudioDevice(audio::FrameFactory& frame_factory,
         timeout_ns_ = MaxTimeout;
     }
 
+    roc_log(LogDebug, "pulseaudio %s: opening device: device=%s",
+            device_type_to_str(device_type_), device);
+
+    if (device && strcmp(device, "default") != 0) {
+        device_ = device;
+    }
+
+    if ((init_status_ = start_mainloop_()) != status::StatusOK) {
+        return;
+    }
+
+    if ((init_status_ = open_()) != status::StatusOK) {
+        return;
+    }
+
     init_status_ = status::StatusOK;
 }
 
@@ -189,32 +219,6 @@ PulseaudioDevice::~PulseaudioDevice() {
 
 status::StatusCode PulseaudioDevice::init_status() const {
     return init_status_;
-}
-
-status::StatusCode PulseaudioDevice::open(const char* device) {
-    if (mainloop_) {
-        roc_panic("pulseaudio %s: can't call open() twice",
-                  device_type_to_str(device_type_));
-    }
-
-    roc_log(LogDebug, "pulseaudio %s: opening device: device=%s",
-            device_type_to_str(device_type_), device);
-
-    if (device && strcmp(device, "default") != 0) {
-        device_ = device;
-    }
-
-    status::StatusCode code = status::NoStatus;
-
-    if ((code = start_mainloop_()) != status::StatusOK) {
-        return code;
-    }
-
-    if ((code = open_()) != status::StatusOK) {
-        return code;
-    }
-
-    return status::StatusOK;
 }
 
 DeviceType PulseaudioDevice::type() const {
@@ -239,6 +243,18 @@ audio::SampleSpec PulseaudioDevice::sample_spec() const {
     pa_threaded_mainloop_unlock(mainloop_);
 
     return sample_spec;
+}
+
+core::nanoseconds_t PulseaudioDevice::frame_length() const {
+    want_mainloop_();
+
+    pa_threaded_mainloop_lock(mainloop_);
+
+    const core::nanoseconds_t frame_len = frame_len_ns_;
+
+    pa_threaded_mainloop_unlock(mainloop_);
+
+    return frame_len;
 }
 
 bool PulseaudioDevice::has_state() const {
@@ -648,17 +664,17 @@ void PulseaudioDevice::device_info_cb_(pa_context*,
 }
 
 bool PulseaudioDevice::load_device_params_(const pa_sample_spec& device_spec) {
-    if (sample_spec_.sample_format() == audio::SampleFormat_Invalid) {
-        audio::PcmFormat fmt = from_pulse_format(device_spec.format);
+    if (sample_spec_.format() == audio::Format_Invalid) {
+        audio::PcmSubformat fmt = from_pulse_format(device_spec.format);
 
-        if (fmt == audio::PcmFormat_Invalid) {
-            // We don't support device's native format, so ask pulseaudio
-            // to do conversion for our native format.
-            fmt = audio::Sample_RawFormat;
+        if (fmt == audio::PcmSubformat_Invalid) {
+            // If don't support device's native format, ask pulseaudio
+            // to do conversion to our native format.
+            fmt = audio::PcmSubformat_Raw;
         }
 
-        sample_spec_.set_sample_format(audio::SampleFormat_Pcm);
-        sample_spec_.set_pcm_format(fmt);
+        sample_spec_.set_format(audio::Format_Pcm);
+        sample_spec_.set_pcm_subformat(fmt);
     }
 
     if (sample_spec_.sample_rate() == 0) {
@@ -671,7 +687,7 @@ bool PulseaudioDevice::load_device_params_(const pa_sample_spec& device_spec) {
         sample_spec_.channel_set().set_count(device_spec.channels);
     }
 
-    if (!sample_spec_.is_valid()) {
+    if (!sample_spec_.is_complete()) {
         roc_log(LogError,
                 "pulseaudio %s: can't determine device sample spec:"
                 " sample_spec=%s",
@@ -717,7 +733,7 @@ bool PulseaudioDevice::load_device_params_(const pa_sample_spec& device_spec) {
 }
 
 bool PulseaudioDevice::init_stream_params_(const pa_sample_spec& device_spec) {
-    stream_spec_.format = to_pulse_format(sample_spec_.pcm_format());
+    stream_spec_.format = to_pulse_format(sample_spec_.pcm_subformat());
     stream_spec_.rate = (uint32_t)sample_spec_.sample_rate();
     stream_spec_.channels = (uint8_t)sample_spec_.num_channels();
 

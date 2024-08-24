@@ -89,9 +89,9 @@ def compute_octets(code):
 
 # generate enum name for pcm code + endian
 # e.g.:
-#  SInt18_3, Default => PcmFormat_SInt18_3
-#  SInt18_3, Little => PcmFormat_SInt18_3_Le
-#  SInt18_3, Big => PcmFormat_SInt18_3_Be
+#  SInt18_3, Default => PcmSubformat_SInt18_3
+#  SInt18_3, Little => PcmSubformat_SInt18_3_Le
+#  SInt18_3, Big => PcmSubformat_SInt18_3_Be
 def make_enum_name(code, endian):
     name = code['code']
 
@@ -101,13 +101,13 @@ def make_enum_name(code, endian):
         if endian == 'Big':
             name += '_Be'
 
-    return 'PcmFormat_' + name
+    return 'PcmSubformat_' + name
 
 # generate short string name for pcm code + endian
 # e.g.:
-#  SInt18_3, Default => s18_3
-#  SInt18_3, Little => s18_3le
-#  SInt18_3, Big => s18_3be
+#  SInt18_3, Default => pcm_s18_3
+#  SInt18_3, Little => pcm_s18_3le
+#  SInt18_3, Big => pcm_s18_3be
 def make_short_name(code, endian):
     name = code['short_name']
 
@@ -585,10 +585,11 @@ env = jinja2.Environment(
 
 template = env.from_string('''
 /*
- * THIS FILE IS AUTO-GENERATED USING `pcm_format_gen.py'. DO NOT EDIT!
+ * THIS FILE IS AUTO-GENERATED USING `pcm_subformat_gen.py'. DO NOT EDIT!
  */
 
-#include "roc_audio/pcm_format.h"
+#include "roc_audio/pcm_subformat.h"
+#include "roc_audio/pcm_subformat_rw.h"
 #include "roc_core/attributes.h"
 #include "roc_core/cpu_traits.h"
 #include "roc_core/stddefs.h"
@@ -709,7 +710,6 @@ pcm_sign_converter<PcmCode_{{ icode.code }}>::to_signed(arg);
 {% endif %}
 {% endfor %}
 {% endfor %}
-
 // N-byte native-endian sample
 template <class T> struct pcm_sample;
 
@@ -733,54 +733,6 @@ template <> struct pcm_sample<{{ type }}> {
 };
 
 {% endfor %}
-// Write octet at given byte-aligned bit offset
-inline void pcm_aligned_write(uint8_t* buffer, size_t& bit_offset, uint8_t arg) {
-    buffer[bit_offset >> 3] = arg;
-    bit_offset += 8;
-}
-
-// Read octet at given byte-aligned bit offset
-inline uint8_t pcm_aligned_read(const uint8_t* buffer, size_t& bit_offset) {
-    uint8_t ret = buffer[bit_offset >> 3];
-    bit_offset += 8;
-    return ret;
-}
-
-// Write value (at most 8 bits) at given unaligned bit offset
-inline void
-pcm_unaligned_write(uint8_t* buffer, size_t& bit_offset, size_t bit_length, uint8_t arg) {
-    size_t byte_index = (bit_offset >> 3);
-    size_t bit_index = (bit_offset & 0x7u);
-
-    if (bit_index == 0) {
-        buffer[byte_index] = 0;
-    }
-
-    buffer[byte_index] |= uint8_t(uint8_t(arg << (8 - bit_length)) >> bit_index);
-
-    if (bit_index + bit_length > 8) {
-        buffer[byte_index + 1] = uint8_t(arg << bit_index);
-    }
-
-    bit_offset += bit_length;
-}
-
-// Read value (at most 8 bits) at given unaligned bit offset
-inline uint8_t
-pcm_unaligned_read(const uint8_t* buffer, size_t& bit_offset, size_t bit_length) {
-    size_t byte_index = (bit_offset >> 3);
-    size_t bit_index = (bit_offset & 0x7u);
-
-    uint8_t ret = uint8_t(uint8_t(buffer[byte_index] << bit_index) >> (8 - bit_length));
-
-    if (bit_index + bit_length > 8) {
-        ret |= uint8_t(buffer[byte_index + 1] >> ((8 - bit_index) + (8 - bit_length)));
-    }
-
-    bit_offset += bit_length;
-    return ret;
-}
-
 // Sample packer / unpacker
 template <PcmCode, PcmEndian> struct pcm_packer;
 
@@ -870,7 +822,7 @@ struct pcm_mapper {
 
 // Select mapping function
 template <PcmCode InCode, PcmEndian InEndian>
-PcmMapFn pcm_map_to_raw(PcmFormat raw_format) {
+PcmMapFn pcm_map_to_raw(PcmSubformat raw_format) {
     switch (raw_format) {
 {% for ocode in CODES %}
 {% if ocode.is_raw: %}
@@ -892,7 +844,7 @@ PcmMapFn pcm_map_to_raw(PcmFormat raw_format) {
 
 // Select mapping function
 template <PcmCode OutCode, PcmEndian OutEndian>
-PcmMapFn pcm_map_from_raw(PcmFormat raw_format) {
+PcmMapFn pcm_map_from_raw(PcmSubformat raw_format) {
     switch (raw_format) {
 {% for icode in CODES %}
 {% if icode.is_raw: %}
@@ -915,7 +867,7 @@ PcmMapFn pcm_map_from_raw(PcmFormat raw_format) {
 } // namespace
 
 // Select mapping function
-PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
+PcmMapFn pcm_subformat_mapfn(PcmSubformat in_format, PcmSubformat out_format) {
     // non-raw to raw
     switch (in_format) {
 {% for icode in CODES %}
@@ -983,13 +935,15 @@ PcmMapFn pcm_format_mapfn(PcmFormat in_format, PcmFormat out_format) {
 }
 
 // Get format traits
-PcmTraits pcm_format_traits(PcmFormat format) {
+PcmTraits pcm_subformat_traits(PcmSubformat format) {
     PcmTraits traits;
 
     switch (format) {
 {% for code in CODES %}
 {% for endian in ENDIANS %}
     case {{ make_enum_name(code, endian) }}:
+        traits.id = {{ make_enum_name(code, endian) }};
+        traits.name = "{{ make_short_name(code, endian) }}";
         traits.bit_width = {{ code.packed_width }};
         traits.bit_depth = {{ code.depth }};
         traits.flags = {{ make_format_flags(code) }};
@@ -1030,7 +984,7 @@ PcmTraits pcm_format_traits(PcmFormat format) {
     return traits;
 }
 
-const char* pcm_format_to_str(PcmFormat format) {
+const char* pcm_subformat_to_str(PcmSubformat format) {
     switch (format) {
 {% for code in CODES %}
 {% for endian in ENDIANS %}
@@ -1044,9 +998,9 @@ const char* pcm_format_to_str(PcmFormat format) {
     return NULL;
 }
 
-PcmFormat pcm_format_from_str(const char* str) {
+PcmSubformat pcm_subformat_from_str(const char* str) {
     if (!str) {
-        return PcmFormat_Invalid;
+        return PcmSubformat_Invalid;
     }
 {% for c0 in nth_chars(CODES) %}
     if (str[0] == '{{ c0 }}') {
@@ -1063,7 +1017,7 @@ PcmFormat pcm_format_from_str(const char* str) {
 {% endfor %}
 {% endif %}
 {% endfor %}
-                return PcmFormat_Invalid;
+                return PcmSubformat_Invalid;
             }
 {% endfor %}
 {% for code in CODES %}
@@ -1075,13 +1029,13 @@ PcmFormat pcm_format_from_str(const char* str) {
 {% endfor %}
 {% endif %}
 {% endfor %}
-            return PcmFormat_Invalid;
+            return PcmSubformat_Invalid;
         }
 {% endfor %}
-        return PcmFormat_Invalid;
+        return PcmSubformat_Invalid;
     }
 {% endfor %}
-    return PcmFormat_Invalid;
+    return PcmSubformat_Invalid;
 }
 
 } // namespace audio
@@ -1094,5 +1048,5 @@ text = template.render(
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-with open('pcm_format.cpp', 'w') as fp:
+with open('pcm_subformat.cpp', 'w') as fp:
     print(text, file=fp)

@@ -55,15 +55,22 @@ public:
     //! Get driver by index.
     const DriverInfo& nth_driver(size_t driver_index) const;
 
+    //! Get number of file formats available.
+    size_t num_formats() const;
+
+    //! Get driver by index.
+    const FormatInfo& nth_format(size_t format_index) const;
+
 private:
     friend class core::Singleton<BackendMap>;
 
     BackendMap();
 
     void register_backends_();
-    void register_drivers_();
-
     void add_backend_(IBackend*);
+
+    void collect_drivers_();
+    void collect_formats_();
 
 #ifdef ROC_TARGET_PULSEAUDIO
     core::Optional<PulseaudioBackend> pulseaudio_backend_;
@@ -81,6 +88,7 @@ private:
 
     core::Array<IBackend*, MaxBackends> backends_;
     core::Array<DriverInfo, MaxDrivers> drivers_;
+    core::Array<FormatInfo, MaxFormats> formats_;
 };
 
 } // namespace sndio

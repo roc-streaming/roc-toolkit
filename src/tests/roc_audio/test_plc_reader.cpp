@@ -385,7 +385,7 @@ TEST_GROUP(plc_reader) {
 TEST(plc_reader, small_read) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -414,7 +414,7 @@ TEST(plc_reader, small_read) {
 TEST(plc_reader, big_read) {
     enum { FrameSz = MaxSz * 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -443,7 +443,7 @@ TEST(plc_reader, big_read) {
 TEST(plc_reader, initial_gap) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -496,7 +496,7 @@ TEST(plc_reader, initial_gap) {
 TEST(plc_reader, readahead_disabled) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -568,7 +568,7 @@ TEST(plc_reader, readahead_disabled) {
 TEST(plc_reader, readahead_enabled) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -675,7 +675,7 @@ TEST(plc_reader, readahead_enabled) {
 TEST(plc_reader, readahead_drained) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -749,7 +749,7 @@ TEST(plc_reader, readahead_drained) {
 TEST(plc_reader, readahead_partial) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -826,7 +826,7 @@ TEST(plc_reader, readahead_partial) {
 TEST(plc_reader, soft_reads) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -967,7 +967,7 @@ TEST(plc_reader, variable_frame_sizes) {
         LookaheadSz = 13,
     };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -1130,7 +1130,7 @@ TEST(plc_reader, variable_frame_sizes) {
 TEST(plc_reader, without_cts) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -1198,7 +1198,7 @@ TEST(plc_reader, without_cts) {
 TEST(plc_reader, with_cts) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -1272,7 +1272,7 @@ TEST(plc_reader, with_cts) {
 TEST(plc_reader, non_raw_format) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec int_spec(MaxSz, PcmFormat_SInt16, ChanLayout_Surround,
+    const SampleSpec int_spec(MaxSz, PcmSubformat_SInt16, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     IntReader<int16_t> int_reader(int_spec);
@@ -1354,7 +1354,7 @@ TEST(plc_reader, non_raw_format) {
 TEST(plc_reader, supported_backends) {
     enum { FrameSz = MaxSz / 2, NumFrames = 5, NumIters = 10 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     for (size_t n_back = 0; n_back < n_supported_backends; n_back++) {
@@ -1401,7 +1401,7 @@ TEST(plc_reader, supported_backends) {
 TEST(plc_reader, forward_mode) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -1429,7 +1429,7 @@ TEST(plc_reader, forward_mode) {
 TEST(plc_reader, forward_error) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -1457,7 +1457,7 @@ TEST(plc_reader, forward_error) {
 TEST(plc_reader, forward_partial) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, sample_spec);
@@ -1481,7 +1481,7 @@ TEST(plc_reader, forward_partial) {
 TEST(plc_reader, preallocated_buffer) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec sample_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec sample_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                                  ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     const size_t buffer_list[] = {

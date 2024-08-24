@@ -86,11 +86,19 @@ enum StatusCode {
     //! @remarks
     //!  Indicates that there is no suitable driver to open sink or source.
     //! @note
-    //!  Example: we're trying to open an mp3 file using a backend that
-    //!  supports only wav files.
+    //!  Example: we're trying to open a pulseaudio device using a backend
+    //!  that supports only alsa devices.
     StatusNoDriver,
 
-    //! No plugin found.
+    //! Unsupported format.
+    //! @remarks
+    //!  Indicates that the format or sub-format requested is not supported.
+    //! @note
+    //!  Example: we're trying to open an mp3 file using a backend that
+    //!  supports only wav files.
+    StatusNoFormat,
+
+    //! Unusable or missing plugin.
     //! @remarks
     //!  Indicates that plugin lookup or initialization failed.
     //! @note

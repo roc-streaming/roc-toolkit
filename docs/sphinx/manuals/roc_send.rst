@@ -31,11 +31,10 @@ General options
 Input options
 -------------
 
--i, --input=IO_URI          Input file or device URI
---input-format=FILE_FORMAT  Force input file format
---io-encoding=IO_ENCODING   Input device encoding
---io-latency=TIME           Input device latency, TIME units
---io-frame-len=TIME         Input frame length, TIME units
+-i, --input=IO_URI         Input file or device URI
+--io-encoding=IO_ENCODING  Input device encoding
+--io-latency=TIME          Input device latency, TIME units
+--io-frame-len=TIME        Input frame length, TIME units
 
 Network options
 ---------------
@@ -116,8 +115,6 @@ The list of supported schemes and file formats can be retrieved using ``--list-s
 
 If the ``--input`` is omitted, the default driver and device are selected.
 
-The ``--input-format`` option can be used to force the input file format. If it is omitted, the file format is auto-detected. This option is always required when the input is stdin.
-
 The path component of the provided URI is `percent-decoded <https://en.wikipedia.org/wiki/Percent-encoding>`_. For convenience, unencoded characters are allowed as well, except that ``%`` should be always encoded as ``%25``.
 
 For example, the file named ``/foo/bar%/[baz]`` may be specified using either of the following URIs: ``file:///foo%2Fbar%25%2F%5Bbaz%5D`` and ``file:///foo/bar%25/[baz]``.
@@ -125,29 +122,35 @@ For example, the file named ``/foo/bar%/[baz]`` may be specified using either of
 I/O encoding
 ------------
 
-``--io-encoding`` option allows to explicitly specify encoding of the input device. It can't be used if input is a file.
+``--io-encoding`` option allows to explicitly specify encoding of the input file or device.
 
-This option is useful when device supports multiple encodings. Note that I/O encoding may be different from network packet encoding. Necessary conversions will be applied automatically.
+This option is useful when device supports multiple encodings, or file encoding can't be detected automatically (e.g. file doesn't have extension or uses header-less format like raw PCM). Note that I/O encoding may be different from network packet encoding. Necessary conversions will be applied automatically.
 
 *IO_ENCODING* should have the following form:
 
-``<format>/<rate>/<channels>``
+``<format>[@<subformat>]/<rate>/<channels>``
 
 Where:
 
-* ``format`` defines sample precision and binary representation, e.g. ``s16_le`` stands for little-endian signed 16-bit integers
+* ``format`` defines container format, e.g. ``pcm`` (raw samples), ``wav``, ``ogg``
+* ``subformat`` is optional format-dependent codec, e.g. ``s16`` for ``pcm`` or ``wav``, and ``vorbis`` for ``ogg``
 * ``rate`` defines sample rate in Hertz (number of samples per second), e.g. ``48000``
 * ``channels`` defines channel layout, e.g. ``mono`` or ``stereo``
 
-Any component may be set to special value ``-``, which means use default value for the specified input device.
+``format``, ``rate``, and ``channels`` may be set to special value ``-``, which means using default value for input device, or auto-detect value for input file.
+
+Whether ``subformat`` is required, allowed, and what values are accepted, depends on ``format``.
 
 Examples:
 
-* ``s16/44100/mono`` -- 16-bit native-endian integers, 44.1KHz, 1 channel
-* ``f32_le/48000/stereo`` -- 32-bit little-endian floats, 48KHz, 2 channels
-* ``s24_4be/-/-`` -- 24-bit PCM packed into 4-byte big-endian frames, default rate and channels
+* ``pcm@s16/44100/mono`` -- PCM, 16-bit native-endian integers, 44.1KHz, 1 channel
+* ``pcm@f32_le/48000/stereo`` -- PCM, 32-bit little-endian floats, 48KHz, 2 channels
+* ``wav/-/-`` -- WAV file, auto-detect sub-format, rate, channels
+* ``flac-/-/-`` -- FLAC file, auto-detect sub-format, rate, channels
 
-The list of supported formats and channel layouts can be retrieved using ``--list-supported`` option.
+Devices (``pulse://``, ``alsa://``, etc.) usually support only ``pcm`` format. Files (``file://``) support a lot of different formats.
+
+The list of supported formats, sub-formats, and channel layouts can be retrieved using ``--list-supported`` option.
 
 I/O latency and frame
 ---------------------
@@ -206,19 +209,23 @@ Packet encoding
 
 *PKT_ENCODING* is similar to *IO_ENCODING*, but adds numeric encoding identifier:
 
-``<id>:<format>/<rate>/<channels>``
+``<id>:<format>[@<subformat>]/<rate>/<channels>``
 
 Where:
 
 * ``id`` is an arbitrary number in range 100..127, which should uniquely identify encoding on all related senders and receivers
-* ``format`` defines sample precision and binary representation, e.g. ``s16_le`` stands for little-endian signed 16-bit integers
+* ``format`` defines container format, e.g. ``pcm`` (raw samples), ``flac``
+* ``subformat`` is optional format-dependent codec, e.g. ``s16`` for ``pcm`` or ``flac``
 * ``rate`` defines sample rate in Hertz (number of samples per second), e.g. ``48000``
 * ``channels`` defines channel layout, e.g. ``mono`` or ``stereo``
 
+Whether ``subformat`` is required, allowed, and what values are accepted, depends on ``format``.
+
 Examples:
 
-* ``101:s16_be/44100/mono`` -- 16-bit big-endian integers, 44.1KHz, 1 channel
-* ``102:f32_le/48000/stereo`` -- 32-bit little-endian floats, 48KHz, 2 channels
+* ``101:pcm@s24/44100/mono`` -- PCM, 24-bit network-endian integers, 44.1KHz, 1 channel
+* ``102:pcm@f32/48000/stereo`` -- PCM, 32-bit network-endian floats, 48KHz, 2 channels
+* ``103:flac@s16/48000/stereo`` -- FLAC, 16-bit precision, 48KHz, 2 channels
 
 The list of supported formats and channel layouts can be retrieved using ``--list-supported`` option.
 
@@ -233,8 +240,8 @@ FEC encoding
 
 * ``auto`` -- automatically detect FEC encoding from protocols used for ``--source`` and ``--repair`` encodings
 * ``none`` -- don't use FEC
-* ``rs8m`` -- Reed-Solomon codec
-* ``ldpc`` -- LDPC-Staircase codec
+* ``rs8m`` -- Reed-Solomon codec -- good for small block size / latency, requires more CPU
+* ``ldpc`` -- LDPC-Staircase codec -- good for large block size / latency, requires less CPU
 
 The list of supported FEC encodings and related protocols ``--list-supported`` option.
 
@@ -270,7 +277,7 @@ A few backends are available:
 
 Here, quality reflects potential distortions introduced by resampler, and precision reflects how accurately resampler can apply scaling and hence how accurately we can tune latency.
 
-For very low latency or very low latency error, you usually need to use ``builtin`` backend. If those factors are not critical, you may use ``speex`` resampler to reduce CPU usage. ``speexdec`` backend is a compromise for situations when both CPU usage and latency are critical, and quality is less important.
+For very low or very precise latency, you usually need to use ``builtin`` backend. If those factors are not critical, you may use ``speex`` resampler to reduce CPU usage. ``speexdec`` backend is a compromise for situations when both CPU usage and latency are critical, and quality is less important.
 
 If sender-side latency tuning is disabled (which is the default), resampler precision is not relevant, and ``speex`` is almost always the best choice.
 
@@ -281,13 +288,13 @@ This section is relevant when sender-side latency tuning is enabled (**disabled 
 
 By default, latency tuning is performed on receiver side: ``--latency-profile`` is set to ``auto`` on receiver and to ``intact`` on sender. If you want to do it on sender side, you can set ``--latency-profile`` to ``intact`` on receiver and to something else on sender. This is useful when receiver is more CPU-constrained than sender, because latency tuning uses resampler.
 
-Sender-side latency tuning requires latency parameters (target, start, min, and max latency) to **match on receiver and sender**. Also note that sender may perform tuning less accurately, depending on network lag. 
+Sender-side latency tuning requires latency parameters (target, start, min, and max latency) to **match on receiver and sender**. Also note that sender may perform tuning less accurately, depending on network lag.
 
 ``--target-latency`` option defines the latency value to maintain, as measured by the ``--latency-backend``:
 
-* If value is provided, **fixed latency** mode is activated. The latency starts from ``--target-latency`` and is kept close to that value.
+* If value is provided, *fixed latency* mode is activated. The latency starts from ``--target-latency`` and is kept close to that value.
 
-* If option is omitted or set to ``auto``, **adaptive latency** mode is activated. The latency is chosen dynamically. Initial latency is ``--start-latency``, and the allowed range is ``--min-latency`` to ``--max-latency``.
+* If option is omitted or set to ``auto``, *adaptive latency* mode is activated. The latency is chosen dynamically. Initial latency is ``--start-latency``, and the allowed range is ``--min-latency`` to ``--max-latency``.
 
 ``--latency-tolerance`` option defines maximum allowed deviation of the actual latency from the (current) target latency. If this limit is exceeded for some reason (typically due to poor network conditions), connection is restarted.
 
@@ -368,7 +375,7 @@ Send file to receiver with IPv6 source, repair, and control endpoints:
     $ roc-send -vv -i file:./input.wav -s rtp+rs8m://[2001:db8::]:10001 \
         -r rs8m://[2001:db8::]:10002 -r rtcp://[2001:db8::]:10003
 
-Send file to two receivers, each with three endpoints:
+Send file to two destinations ("slots"), each with three endpoints:
 
 .. code::
 
@@ -410,13 +417,13 @@ Send WAV file (specify format manually):
 
 .. code::
 
-    $ roc-send -vv -s rtp://192.168.0.3:10001 -i file:./input.file --input-format wav
+    $ roc-send -vv -s rtp://192.168.0.3:10001 -i file:./input.file --io-encoding wav/-/-
 
 Send WAV from stdin:
 
 .. code::
 
-    $ roc-send -vv -s rtp://192.168.0.3:10001 -i file:- --input-format wav <./input.wav
+    $ roc-send -vv -s rtp://192.168.0.3:10001 -i file:- --io-encoding wav/-/- <./input.wav
 
 Send WAV file (specify absolute path):
 
@@ -432,17 +439,24 @@ Force specific encoding on the input device:
 .. code::
 
     $ roc-send -vv -s rtp://192.168.0.3:10001 \
-        --input alsa://hw:1,0 --io-encoding s32/48000/stereo
+        --input alsa://hw:1,0 --io-encoding pcm@s32/48000/stereo
+
+Force specific encoding on the input file:
+
+.. code::
+
+    $ roc-send -vv -s rtp://192.168.0.3:10001 \
+        --input file:./input.pcm --io-encoding pcm@s32/48000/stereo
 
 Use specific encoding for network packets:
 
 .. code::
 
-    $ roc-send -vv -s rtp://192.168.0.3:10001 --packet-encoding 101:s32/48000/stereo
+    $ roc-send -vv -s rtp://192.168.0.3:10001 --packet-encoding 101:pcm@s24/48000/stereo
 
 .. code::
 
-    $ roc-recv -vv -s rtp://0.0.0.0:10001 --packet-encoding 101:s32/48000/stereo
+    $ roc-recv -vv -s rtp://0.0.0.0:10001 --packet-encoding 101:pcm@s24/48000/stereo
 
 Select the LDPC-Staircase FEC scheme and a larger block size:
 

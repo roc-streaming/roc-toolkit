@@ -37,7 +37,7 @@ enum {
 };
 
 const audio::SampleSpec payload_spec(SampleRate,
-                                     audio::PcmFormat_SInt16_Be,
+                                     audio::PcmSubformat_SInt16_Be,
                                      audio::ChanLayout_Surround,
                                      audio::ChanOrder_Smpte,
                                      ChMask);

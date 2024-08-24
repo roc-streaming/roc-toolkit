@@ -69,7 +69,7 @@ TEST(timestamp_injector, negative_and_positive_dn) {
 
     const float sample_rate = 48000.;
     const audio::SampleSpec sample_spec =
-        audio::SampleSpec((size_t)sample_rate, audio::Sample_RawFormat,
+        audio::SampleSpec((size_t)sample_rate, audio::PcmSubformat_Raw,
                           audio::ChanLayout_Surround, audio::ChanOrder_Smpte, ChMask);
 
     packet::stream_timestamp_t rtp_ts = 2222;
@@ -120,7 +120,7 @@ TEST(timestamp_injector, fetch_peek) {
     };
 
     const audio::SampleSpec sample_spec =
-        audio::SampleSpec(SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround,
+        audio::SampleSpec(SampleRate, audio::PcmSubformat_Raw, audio::ChanLayout_Surround,
                           audio::ChanOrder_Smpte, ChMask);
 
     packet::FifoQueue queue;
@@ -167,7 +167,7 @@ TEST(timestamp_injector, forward_error) {
     };
 
     const audio::SampleSpec sample_spec =
-        audio::SampleSpec(SampleRate, audio::Sample_RawFormat, audio::ChanLayout_Surround,
+        audio::SampleSpec(SampleRate, audio::PcmSubformat_Raw, audio::ChanLayout_Surround,
                           audio::ChanOrder_Smpte, ChMask);
 
     const status::StatusCode status_list[] = {

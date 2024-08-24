@@ -19,19 +19,6 @@
 namespace roc {
 namespace sndio {
 
-namespace {
-
-bool has_suffix(const char* str, const char* suffix) {
-    size_t len_str = strlen(str);
-    size_t len_suffix = strlen(suffix);
-    if (len_suffix > len_str) {
-        return false;
-    }
-    return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
-}
-
-} // namespace
-
 WavBackend::WavBackend() {
 }
 
@@ -39,40 +26,52 @@ const char* WavBackend::name() const {
     return "wav";
 }
 
-void WavBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list) {
-    if (!driver_list.push_back(
-            DriverInfo("wav", DriverType_File,
-                       DriverFlag_SupportsSink | DriverFlag_SupportsSource, this))) {
-        roc_panic("wav backend: can't add driver");
+bool WavBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& result) {
+    if (!result.push_back(DriverInfo(
+            "file", Driver_File | Driver_SupportsSink | Driver_SupportsSource, this))) {
+        return false;
     }
+    return true;
+}
+
+bool WavBackend::discover_formats(core::Array<FormatInfo, MaxFormats>& result) {
+    if (!result.push_back(FormatInfo(
+            "file", "wav", Driver_File | Driver_SupportsSink | Driver_SupportsSource,
+            this))) {
+        return false;
+    }
+    return true;
+}
+
+bool WavBackend::discover_subformat_groups(core::StringList& result) {
+    // no sub-formats except pcm
+    return true;
+}
+
+bool WavBackend::discover_subformats(const char* group, core::StringList& result) {
+    // no sub-formats except pcm
+    return true;
 }
 
 status::StatusCode WavBackend::open_device(DeviceType device_type,
-                                           DriverType driver_type,
                                            const char* driver,
                                            const char* path,
                                            const IoConfig& io_config,
                                            audio::FrameFactory& frame_factory,
                                            core::IArena& arena,
                                            IDevice** result) {
-    if (driver_type != DriverType_File) {
-        return status::StatusNoDriver;
-    }
+    roc_panic_if(!driver);
+    roc_panic_if(!path);
 
-    if (driver) {
-        if (strcmp(driver, "wav") != 0) {
-            return status::StatusNoDriver;
-        }
-    } else {
-        if (!has_suffix(path, ".wav")) {
-            return status::StatusNoDriver;
-        }
+    if (strcmp(driver, "file") != 0) {
+        // Not file://, go to next backend.
+        return status::StatusNoDriver;
     }
 
     switch (device_type) {
     case DeviceType_Sink: {
         core::ScopedPtr<WavSink> sink(new (arena)
-                                          WavSink(frame_factory, arena, io_config));
+                                          WavSink(frame_factory, arena, io_config, path));
 
         if (!sink) {
             roc_log(LogDebug, "wav backend: can't allocate sink: path=%s", path);
@@ -80,16 +79,9 @@ status::StatusCode WavBackend::open_device(DeviceType device_type,
         }
 
         if (sink->init_status() != status::StatusOK) {
-            roc_log(LogDebug, "wav backend: can't initialize sink: path=%s status=%s",
-                    path, status::code_to_str(sink->init_status()));
-            return sink->init_status();
-        }
-
-        const status::StatusCode code = sink->open(path);
-        if (code != status::StatusOK) {
             roc_log(LogDebug, "wav backend: can't open sink: path=%s status=%s", path,
-                    status::code_to_str(code));
-            return code;
+                    status::code_to_str(sink->init_status()));
+            return sink->init_status();
         }
 
         *result = sink.hijack();
@@ -97,8 +89,8 @@ status::StatusCode WavBackend::open_device(DeviceType device_type,
     } break;
 
     case DeviceType_Source: {
-        core::ScopedPtr<WavSource> source(new (arena)
-                                              WavSource(frame_factory, arena, io_config));
+        core::ScopedPtr<WavSource> source(
+            new (arena) WavSource(frame_factory, arena, io_config, path));
 
         if (!source) {
             roc_log(LogDebug, "wav backend: can't allocate source: path=%s", path);
@@ -106,24 +98,14 @@ status::StatusCode WavBackend::open_device(DeviceType device_type,
         }
 
         if (source->init_status() != status::StatusOK) {
-            roc_log(LogDebug, "wav backend: can't initialize source: path=%s status=%s",
-                    path, status::code_to_str(source->init_status()));
-            return source->init_status();
-        }
-
-        const status::StatusCode code = source->open(path);
-        if (code != status::StatusOK) {
             roc_log(LogDebug, "wav backend: can't open source: path=%s status=%s", path,
-                    status::code_to_str(code));
-            return code;
+                    status::code_to_str(source->init_status()));
+            return source->init_status();
         }
 
         *result = source.hijack();
         return status::StatusOK;
     } break;
-
-    default:
-        break;
     }
 
     roc_panic("wav backend: invalid device type");

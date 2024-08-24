@@ -12,7 +12,7 @@
 #ifndef ROC_AUDIO_PCM_MAPPER_H_
 #define ROC_AUDIO_PCM_MAPPER_H_
 
-#include "roc_audio/pcm_format.h"
+#include "roc_audio/pcm_subformat.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 
@@ -21,17 +21,17 @@ namespace audio {
 
 //! PCM format mapper.
 //! Converts between two PCM formats.
-//! Either input or output format must be raw samples (Sample_RawFormat).
+//! Either input or output format must be raw samples (PcmSubformat_Raw).
 class PcmMapper : public core::NonCopyable<> {
 public:
     //! Initialize.
-    PcmMapper(PcmFormat input_fmt, PcmFormat output_fmt);
+    PcmMapper(PcmSubformat input_fmt, PcmSubformat output_fmt);
 
     //! Get input format.
-    PcmFormat input_format() const;
+    PcmSubformat input_format() const;
 
     //! Get output format.
-    PcmFormat output_format() const;
+    PcmSubformat output_format() const;
 
     //! Get number of input samples (total for all channels) for given number of bytes.
     size_t input_sample_count(size_t input_bytes) const;
@@ -76,8 +76,8 @@ public:
                size_t n_samples);
 
 private:
-    const PcmFormat input_fmt_;
-    const PcmFormat output_fmt_;
+    const PcmSubformat input_fmt_;
+    const PcmSubformat output_fmt_;
 
     const PcmTraits input_traits_;
     const PcmTraits output_traits_;

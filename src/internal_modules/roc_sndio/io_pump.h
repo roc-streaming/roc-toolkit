@@ -83,12 +83,14 @@ private:
     const audio::SampleSpec sample_spec_;
 
     audio::FramePtr frame_;
-    const size_t frame_size_;
-    const packet::stream_timestamp_t frame_duration_;
+    size_t frame_size_;
+    packet::stream_timestamp_t frame_duration_;
 
     const Mode mode_;
     bool was_active_;
     core::Atomic<int> stop_;
+
+    uint64_t transferred_bytes_;
 
     status::StatusCode init_status_;
 };

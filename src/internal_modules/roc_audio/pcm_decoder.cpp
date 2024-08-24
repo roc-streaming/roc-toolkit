@@ -19,7 +19,7 @@ IFrameDecoder* PcmDecoder::construct(const SampleSpec& sample_spec, core::IArena
 
 PcmDecoder::PcmDecoder(const SampleSpec& sample_spec, core::IArena& arena)
     : IFrameDecoder(arena)
-    , pcm_mapper_(sample_spec.pcm_format(), Sample_RawFormat)
+    , pcm_mapper_(sample_spec.pcm_subformat(), PcmSubformat_Raw)
     , n_chans_(sample_spec.num_channels())
     , stream_pos_(0)
     , stream_avail_(0)

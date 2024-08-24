@@ -98,9 +98,9 @@ TEST_GROUP(channel_mapper_writer) {};
 TEST(channel_mapper_writer, small_write_upmix) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Mono);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     test::MockWriter mock_writer;
@@ -128,9 +128,9 @@ TEST(channel_mapper_writer, small_write_upmix) {
 TEST(channel_mapper_writer, small_write_downmix) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockWriter mock_writer;
@@ -158,9 +158,9 @@ TEST(channel_mapper_writer, small_write_downmix) {
 TEST(channel_mapper_writer, small_write_no_cts) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockWriter mock_writer;
@@ -187,9 +187,9 @@ TEST(channel_mapper_writer, small_write_no_cts) {
 // Write big frame when upmixing.
 // It should be split into multiple writes to fit maximum size.
 TEST(channel_mapper_writer, big_write_upmix) {
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Mono);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     test::MockWriter mock_writer;
@@ -222,9 +222,9 @@ TEST(channel_mapper_writer, big_write_upmix) {
 // Write big frame when downmixing.
 // It should be split into multiple writes to fit maximum size.
 TEST(channel_mapper_writer, big_write_downmix) {
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockWriter mock_writer;
@@ -256,9 +256,9 @@ TEST(channel_mapper_writer, big_write_downmix) {
 
 // Same as above, but input frames don't have CTS.
 TEST(channel_mapper_writer, big_write_no_cts) {
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockWriter mock_writer;
@@ -288,9 +288,9 @@ TEST(channel_mapper_writer, big_write_no_cts) {
 TEST(channel_mapper_writer, forward_error) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Mono);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     test::MockWriter mock_writer;

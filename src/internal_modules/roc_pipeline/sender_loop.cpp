@@ -157,6 +157,12 @@ audio::SampleSpec SenderLoop::sample_spec() const {
     return sink_.sample_spec();
 }
 
+core::nanoseconds_t SenderLoop::frame_length() const {
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.frame_length();
+}
+
 bool SenderLoop::has_state() const {
     core::Mutex::Lock lock(sink_mutex_);
 

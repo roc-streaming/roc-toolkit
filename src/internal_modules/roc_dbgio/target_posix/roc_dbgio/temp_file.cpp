@@ -30,7 +30,7 @@ TempFile::TempFile(const char* name) {
         tempdir = "/tmp";
     }
 
-    if (snprintf(dir_, sizeof(dir_), "%s/rocXXXXXX", tempdir) < 0) {
+    if (snprintf(dir_, sizeof(dir_), "%s/roc-XXXXXX", tempdir) < 0) {
         roc_log(LogError, "temp file: snprintf(): %s", core::errno_to_str().c_str());
         return;
     }

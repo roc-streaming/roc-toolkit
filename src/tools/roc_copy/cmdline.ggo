@@ -10,11 +10,10 @@ option "list-supported" L "List supported protocols, formats, etc." optional
 
 section "I/O options"
 
-    option "input" i "Input file URI" typestr="FILE_URI" string optional
-    option "input-format" - "Force input file format" typestr="FILE_FORMAT" string optional
+    option "input" i "Input file URI" typestr="IO_URI" string optional
+    option "input-encoding" - "Input file encoding" typestr="IO_ENCODING" string optional
 
-    option "output" o "Output file URI" typestr="FILE_URI" string optional
-    option "output-format" - "Force output file format" typestr="FILE_FORMAT" string optional
+    option "output" o "Output file URI" typestr="IO_URI" string optional
     option "output-encoding" - "Output file encoding" typestr="IO_ENCODING" string optional
 
     option "io-frame-len" - "I/O frame length, TIME units" typestr="TIME" string optional
@@ -31,16 +30,16 @@ section "Debugging options"
     option "prof" - "Enable self-profiling" flag off
 
 text "
-FILE_URI defines an absolute or relative file path, e.g.:
-  file:///home/user/test.wav; file:./test.wav; file:-
-  (use 'file://-' for stdout)
+IO_URI is input or output file URI in forms:
+    <driver>://<device>; file://<path>; file:<path>
+  Examples:
+    file:///home/user/test.wav; file:./test.wav; file:-
+  (use 'file://-' for stdin/stdout)
 
-FILE_FORMAT is file format name:
-  wav; ogg; mp3
-  (useful when format can't be auto-detected)
-
-IO_ENCODING is input or output encoding in form <format>/<rate>/<channels>:
-  s16/44100/mono; f32/48000/stereo; -/-/mono
+IO_ENCODING is input or output file encoding in form:
+     <format>[@<subformat>]/<rate>/<channels>
+  Examples:
+    pcm@s16/44100/mono; wav/-/-
   (any component may be '-' to use default value)
 
 TIME defines duration using a number with mandatory suffix:

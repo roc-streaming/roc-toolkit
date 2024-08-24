@@ -44,10 +44,10 @@ namespace {
 const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;
 const audio::ChannelMask Chans_Stereo = audio::ChanMask_Surround_Stereo;
 
-const audio::PcmFormat Format_Raw = audio::Sample_RawFormat;
-const audio::PcmFormat Format_S16_Be = audio::PcmFormat_SInt16_Be;
-const audio::PcmFormat Format_S16_Ne = audio::PcmFormat_SInt16;
-const audio::PcmFormat Format_S32_Ne = audio::PcmFormat_SInt32;
+const audio::PcmSubformat Format_Raw = audio::PcmSubformat_Raw;
+const audio::PcmSubformat Format_S16_Be = audio::PcmSubformat_SInt16_Be;
+const audio::PcmSubformat Format_S16_Ne = audio::PcmSubformat_SInt16;
+const audio::PcmSubformat Format_S32_Ne = audio::PcmSubformat_SInt32;
 
 const rtp::PayloadType PayloadType_Ch1 = rtp::PayloadType_L16_Mono;
 const rtp::PayloadType PayloadType_Ch2 = rtp::PayloadType_L16_Stereo;
@@ -171,19 +171,19 @@ TEST_GROUP(sender_sink) {
     }
 
     void init_with_specs(int input_sample_rate, audio::ChannelMask input_channels,
-                         audio::PcmFormat input_format, int packet_sample_rate,
+                         audio::PcmSubformat input_format, int packet_sample_rate,
                          audio::ChannelMask packet_channels,
-                         audio::PcmFormat packet_format) {
+                         audio::PcmSubformat packet_format) {
+        input_sample_spec.set_format(audio::Format_Pcm);
+        input_sample_spec.set_pcm_subformat(input_format);
         input_sample_spec.set_sample_rate((size_t)input_sample_rate);
-        input_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
-        input_sample_spec.set_pcm_format(input_format);
         input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         input_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
         input_sample_spec.channel_set().set_mask(input_channels);
 
+        packet_sample_spec.set_format(audio::Format_Pcm);
+        packet_sample_spec.set_pcm_subformat(packet_format);
         packet_sample_spec.set_sample_rate((size_t)packet_sample_rate);
-        packet_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
-        packet_sample_spec.set_pcm_format(packet_format);
         packet_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
         packet_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
         packet_sample_spec.channel_set().set_mask(packet_channels);
@@ -308,8 +308,8 @@ TEST(sender_sink, frame_size_large) {
 TEST(sender_sink, channel_mapping_stereo_to_mono) {
     enum { Rate = SampleRate, InputChans = Chans_Stereo, PacketChans = Chans_Mono };
 
-    const audio::PcmFormat InputFormat = Format_Raw;
-    const audio::PcmFormat PacketFormat = Format_S16_Be;
+    const audio::PcmSubformat InputFormat = Format_Raw;
+    const audio::PcmSubformat PacketFormat = Format_S16_Be;
 
     init_with_specs(Rate, InputChans, InputFormat, Rate, PacketChans, PacketFormat);
 
@@ -343,8 +343,8 @@ TEST(sender_sink, channel_mapping_stereo_to_mono) {
 TEST(sender_sink, channel_mapping_mono_to_stereo) {
     enum { Rate = SampleRate, InputChans = Chans_Mono, PacketChans = Chans_Stereo };
 
-    const audio::PcmFormat InputFormat = Format_Raw;
-    const audio::PcmFormat PacketFormat = Format_S16_Be;
+    const audio::PcmSubformat InputFormat = Format_Raw;
+    const audio::PcmSubformat PacketFormat = Format_S16_Be;
 
     init_with_specs(Rate, InputChans, InputFormat, Rate, PacketChans, PacketFormat);
 
@@ -378,8 +378,8 @@ TEST(sender_sink, channel_mapping_mono_to_stereo) {
 TEST(sender_sink, sample_rate_mapping) {
     enum { InputRate = 48000, PacketRate = 44100, Chans = Chans_Stereo };
 
-    const audio::PcmFormat InputFormat = Format_Raw;
-    const audio::PcmFormat PacketFormat = Format_S16_Be;
+    const audio::PcmSubformat InputFormat = Format_Raw;
+    const audio::PcmSubformat PacketFormat = Format_S16_Be;
 
     init_with_specs(InputRate, Chans, InputFormat, PacketRate, Chans, PacketFormat);
 
@@ -413,8 +413,8 @@ TEST(sender_sink, sample_rate_mapping) {
 TEST(sender_sink, format_mapping_s16) {
     enum { Rate = SampleRate, Chans = Chans_Stereo };
 
-    const audio::PcmFormat InputFormat = Format_S16_Ne;
-    const audio::PcmFormat PacketFormat = Format_S16_Be;
+    const audio::PcmSubformat InputFormat = Format_S16_Ne;
+    const audio::PcmSubformat PacketFormat = Format_S16_Be;
 
     init_with_specs(Rate, Chans, InputFormat, Rate, Chans, PacketFormat);
 
@@ -447,8 +447,8 @@ TEST(sender_sink, format_mapping_s16) {
 TEST(sender_sink, format_mapping_s32) {
     enum { Rate = SampleRate, Chans = Chans_Stereo };
 
-    const audio::PcmFormat InputFormat = Format_S32_Ne;
-    const audio::PcmFormat PacketFormat = Format_S16_Be;
+    const audio::PcmSubformat InputFormat = Format_S32_Ne;
+    const audio::PcmSubformat PacketFormat = Format_S16_Be;
 
     init_with_specs(Rate, Chans, InputFormat, Rate, Chans, PacketFormat);
 
@@ -519,8 +519,8 @@ TEST(sender_sink, timestamp_mapping_remixing) {
         PacketChans = Chans_Mono
     };
 
-    const audio::PcmFormat InputFormat = Format_S16_Ne;
-    const audio::PcmFormat PacketFormat = Format_S16_Be;
+    const audio::PcmSubformat InputFormat = Format_S16_Ne;
+    const audio::PcmSubformat PacketFormat = Format_S16_Be;
 
     init_with_specs(InputRate, InputChans, InputFormat, PacketRate, PacketChans,
                     PacketFormat);

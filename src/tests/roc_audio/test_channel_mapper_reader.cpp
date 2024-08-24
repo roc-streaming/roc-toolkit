@@ -115,9 +115,9 @@ TEST_GROUP(channel_mapper_reader) {};
 TEST(channel_mapper_reader, small_read_upmix) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Mono);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     const core::nanoseconds_t start_ts = 1000000;
@@ -146,9 +146,9 @@ TEST(channel_mapper_reader, small_read_upmix) {
 TEST(channel_mapper_reader, small_read_downmix) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     const core::nanoseconds_t start_cts = 1000000;
@@ -177,9 +177,9 @@ TEST(channel_mapper_reader, small_read_downmix) {
 TEST(channel_mapper_reader, small_read_no_cts) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, in_spec);
@@ -205,9 +205,9 @@ TEST(channel_mapper_reader, small_read_no_cts) {
 // Request big frame when upmixing.
 // Duration is capped so that both input and output frames could fit max size.
 TEST(channel_mapper_reader, big_read_upmix) {
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Mono);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     const core::nanoseconds_t start_cts = 1000000;
@@ -247,9 +247,9 @@ TEST(channel_mapper_reader, big_read_upmix) {
 // Request big frame when downmixing.
 // Duration is capped so that both input and output frames could fit max size.
 TEST(channel_mapper_reader, big_read_downmix) {
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     const core::nanoseconds_t start_cts = 1000000;
@@ -289,9 +289,9 @@ TEST(channel_mapper_reader, big_read_downmix) {
 // Same as above, but input frames don't have CTS
 // (because we don't call enable_timestamps).
 TEST(channel_mapper_reader, big_read_no_cts) {
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Stereo);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Mono);
 
     test::MockReader mock_reader(frame_factory, in_spec);
@@ -324,9 +324,9 @@ TEST(channel_mapper_reader, big_read_no_cts) {
 TEST(channel_mapper_reader, forward_mode) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Mono);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     test::MockReader mock_reader(frame_factory, in_spec);
@@ -352,9 +352,9 @@ TEST(channel_mapper_reader, forward_mode) {
 TEST(channel_mapper_reader, forward_error) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Mono);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     test::MockReader mock_reader(frame_factory, in_spec);
@@ -378,9 +378,9 @@ TEST(channel_mapper_reader, forward_error) {
 TEST(channel_mapper_reader, forward_partial) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Mono);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     test::MockReader mock_reader(frame_factory, in_spec);
@@ -402,9 +402,9 @@ TEST(channel_mapper_reader, forward_partial) {
 TEST(channel_mapper_reader, preallocated_buffer) {
     enum { FrameSz = MaxSz / 2 };
 
-    const SampleSpec in_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec in_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                              ChanOrder_Smpte, ChanMask_Surround_Mono);
-    const SampleSpec out_spec(MaxSz, Sample_RawFormat, ChanLayout_Surround,
+    const SampleSpec out_spec(MaxSz, PcmSubformat_Raw, ChanLayout_Surround,
                               ChanOrder_Smpte, ChanMask_Surround_Stereo);
 
     const size_t buffer_list[] = {

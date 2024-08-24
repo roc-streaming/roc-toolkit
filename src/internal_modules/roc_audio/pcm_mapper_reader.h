@@ -26,7 +26,7 @@ namespace audio {
 //! PCM mapper reader.
 //! Reads frames from nested reader and maps them to another PCM format.
 //! @remarks
-//!  - Either input or output format must be raw samples (Sample_RawFormat).
+//!  - Either input or output format must be raw samples (PcmSubformat_Raw).
 //!  - Both input and output formats must be byte-aligned.
 class PcmMapperReader : public IFrameReader, public core::NonCopyable<> {
 public:

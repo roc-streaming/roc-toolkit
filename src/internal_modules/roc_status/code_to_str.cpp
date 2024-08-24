@@ -34,6 +34,8 @@ const char* code_to_str(StatusCode code) {
         return "NoRoute";
     case StatusNoDriver:
         return "NoDriver";
+    case StatusNoFormat:
+        return "NoFormat";
     case StatusNoPlugin:
         return "NoPlugin";
     case StatusErrDevice:

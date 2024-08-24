@@ -4,7 +4,7 @@ import os.path
 import subprocess
 
 def format_name(encoding, endian):
-    return 'PcmFormat_' + \
+    return 'PcmSubformat_' + \
         encoding['pcm_encoding'] + '_' + endian['pcm_endian']
 
 def format_array(array, maxlen=8, indent=1):

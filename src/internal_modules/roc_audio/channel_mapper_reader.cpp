@@ -25,9 +25,9 @@ ChannelMapperReader::ChannelMapperReader(IFrameReader& frame_reader,
     , in_spec_(in_spec)
     , out_spec_(out_spec)
     , init_status_(status::NoStatus) {
-    if (!in_spec_.is_valid() || !out_spec_.is_valid() || !in_spec_.is_raw()
+    if (!in_spec_.is_complete() || !out_spec_.is_complete() || !in_spec_.is_raw()
         || !out_spec_.is_raw()) {
-        roc_panic("channel mapper reader: required valid sample specs with raw format:"
+        roc_panic("channel mapper reader: required complete sample specs with raw format:"
                   " in_spec=%s out_spec=%s",
                   sample_spec_to_str(in_spec_).c_str(),
                   sample_spec_to_str(out_spec_).c_str());

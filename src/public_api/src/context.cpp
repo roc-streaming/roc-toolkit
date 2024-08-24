@@ -89,7 +89,7 @@ int roc_context_register_encoding(roc_context* context,
     enc.payload_type = (unsigned int)encoding_id;
     enc.packet_flags = packet::Packet::FlagAudio;
 
-    if (!api::sample_spec_from_user(enc.sample_spec, *encoding, true)) {
+    if (!api::sample_spec_from_user(enc.sample_spec, *encoding)) {
         roc_log(
             LogError,
             "roc_context_register_encoding(): invalid arguments: encoding is invalid");

@@ -28,22 +28,21 @@ namespace sndio {
 
 //! SoX sink.
 //! @remarks
-//!  Writes samples to output file or device.
-//!  Supports multiple drivers for different file types and audio systems.
+//!  Writes samples to output device.
+//!  Supports multiple drivers for different audio systems.
+//!  Does not support files.
 class SoxSink : public ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
     SoxSink(audio::FrameFactory& frame_factory,
             core::IArena& arena,
             const IoConfig& io_config,
-            DriverType driver_type);
+            const char* driver,
+            const char* path);
     ~SoxSink();
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
-
-    //! Open sink.
-    ROC_ATTR_NODISCARD status::StatusCode open(const char* driver, const char* path);
 
     //! Get device type.
     virtual DeviceType type() const;
@@ -56,6 +55,9 @@ public:
 
     //! Get sample specification of the sink.
     virtual audio::SampleSpec sample_spec() const;
+
+    //! Get recommended frame length of the sink.
+    virtual core::nanoseconds_t frame_length() const;
 
     //! Check if the sink supports state updates.
     virtual bool has_state() const;
@@ -95,9 +97,8 @@ private:
     status::StatusCode write_(const sox_sample_t* samples, size_t n_samples);
     status::StatusCode close_();
 
-    const DriverType driver_type_;
-    core::StringBuffer driver_name_;
-    core::StringBuffer output_name_;
+    core::StringBuffer driver_;
+    core::StringBuffer path_;
 
     sox_format_t* output_;
     sox_signalinfo_t out_signal_;
@@ -105,7 +106,9 @@ private:
     core::Array<sox_sample_t> buffer_;
     size_t buffer_size_;
     core::nanoseconds_t frame_length_;
-    audio::SampleSpec sample_spec_;
+
+    audio::SampleSpec frame_spec_;
+    audio::SampleSpec out_spec_;
 
     bool paused_;
 

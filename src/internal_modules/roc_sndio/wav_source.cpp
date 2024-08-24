@@ -7,6 +7,7 @@
  */
 
 #include "roc_sndio/wav_source.h"
+#include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_status/code_to_str.h"
@@ -14,24 +15,52 @@
 namespace roc {
 namespace sndio {
 
+namespace {
+
+size_t file_read(void* file, void* buf, size_t bufsz) {
+    return fread(buf, 1, bufsz, (FILE*)file);
+}
+
+drwav_bool32 file_seek(void* file, int offset, drwav_seek_origin origin) {
+    return fseek((FILE*)file, offset,
+                 origin == drwav_seek_origin_current ? SEEK_CUR : SEEK_SET)
+        == 0;
+}
+
+} // namespace
+
 WavSource::WavSource(audio::FrameFactory& frame_factory,
                      core::IArena& arena,
-                     const IoConfig& io_config)
+                     const IoConfig& io_config,
+                     const char* path)
     : IDevice(arena)
     , ISource(arena)
     , frame_factory_(frame_factory)
-    , file_opened_(false)
+    , input_file_(NULL)
     , eof_(false)
     , init_status_(status::NoStatus) {
-    if (io_config.latency != 0) {
-        roc_log(LogError, "wav source: setting io latency not supported by backend");
+    if (io_config.sample_spec.has_format()) {
+        if (io_config.sample_spec.format() != audio::Format_Wav) {
+            roc_log(LogDebug,
+                    "wav source: requested format '%s' not supported by backend: spec=%s",
+                    io_config.sample_spec.format_name(),
+                    audio::sample_spec_to_str(io_config.sample_spec).c_str());
+            // Not a wav file, go to next backend.
+            init_status_ = status::StatusNoFormat;
+            return;
+        }
+    }
+
+    if (io_config.sample_spec.has_subformat() || io_config.sample_spec.has_sample_rate()
+        || io_config.sample_spec.has_channel_set()) {
+        roc_log(LogError,
+                "wav source: invalid io encoding: <subformat>, <rate> and <channels>"
+                " not allowed for input file when <format> is 'wav', set them to \"-\"");
         init_status_ = status::StatusBadConfig;
         return;
     }
 
-    if (!io_config.sample_spec.is_empty()) {
-        roc_log(LogError, "wav source: setting io encoding not supported by backend");
-        init_status_ = status::StatusBadConfig;
+    if ((init_status_ = open_(path)) != status::StatusOK) {
         return;
     }
 
@@ -50,10 +79,6 @@ status::StatusCode WavSource::init_status() const {
     return init_status_;
 }
 
-status::StatusCode WavSource::open(const char* path) {
-    return open_(path);
-}
-
 DeviceType WavSource::type() const {
     return DeviceType_Source;
 }
@@ -67,11 +92,15 @@ ISource* WavSource::to_source() {
 }
 
 audio::SampleSpec WavSource::sample_spec() const {
-    if (!file_opened_) {
+    if (!input_file_) {
         roc_panic("wav source: not opened");
     }
 
     return sample_spec_;
+}
+
+core::nanoseconds_t WavSource::frame_length() const {
+    return 0;
 }
 
 bool WavSource::has_state() const {
@@ -89,11 +118,11 @@ bool WavSource::has_clock() const {
 status::StatusCode WavSource::rewind() {
     roc_log(LogDebug, "wav source: rewinding");
 
-    if (!file_opened_) {
+    if (!input_file_) {
         roc_panic("wav source: not opened");
     }
 
-    if (!drwav_seek_to_pcm_frame(&wav_, 0)) {
+    if (!drwav_seek_to_pcm_frame(&wav_decoder_, 0)) {
         roc_log(LogError, "wav source: seek failed");
         return status::StatusErrFile;
     }
@@ -110,7 +139,7 @@ void WavSource::reclock(core::nanoseconds_t timestamp) {
 status::StatusCode WavSource::read(audio::Frame& frame,
                                    packet::stream_timestamp_t duration,
                                    audio::FrameReadMode mode) {
-    if (!file_opened_) {
+    if (!input_file_) {
         roc_panic("wav source: not opened");
     }
 
@@ -132,9 +161,15 @@ status::StatusCode WavSource::read(audio::Frame& frame,
     while (frame_left != 0) {
         size_t n_samples = frame_left;
 
-        n_samples =
-            drwav_read_pcm_frames_f32(&wav_, n_samples / wav_.channels, frame_data)
-            * wav_.channels;
+        n_samples = drwav_read_pcm_frames_f32(
+                        &wav_decoder_, n_samples / wav_decoder_.channels, frame_data)
+            * wav_decoder_.channels;
+
+        if (ferror(input_file_)) {
+            roc_log(LogError, "wav source: can't read input file: %s",
+                    core::errno_to_str(errno).c_str());
+            return status::StatusErrFile;
+        }
 
         if (n_samples == 0) {
             roc_log(LogDebug, "wav source: got eof from input file");
@@ -152,7 +187,8 @@ status::StatusCode WavSource::read(audio::Frame& frame,
     }
 
     frame.set_num_raw_samples(frame_size);
-    frame.set_duration(frame_size / sample_spec_.num_channels());
+    frame.set_duration(
+        packet::stream_timestamp_t(frame_size / sample_spec_.num_channels()));
 
     if (frame.duration() < duration) {
         return status::StatusPart;
@@ -170,46 +206,63 @@ void WavSource::dispose() {
 }
 
 status::StatusCode WavSource::open_(const char* path) {
-    if (file_opened_) {
-        roc_panic("wav source: already opened");
+    roc_log(LogDebug, "wav source: opening: path=%s", path);
+
+    if (strcmp(path, "-") == 0) {
+        input_file_ = stdin;
+    } else {
+        if (!(input_file_ = fopen(path, "rb"))) {
+            roc_log(LogError, "wav source: can't open input file: %s",
+                    core::errno_to_str(errno).c_str());
+            return status::StatusErrFile;
+        }
     }
 
-    if (!drwav_init_file(&wav_, path, NULL)) {
-        roc_log(LogDebug, "wav sink: can't open input file: %s",
-                core::errno_to_str(errno).c_str());
-        return status::StatusErrFile;
+    if (!drwav_init(&wav_decoder_, &file_read, &file_seek, input_file_, NULL)) {
+        roc_log(LogDebug, "wav source: can't recognize input file format");
+        if (input_file_ != stdin) {
+            fclose(input_file_);
+        }
+        input_file_ = NULL;
+        return status::StatusNoFormat;
     }
 
-    roc_log(LogInfo,
-            "wav source: opened input file:"
-            " path=%s in_bits=%lu in_rate=%lu in_ch=%lu",
-            path, (unsigned long)wav_.bitsPerSample, (unsigned long)wav_.sampleRate,
-            (unsigned long)wav_.channels);
-
-    sample_spec_.set_sample_rate((size_t)wav_.sampleRate);
-    sample_spec_.set_sample_format(audio::SampleFormat_Pcm);
-    sample_spec_.set_pcm_format(audio::Sample_RawFormat);
+    sample_spec_.set_format(audio::Format_Pcm);
+    sample_spec_.set_pcm_subformat(audio::PcmSubformat_Raw);
+    sample_spec_.set_sample_rate((size_t)wav_decoder_.sampleRate);
     sample_spec_.channel_set().set_layout(audio::ChanLayout_Surround);
     sample_spec_.channel_set().set_order(audio::ChanOrder_Smpte);
-    sample_spec_.channel_set().set_count((size_t)wav_.channels);
+    sample_spec_.channel_set().set_count((size_t)wav_decoder_.channels);
 
-    file_opened_ = true;
+    roc_log(LogInfo, "wav source: opened input file: %s",
+            audio::sample_spec_to_str(sample_spec_).c_str());
 
     return status::StatusOK;
 }
 
 status::StatusCode WavSource::close_() {
-    if (!file_opened_) {
+    if (!input_file_) {
         return status::StatusOK;
     }
 
-    roc_log(LogInfo, "sndfile source: closing input file");
+    roc_log(LogInfo, "wav source: closing input file");
 
-    file_opened_ = false;
-
-    if (drwav_uninit(&wav_) != DRWAV_SUCCESS) {
+    if (drwav_uninit(&wav_decoder_) != DRWAV_SUCCESS) {
         roc_log(LogError, "wav source: can't properly close input file");
         return status::StatusErrFile;
+    }
+
+    if (input_file_ == stdin) {
+        input_file_ = NULL;
+    } else {
+        const int err = fclose(input_file_);
+        input_file_ = NULL;
+
+        if (err != 0) {
+            roc_log(LogError, "wav source: can't properly close input file: %s",
+                    core::errno_to_str(errno).c_str());
+            return status::StatusErrFile;
+        }
     }
 
     return status::StatusOK;

@@ -60,9 +60,6 @@ List supported protocols, formats, etc.
 .BI \-i\fP,\fB  \-\-input\fB= IO_URI
 Input file or device URI
 .TP
-.BI \-\-input\-format\fB= FILE_FORMAT
-Force input file format
-.TP
 .BI \-\-io\-encoding\fB= IO_ENCODING
 Input device encoding
 .TP
@@ -205,44 +202,50 @@ The list of supported schemes and file formats can be retrieved using \fB\-\-lis
 .sp
 If the \fB\-\-input\fP is omitted, the default driver and device are selected.
 .sp
-The \fB\-\-input\-format\fP option can be used to force the input file format. If it is omitted, the file format is auto\-detected. This option is always required when the input is stdin.
-.sp
 The path component of the provided URI is \fI\%percent\-decoded\fP\&. For convenience, unencoded characters are allowed as well, except that \fB%\fP should be always encoded as \fB%25\fP\&.
 .sp
 For example, the file named \fB/foo/bar%/[baz]\fP may be specified using either of the following URIs: \fBfile:///foo%2Fbar%25%2F%5Bbaz%5D\fP and \fBfile:///foo/bar%25/[baz]\fP\&.
 .SS I/O encoding
 .sp
-\fB\-\-io\-encoding\fP option allows to explicitly specify encoding of the input device. It can\(aqt be used if input is a file.
+\fB\-\-io\-encoding\fP option allows to explicitly specify encoding of the input file or device.
 .sp
-This option is useful when device supports multiple encodings. Note that I/O encoding may be different from network packet encoding. Necessary conversions will be applied automatically.
+This option is useful when device supports multiple encodings, or file encoding can\(aqt be detected automatically (e.g. file doesn\(aqt have extension or uses header\-less format like raw PCM). Note that I/O encoding may be different from network packet encoding. Necessary conversions will be applied automatically.
 .sp
 \fIIO_ENCODING\fP should have the following form:
 .sp
-\fB<format>/<rate>/<channels>\fP
+\fB<format>[@<subformat>]/<rate>/<channels>\fP
 .sp
 Where:
 .INDENT 0.0
 .IP \(bu 2
-\fBformat\fP defines sample precision and binary representation, e.g. \fBs16_le\fP stands for little\-endian signed 16\-bit integers
+\fBformat\fP defines container format, e.g. \fBpcm\fP (raw samples), \fBwav\fP, \fBogg\fP
+.IP \(bu 2
+\fBsubformat\fP is optional format\-dependent codec, e.g. \fBs16\fP for \fBpcm\fP or \fBwav\fP, and \fBvorbis\fP for \fBogg\fP
 .IP \(bu 2
 \fBrate\fP defines sample rate in Hertz (number of samples per second), e.g. \fB48000\fP
 .IP \(bu 2
 \fBchannels\fP defines channel layout, e.g. \fBmono\fP or \fBstereo\fP
 .UNINDENT
 .sp
-Any component may be set to special value \fB\-\fP, which means use default value for the specified input device.
+\fBformat\fP, \fBrate\fP, and \fBchannels\fP may be set to special value \fB\-\fP, which means using default value for input device, or auto\-detect value for input file.
+.sp
+Whether \fBsubformat\fP is required, allowed, and what values are accepted, depends on \fBformat\fP\&.
 .sp
 Examples:
 .INDENT 0.0
 .IP \(bu 2
-\fBs16/44100/mono\fP \-\- 16\-bit native\-endian integers, 44.1KHz, 1 channel
+\fBpcm@s16/44100/mono\fP \-\- PCM, 16\-bit native\-endian integers, 44.1KHz, 1 channel
 .IP \(bu 2
-\fBf32_le/48000/stereo\fP \-\- 32\-bit little\-endian floats, 48KHz, 2 channels
+\fBpcm@f32_le/48000/stereo\fP \-\- PCM, 32\-bit little\-endian floats, 48KHz, 2 channels
 .IP \(bu 2
-\fBs24_4be/\-/\-\fP \-\- 24\-bit PCM packed into 4\-byte big\-endian frames, default rate and channels
+\fBwav/\-/\-\fP \-\- WAV file, auto\-detect sub\-format, rate, channels
+.IP \(bu 2
+\fBflac\-/\-/\-\fP \-\- FLAC file, auto\-detect sub\-format, rate, channels
 .UNINDENT
 .sp
-The list of supported formats and channel layouts can be retrieved using \fB\-\-list\-supported\fP option.
+Devices (\fBpulse://\fP, \fBalsa://\fP, etc.) usually support only \fBpcm\fP format. Files (\fBfile://\fP) support a lot of different formats.
+.sp
+The list of supported formats, sub\-formats, and channel layouts can be retrieved using \fB\-\-list\-supported\fP option.
 .SS I/O latency and frame
 .sp
 \fB\-\-io\-latency\fP option defines I/O buffer size for the input device. It can\(aqt be used if input is a file.
@@ -307,26 +310,32 @@ Supported control protocols:
 .sp
 \fIPKT_ENCODING\fP is similar to \fIIO_ENCODING\fP, but adds numeric encoding identifier:
 .sp
-\fB<id>:<format>/<rate>/<channels>\fP
+\fB<id>:<format>[@<subformat>]/<rate>/<channels>\fP
 .sp
 Where:
 .INDENT 0.0
 .IP \(bu 2
 \fBid\fP is an arbitrary number in range 100..127, which should uniquely identify encoding on all related senders and receivers
 .IP \(bu 2
-\fBformat\fP defines sample precision and binary representation, e.g. \fBs16_le\fP stands for little\-endian signed 16\-bit integers
+\fBformat\fP defines container format, e.g. \fBpcm\fP (raw samples), \fBflac\fP
+.IP \(bu 2
+\fBsubformat\fP is optional format\-dependent codec, e.g. \fBs16\fP for \fBpcm\fP or \fBflac\fP
 .IP \(bu 2
 \fBrate\fP defines sample rate in Hertz (number of samples per second), e.g. \fB48000\fP
 .IP \(bu 2
 \fBchannels\fP defines channel layout, e.g. \fBmono\fP or \fBstereo\fP
 .UNINDENT
 .sp
+Whether \fBsubformat\fP is required, allowed, and what values are accepted, depends on \fBformat\fP\&.
+.sp
 Examples:
 .INDENT 0.0
 .IP \(bu 2
-\fB101:s16_be/44100/mono\fP \-\- 16\-bit big\-endian integers, 44.1KHz, 1 channel
+\fB101:pcm@s24/44100/mono\fP \-\- PCM, 24\-bit network\-endian integers, 44.1KHz, 1 channel
 .IP \(bu 2
-\fB102:f32_le/48000/stereo\fP \-\- 32\-bit little\-endian floats, 48KHz, 2 channels
+\fB102:pcm@f32/48000/stereo\fP \-\- PCM, 32\-bit network\-endian floats, 48KHz, 2 channels
+.IP \(bu 2
+\fB103:flac@s16/48000/stereo\fP \-\- FLAC, 16\-bit precision, 48KHz, 2 channels
 .UNINDENT
 .sp
 The list of supported formats and channel layouts can be retrieved using \fB\-\-list\-supported\fP option.
@@ -343,9 +352,9 @@ If you specify custom packet encoding on sender(s), and don\(aqt use signaling p
 .IP \(bu 2
 \fBnone\fP \-\- don\(aqt use FEC
 .IP \(bu 2
-\fBrs8m\fP \-\- Reed\-Solomon codec
+\fBrs8m\fP \-\- Reed\-Solomon codec \-\- good for small block size / latency, requires more CPU
 .IP \(bu 2
-\fBldpc\fP \-\- LDPC\-Staircase codec
+\fBldpc\fP \-\- LDPC\-Staircase codec \-\- good for large block size / latency, requires less CPU
 .UNINDENT
 .sp
 The list of supported FEC encodings and related protocols \fB\-\-list\-supported\fP option.
@@ -386,7 +395,7 @@ A few backends are available:
 .sp
 Here, quality reflects potential distortions introduced by resampler, and precision reflects how accurately resampler can apply scaling and hence how accurately we can tune latency.
 .sp
-For very low latency or very low latency error, you usually need to use \fBbuiltin\fP backend. If those factors are not critical, you may use \fBspeex\fP resampler to reduce CPU usage. \fBspeexdec\fP backend is a compromise for situations when both CPU usage and latency are critical, and quality is less important.
+For very low or very precise latency, you usually need to use \fBbuiltin\fP backend. If those factors are not critical, you may use \fBspeex\fP resampler to reduce CPU usage. \fBspeexdec\fP backend is a compromise for situations when both CPU usage and latency are critical, and quality is less important.
 .sp
 If sender\-side latency tuning is disabled (which is the default), resampler precision is not relevant, and \fBspeex\fP is almost always the best choice.
 .SS Latency configuration
@@ -400,9 +409,9 @@ Sender\-side latency tuning requires latency parameters (target, start, min, and
 \fB\-\-target\-latency\fP option defines the latency value to maintain, as measured by the \fB\-\-latency\-backend\fP:
 .INDENT 0.0
 .IP \(bu 2
-If value is provided, \fBfixed latency\fP mode is activated. The latency starts from \fB\-\-target\-latency\fP and is kept close to that value.
+If value is provided, \fIfixed latency\fP mode is activated. The latency starts from \fB\-\-target\-latency\fP and is kept close to that value.
 .IP \(bu 2
-If option is omitted or set to \fBauto\fP, \fBadaptive latency\fP mode is activated. The latency is chosen dynamically. Initial latency is \fB\-\-start\-latency\fP, and the allowed range is \fB\-\-min\-latency\fP to \fB\-\-max\-latency\fP\&.
+If option is omitted or set to \fBauto\fP, \fIadaptive latency\fP mode is activated. The latency is chosen dynamically. Initial latency is \fB\-\-start\-latency\fP, and the allowed range is \fB\-\-min\-latency\fP to \fB\-\-max\-latency\fP\&.
 .UNINDENT
 .sp
 \fB\-\-latency\-tolerance\fP option defines maximum allowed deviation of the actual latency from the (current) target latency. If this limit is exceeded for some reason (typically due to poor network conditions), connection is restarted.
@@ -499,7 +508,7 @@ $ roc\-send \-vv \-i file:./input.wav \-s rtp+rs8m://[2001:db8::]:10001 \e
 .UNINDENT
 .UNINDENT
 .sp
-Send file to two receivers, each with three endpoints:
+Send file to two destinations (\(dqslots\(dq), each with three endpoints:
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -571,7 +580,7 @@ Send WAV file (specify format manually):
 .sp
 .nf
 .ft C
-$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-i file:./input.file \-\-input\-format wav
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-i file:./input.file \-\-io\-encoding wav/\-/\-
 .ft P
 .fi
 .UNINDENT
@@ -583,7 +592,7 @@ Send WAV from stdin:
 .sp
 .nf
 .ft C
-$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-i file:\- \-\-input\-format wav <./input.wav
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-i file:\- \-\-io\-encoding wav/\-/\- <./input.wav
 .ft P
 .fi
 .UNINDENT
@@ -609,7 +618,20 @@ Force specific encoding on the input device:
 .nf
 .ft C
 $ roc\-send \-vv \-s rtp://192.168.0.3:10001 \e
-    \-\-input alsa://hw:1,0 \-\-io\-encoding s32/48000/stereo
+    \-\-input alsa://hw:1,0 \-\-io\-encoding pcm@s32/48000/stereo
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Force specific encoding on the input file:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \e
+    \-\-input file:./input.pcm \-\-io\-encoding pcm@s32/48000/stereo
 .ft P
 .fi
 .UNINDENT
@@ -621,7 +643,7 @@ Use specific encoding for network packets:
 .sp
 .nf
 .ft C
-$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-\-packet\-encoding 101:s32/48000/stereo
+$ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-\-packet\-encoding 101:pcm@s24/48000/stereo
 .ft P
 .fi
 .UNINDENT
@@ -631,7 +653,7 @@ $ roc\-send \-vv \-s rtp://192.168.0.3:10001 \-\-packet\-encoding 101:s32/48000/
 .sp
 .nf
 .ft C
-$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-\-packet\-encoding 101:s32/48000/stereo
+$ roc\-recv \-vv \-s rtp://0.0.0.0:10001 \-\-packet\-encoding 101:pcm@s24/48000/stereo
 .ft P
 .fi
 .UNINDENT

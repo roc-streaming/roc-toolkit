@@ -59,7 +59,7 @@ core::SlabPool<core::Buffer> big_frame_buffer_pool("big_frame_buffer_pool",
 audio::FrameFactory big_frame_factory(frame_pool, big_frame_buffer_pool);
 
 const audio::SampleSpec sample_spec(SampleRate,
-                                    audio::Sample_RawFormat,
+                                    audio::PcmSubformat_Raw,
                                     audio::ChanLayout_Surround,
                                     audio::ChanOrder_Smpte,
                                     Chans);

@@ -7,7 +7,7 @@
  */
 
 #include "roc_audio/pcm_mapper_reader.h"
-#include "roc_audio/sample_format.h"
+#include "roc_audio/format.h"
 #include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -25,10 +25,9 @@ PcmMapperReader::PcmMapperReader(IFrameReader& frame_reader,
     , out_spec_(out_spec)
     , num_ch_(out_spec.num_channels())
     , init_status_(status::NoStatus) {
-    if (!in_spec_.is_valid() || !out_spec_.is_valid()
-        || in_spec_.sample_format() != SampleFormat_Pcm
-        || out_spec_.sample_format() != SampleFormat_Pcm) {
-        roc_panic("pcm mapper reader: required valid sample specs with pcm format:"
+    if (!in_spec_.is_complete() || !out_spec_.is_complete()
+        || in_spec_.format() != Format_Pcm || out_spec_.format() != Format_Pcm) {
+        roc_panic("pcm mapper reader: required complete sample specs with pcm format:"
                   " in_spec=%s out_spec=%s",
                   sample_spec_to_str(in_spec_).c_str(),
                   sample_spec_to_str(out_spec_).c_str());
@@ -49,7 +48,8 @@ PcmMapperReader::PcmMapperReader(IFrameReader& frame_reader,
             sample_spec_to_str(in_spec_).c_str(), sample_spec_to_str(out_spec_).c_str());
     }
 
-    mapper_.reset(new (mapper_) PcmMapper(in_spec_.pcm_format(), out_spec_.pcm_format()));
+    mapper_.reset(new (mapper_)
+                      PcmMapper(in_spec_.pcm_subformat(), out_spec_.pcm_subformat()));
 
     if (mapper_->input_bit_count(1) % 8 != 0 || mapper_->output_bit_count(1) % 8 != 0) {
         roc_panic("pcm mapper reader: unsupported not byte-aligned encoding:"

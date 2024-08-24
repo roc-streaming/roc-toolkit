@@ -30,14 +30,12 @@ public:
     //! Initialize.
     WavSink(audio::FrameFactory& frame_factory,
             core::IArena& arena,
-            const IoConfig& io_config);
+            const IoConfig& io_config,
+            const char* path);
     ~WavSink();
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
-
-    //! Open sink.
-    ROC_ATTR_NODISCARD status::StatusCode open(const char* device);
 
     //! Get device type.
     virtual DeviceType type() const;
@@ -50,6 +48,9 @@ public:
 
     //! Get sample specification of the sink.
     virtual audio::SampleSpec sample_spec() const;
+
+    //! Get recommended frame length of the sink.
+    virtual core::nanoseconds_t frame_length() const;
 
     //! Check if the sink supports state updates.
     virtual bool has_state() const;
@@ -76,7 +77,8 @@ private:
     status::StatusCode open_(const char* path);
     status::StatusCode close_();
 
-    audio::SampleSpec sample_spec_;
+    audio::SampleSpec frame_spec_;
+    audio::SampleSpec file_spec_;
 
     FILE* output_file_;
     core::Optional<WavHeader> header_;

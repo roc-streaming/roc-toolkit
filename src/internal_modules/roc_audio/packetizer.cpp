@@ -34,8 +34,8 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , packet_cts_(0)
     , capture_ts_(0)
     , init_status_(status::NoStatus) {
-    roc_panic_if_msg(!sample_spec_.is_valid() || !sample_spec_.is_raw(),
-                     "packetizer: required valid sample spec with raw format: %s",
+    roc_panic_if_msg(!sample_spec_.is_complete() || !sample_spec_.is_raw(),
+                     "packetizer: required complete sample spec with raw format: %s",
                      sample_spec_to_str(sample_spec_).c_str());
 
     if (packet_length <= 0 || sample_spec.ns_2_stream_timestamp(packet_length) <= 0) {

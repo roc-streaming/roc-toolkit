@@ -28,9 +28,9 @@ ResamplerWriter::ResamplerWriter(IFrameWriter& frame_writer,
     , out_frame_pos_(0)
     , scaling_(1.f)
     , init_status_(status::NoStatus) {
-    if (!in_spec_.is_valid() || !out_spec_.is_valid() || !in_spec_.is_raw()
+    if (!in_spec_.is_complete() || !out_spec_.is_complete() || !in_spec_.is_raw()
         || !out_spec_.is_raw()) {
-        roc_panic("resampler writer: required valid sample specs with raw format:"
+        roc_panic("resampler writer: required complete sample specs with raw format:"
                   " in_spec=%s out_spec=%s",
                   sample_spec_to_str(in_spec_).c_str(),
                   sample_spec_to_str(out_spec_).c_str());

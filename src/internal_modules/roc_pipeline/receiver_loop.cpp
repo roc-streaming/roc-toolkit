@@ -157,6 +157,12 @@ audio::SampleSpec ReceiverLoop::sample_spec() const {
     return source_.sample_spec();
 }
 
+core::nanoseconds_t ReceiverLoop::frame_length() const {
+    core::Mutex::Lock lock(source_mutex_);
+
+    return source_.frame_length();
+}
+
 bool ReceiverLoop::has_state() const {
     core::Mutex::Lock lock(source_mutex_);
 

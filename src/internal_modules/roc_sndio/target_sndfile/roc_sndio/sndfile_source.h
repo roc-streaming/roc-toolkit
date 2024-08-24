@@ -12,8 +12,6 @@
 #ifndef ROC_SNDIO_SNDFILE_SOURCE_H_
 #define ROC_SNDIO_SNDFILE_SOURCE_H_
 
-#include <sndfile.h>
-
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/iarena.h"
@@ -21,6 +19,8 @@
 #include "roc_core/string_buffer.h"
 #include "roc_sndio/io_config.h"
 #include "roc_sndio/isource.h"
+
+#include <sndfile.h>
 
 namespace roc {
 namespace sndio {
@@ -34,14 +34,12 @@ public:
     //! Initialize.
     SndfileSource(audio::FrameFactory& frame_factory,
                   core::IArena& arena,
-                  const IoConfig& io_config);
+                  const IoConfig& io_config,
+                  const char* path);
     ~SndfileSource();
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
-
-    //! Open source.
-    ROC_ATTR_NODISCARD status::StatusCode open(const char* driver, const char* path);
 
     //! Get device type.
     virtual DeviceType type() const;
@@ -54,6 +52,9 @@ public:
 
     //! Get sample specification of the source.
     virtual audio::SampleSpec sample_spec() const;
+
+    //! Get recommended frame length of the source.
+    virtual core::nanoseconds_t frame_length() const;
 
     //! Check if the source supports state updates.
     virtual bool has_state() const;
@@ -90,7 +91,9 @@ private:
 
     audio::FrameFactory& frame_factory_;
 
-    audio::SampleSpec sample_spec_;
+    audio::SampleSpec requested_spec_;
+    audio::SampleSpec file_spec_;
+    audio::SampleSpec frame_spec_;
 
     SNDFILE* file_;
     SF_INFO file_info_;

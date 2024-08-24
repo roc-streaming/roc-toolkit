@@ -147,6 +147,7 @@ private:
     virtual sndio::ISink* to_sink();
     virtual sndio::ISource* to_source();
     virtual audio::SampleSpec sample_spec() const;
+    virtual core::nanoseconds_t frame_length() const;
     virtual bool has_state() const;
     virtual sndio::DeviceState state() const;
     virtual status::StatusCode pause();

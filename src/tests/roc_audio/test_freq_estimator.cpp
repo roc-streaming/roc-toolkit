@@ -24,7 +24,7 @@ const LatencyTunerProfile profile_list[] = { LatencyTunerProfile_Responsive,
                                              LatencyTunerProfile_Gradual };
 
 const SampleSpec sample_spec(44100,
-                             Sample_RawFormat,
+                             PcmSubformat_Raw,
                              ChanLayout_Surround,
                              ChanOrder_Smpte,
                              ChanMask_Surround_Mono);

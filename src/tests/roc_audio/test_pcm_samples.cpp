@@ -59,8 +59,8 @@ TEST(pcm_samples, decode) {
     for (size_t idx = 0; idx < ROC_ARRAY_SIZE(test_samples); idx++) {
         roc_log(LogDebug, "mapping %s to raw samples", test_samples[idx]->name);
 
-        PcmFormat in_fmt = test_samples[idx]->format;
-        PcmFormat out_fmt = Sample_RawFormat;
+        PcmSubformat in_fmt = test_samples[idx]->format;
+        PcmSubformat out_fmt = PcmSubformat_Raw;
 
         PcmMapper mapper(in_fmt, out_fmt);
 
@@ -103,8 +103,8 @@ TEST(pcm_samples, encode_decode) {
         { // encode
             roc_log(LogDebug, "mapping raw samples to %s", test_samples[idx]->name);
 
-            PcmFormat in_fmt = Sample_RawFormat;
-            PcmFormat out_fmt = test_samples[idx]->format;
+            PcmSubformat in_fmt = PcmSubformat_Raw;
+            PcmSubformat out_fmt = test_samples[idx]->format;
 
             PcmMapper mapper(in_fmt, out_fmt);
 
@@ -135,8 +135,8 @@ TEST(pcm_samples, encode_decode) {
         { // decode
             roc_log(LogDebug, "mapping %s to raw samples", test_samples[idx]->name);
 
-            PcmFormat in_fmt = test_samples[idx]->format;
-            PcmFormat out_fmt = Sample_RawFormat;
+            PcmSubformat in_fmt = test_samples[idx]->format;
+            PcmSubformat out_fmt = PcmSubformat_Raw;
 
             PcmMapper mapper(in_fmt, out_fmt);
 

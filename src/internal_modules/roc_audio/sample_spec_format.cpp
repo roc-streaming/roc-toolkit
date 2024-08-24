@@ -15,11 +15,14 @@ void format_sample_spec(const SampleSpec& sample_spec, core::StringBuilder& bld)
     bld.append_str("<sspec rate=");
     bld.append_uint(sample_spec.sample_rate(), 10);
     bld.append_str(" fmt=<");
-    bld.append_str(sample_format_to_str(sample_spec.sample_format()));
-    if (sample_spec.sample_format() == SampleFormat_Pcm) {
-        const char* str = pcm_format_to_str(sample_spec.pcm_format());
+    if (sample_spec.has_format()) {
+        bld.append_str(sample_spec.format_name());
+    } else {
+        bld.append_str("none");
+    }
+    if (sample_spec.has_subformat()) {
         bld.append_str(" ");
-        bld.append_str(str ? str : "invalid");
+        bld.append_str(sample_spec.subformat_name());
     }
     bld.append_str(">");
     bld.append_str(" chset=");

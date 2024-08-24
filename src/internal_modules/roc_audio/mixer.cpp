@@ -23,8 +23,8 @@ Mixer::Mixer(const SampleSpec& sample_spec,
     , sample_spec_(sample_spec)
     , enable_timestamps_(enable_timestamps)
     , init_status_(status::NoStatus) {
-    roc_panic_if_msg(!sample_spec_.is_valid() || !sample_spec_.is_raw(),
-                     "mixer: required valid sample spec with raw format: %s",
+    roc_panic_if_msg(!sample_spec_.is_complete() || !sample_spec_.is_raw(),
+                     "mixer: required complete sample spec with raw format: %s",
                      sample_spec_to_str(sample_spec_).c_str());
 
     in_frame_ = frame_factory_.allocate_frame(0);
