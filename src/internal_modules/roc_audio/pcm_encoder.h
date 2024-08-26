@@ -35,6 +35,12 @@ public:
     //! Get encoded frame size in bytes for given number of samples per channel.
     virtual size_t encoded_byte_count(size_t num_samples) const;
 
+    //! Get headers frame.
+    const uint8_t* get_headers_frame() const;
+
+    //! Get the size of the headers.
+    size_t get_headers_frame_size() const;
+
     //! Start encoding a new frame.
     virtual void begin_frame(void* frame, size_t frame_size);
 

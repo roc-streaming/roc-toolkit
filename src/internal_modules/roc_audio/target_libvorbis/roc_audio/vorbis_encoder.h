@@ -35,6 +35,12 @@ public:
     //! Get encoded frame size in bytes for given number of samples per channel.
     virtual size_t encoded_byte_count(size_t n_samples) const;
 
+    //! Get combined Vorbis headers.
+    const uint8_t* get_headers_frame() const;
+
+    //! Get the size of the combined headers.
+    size_t get_headers_frame_size() const;
+
     //! Start encoding a new frame.
     virtual void begin_frame(void* frame, size_t frame_size);
 
@@ -45,6 +51,17 @@ public:
     virtual void end_frame();
 
 private:
+    void initialize_structures_(long num_channels, long sample_rate);
+    void create_headers_frame_();
+    size_t calculate_total_headers_size_(ogg_packet& header_packet,
+                                         ogg_packet& header_comment,
+                                         ogg_packet& header_codebook);
+    void copy_headers_to_memory_(ogg_packet& header_packet,
+                                 ogg_packet& header_comment,
+                                 ogg_packet& header_codebook);
+    void insert_headers_into_stream_(ogg_packet& header_packet,
+                                     ogg_packet& header_comment,
+                                     ogg_packet& header_codebook);
     void buffer_samples_(const sample_t* samples, size_t n_samples);
     void process_encoding_();
 
@@ -53,8 +70,13 @@ private:
     size_t frame_size_;
     size_t current_position_;
     vorbis_info vorbis_info_;
+    vorbis_comment vorbis_comment_;
     vorbis_dsp_state vorbis_dsp_;
     vorbis_block vorbis_block_;
+    ogg_stream_state ogg_stream_;
+
+    uint8_t* headers_frame_;
+    size_t headers_frame_size_;
 };
 
 } // namespace audio
