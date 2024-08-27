@@ -1,11 +1,3 @@
-/*
- * Copyright (c) 2024 Roc Streaming authors
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-
 //! @file roc_audio/target_libvorbis/roc_audio/vorbis_decoder.h
 //! @brief Vorbis audio decoder.
 
@@ -40,6 +32,9 @@ public:
     //! Get number of samples per channel that can be decoded from given frame.
     virtual size_t decoded_sample_count(const void* frame_data, size_t frame_size) const;
 
+    //! Initialize decoder with combined Vorbis headers.
+    bool initialize_headers(const uint8_t* headers, size_t headers_size);
+
     //! Start decoding a new frame.
     virtual void begin_frame(packet::stream_timestamp_t frame_position,
                              const void* frame_data,
@@ -55,6 +50,10 @@ public:
     virtual void end_frame();
 
 private:
+    void reset_frame_state_(packet::stream_timestamp_t frame_position);
+    void add_data_to_ogg_sync_(const void* frame_data, size_t frame_size);
+    bool read_headers_();
+    void process_frame_packets_();
     void process_packet_();
 
     bool initialized_;

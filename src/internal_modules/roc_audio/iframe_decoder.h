@@ -33,6 +33,27 @@ public:
     //! Check if the object was successfully constructed.
     virtual status::StatusCode init_status() const = 0;
 
+    //! Initialize the decoder with codec-specific headers.
+    //!
+    //! @b Parameters
+    //!  - @p headers - pointer to the buffer containing codec-specific header data.
+    //!  - @p headers_size - size of the header buffer in bytes.
+    //!
+    //! @remarks
+    //!  This function sets up the decoder using the provided headers, which contain
+    //!  essential configuration information for decoding the audio stream. The headers
+    //!  must be in the format required by the specific codec. This function must be
+    //!  called before decoding any frames.
+    //!
+    //! @returns
+    //!  - true if the headers are successfully processed and the decoder is initialized.
+    //!  - false if there is an error in processing the headers.
+    //!
+    //! @pre
+    //!  Must be called before begin_frame(), read_samples(), drop_samples(), or
+    //!  end_frame().
+    virtual bool initialize_headers(const uint8_t* headers, size_t headers_size) = 0;
+
     //! Get decoded stream position.
     //!
     //! @returns
