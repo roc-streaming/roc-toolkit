@@ -4529,6 +4529,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_SInt8_Le;
 #endif
+        traits.native_alias = PcmSubformat_SInt8;
         traits.default_variant = PcmSubformat_SInt8;
         traits.be_variant = PcmSubformat_SInt8_Be;
         traits.le_variant = PcmSubformat_SInt8_Le;
@@ -4542,8 +4543,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt8;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt8_Be;
 #endif
         traits.portable_alias = PcmSubformat_SInt8_Be;
         traits.default_variant = PcmSubformat_SInt8;
@@ -4559,8 +4562,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt8;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt8_Le;
 #endif
         traits.portable_alias = PcmSubformat_SInt8_Le;
         traits.default_variant = PcmSubformat_SInt8;
@@ -4581,6 +4586,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_UInt8_Le;
 #endif
+        traits.native_alias = PcmSubformat_UInt8;
         traits.default_variant = PcmSubformat_UInt8;
         traits.be_variant = PcmSubformat_UInt8_Be;
         traits.le_variant = PcmSubformat_UInt8_Le;
@@ -4594,8 +4600,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt8;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt8_Be;
 #endif
         traits.portable_alias = PcmSubformat_UInt8_Be;
         traits.default_variant = PcmSubformat_UInt8;
@@ -4611,8 +4619,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt8;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt8_Le;
 #endif
         traits.portable_alias = PcmSubformat_UInt8_Le;
         traits.default_variant = PcmSubformat_UInt8;
@@ -4633,6 +4643,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_SInt16_Le;
 #endif
+        traits.native_alias = PcmSubformat_SInt16;
         traits.default_variant = PcmSubformat_SInt16;
         traits.be_variant = PcmSubformat_SInt16_Be;
         traits.le_variant = PcmSubformat_SInt16_Le;
@@ -4646,8 +4657,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt16;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt16_Be;
 #endif
         traits.portable_alias = PcmSubformat_SInt16_Be;
         traits.default_variant = PcmSubformat_SInt16;
@@ -4663,8 +4676,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt16;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt16_Le;
 #endif
         traits.portable_alias = PcmSubformat_SInt16_Le;
         traits.default_variant = PcmSubformat_SInt16;
@@ -4685,6 +4700,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_UInt16_Le;
 #endif
+        traits.native_alias = PcmSubformat_UInt16;
         traits.default_variant = PcmSubformat_UInt16;
         traits.be_variant = PcmSubformat_UInt16_Be;
         traits.le_variant = PcmSubformat_UInt16_Le;
@@ -4698,8 +4714,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt16;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt16_Be;
 #endif
         traits.portable_alias = PcmSubformat_UInt16_Be;
         traits.default_variant = PcmSubformat_UInt16;
@@ -4715,8 +4733,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt16;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt16_Le;
 #endif
         traits.portable_alias = PcmSubformat_UInt16_Le;
         traits.default_variant = PcmSubformat_UInt16;
@@ -4737,6 +4757,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_SInt18_Le;
 #endif
+        traits.native_alias = PcmSubformat_SInt18;
         traits.default_variant = PcmSubformat_SInt18;
         traits.be_variant = PcmSubformat_SInt18_Be;
         traits.le_variant = PcmSubformat_SInt18_Le;
@@ -4750,8 +4771,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt18;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt18_Be;
 #endif
         traits.portable_alias = PcmSubformat_SInt18_Be;
         traits.default_variant = PcmSubformat_SInt18;
@@ -4767,8 +4790,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt18;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt18_Le;
 #endif
         traits.portable_alias = PcmSubformat_SInt18_Le;
         traits.default_variant = PcmSubformat_SInt18;
@@ -4789,6 +4814,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_UInt18_Le;
 #endif
+        traits.native_alias = PcmSubformat_UInt18;
         traits.default_variant = PcmSubformat_UInt18;
         traits.be_variant = PcmSubformat_UInt18_Be;
         traits.le_variant = PcmSubformat_UInt18_Le;
@@ -4802,8 +4828,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt18;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt18_Be;
 #endif
         traits.portable_alias = PcmSubformat_UInt18_Be;
         traits.default_variant = PcmSubformat_UInt18;
@@ -4819,8 +4847,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt18;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt18_Le;
 #endif
         traits.portable_alias = PcmSubformat_UInt18_Le;
         traits.default_variant = PcmSubformat_UInt18;
@@ -4841,6 +4871,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_SInt18_3_Le;
 #endif
+        traits.native_alias = PcmSubformat_SInt18_3;
         traits.default_variant = PcmSubformat_SInt18_3;
         traits.be_variant = PcmSubformat_SInt18_3_Be;
         traits.le_variant = PcmSubformat_SInt18_3_Le;
@@ -4854,8 +4885,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt18_3;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt18_3_Be;
 #endif
         traits.portable_alias = PcmSubformat_SInt18_3_Be;
         traits.default_variant = PcmSubformat_SInt18_3;
@@ -4871,8 +4904,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt18_3;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt18_3_Le;
 #endif
         traits.portable_alias = PcmSubformat_SInt18_3_Le;
         traits.default_variant = PcmSubformat_SInt18_3;
@@ -4893,6 +4928,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_UInt18_3_Le;
 #endif
+        traits.native_alias = PcmSubformat_UInt18_3;
         traits.default_variant = PcmSubformat_UInt18_3;
         traits.be_variant = PcmSubformat_UInt18_3_Be;
         traits.le_variant = PcmSubformat_UInt18_3_Le;
@@ -4906,8 +4942,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt18_3;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt18_3_Be;
 #endif
         traits.portable_alias = PcmSubformat_UInt18_3_Be;
         traits.default_variant = PcmSubformat_UInt18_3;
@@ -4923,8 +4961,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt18_3;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt18_3_Le;
 #endif
         traits.portable_alias = PcmSubformat_UInt18_3_Le;
         traits.default_variant = PcmSubformat_UInt18_3;
@@ -4945,6 +4985,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_SInt18_4_Le;
 #endif
+        traits.native_alias = PcmSubformat_SInt18_4;
         traits.default_variant = PcmSubformat_SInt18_4;
         traits.be_variant = PcmSubformat_SInt18_4_Be;
         traits.le_variant = PcmSubformat_SInt18_4_Le;
@@ -4958,8 +4999,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt18_4;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt18_4_Be;
 #endif
         traits.portable_alias = PcmSubformat_SInt18_4_Be;
         traits.default_variant = PcmSubformat_SInt18_4;
@@ -4975,8 +5018,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt18_4;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt18_4_Le;
 #endif
         traits.portable_alias = PcmSubformat_SInt18_4_Le;
         traits.default_variant = PcmSubformat_SInt18_4;
@@ -4997,6 +5042,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_UInt18_4_Le;
 #endif
+        traits.native_alias = PcmSubformat_UInt18_4;
         traits.default_variant = PcmSubformat_UInt18_4;
         traits.be_variant = PcmSubformat_UInt18_4_Be;
         traits.le_variant = PcmSubformat_UInt18_4_Le;
@@ -5010,8 +5056,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt18_4;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt18_4_Be;
 #endif
         traits.portable_alias = PcmSubformat_UInt18_4_Be;
         traits.default_variant = PcmSubformat_UInt18_4;
@@ -5027,8 +5075,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt18_4;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt18_4_Le;
 #endif
         traits.portable_alias = PcmSubformat_UInt18_4_Le;
         traits.default_variant = PcmSubformat_UInt18_4;
@@ -5049,6 +5099,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_SInt20_Le;
 #endif
+        traits.native_alias = PcmSubformat_SInt20;
         traits.default_variant = PcmSubformat_SInt20;
         traits.be_variant = PcmSubformat_SInt20_Be;
         traits.le_variant = PcmSubformat_SInt20_Le;
@@ -5062,8 +5113,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt20;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt20_Be;
 #endif
         traits.portable_alias = PcmSubformat_SInt20_Be;
         traits.default_variant = PcmSubformat_SInt20;
@@ -5079,8 +5132,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt20;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt20_Le;
 #endif
         traits.portable_alias = PcmSubformat_SInt20_Le;
         traits.default_variant = PcmSubformat_SInt20;
@@ -5101,6 +5156,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_UInt20_Le;
 #endif
+        traits.native_alias = PcmSubformat_UInt20;
         traits.default_variant = PcmSubformat_UInt20;
         traits.be_variant = PcmSubformat_UInt20_Be;
         traits.le_variant = PcmSubformat_UInt20_Le;
@@ -5114,8 +5170,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt20;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt20_Be;
 #endif
         traits.portable_alias = PcmSubformat_UInt20_Be;
         traits.default_variant = PcmSubformat_UInt20;
@@ -5131,8 +5189,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt20;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt20_Le;
 #endif
         traits.portable_alias = PcmSubformat_UInt20_Le;
         traits.default_variant = PcmSubformat_UInt20;
@@ -5153,6 +5213,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_SInt20_3_Le;
 #endif
+        traits.native_alias = PcmSubformat_SInt20_3;
         traits.default_variant = PcmSubformat_SInt20_3;
         traits.be_variant = PcmSubformat_SInt20_3_Be;
         traits.le_variant = PcmSubformat_SInt20_3_Le;
@@ -5166,8 +5227,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt20_3;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt20_3_Be;
 #endif
         traits.portable_alias = PcmSubformat_SInt20_3_Be;
         traits.default_variant = PcmSubformat_SInt20_3;
@@ -5183,8 +5246,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt20_3;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt20_3_Le;
 #endif
         traits.portable_alias = PcmSubformat_SInt20_3_Le;
         traits.default_variant = PcmSubformat_SInt20_3;
@@ -5205,6 +5270,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_UInt20_3_Le;
 #endif
+        traits.native_alias = PcmSubformat_UInt20_3;
         traits.default_variant = PcmSubformat_UInt20_3;
         traits.be_variant = PcmSubformat_UInt20_3_Be;
         traits.le_variant = PcmSubformat_UInt20_3_Le;
@@ -5218,8 +5284,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt20_3;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt20_3_Be;
 #endif
         traits.portable_alias = PcmSubformat_UInt20_3_Be;
         traits.default_variant = PcmSubformat_UInt20_3;
@@ -5235,8 +5303,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt20_3;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt20_3_Le;
 #endif
         traits.portable_alias = PcmSubformat_UInt20_3_Le;
         traits.default_variant = PcmSubformat_UInt20_3;
@@ -5257,6 +5327,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_SInt20_4_Le;
 #endif
+        traits.native_alias = PcmSubformat_SInt20_4;
         traits.default_variant = PcmSubformat_SInt20_4;
         traits.be_variant = PcmSubformat_SInt20_4_Be;
         traits.le_variant = PcmSubformat_SInt20_4_Le;
@@ -5270,8 +5341,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt20_4;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt20_4_Be;
 #endif
         traits.portable_alias = PcmSubformat_SInt20_4_Be;
         traits.default_variant = PcmSubformat_SInt20_4;
@@ -5287,8 +5360,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt20_4;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt20_4_Le;
 #endif
         traits.portable_alias = PcmSubformat_SInt20_4_Le;
         traits.default_variant = PcmSubformat_SInt20_4;
@@ -5309,6 +5384,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_UInt20_4_Le;
 #endif
+        traits.native_alias = PcmSubformat_UInt20_4;
         traits.default_variant = PcmSubformat_UInt20_4;
         traits.be_variant = PcmSubformat_UInt20_4_Be;
         traits.le_variant = PcmSubformat_UInt20_4_Le;
@@ -5322,8 +5398,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt20_4;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt20_4_Be;
 #endif
         traits.portable_alias = PcmSubformat_UInt20_4_Be;
         traits.default_variant = PcmSubformat_UInt20_4;
@@ -5339,8 +5417,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt20_4;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt20_4_Le;
 #endif
         traits.portable_alias = PcmSubformat_UInt20_4_Le;
         traits.default_variant = PcmSubformat_UInt20_4;
@@ -5361,6 +5441,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_SInt24_Le;
 #endif
+        traits.native_alias = PcmSubformat_SInt24;
         traits.default_variant = PcmSubformat_SInt24;
         traits.be_variant = PcmSubformat_SInt24_Be;
         traits.le_variant = PcmSubformat_SInt24_Le;
@@ -5374,8 +5455,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt24;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt24_Be;
 #endif
         traits.portable_alias = PcmSubformat_SInt24_Be;
         traits.default_variant = PcmSubformat_SInt24;
@@ -5391,8 +5474,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt24;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt24_Le;
 #endif
         traits.portable_alias = PcmSubformat_SInt24_Le;
         traits.default_variant = PcmSubformat_SInt24;
@@ -5413,6 +5498,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_UInt24_Le;
 #endif
+        traits.native_alias = PcmSubformat_UInt24;
         traits.default_variant = PcmSubformat_UInt24;
         traits.be_variant = PcmSubformat_UInt24_Be;
         traits.le_variant = PcmSubformat_UInt24_Le;
@@ -5426,8 +5512,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt24;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt24_Be;
 #endif
         traits.portable_alias = PcmSubformat_UInt24_Be;
         traits.default_variant = PcmSubformat_UInt24;
@@ -5443,8 +5531,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt24;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt24_Le;
 #endif
         traits.portable_alias = PcmSubformat_UInt24_Le;
         traits.default_variant = PcmSubformat_UInt24;
@@ -5465,6 +5555,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_SInt24_4_Le;
 #endif
+        traits.native_alias = PcmSubformat_SInt24_4;
         traits.default_variant = PcmSubformat_SInt24_4;
         traits.be_variant = PcmSubformat_SInt24_4_Be;
         traits.le_variant = PcmSubformat_SInt24_4_Le;
@@ -5478,8 +5569,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt24_4;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt24_4_Be;
 #endif
         traits.portable_alias = PcmSubformat_SInt24_4_Be;
         traits.default_variant = PcmSubformat_SInt24_4;
@@ -5495,8 +5588,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt24_4;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt24_4_Le;
 #endif
         traits.portable_alias = PcmSubformat_SInt24_4_Le;
         traits.default_variant = PcmSubformat_SInt24_4;
@@ -5517,6 +5612,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_UInt24_4_Le;
 #endif
+        traits.native_alias = PcmSubformat_UInt24_4;
         traits.default_variant = PcmSubformat_UInt24_4;
         traits.be_variant = PcmSubformat_UInt24_4_Be;
         traits.le_variant = PcmSubformat_UInt24_4_Le;
@@ -5530,8 +5626,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt24_4;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt24_4_Be;
 #endif
         traits.portable_alias = PcmSubformat_UInt24_4_Be;
         traits.default_variant = PcmSubformat_UInt24_4;
@@ -5547,8 +5645,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt24_4;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt24_4_Le;
 #endif
         traits.portable_alias = PcmSubformat_UInt24_4_Le;
         traits.default_variant = PcmSubformat_UInt24_4;
@@ -5569,6 +5669,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_SInt32_Le;
 #endif
+        traits.native_alias = PcmSubformat_SInt32;
         traits.default_variant = PcmSubformat_SInt32;
         traits.be_variant = PcmSubformat_SInt32_Be;
         traits.le_variant = PcmSubformat_SInt32_Le;
@@ -5582,8 +5683,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt32;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt32_Be;
 #endif
         traits.portable_alias = PcmSubformat_SInt32_Be;
         traits.default_variant = PcmSubformat_SInt32;
@@ -5599,8 +5702,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt32;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt32_Le;
 #endif
         traits.portable_alias = PcmSubformat_SInt32_Le;
         traits.default_variant = PcmSubformat_SInt32;
@@ -5621,6 +5726,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_UInt32_Le;
 #endif
+        traits.native_alias = PcmSubformat_UInt32;
         traits.default_variant = PcmSubformat_UInt32;
         traits.be_variant = PcmSubformat_UInt32_Be;
         traits.le_variant = PcmSubformat_UInt32_Le;
@@ -5634,8 +5740,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt32;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt32_Be;
 #endif
         traits.portable_alias = PcmSubformat_UInt32_Be;
         traits.default_variant = PcmSubformat_UInt32;
@@ -5651,8 +5759,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt32;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt32_Le;
 #endif
         traits.portable_alias = PcmSubformat_UInt32_Le;
         traits.default_variant = PcmSubformat_UInt32;
@@ -5673,6 +5783,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_SInt64_Le;
 #endif
+        traits.native_alias = PcmSubformat_SInt64;
         traits.default_variant = PcmSubformat_SInt64;
         traits.be_variant = PcmSubformat_SInt64_Be;
         traits.le_variant = PcmSubformat_SInt64_Le;
@@ -5686,8 +5797,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt64;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_SInt64_Be;
 #endif
         traits.portable_alias = PcmSubformat_SInt64_Be;
         traits.default_variant = PcmSubformat_SInt64;
@@ -5703,8 +5816,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt64;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_SInt64_Le;
 #endif
         traits.portable_alias = PcmSubformat_SInt64_Le;
         traits.default_variant = PcmSubformat_SInt64;
@@ -5725,6 +5840,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_UInt64_Le;
 #endif
+        traits.native_alias = PcmSubformat_UInt64;
         traits.default_variant = PcmSubformat_UInt64;
         traits.be_variant = PcmSubformat_UInt64_Be;
         traits.le_variant = PcmSubformat_UInt64_Le;
@@ -5738,8 +5854,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt64;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_UInt64_Be;
 #endif
         traits.portable_alias = PcmSubformat_UInt64_Be;
         traits.default_variant = PcmSubformat_UInt64;
@@ -5755,8 +5873,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsInteger | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt64;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_UInt64_Le;
 #endif
         traits.portable_alias = PcmSubformat_UInt64_Le;
         traits.default_variant = PcmSubformat_UInt64;
@@ -5777,6 +5897,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_Float32_Le;
 #endif
+        traits.native_alias = PcmSubformat_Float32;
         traits.default_variant = PcmSubformat_Float32;
         traits.be_variant = PcmSubformat_Float32_Be;
         traits.le_variant = PcmSubformat_Float32_Le;
@@ -5790,8 +5911,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_Float32;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_Float32_Be;
 #endif
         traits.portable_alias = PcmSubformat_Float32_Be;
         traits.default_variant = PcmSubformat_Float32;
@@ -5807,8 +5930,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_Float32;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_Float32_Le;
 #endif
         traits.portable_alias = PcmSubformat_Float32_Le;
         traits.default_variant = PcmSubformat_Float32;
@@ -5829,6 +5954,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = PcmSubformat_Float64_Le;
 #endif
+        traits.native_alias = PcmSubformat_Float64;
         traits.default_variant = PcmSubformat_Float64;
         traits.be_variant = PcmSubformat_Float64_Be;
         traits.le_variant = PcmSubformat_Float64_Le;
@@ -5842,8 +5968,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = PcmSubformat_Float64;
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = PcmSubformat_Float64_Be;
 #endif
         traits.portable_alias = PcmSubformat_Float64_Be;
         traits.default_variant = PcmSubformat_Float64;
@@ -5859,8 +5987,10 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags = Pcm_IsFloat | Pcm_IsSigned | Pcm_IsPacked | Pcm_IsAligned;
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_Float64;
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = PcmSubformat_Float64_Le;
 #endif
         traits.portable_alias = PcmSubformat_Float64_Le;
         traits.default_variant = PcmSubformat_Float64;

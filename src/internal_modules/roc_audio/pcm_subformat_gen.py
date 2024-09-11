@@ -955,18 +955,23 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.portable_alias = {{ make_enum_name(code, 'Little') }};
 #endif
+        traits.native_alias = {{ make_enum_name(code, 'Default') }};
 {% elif endian == 'Big' %}
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
+        traits.native_alias = {{ make_enum_name(code, 'Default') }};
 #else
         traits.flags |= Pcm_IsBig;
+        traits.native_alias = {{ make_enum_name(code, 'Big') }};
 #endif
         traits.portable_alias = {{ make_enum_name(code, endian) }};
 {% elif endian == 'Little' %}
 #if ROC_CPU_ENDIAN == ROC_CPU_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
+        traits.native_alias = {{ make_enum_name(code, 'Default') }};
 #else
         traits.flags |= Pcm_IsLittle;
+        traits.native_alias = {{ make_enum_name(code, 'Little') }};
 #endif
         traits.portable_alias = {{ make_enum_name(code, endian) }};
 {% endif %}

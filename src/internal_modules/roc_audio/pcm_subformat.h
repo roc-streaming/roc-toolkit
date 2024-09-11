@@ -254,8 +254,13 @@ struct PcmTraits {
 
     //! Same format, but with explicit _Be or _Le suffix.
     //! If format is default-endian, suffix is added based on current CPU,
-    //! otherwise this field is is same as original format.
+    //! otherwise this field is same as original format.
     PcmSubformat portable_alias;
+
+    //! Same format, but without explicit _Be or _Le suffix if possible.
+    //! If format is native-endian, suffix is removed, otherwise this field
+    //! is same as original format.
+    PcmSubformat native_alias;
 
     //! Same format but with removed _Be or _Le suffix.
     //! May be equal to original format.
@@ -277,6 +282,7 @@ struct PcmTraits {
         , bit_width(0)
         , bit_depth(0)
         , portable_alias(PcmSubformat_Invalid)
+        , native_alias(PcmSubformat_Invalid)
         , default_variant(PcmSubformat_Invalid)
         , be_variant(PcmSubformat_Invalid)
         , le_variant(PcmSubformat_Invalid) {
