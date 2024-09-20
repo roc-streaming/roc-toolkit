@@ -789,7 +789,7 @@ else:
             'target_posix_ext',
         ])
 
-    if meta.platform in ['linux', 'android' 'darwin'] or meta.gnu_toolchain:
+    if meta.platform in ['linux', 'android', 'darwin'] or meta.gnu_toolchain:
         env.Append(ROC_TARGETS=[
             # GNU C++ Standard Library (libstdc++), or compatible, like
             # LLVM C++ Standard Library (libc++)
