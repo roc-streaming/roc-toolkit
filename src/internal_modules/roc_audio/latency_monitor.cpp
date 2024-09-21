@@ -12,6 +12,8 @@
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
+#include "roc_packet/delayed_reader.h"
+#include "roc_packet/ireader.h"
 #include "roc_rtp/link_meter.h"
 
 namespace roc {
@@ -24,7 +26,8 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
                                ResamplerReader* resampler,
                                const LatencyConfig& config,
                                const SampleSpec& packet_sample_spec,
-                               const SampleSpec& frame_sample_spec)
+                               const SampleSpec& frame_sample_spec,
+                               packet::IReader& pkt_reader)
     : tuner_(config, frame_sample_spec)
     , frame_reader_(frame_reader)
     , incoming_queue_(incoming_queue)
@@ -45,6 +48,13 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
         if (!init_scaling_()) {
             return;
         }
+    }
+    // frame_reader_ = frame_reader;
+    delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
+        pkt_reader));
+
+    if (!delayed_reader_ || !delayed_reader_->is_valid()) {
+        return;
     }
 
     valid_ = true;
@@ -113,6 +123,12 @@ bool LatencyMonitor::pre_process_(const Frame& frame) {
         if (!update_scaling_()) {
             // TODO(gh-183): forward status code
             return false;
+        }
+    }
+
+    if (!delayed_reader_->is_started()) {
+        if (tuner_.can_start()) {
+            delayed_reader_->start();
         }
     }
 

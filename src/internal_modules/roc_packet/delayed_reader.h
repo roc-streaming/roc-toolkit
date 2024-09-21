@@ -33,15 +33,18 @@ public:
     //!  - @p reader is used to read packets
     //!  - @p target_delay is the delay to insert before first packet
     //!  - @p sample_spec is the specifications of incoming packets
-    DelayedReader(IReader& reader,
-                  core::nanoseconds_t target_delay,
-                  const audio::SampleSpec& sample_spec);
+    DelayedReader(IReader& reader);
 
     //! Check if object was constructed successfully.
     bool is_valid() const;
 
     //! Read packet.
     virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr&);
+
+    void start();
+
+    //! Check if object was constructed successfully.
+    bool is_started() const;
 
 private:
     status::StatusCode fetch_packets_();
@@ -52,10 +55,7 @@ private:
     IReader& reader_;
     SortedQueue queue_;
 
-    stream_timestamp_t delay_;
     bool started_;
-
-    const audio::SampleSpec sample_spec_;
 
     bool valid_;
 };
