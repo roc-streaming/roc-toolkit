@@ -27,7 +27,7 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
                                const LatencyConfig& config,
                                const SampleSpec& packet_sample_spec,
                                const SampleSpec& frame_sample_spec,
-                               packet::IReader& pkt_reader)
+                               packet::DelayedReader& delayed_reader)
     : tuner_(config, frame_sample_spec)
     , frame_reader_(frame_reader)
     , incoming_queue_(incoming_queue)
@@ -39,7 +39,8 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
     , packet_sample_spec_(packet_sample_spec)
     , frame_sample_spec_(frame_sample_spec)
     , alive_(true)
-    , valid_(false) {
+    , valid_(false),
+    delayed_reader_(delayed_reader) {
     if (!tuner_.is_valid()) {
         return;
     }
@@ -48,13 +49,6 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
         if (!init_scaling_()) {
             return;
         }
-    }
-    // frame_reader_ = frame_reader;
-    delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
-        pkt_reader));
-
-    if (!delayed_reader_ || !delayed_reader_->is_valid()) {
-        return;
     }
 
     valid_ = true;
@@ -126,9 +120,9 @@ bool LatencyMonitor::pre_process_(const Frame& frame) {
         }
     }
 
-    if (!delayed_reader_->is_started()) {
+    if (!delayed_reader_.is_started()) {
         if (tuner_.can_start()) {
-            delayed_reader_->start();
+            delayed_reader_.start();
         }
     }
 

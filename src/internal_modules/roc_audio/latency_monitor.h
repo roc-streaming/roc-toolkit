@@ -70,7 +70,7 @@ public:
                    const LatencyConfig& config,
                    const SampleSpec& packet_sample_spec,
                    const SampleSpec& frame_sample_spec,
-                   packet::IReader& pkt_reader);
+                   packet::DelayedReader& delayed_reader);
 
     //! Check if the object was initialized successfully.
     bool is_valid() const;
@@ -127,7 +127,7 @@ private:
     bool alive_;
     bool valid_;
 
-    core::Optional<packet::DelayedReader> delayed_reader_;
+    packet::DelayedReader& delayed_reader_;
 };
 
 } // namespace audio

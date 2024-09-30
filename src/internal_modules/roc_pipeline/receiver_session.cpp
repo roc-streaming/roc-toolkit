@@ -77,7 +77,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     pkt_reader = filter_.get();
 
     delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
-        *pkt_reader));
+        *pkt_reader, pkt_encoding->sample_spec));
+
     if (!delayed_reader_ || !delayed_reader_->is_valid()) {
         return;
     }

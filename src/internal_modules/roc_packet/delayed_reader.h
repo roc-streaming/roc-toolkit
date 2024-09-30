@@ -31,7 +31,6 @@ public:
     //!
     //! @b Parameters
     //!  - @p reader is used to read packets
-    //!  - @p target_delay is the delay to insert before first packet
     //!  - @p sample_spec is the specifications of incoming packets
     DelayedReader(IReader& reader,
                   const audio::SampleSpec& sample_spec);
