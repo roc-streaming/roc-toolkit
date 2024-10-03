@@ -166,7 +166,7 @@ void check_parse_decode(const test::PacketInfo& pi) {
     packet->set_buffer(buffer);
 
     Parser parser(NULL, encoding_map, arena);
-    CHECK(parser.parse(*packet, packet->buffer()));
+    CHECK(parser.parse(*packet, packet->buffer()) == status::StatusOK);
 
     const Encoding* encoding = encoding_map.find_by_pt(packet->rtp()->payload_type);
     CHECK(encoding);

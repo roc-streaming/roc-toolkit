@@ -40,8 +40,10 @@ public:
     //!  Parses input @p buffer and fills @p packet. If the packet payload contains
     //!  an inner packet, calls the inner parser as well.
     //! @returns
-    //!  true if the packet was successfully parsed or false if the packet is invalid.
-    virtual bool parse(Packet& packet, const core::Slice<uint8_t>& buffer) = 0;
+    //!  status::StatusOK if the packet was successfully parsed,
+    //!  or error code otherwise.
+    virtual status::StatusCode parse(Packet& packet,
+                                     const core::Slice<uint8_t>& buffer) = 0;
 };
 
 } // namespace packet
