@@ -39,11 +39,12 @@ public:
     }
 
     //! Parse packet from buffer.
-    virtual bool parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
+    virtual status::StatusCode parse(packet::Packet& packet,
+                                     const core::Slice<uint8_t>& buffer) {
         if (buffer.size() < sizeof(PayloadID)) {
             roc_log(LogDebug, "fec parser: bad packet, size < %d (payload id)",
                     (int)sizeof(PayloadID));
-            return false;
+            return status::StatusBadBuffer;
         }
 
         const PayloadID* payload_id;
@@ -78,7 +79,7 @@ public:
             return inner_parser_->parse(packet, fec.payload);
         }
 
-        return true;
+        return status::StatusOK;
     }
 
 private:

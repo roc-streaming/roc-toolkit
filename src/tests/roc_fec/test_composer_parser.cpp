@@ -197,7 +197,7 @@ void test_parse(const PacketTest& test) {
 
     packet->set_buffer(buffer);
 
-    CHECK(test.parser->parse(*packet, packet->buffer()));
+    CHECK(test.parser->parse(*packet, packet->buffer()) == status::StatusOK);
 
     check_packet(*packet, test.scheme, test.block_length, test.is_rtp);
 }
@@ -220,7 +220,7 @@ void test_compose_parse(const PacketTest& test) {
     packet::PacketPtr packet2 = packet_factory.new_packet();
     CHECK(packet2);
 
-    CHECK(test.parser->parse(*packet2, packet1->buffer()));
+    CHECK(test.parser->parse(*packet2, packet1->buffer()) == status::StatusOK);
 
     check_packet(*packet2, test.scheme, test.block_length, test.is_rtp);
 }

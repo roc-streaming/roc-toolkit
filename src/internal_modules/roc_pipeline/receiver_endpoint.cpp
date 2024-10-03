@@ -222,7 +222,7 @@ status::StatusCode ReceiverEndpoint::pull_packets(core::nanoseconds_t current_ti
 
 status::StatusCode ReceiverEndpoint::handle_packet_(const packet::PacketPtr& packet,
                                                     core::nanoseconds_t current_time) {
-    if (!parser_->parse(*packet, packet->buffer())) {
+    if (parser_->parse(*packet, packet->buffer()) != status::StatusOK) {
         roc_log(LogDebug, "receiver endpoint: dropping bad packet: can't parse");
         return status::StatusOK;
     }

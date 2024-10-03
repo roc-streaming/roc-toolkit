@@ -314,7 +314,7 @@ status::StatusCode BlockReader::parse_repaired_packet_(const core::Slice<uint8_t
         return status::StatusNoMem;
     }
 
-    if (!parser_.parse(*pp, buffer)) {
+    if (parser_.parse(*pp, buffer) != status::StatusOK) {
         roc_log(LogDebug, "fec block reader: can't parse repaired packet");
         // Upper code expects StatusBadPacket in this case.
         return status::StatusBadPacket;
