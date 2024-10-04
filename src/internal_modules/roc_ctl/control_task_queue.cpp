@@ -824,7 +824,7 @@ ControlTask* ControlTaskQueue::fetch_sleeping_task_() {
     return task;
 }
 
-void ControlTaskQueue::insert_sleeping_task_(ControlTask& task) {
+/*void ControlTaskQueue::insert_sleeping_task_(ControlTask& task) {
     roc_panic_if_not(task.effective_deadline_ > 0);
 
     ControlTask* pos = sleeping_queue_.front();
@@ -841,6 +841,17 @@ void ControlTaskQueue::insert_sleeping_task_(ControlTask& task) {
         sleeping_queue_.push_back(task);
     }
 }
+*/
+
+
+// Define the priority queue for sleeping tasks with a std::greater comparator
+std::priority_queue<ControlTask*, std::vector<ControlTask*>, std::greater<>> sleeping_queue_;
+
+void ControlTaskQueue::insert_sleeping_task_(ControlTask& task) {
+    roc_panic_if_not(task.effective_deadline_ > 0);
+            // Push the task into the priority queue
+            sleeping_queue_.push(&task);
+        }
 
 void ControlTaskQueue::remove_sleeping_task_(ControlTask& task) {
     roc_panic_if_not(task.effective_deadline_ > 0);
