@@ -17,6 +17,8 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/ownership_policy.h"
 #include "roc_core/stddefs.h"
+#include <atomic>
+#include <iostream>
 
 namespace roc {
 namespace core {
@@ -34,9 +36,10 @@ namespace core {
 //!
 //! @tparam Node defines base class of list nodes. It is needed if ListNode is
 //! used with non-default tag.
+
 template <class T,
           template <class TT> class OwnershipPolicy = RefCountedOwnership,
-          class Node = ListNode<> >
+          class Node = ListNode<>
 class List : public NonCopyable<> {
 public:
     //! Pointer type.
@@ -235,8 +238,74 @@ private:
 
     ListImpl impl_;
 };
+//! Implementing freelist class based on the specifications listed in Issue #734.
+//! This will be modeled after the List class and based on the lock-free free list based on
+//! this article:
+//! https://moodycamel.com/blog/2014/solving-the-aba-problem-for-lock-free-free-lists.htm
+class FreeListNode
+{
+//! Implemented freelistnode based on the formatting of listnodes on list_node.h
+public:
+    FreeListNode() : freeListNext(nullptr){}
+    std::atomic<T*> freeListNext;
+};
+
+class Freelist : public NonCopyable<>{
+private:
+    std::atomic<Node*> freeListHead;
+
+public:
+    typedef typename OwnershipPolicy<T>::Pointer Pointer;
+
+    //! Initialize empty freelist.
+    Freelist() {
+    }
+
+    //! Release ownership of containing objects.
+    ~Freelist() {
+        while (!is_empty()) {
+            pop_back();
+        }
+    }
+    //! Implemented add function from the article referred to.
+    void add(Node* node)
+    {
+        // Memory ordering directives have been ommitted for the sake of simplicity
+        auto head = freeListHead.load();
+        do {
+            node->next.store(head);
+        } while (!freeListHead.compare_exchange_strong(head, node));
+    }
+
+    //! Implemented push_back function based on the List<T> class
+    void push_back(T& elem) {
+        OwnershipPolicy<T>::acquire(elem);
+
+        ListData* data = to_node_data_(elem);
+        impl_.insert(data, impl_.head());
+    }
+
+    //! Implemented pop_back function based on the List<T> class
+    void pop_back() {
+        ListData* data = impl_.pop_back();
+        T* elem = from_node_data_(data);
+
+        OwnershipPolicy<T>::release(*elem);
+    }
+private:
+    //! Implemented from List<T> class
+    static ListData* to_node_data_(const T& elem) {
+        return static_cast<const Node&>(elem).list_data();
+    }
+    static T* from_node_data_(ListData* data) {
+        return static_cast<T*>(static_cast<Node*>(Node::list_node(data)));
+    }
+    ListImpl impl_;
+}; //Freelist
+
 
 } // namespace core
 } // namespace roc
+
 
 #endif // ROC_CORE_LIST_H_
