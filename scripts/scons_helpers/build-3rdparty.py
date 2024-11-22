@@ -40,7 +40,7 @@ Context = type(
         field: '' for field in (
             'root_dir work_dir dist_dir log_file commit_file'
             ' pkg_dir pkg_src_dir pkg_bin_dir pkg_lib_dir pkg_inc_dir pkg_rpath_dir'
-            ' pkg pkg_name pkg_ver pkg_deps'
+            ' pkg pkg_name pkg_ver pkg_ver_major pkg_ver_minor pkg_ver_patch pkg_deps'
             ' build host toolchain variant android_platform macos_platform macos_arch'
             ' prefer_cmake'
             ' env unparsed_env').split()
@@ -888,14 +888,20 @@ def parse_env(unparsed_vars):
     return env
 
 def parse_dep(unparsed_dep):
-    m = re.match('^(.*?)-([0-9][a-z0-9.-]+)$', unparsed_dep)
+    m = re.match(r'^(.*?)-([0-9][a-z0-9.-]+)$', unparsed_dep)
     if not m:
         die("can't determine version of '{}'", unparsed_dep)
     return m.group(1), m.group(2)
 
-def parse_ver(unparsed_ver):
+def parse_ver(unparsed_ver, fn=str, count=None):
     try:
-        return tuple(map(int, unparsed_ver.split('.')))
+        comps = list(map(fn, unparsed_ver.split('.')))
+        if count:
+            if len(comps) > count:
+                comps = comps[:count]
+            elif len(comps) < count:
+                comps = comps + [0] * (count-len(comps))
+        return tuple(comps)
     except:
         die("can't parse version '{}'", unparsed_ver)
 
@@ -1045,6 +1051,7 @@ ctx = Context()
 
 ctx.pkg = args.package
 ctx.pkg_name, ctx.pkg_ver = parse_dep(args.package)
+ctx.pkg_ver_major, ctx.pkg_ver_minor, ctx.pkg_ver_patch = parse_ver(ctx.pkg_ver, count=3)
 ctx.pkg_deps = args.deps or []
 
 ctx.build = args.build
@@ -1173,24 +1180,25 @@ elif ctx.pkg_name == 'libunwind':
 elif ctx.pkg_name == 'libuuid':
     download(
         ctx,
-        'https://github.com/util-linux/util-linux/archive/refs/tags/v{ctx.pkg_ver}.tar.gz',
+        'https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/'+
+            'v{ctx.pkg_ver_major}.{ctx.pkg_ver_minor}/util-linux-{ctx.pkg_ver}.tar.gz',
         'util-linux-{ctx.pkg_ver}.tar.gz')
     unpack(ctx,
            'util-linux-{ctx.pkg_ver}.tar.gz',
            'util-linux-{ctx.pkg_ver}')
-    changedir(ctx, 'util-linux-{ctx.pkg_ver}')
-    execute(ctx, './autogen.sh')
-    execute(ctx, './configure --disable-all-programs --enable-libuuid --host={host} {vars} {flags} {opts}'.format(
+    changedir(ctx, 'src/util-linux-{ctx.pkg_ver}')
+    execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
         host=ctx.toolchain,
         vars=format_vars(ctx),
         flags=format_flags(ctx, cflags='-fcommon -fPIC'),
         opts=' '.join([
-            '--disable-shared',
-            '--enable-static',
-        ])))
+            '--disable-year2038',
+            '--disable-all-programs',
+            '--enable-libuuid',
+           ])))
     execute_make(ctx)
-    install_files(ctx, 'libuuid/uuid.h', ctx.pkg_inc_dir)
-    install_files(ctx, 'src/.libs/libuuid.a', ctx.pkg_lib_dir)
+    install_files(ctx, 'libuuid/src/uuid.h', ctx.pkg_inc_dir)
+    install_files(ctx, '.libs/libuuid.a', ctx.pkg_lib_dir)
 elif ctx.pkg_name == 'openfec':
     if ctx.variant == 'debug':
         setattr(ctx, 'res_dir', 'bin/Debug')
@@ -1381,7 +1389,7 @@ elif ctx.pkg_name == 'pulseaudio':
         ctx,
         'pulseaudio-{ctx.pkg_ver}.tar.gz',
         'pulseaudio-{ctx.pkg_ver}')
-    pa_ver = parse_ver(ctx.pkg_ver)
+    pa_ver = parse_ver(ctx.pkg_ver, int)
     if (8, 99, 1) <= pa_ver < (11, 99, 1):
         apply_patch(
             ctx,
@@ -1601,7 +1609,8 @@ elif ctx.pkg_name == 'google-benchmark':
         'benchmark_v{ctx.pkg_ver}.tar.gz',
         'benchmark-{ctx.pkg_ver}')
     changedir(ctx, 'src/benchmark-{ctx.pkg_ver}')
-    if parse_ver(ctx.pkg_ver) < (1, 7, 1) and not which('python') and which('python3'):
+    bench_ver = parse_ver(ctx.pkg_ver, int)
+    if bench_ver < (1, 7, 1) and not which('python') and which('python3'):
         subst_tree(
             ctx, 'tools', ['*.py'],
             from_='#!/usr/bin/env python', to='#!/usr/bin/env python3')

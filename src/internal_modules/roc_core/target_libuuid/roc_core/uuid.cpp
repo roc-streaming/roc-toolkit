@@ -7,10 +7,9 @@
  */
 
 #include "roc_core/uuid.h"
-
 #include "roc_core/panic.h"
 
-#include <uuid/uuid.h>
+#include <uuid.h>
 
 namespace roc {
 namespace core {
@@ -24,10 +23,10 @@ bool uuid_generare(char* buf, size_t buf_sz) {
         roc_panic("uuid: buffer too small");
     }
 
-    uuid_t u;
+    ::uuid_t u;
 
-    uuid_generate(u);
-    uuid_unparse_lower(u, buf);
+    ::uuid_generate(u);
+    ::uuid_unparse_lower(u, buf);
 
     return true;
 }

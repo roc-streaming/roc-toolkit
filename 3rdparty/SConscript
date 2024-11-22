@@ -19,7 +19,7 @@ thirdparty_versions = {
     'json-c':           '0.12-20140410',
     'libatomic_ops':    '7.6.10',
     'libunwind':        '1.2.1',
-    'libuuid':          '2.40.1',
+    'libuuid':          '2.33.2',
     'libuv':            '1.35.0',
     'ltdl':             '2.4.6',
     'openfec':          '1.4.2.11',

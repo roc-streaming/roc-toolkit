@@ -16,7 +16,8 @@ namespace core {
 TEST_GROUP(uuid) {};
 
 TEST(uuid, generate) {
-    char a_uuid[UuidLen + 1] = {};
+    char a_uuid[UuidLen + 1];
+    memset(a_uuid, 0xcc, sizeof(a_uuid));
 
     CHECK(uuid_generare(a_uuid, sizeof(a_uuid)) == true);
     CHECK(a_uuid[8] == '-');
@@ -27,7 +28,8 @@ TEST(uuid, generate) {
 }
 
 TEST(uuid, generated_with_bigger_buffer) {
-    char a_uuid[UuidLen + 1 + 4] = {};
+    char a_uuid[UuidLen + 1 + 4];
+    memset(a_uuid, 0xcc, sizeof(a_uuid));
 
     CHECK(uuid_generare(a_uuid, sizeof(a_uuid)) == true);
     CHECK(a_uuid[8] == '-');

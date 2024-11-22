@@ -227,7 +227,7 @@ AddOption('--disable-libunwind',
 AddOption('--disable-libuuid',
           dest='disable_libuuid',
           action='store_true',
-          help='disable libuuid support')
+          help='disable libuuid support for reliable UUID generation')
 
 AddOption('--disable-alsa',
           dest='disable_alsa',
