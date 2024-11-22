@@ -431,8 +431,8 @@ def show_pr(org, repo, pr_number, show_json):
         print(json.dumps(json_result, indent=2))
 
 # die if PR does not fulfill all requirements
-def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, no_checks,
-              no_issue, no_milestone):
+def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, no_issue, no_milestone,
+              ignore_actions, ignore_state):
     pr_info = query_pr_info(org, repo, pr_number)
 
     if not no_issue:
@@ -450,13 +450,14 @@ def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, no_checks,
                 error("can't determine milestone associated with issue\n"
                       "assign milestone to issue or use --milestone or --no-milestone")
 
-    if pr_info['pr_state'] != 'open':
-        error("can't proceed on non-open pr")
+    if not ignore_state:
+        if pr_info['pr_state'] != 'open':
+            error("can't proceed on non-open pr")
 
-    if pr_info['pr_draft']:
-        error("can't proceed on draft pr")
+        if pr_info['pr_draft']:
+            error("can't proceed on draft pr")
 
-    if not no_checks:
+    if not ignore_actions:
         for action_name, action_result in query_pr_actions(org, repo, pr_number):
             if action_result != 'success':
                 error("can't proceed on pr with failed checks\n"
@@ -675,6 +676,14 @@ def force_push_pr(org, repo, pr_number):
         f'{local_branch}:{source_branch}'
         ])
 
+# tell github to remove draft status from pr
+def undraft_pr(org, repo, pr_number):
+    run_cmd([
+        'gh', 'pr', 'ready',
+        '--repo', f'{org}/{repo}',
+        pr_number,
+    ])
+
 # tell github to merge PR
 def merge_pr(org, repo, pr_number):
     # wait until PR is mereable
@@ -761,8 +770,10 @@ merge_pr_parser.add_argument('-m', '--milestone', type=str, dest='milestone_name
                              help="overwrite issue milestone")
 merge_pr_parser.add_argument('-M', '--no-milestone', action='store_true', dest='no_milestone',
                              help="don't set issue milestone")
-merge_pr_parser.add_argument('--no-checks', action='store_true', dest='no_checks',
-                             help="proceed even if pr checks are failed")
+merge_pr_parser.add_argument('--ignore-actions', action='store_true', dest='ignore_actions',
+                             help="proceed even if pr github actions are failed")
+merge_pr_parser.add_argument('--ignore-state', action='store_true', dest='ignore_state',
+                             help="proceed even if pr is closed or draft")
 merge_pr_parser.add_argument('--no-push', action='store_true', dest='no_push',
                              help="don't actually push and merge anything")
 merge_pr_parser.add_argument('-n', '--dry-run', action='store_true', dest='dry_run',
@@ -787,7 +798,8 @@ if args.command == 'merge_pr':
     if int(bool(args.rebase)) + int(bool(args.squash)) != 1:
         error("either --rebase or --squash should be specified")
     verify_pr(args.org, args.repo, args.pr_number, args.issue_number,
-              args.milestone_name, args.no_checks, args.no_issue, args.no_milestone)
+              args.milestone_name, args.no_issue, args.no_milestone,
+              args.ignore_actions, args.ignore_state)
     # create new worktree in /tmp, where we'll checkout pr's branch
     orig_path = enter_worktree()
     merged = False
@@ -813,6 +825,8 @@ if args.command == 'merge_pr':
         print_pr_commits(args.org, args.repo, args.pr_number)
         if not args.no_push:
             force_push_pr(args.org, args.repo, args.pr_number)
+            if args.ignore_state:
+                undraft_pr(args.org, args.repo, args.pr_number)
             merge_pr(args.org, args.repo, args.pr_number)
             merged = True
     finally:
