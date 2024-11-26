@@ -166,28 +166,58 @@ public:
         if (is_empty()) {
             roc_panic("ring queue: pop_back() called on empty buffer");
         }
-        buff_[end_].~T();
         end_ = (end_ - 1 + buff_len_) % buff_len_;
+        buff_[end_].~T();
     }
 
-    //! Set ring queue size
+    //! Change ring queue capacity.
     //! @remarks
-    //! Calls grow() to ensure that there is enough space in ring queue
+    //!  After this call, capacity() is equal to the new value, and size()
+    //!  is either the same as before or smaller if capacity decreased.
+    //!  When needed, performs reallocation or destroys excess elements in
+    //!  the end of the queue.
     //! @returns
-    //! false if the allocation failed
-    ROC_ATTR_NODISCARD bool resize(size_t new_size) {
-        if (!grow(new_size)) {
+    //!  false if the allocation failed
+    ROC_ATTR_NODISCARD bool resize(size_t new_capacity) {
+        const size_t old_capacity = capacity();
+        if (new_capacity == old_capacity) {
+            return true;
+        }
+
+        const size_t old_size = size();
+        const size_t new_size = std::min(old_size, new_capacity);
+
+        T* new_buff = allocate_(new_capacity + 1);
+        if (!new_buff) {
             return false;
         }
 
-        for (size_t n = size(); n < new_size; ++n) {
-            new (&buff_[end_]) T();
-            end_ = (end_ + 1) % buff_len_;
-        }
+        if (new_buff != buff_) {
+            // Copy old objects to the beginning of the new memory.
+            for (size_t n = 0; n < new_size; n++) {
+                new (&new_buff[n]) T(buff_[(begin_ + n) % buff_len_]);
+            }
 
-        for (size_t n = size(); n > new_size; n--) {
-            end_ = (end_ - 1 + buff_len_) % buff_len_;
-            buff_[end_].~T();
+            // Destruct objects in old memory (in reversed order).
+            for (size_t n = old_size; n > 0; n--) {
+                buff_[(begin_ + n - 1) % buff_len_].~T();
+            }
+
+            // Free old memory
+            deallocate_(buff_);
+
+            buff_ = new_buff;
+            buff_len_ = new_capacity + 1;
+
+            begin_ = 0;
+            end_ = new_size;
+        } else {
+            // Destruct old objects (in reversed order) if size decreased.
+            for (size_t n = old_size; n > new_size; n--) {
+                buff_[(begin_ + n - 1) % buff_len_].~T();
+            }
+
+            buff_len_ = new_capacity + 1;
         }
 
         return true;
@@ -221,41 +251,6 @@ private:
         if ((void*)data != (void*)embedded_data_.memory()) {
             arena_.deallocate(data);
         }
-    }
-
-    bool grow(size_t min_len) {
-        if (min_len <= capacity()) {
-            return true;
-        }
-
-        T* new_buff = allocate_(min_len + 1);
-        if (!new_buff) {
-            return false;
-        }
-
-        if (new_buff != buff_) {
-            // Copy old objects to the beginning of the new memory.
-            size_t end_index = (end_ - 1 + buff_len_) % buff_len_;
-            for (size_t i = begin_, j = 0; i != end_index; i = (i + 1) % buff_len_, ++j) {
-                new (new_buff + j) T(buff_[i]);
-            }
-
-            for (size_t i = end_index; i != begin_; i = (i - 1 + buff_len_) % buff_len_) {
-                buff_[i].~T();
-            }
-
-            // Free old memory
-            if (buff_) {
-                deallocate_(buff_);
-            }
-
-            buff_ = new_buff;
-            end_ = size();
-            begin_ = 0;
-        }
-
-        buff_len_ = min_len + 1;
-        return true;
     }
 
     T* buff_;
