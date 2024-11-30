@@ -214,6 +214,16 @@ enum StatusCode {
     //!  Example: trying to write frame after previous write failed.
     StatusBadState,
 
+    //! Unable to set realtime priority.
+    //! @remark
+    //!  The objects thread failed to initialize and does not operating.
+    //! @note
+    //!  Eaample: NetworkLoop was called wit requested real-time level
+    //!  higher than 0, which requires root privileges. The inner thread
+    //!  fails to elevate priority, sets init_status to this value
+    //!  and stops.
+    StatusFailedRealtime,
+
     //! Maximum enum value.
     MaxStatus,
 };

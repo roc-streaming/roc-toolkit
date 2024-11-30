@@ -79,7 +79,8 @@ bool start_recv(NetworkLoop& net_loop,
 TEST_GROUP(udp_ports) {};
 
 TEST(udp_ports, no_ports) {
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     LONGS_EQUAL(0, net_loop.num_ports());
@@ -88,7 +89,8 @@ TEST(udp_ports, no_ports) {
 TEST(udp_ports, add_remove) {
     packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
@@ -116,7 +118,8 @@ TEST(udp_ports, add_remove) {
 TEST(udp_ports, add_start_remove) {
     packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
@@ -147,7 +150,8 @@ TEST(udp_ports, add_start_remove) {
 }
 
 TEST(udp_ports, add_remove_add) {
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
@@ -165,7 +169,8 @@ TEST(udp_ports, add_remove_add) {
 }
 
 TEST(udp_ports, add_start_remove_add) {
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
@@ -188,7 +193,8 @@ TEST(udp_ports, add_start_remove_add) {
 TEST(udp_ports, anyaddr) {
     packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig tx_config = make_udp_config("0.0.0.0", 0);
@@ -217,7 +223,8 @@ TEST(udp_ports, anyaddr) {
 TEST(udp_ports, localhost) {
     packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig tx_config = make_udp_config("127.0.0.1", 0);
@@ -246,7 +253,8 @@ TEST(udp_ports, localhost) {
 TEST(udp_ports, addrinuse) {
     packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop1(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop1(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                          arena);
     LONGS_EQUAL(status::StatusOK, net_loop1.init_status());
 
     UdpConfig tx_config = make_udp_config("127.0.0.1", 0);
@@ -271,7 +279,8 @@ TEST(udp_ports, addrinuse) {
 
     LONGS_EQUAL(2, net_loop1.num_ports());
 
-    NetworkLoop net_loop2(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop2(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                          arena);
     LONGS_EQUAL(status::StatusOK, net_loop2.init_status());
 
     LONGS_EQUAL(0, net_loop2.num_ports());
@@ -286,7 +295,8 @@ TEST(udp_ports, addrinuse) {
 TEST(udp_ports, broadcast_sender) {
     packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     LONGS_EQUAL(0, net_loop.num_ports());
@@ -304,7 +314,8 @@ TEST(udp_ports, broadcast_sender) {
 TEST(udp_ports, multicast_receiver) {
     packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     LONGS_EQUAL(0, net_loop.num_ports());
@@ -336,7 +347,8 @@ TEST(udp_ports, multicast_receiver) {
 TEST(udp_ports, multicast_receiver_error) {
     packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     LONGS_EQUAL(0, net_loop.num_ports());
@@ -378,7 +390,8 @@ TEST(udp_ports, multicast_receiver_error) {
 TEST(udp_ports, bidirectional) {
     packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig config = make_udp_config("0.0.0.0", 0);

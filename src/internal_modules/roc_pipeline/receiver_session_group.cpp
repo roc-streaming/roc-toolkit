@@ -71,7 +71,7 @@ ReceiverSessionGroup::create_control_pipeline(ReceiverEndpoint* control_endpoint
     // and later when we call generate_packets() or process_packets().
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
         source_config_.common.rtcp, *this, *control_endpoint->outbound_writer(),
-        *control_endpoint->outbound_composer(), packet_factory_, arena_));
+        *control_endpoint->outbound_composer(), packet_factory_, arena_, dumper_));
 
     const status::StatusCode code = rtcp_communicator_->init_status();
     if (code != status::StatusOK) {
@@ -140,12 +140,11 @@ void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t playback_time) {
     }
 }
 
-status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet,
-                                                      core::nanoseconds_t current_time) {
+status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (packet->has_flags(packet::Packet::FlagControl)) {
-        return route_control_packet_(packet, current_time);
+        return route_control_packet_(packet);
     }
 
     return route_transport_packet_(packet);
@@ -344,15 +343,14 @@ ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
 }
 
 status::StatusCode
-ReceiverSessionGroup::route_control_packet_(const packet::PacketPtr& packet,
-                                            core::nanoseconds_t current_time) {
+ReceiverSessionGroup::route_control_packet_(const packet::PacketPtr& packet) {
     if (!rtcp_communicator_) {
         roc_panic("session group: rtcp communicator is null");
     }
 
     // This will invoke IParticipant methods implemented by us,
     // in particular notify_recv_stream() and maybe halt_recv_stream().
-    return rtcp_communicator_->process_packet(packet, current_time);
+    return rtcp_communicator_->process_packet(packet);
 }
 
 bool ReceiverSessionGroup::can_create_session_(const packet::PacketPtr& packet) {

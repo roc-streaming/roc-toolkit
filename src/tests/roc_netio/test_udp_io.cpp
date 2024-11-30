@@ -205,7 +205,8 @@ TEST(udp_io, one_sender_one_receiver_single_thread_non_blocking_disabled) {
 
     tx_config.enable_non_blocking = false;
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     packet::IWriter* tx_writer = NULL;
@@ -232,7 +233,8 @@ TEST(udp_io, one_sender_one_receiver_single_loop) {
     UdpConfig tx_config = make_udp_config();
     UdpConfig rx_config = make_udp_config();
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     packet::IWriter* tx_writer = NULL;
@@ -259,14 +261,16 @@ TEST(udp_io, one_sender_one_receiver_separate_loops) {
     UdpConfig tx_config = make_udp_config();
     UdpConfig rx_config = make_udp_config();
 
-    NetworkLoop tx_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop tx_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                        arena);
     LONGS_EQUAL(status::StatusOK, tx_loop.init_status());
 
     packet::IWriter* tx_writer = NULL;
     CHECK(add_udp_sender(tx_loop, tx_config, &tx_writer));
     CHECK(tx_writer);
 
-    NetworkLoop rx_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop rx_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                        arena);
     LONGS_EQUAL(status::StatusOK, rx_loop.init_status());
     CHECK(add_udp_receiver(rx_loop, rx_config, rx_queue));
 
@@ -293,18 +297,21 @@ TEST(udp_io, one_sender_many_receivers) {
     UdpConfig rx_config2 = make_udp_config();
     UdpConfig rx_config3 = make_udp_config();
 
-    NetworkLoop tx_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop tx_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                        arena);
     LONGS_EQUAL(status::StatusOK, tx_loop.init_status());
 
     packet::IWriter* tx_writer = NULL;
     CHECK(add_udp_sender(tx_loop, tx_config, &tx_writer));
     CHECK(tx_writer);
 
-    NetworkLoop rx1_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop rx1_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, rx1_loop.init_status());
     CHECK(add_udp_receiver(rx1_loop, rx_config1, rx_queue1));
 
-    NetworkLoop rx23_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop rx23_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                          arena);
     LONGS_EQUAL(status::StatusOK, rx23_loop.init_status());
     CHECK(add_udp_receiver(rx23_loop, rx_config2, rx_queue2));
     CHECK(add_udp_receiver(rx23_loop, rx_config3, rx_queue3));
@@ -338,14 +345,16 @@ TEST(udp_io, many_senders_one_receiver) {
 
     UdpConfig rx_config = make_udp_config();
 
-    NetworkLoop tx1_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop tx1_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, tx1_loop.init_status());
 
     packet::IWriter* tx_writer1 = NULL;
     CHECK(add_udp_sender(tx1_loop, tx_config1, &tx_writer1));
     CHECK(tx_writer1);
 
-    NetworkLoop tx23_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop tx23_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                          arena);
     LONGS_EQUAL(status::StatusOK, tx23_loop.init_status());
 
     packet::IWriter* tx_writer2 = NULL;
@@ -356,7 +365,8 @@ TEST(udp_io, many_senders_one_receiver) {
     CHECK(add_udp_sender(tx23_loop, tx_config3, &tx_writer3));
     CHECK(tx_writer3);
 
-    NetworkLoop rx_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop rx_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                        arena);
     LONGS_EQUAL(status::StatusOK, rx_loop.init_status());
     CHECK(add_udp_receiver(rx_loop, rx_config, rx_queue));
 
@@ -400,7 +410,8 @@ TEST(udp_io, bidirectional_ports_one_loop) {
     peer1_config.enable_non_blocking = false;
     peer2_config.enable_non_blocking = false;
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     packet::IWriter* peer1_tx_writer = NULL;
@@ -444,10 +455,12 @@ TEST(udp_io, bidirectional_ports_separate_loops) {
     peer1_config.enable_non_blocking = false;
     peer2_config.enable_non_blocking = false;
 
-    NetworkLoop peer1_net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop peer1_net_loop(packet_pool, buffer_pool,
+                               netio::NetworkLoop::DEFAULT_PRIORITY, arena);
     LONGS_EQUAL(status::StatusOK, peer1_net_loop.init_status());
 
-    NetworkLoop peer2_net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop peer2_net_loop(packet_pool, buffer_pool,
+                               netio::NetworkLoop::DEFAULT_PRIORITY, arena);
     LONGS_EQUAL(status::StatusOK, peer2_net_loop.init_status());
 
     packet::IWriter* peer1_tx_writer = NULL;
