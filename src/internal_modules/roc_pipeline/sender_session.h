@@ -96,8 +96,7 @@ public:
     //!  This way feedback packets from receiver reach sender pipeline.
     //!  Packets are stored inside internal pipeline queues, and then fetched
     //!  when frame are passed from frame_writer().
-    ROC_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
-                                                  core::nanoseconds_t current_time);
+    ROC_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet);
 
     //! Get slot metrics.
     //! @remarks
@@ -133,8 +132,7 @@ private:
 
     void start_feedback_monitor_();
 
-    status::StatusCode route_control_packet_(const packet::PacketPtr& packet,
-                                             core::nanoseconds_t current_time);
+    status::StatusCode route_control_packet_(const packet::PacketPtr& packet);
 
     core::IArena& arena_;
 

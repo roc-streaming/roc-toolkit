@@ -59,7 +59,7 @@ public:
     //! @remarks
     //!  Run until the stop() is called or, if oneshot mode is enabled,
     //!  the source becomes inactive.
-    ROC_NODISCARD status::StatusCode run();
+    ROC_NODISCARD status::StatusCode run(const int realtime_priority = 0);
 
     //! Stop the pump.
     //! @remarks

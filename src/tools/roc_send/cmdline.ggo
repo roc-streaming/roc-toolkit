@@ -5,6 +5,8 @@ option "verbose" v "Increase verbosity level (may be used multiple times)"
     multiple optional
 option "color" - "Set colored logging mode for stderr output"
     values="auto","always","never" default="auto" enum optional
+option "real-time" - "Set realtime priority for timing sensitive threads, 0-99 Requires root privileges."
+    int typestr="INTEGER" optional default="0"
 
 option "list-supported" L "List supported protocols, formats, etc." optional
 

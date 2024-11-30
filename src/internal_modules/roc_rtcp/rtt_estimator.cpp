@@ -12,12 +12,17 @@
 namespace roc {
 namespace rtcp {
 
-RttEstimator::RttEstimator(const RttConfig& config)
+RttEstimator::RttEstimator(const RttConfig& config,
+                           core::IArena& arena,
+                           dbgio::CsvDumper* dumper)
     : config_(config)
     , metrics_()
     , has_metrics_(false)
     , first_report_ts_(0)
-    , last_report_ts_(0) {
+    , last_report_ts_(0)
+    , dumper_(dumper)
+    , rtt_stats_(arena, config.rtt_winlen, 0.5)
+    , clock_offset_stats_(arena, config.clock_offset_winlen, 0.5) {
 }
 
 bool RttEstimator::has_metrics() const {
@@ -85,10 +90,33 @@ void RttEstimator::update(core::nanoseconds_t local_report_ts,
     }
     last_report_ts_ = local_report_ts;
 
-    metrics_.clock_offset = clock_offset;
-    metrics_.rtt = rtt;
+    rtt_stats_.add(rtt);
+    clock_offset_stats_.add(clock_offset);
+    metrics_.rtt = rtt_stats_.mov_quantile();
+    metrics_.clock_offset = clock_offset_stats_.mov_quantile();
 
     has_metrics_ = true;
+
+    if (dumper_) {
+        dump_(local_report_ts, remote_report_ts, remote_reply_ts, local_reply_ts);
+    }
+}
+
+void RttEstimator::dump_(core::nanoseconds_t local_report_ts,
+                         core::nanoseconds_t remote_report_ts,
+                         core::nanoseconds_t remote_reply_ts,
+                         core::nanoseconds_t local_reply_ts) {
+    dbgio::CsvEntry e;
+    e.type = 'r';
+    e.n_fields = 7;
+    e.fields[0] = core::timestamp(core::ClockUnix);
+    e.fields[1] = metrics_.rtt;
+    e.fields[2] = metrics_.clock_offset;
+    e.fields[3] = local_report_ts;
+    e.fields[4] = remote_report_ts;
+    e.fields[5] = remote_reply_ts;
+    e.fields[6] = local_reply_ts;
+    dumper_->write(e);
 }
 
 } // namespace rtcp

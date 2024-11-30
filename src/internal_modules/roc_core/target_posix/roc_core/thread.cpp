@@ -46,13 +46,14 @@ uint64_t Thread::get_tid() {
 #endif
 }
 
-bool Thread::enable_realtime() {
+bool Thread::enable_realtime(const int sched_prio) {
     sched_param param;
     memset(&param, 0, sizeof(param));
-    param.sched_priority = sched_get_priority_max(SCHED_RR);
+    param.sched_priority = sched_prio;
 
+    roc_log(LogInfo, "thread: set realtime priority");
     if (int err = pthread_setschedparam(pthread_self(), SCHED_RR, &param)) {
-        roc_log(LogDebug,
+        roc_log(LogError,
                 "thread: can't set realtime priority: pthread_setschedparam(): %s",
                 errno_to_str(err).c_str());
         return false;

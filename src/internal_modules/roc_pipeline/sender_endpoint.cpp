@@ -212,13 +212,19 @@ status::StatusCode SenderEndpoint::handle_packet_(const packet::PacketPtr& packe
                                                   core::nanoseconds_t current_time) {
     status::StatusCode code = status::NoStatus;
 
+    // Apparently the packet is not from network, set it's TS manually.
+    if (packet->udp() && packet->udp()->receive_timestamp == 0 && current_time != 0) {
+        packet->udp()->receive_timestamp = current_time;
+    }
+
     if ((code = parser_->parse(*packet, packet->buffer())) != status::StatusOK) {
         roc_log(LogDebug, "sender endpoint: dropping bad packet: can't parse: status=%s",
                 status::code_to_str(code));
+
         return status::StatusOK;
     }
 
-    code = sender_session_.route_packet(packet, current_time);
+    code = sender_session_.route_packet(packet);
 
     if (code == status::StatusNoRoute) {
         roc_log(LogDebug, "sender endpoint: dropping bad packet: can't route");
