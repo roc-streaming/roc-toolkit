@@ -31,12 +31,14 @@ public:
     Proxy(const roc_endpoint* receiver_source_endp,
           const roc_endpoint* receiver_repair_endp,
           size_t n_source_packets,
-          size_t n_repair_packets)
+          size_t n_repair_packets,
+          size_t n_control_packets) // Added control packets count
         : packet_pool_("proxy_packet_pool", arena_)
         , buffer_pool_("proxy_buffer_pool", arena_, 2000)
         , net_loop_(packet_pool_, buffer_pool_, arena_)
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
+        , n_control_packets_(n_control_packets) // Initialize control packets count
         , pos_(0) {
         CHECK(net_loop_.is_valid());
 
@@ -64,6 +66,26 @@ public:
                                                              "127.0.0.1", 0));
         CHECK(recv_repair_config_.bind_address.set_host_port(address::Family_IPv4,
                                                              "127.0.0.1", 0));
+
+
+        // Control endpoint setup
+        if (receiver_control_endp) {
+            roc_protocol control_proto;
+            CHECK(roc_endpoint_get_protocol(receiver_control_endp, &control_proto) == 0);
+
+            int control_port = 0;
+            CHECK(roc_endpoint_get_port(receiver_control_endp, &control_port) == 0);
+
+            CHECK(receiver_control_endp_.set_host_port(address::Family_IPv4, "127.0.0.1", control_port));
+
+            CHECK(recv_control_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1", 0));
+
+            netio::NetworkLoop::Tasks::AddUdpPort add_task(recv_control_config_);
+            CHECK(net_loop_.schedule_and_wait(add_task));
+
+            netio::NetworkLoop::Tasks::StartUdpRecv recv_task(add_task.get_handle(), *this);
+            CHECK(net_loop_.schedule_and_wait(recv_task));
+        }
 
         netio::NetworkLoop::PortHandle send_port = NULL;
 
