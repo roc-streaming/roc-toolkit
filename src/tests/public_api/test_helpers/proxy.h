@@ -132,11 +132,23 @@ public:
         CHECK(roc_endpoint_set_port(input_repair_endp_,
                                     recv_repair_config_.bind_address.port())
               == 0);
+
+        if (receiver_control_endp) {
+            CHECK(roc_endpoint_allocate(&input_control_endp_) == 0);
+            CHECK(roc_endpoint_set_protocol(input_control_endp_, control_proto) == 0);
+            CHECK(roc_endpoint_set_host(input_control_endp_, "127.0.0.1") == 0);
+            CHECK(roc_endpoint_set_port(input_control_endp_,
+                                        recv_control_config_.bind_address.port())
+                  == 0);
+        }
     }
 
     ~Proxy() {
         CHECK(roc_endpoint_deallocate(input_source_endp_) == 0);
         CHECK(roc_endpoint_deallocate(input_repair_endp_) == 0);
+        if (input_control_endp_) {
+            CHECK(roc_endpoint_deallocate(input_control_endp_) == 0);
+        }
     }
 
     const roc_endpoint* source_endpoint() const {
@@ -147,6 +159,10 @@ public:
         return input_repair_endp_;
     }
 
+     const roc_endpoint* control_endpoint() const {
+        return input_control_endp_;
+    }
+
 private:
     virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& pp) {
         pp->udp()->src_addr = send_config_.bind_address;
@@ -154,9 +170,12 @@ private:
         if (pp->udp()->dst_addr == recv_source_config_.bind_address) {
             pp->udp()->dst_addr = receiver_source_endp_;
             UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue_.write(pp));
-        } else {
+        } else if (pp->udp()->dst_addr == recv_repair_config_.bind_address) {
             pp->udp()->dst_addr = receiver_repair_endp_;
             UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue_.write(pp));
+        } else if (pp->udp()->dst_addr == recv_control_config_.bind_address) {
+            pp->udp()->dst_addr = receiver_control_endp_;
+            UNSIGNED_LONGS_EQUAL(status::StatusOK, control_queue_.write(pp));
         }
 
         for (;;) {
@@ -166,11 +185,16 @@ private:
                 if (!send_packet_(source_queue_, block_pos == 1)) {
                     break;
                 }
-            } else {
+            } else if (block_pos < n_source_packets_ + n_repair_packets_) {
                 if (!send_packet_(repair_queue_, false)) {
                     break;
                 }
+            } else {
+                if (!send_packet_(control_queue_, false)) {
+                    break;
+                }
             }
+
         }
 
         return status::StatusOK;
