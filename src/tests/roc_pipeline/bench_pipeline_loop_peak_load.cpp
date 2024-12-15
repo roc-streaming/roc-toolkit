@@ -252,6 +252,7 @@ private:
 };
 
 class TestPipeline : public PipelineLoop,
+                     public IPipelineTaskCompleter,
                      private IPipelineTaskScheduler,
                      public ctl::ControlTaskExecutor<TestPipeline> {
 public:
@@ -319,6 +320,11 @@ public:
         state.counters["sc"] = st.scheduler_cancellations;
     }
 
+    virtual void pipeline_task_completed(PipelineTask& basic_task) {
+        TestPipeline::Task& task = (TestPipeline::Task&)basic_task;
+        delete &task;
+    }
+
     using PipelineLoop::process_subframes_and_tasks;
 
 private:
@@ -375,7 +381,7 @@ private:
     BackgroundProcessingTask control_task_;
 };
 
-class TaskThread : public core::Thread, private IPipelineTaskCompleter {
+class TaskThread : public core::Thread {
 public:
     TaskThread(TestPipeline& pipeline)
         : pipeline_(pipeline)
@@ -400,14 +406,9 @@ private:
 
                 task->start();
 
-                pipeline_.schedule(*task, *this);
+                pipeline_.schedule(*task, pipeline_);
             }
         }
-    }
-
-    virtual void pipeline_task_completed(PipelineTask& basic_task) {
-        TestPipeline::Task& task = (TestPipeline::Task&)basic_task;
-        delete &task;
     }
 
     TestPipeline& pipeline_;
