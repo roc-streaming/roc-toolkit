@@ -100,10 +100,10 @@ namespace {
 enum {
     SampleRate = 1000000, // 1 sample = 1 us (for convenience)
     Chans = 0x1,
-    FrameSize = 5000, // duration of the frame (5000 = 5ms)
+    FrameSampleCount = 5000, // duration of the frame (5000 = 5ms)
+    FrameByteCount = FrameSampleCount * sizeof(audio::sample_t),
     NumIterations = 3000,
-    WarmupIterations = 10,
-    FrameBufSize = 100
+    WarmupIterations = 10
 };
 
 // computation time of a frame
@@ -124,7 +124,8 @@ const size_t MaxTaskBurst = 10;
 core::HeapArena arena;
 
 core::SlabPool<audio::Frame> frame_pool("frame_pool", arena);
-core::SlabPool<core::Buffer> frame_buffer_pool("frame_buffer_pool", arena, FrameBufSize);
+core::SlabPool<core::Buffer>
+    frame_buffer_pool("frame_buffer_pool", arena, sizeof(core::Buffer) + FrameByteCount);
 
 audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
@@ -428,14 +429,16 @@ public:
 
         size_t ts = 0;
 
-        audio::FramePtr frame = frame_factory.allocate_frame(FrameSize);
+        audio::FramePtr frame = frame_factory.allocate_frame(FrameByteCount);
+        frame->set_raw(true);
+        frame->set_duration(FrameSampleCount);
 
         while (state_.KeepRunning()) {
             ticker.wait(ts);
 
             stats_.frame_started();
 
-            (void)pipeline_.process_subframes_and_tasks(*frame, frame->duration(),
+            (void)pipeline_.process_subframes_and_tasks(*frame, FrameSampleCount,
                                                         audio::ModeHard);
 
             stats_.frame_finished();
