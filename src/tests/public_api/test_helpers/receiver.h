@@ -295,8 +295,9 @@ public:
         return conn_metrics_[n];
     }
 
-    void stop() {
+    void stop_and_join() {
         stopped_ = true;
+        join();
     }
 
 private:

@@ -38,6 +38,8 @@ enum {
     FlagInfinite = (1 << 5),
     FlagLoseSomePkts = (1 << 6),
     FlagLoseAllRepairPkts = (1 << 7),
+    FlagDeliveryDelay = (1 << 8),
+    FlagDeliveryJitter = (1 << 9),
 };
 
 inline float increment_sample_value(float sample_value, float sample_step) {

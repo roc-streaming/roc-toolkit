@@ -164,6 +164,10 @@ void test_plc_process_loss(void* plugin_instance,
 
     // update stats shared by all plugin instances
     plc->plugin->n_lost_samples += lost_sample_count;
+
+    roc_log(LogNote, "plc plugin: n_hist=%lu n_lost=%lu",
+            (unsigned long)plc->plugin->n_hist_samples,
+            (unsigned long)plc->plugin->n_lost_samples);
 }
 
 TestPlugin::TestPlugin() {
@@ -210,7 +214,7 @@ TEST_GROUP(plugin_plc) {
         receiver_conf.plc_backend = (roc_plc_backend)PluginID;
 
         receiver_conf.latency_tuner_profile = ROC_LATENCY_TUNER_PROFILE_INTACT;
-        receiver_conf.target_latency = test::Latency * 1000000000ull / SampleRate;
+        receiver_conf.target_latency = test::Latency * 1000000000ull / SampleRate * 4;
         receiver_conf.latency_tolerance =
             test::Latency * 1000000000ull / SampleRate * 10000;
         receiver_conf.no_playback_timeout =
@@ -253,10 +257,13 @@ TEST(plugin_plc, losses_restored_by_fec) {
 
         sender.connect(proxy.source_endpoint(), proxy.repair_endpoint(), NULL);
 
+        CHECK(proxy.start());
         CHECK(sender.start());
+
         receiver.receive();
-        sender.stop();
-        sender.join();
+
+        sender.stop_and_join();
+        proxy.stop_and_join();
 
         // some packets were lost
         CHECK(proxy.n_dropped_packets() > 0);
@@ -305,10 +312,13 @@ TEST(plugin_plc, losses_restored_by_plc) {
 
         sender.connect(proxy.source_endpoint(), proxy.repair_endpoint(), NULL);
 
+        CHECK(proxy.start());
         CHECK(sender.start());
+
         receiver.receive();
-        sender.stop();
-        sender.join();
+
+        sender.stop_and_join();
+        proxy.stop_and_join();
 
         // some packets were lost
         CHECK(proxy.n_dropped_packets() > 0);
