@@ -57,7 +57,6 @@ macOS versions:
 
 * macOS 14 (Sonoma)
 * macOS 13 (Ventura)
-* macOS 12 (Monterey)
 
 Hardware architectures:
 

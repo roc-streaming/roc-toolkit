@@ -8,7 +8,7 @@ Tested devices
 Overview
 ========
 
-This page provides the list of devices used for acceptance testing of evey published release.
+This page provides the list of devices used for acceptance testing of every published release.
 
 Testing includes building for target platform, running all unit and integration tests on hardware, and manual testing of sender and receiver. `QA repository <https://github.com/roc-streaming/qa/>`_ contains scripts that implements this procedure.
 
