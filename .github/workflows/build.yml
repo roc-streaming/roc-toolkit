@@ -426,10 +426,6 @@ jobs:
             macos-version: 13
             script: standard-build
 
-          - macos-arch: x86_64
-            macos-version: 12
-            script: standard-build
-
     runs-on: macos-${{ matrix.macos-version }}
 
     name: macos${{ matrix.macos-version }}-${{ matrix.macos-arch }}/${{ matrix.script }}
