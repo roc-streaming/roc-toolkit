@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/packet_dispatcher.h"
 
 #include "roc_core/heap_arena.h"
@@ -145,7 +144,7 @@ TEST_GROUP(block_writer_reader_peek) {
 // Check how peek works when there are no losses.
 TEST(block_writer_reader_peek, no_losses) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     test::PacketDispatcher dispatcher(source_parser, repair_parser, packet_factory,
@@ -183,7 +182,7 @@ TEST(block_writer_reader_peek, no_losses) {
 // Check that peek works with repaired packets.
 TEST(block_writer_reader_peek, repairs_in_the_middle_of_block) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     test::PacketDispatcher dispatcher(source_parser, repair_parser, packet_factory,
@@ -225,7 +224,7 @@ TEST(block_writer_reader_peek, repairs_in_the_middle_of_block) {
 // Check that peek skips lost packets in the middle of the block.
 TEST(block_writer_reader_peek, losses_in_the_middle_of_block) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     test::PacketDispatcher dispatcher(source_parser, repair_parser, packet_factory,
@@ -278,7 +277,7 @@ TEST(block_writer_reader_peek, losses_in_the_middle_of_block) {
 // Check that peek skips lost packets in the beginning of the block.
 TEST(block_writer_reader_peek, losses_in_the_beginning_of_block) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     test::PacketDispatcher dispatcher(source_parser, repair_parser, packet_factory,
@@ -334,7 +333,7 @@ TEST(block_writer_reader_peek, losses_in_the_beginning_of_block) {
 // the end of the block, but instead returns StatusDrain.
 TEST(block_writer_reader_peek, losses_in_the_end_of_block) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     test::PacketDispatcher dispatcher(source_parser, repair_parser, packet_factory,
@@ -391,7 +390,7 @@ TEST(block_writer_reader_peek, losses_in_the_end_of_block) {
 // Peek packet when there is loss, then deliver lost packet and peek again.
 TEST(block_writer_reader_peek, late_source_packets) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     test::PacketDispatcher dispatcher(source_parser, repair_parser, packet_factory,
@@ -464,7 +463,7 @@ TEST(block_writer_reader_peek, late_source_packets) {
 // and then peek again.
 TEST(block_writer_reader_peek, late_repair_packets) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     test::PacketDispatcher dispatcher(source_parser, repair_parser, packet_factory,

@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/context.h"
 #include "test_helpers/proxy.h"
 #include "test_helpers/receiver.h"
@@ -231,7 +230,7 @@ TEST_GROUP(plugin_plc) {
 // Check that all all packets were restored by FEC and not by PLC.
 TEST(plugin_plc, losses_restored_by_fec) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     enum { Flags = test::FlagRS8M | test::FlagLoseSomePkts };
@@ -284,7 +283,7 @@ TEST(plugin_plc, losses_restored_by_fec) {
 // Check that PLC was used to restore packets.
 TEST(plugin_plc, losses_restored_by_plc) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     enum {

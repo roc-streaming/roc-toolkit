@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/context.h"
 #include "test_helpers/proxy.h"
 #include "test_helpers/receiver.h"
@@ -166,7 +165,7 @@ TEST(loopback_sender_2_receiver, rtp_rtcp) {
 
 TEST(loopback_sender_2_receiver, rs8m_without_losses) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     enum { Flags = test::FlagRS8M, SampleRate = 44100, FrameChans = 2, PacketChans = 2 };
@@ -192,7 +191,7 @@ TEST(loopback_sender_2_receiver, rs8m_without_losses) {
 
 TEST(loopback_sender_2_receiver, rs8m_with_losses) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     enum {
@@ -232,7 +231,7 @@ TEST(loopback_sender_2_receiver, rs8m_with_losses) {
 
 TEST(loopback_sender_2_receiver, ldpc_without_losses) {
     if (!is_ldpc_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     enum { Flags = test::FlagLDPC, SampleRate = 44100, FrameChans = 2, PacketChans = 2 };
@@ -258,7 +257,7 @@ TEST(loopback_sender_2_receiver, ldpc_without_losses) {
 
 TEST(loopback_sender_2_receiver, ldpc_with_losses) {
     if (!is_ldpc_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     enum {
@@ -632,7 +631,7 @@ TEST(loopback_sender_2_receiver, multitrack_separate_contexts) {
 // Smoke test for various counters, durations, etc.
 TEST(loopback_sender_2_receiver, metrics_measurements) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     enum {

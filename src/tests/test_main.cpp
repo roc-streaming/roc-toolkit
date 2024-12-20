@@ -6,14 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/CommandLineArguments.h>
-#include <CppUTest/CommandLineTestRunner.h>
-
 #include "roc_core/crash_handler.h"
 #include "roc_core/die.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
 #include "roc_core/stddefs.h"
+
+#include "test_harness.h"
 
 using namespace roc;
 
@@ -53,7 +52,9 @@ int main(int argc, const char** argv) {
 
     MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
 
-    const int code = CommandLineTestRunner::RunAllTests(argc, argv);
+    ExtTestRunner runner(argc, argv);
+
+    const int code = runner.runAllTestsMain();
     if (code != 0) {
         /* Terminate without destructors and exit handlers.
          * If a test was failed, chances are that there are leaks or other errors

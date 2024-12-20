@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/mock_arena.h"
 #include "test_helpers/packet_dispatcher.h"
 #include "test_helpers/status_reader.h"
@@ -134,11 +133,11 @@ TEST_GROUP(block_writer_reader_errors) {
 };
 
 TEST(block_writer_reader_errors, writer_cant_resize_block) {
-    enum { BlockSize1 = 50, BlockSize2 = 60 };
-
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
+
+    enum { BlockSize1 = 50, BlockSize2 = 60 };
 
     core::ScopedPtr<IBlockEncoder> encoder(
         CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
@@ -178,11 +177,11 @@ TEST(block_writer_reader_errors, writer_cant_resize_block) {
 }
 
 TEST(block_writer_reader_errors, writer_cant_encode_packet) {
-    enum { BlockSize1 = 50, BlockSize2 = 60 };
-
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
+
+    enum { BlockSize1 = 50, BlockSize2 = 60 };
 
     test::MockArena mock_arena;
 
@@ -218,11 +217,11 @@ TEST(block_writer_reader_errors, writer_cant_encode_packet) {
 }
 
 TEST(block_writer_reader_errors, reader_cant_resize_block) {
-    enum { BlockSize1 = 50, BlockSize2 = 60 };
-
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
+
+    enum { BlockSize1 = 50, BlockSize2 = 60 };
 
     core::ScopedPtr<IBlockEncoder> encoder(
         CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
@@ -288,11 +287,11 @@ TEST(block_writer_reader_errors, reader_cant_resize_block) {
 }
 
 TEST(block_writer_reader_errors, reader_cant_decode_packet) {
-    enum { BlockSize1 = 50, BlockSize2 = 60 };
-
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
+
+    enum { BlockSize1 = 50, BlockSize2 = 60 };
 
     core::ScopedPtr<IBlockEncoder> encoder(
         CodecMap::instance().new_block_encoder(codec_config, packet_factory, arena));
@@ -371,7 +370,7 @@ TEST(block_writer_reader_errors, reader_cant_decode_packet) {
 
 TEST(block_writer_reader_errors, reader_cant_read_source_packet) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     core::ScopedPtr<IBlockEncoder> encoder(
@@ -418,7 +417,7 @@ TEST(block_writer_reader_errors, reader_cant_read_source_packet) {
 
 TEST(block_writer_reader_errors, reader_cant_read_repair_packet) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     core::ScopedPtr<IBlockEncoder> encoder(
@@ -465,7 +464,7 @@ TEST(block_writer_reader_errors, reader_cant_read_repair_packet) {
 
 TEST(block_writer_reader_errors, reader_cant_read_source_and_repair_packets) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     core::ScopedPtr<IBlockDecoder> decoder(

@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
+#include "test_harness.h"
 
 #include "roc_core/heap_arena.h"
 #include "roc_fec/codec_map.h"
@@ -429,12 +429,12 @@ TEST(sender, endpoints_fec) {
 }
 
 TEST(sender, endpoints_fec_multiple_slots) {
+    if (!fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8)) {
+        TEST_SKIP();
+    }
+
     Context context(context_config, arena);
     LONGS_EQUAL(status::StatusOK, context.init_status());
-
-    if (!fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8)) {
-        return;
-    }
 
     sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 
@@ -707,7 +707,7 @@ TEST(sender, configure_errors) {
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
-    { // multicast group: IP familty mismatch
+    { // multicast group: IP family mismatch
         Context context(context_config, arena);
         LONGS_EQUAL(status::StatusOK, context.init_status());
 
@@ -905,14 +905,14 @@ TEST(sender, recover) {
 }
 
 TEST(sender, port_sharing) {
+    if (!fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8)) {
+        TEST_SKIP();
+    }
+
     Context context(context_config, arena);
     LONGS_EQUAL(status::StatusOK, context.init_status());
 
     LONGS_EQUAL(0, context.network_loop().num_ports());
-
-    if (!fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8)) {
-        return;
-    }
 
     sender_config.fec_encoder.scheme = packet::FEC_ReedSolomon_M8;
 

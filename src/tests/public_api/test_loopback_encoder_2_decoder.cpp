@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/utils.h"
 
 #include "roc_core/macro_helpers.h"
@@ -408,7 +407,7 @@ TEST(loopback_encoder_2_decoder, source_control) {
 
 TEST(loopback_encoder_2_decoder, source_repair) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     sender_conf.fec_encoding = ROC_FEC_ENCODING_RS8M;
@@ -452,7 +451,7 @@ TEST(loopback_encoder_2_decoder, source_repair) {
 
 TEST(loopback_encoder_2_decoder, source_repair_losses) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     sender_conf.fec_encoding = ROC_FEC_ENCODING_RS8M;
@@ -496,7 +495,7 @@ TEST(loopback_encoder_2_decoder, source_repair_losses) {
 
 TEST(loopback_encoder_2_decoder, source_repair_control) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     sender_conf.fec_encoding = ROC_FEC_ENCODING_RS8M;

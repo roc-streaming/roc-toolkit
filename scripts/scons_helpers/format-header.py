@@ -1,4 +1,5 @@
 import datetime
+import filecmp
 import fnmatch
 import os
 import re
@@ -42,6 +43,8 @@ def make_guard(path):
             arr = ['roc', 'public_api', dirname, basename]
         else:
             arr = ['roc', 'public_api', basename]
+    elif dirname == '.':
+        arr = ['roc', basename]
     else:
         arr = [dirname, basename]
     while not arr[0].startswith('roc_') and arr[0] != 'roc':
@@ -201,4 +204,5 @@ for path in walk_dir('.', ['*.h', '*.cpp']):
     with tempfile.NamedTemporaryFile('w+') as fp:
         format_file(fp, path)
         fp.flush()
-        shutil.copy(fp.name, path)
+        if not filecmp.cmp(path, fp.name):
+            shutil.copy(fp.name, path)

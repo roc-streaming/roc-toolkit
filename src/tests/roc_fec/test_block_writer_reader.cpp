@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/packet_dispatcher.h"
 
 #include "roc_core/heap_arena.h"
@@ -2592,7 +2591,7 @@ TEST(block_writer_reader, reader_oversized_repair_block) {
 
 TEST(block_writer_reader, reader_invalid_fec_scheme_source_packet) {
     if (CodecMap::instance().num_schemes() == 1) {
-        return;
+        TEST_SKIP();
     }
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
@@ -2665,7 +2664,7 @@ TEST(block_writer_reader, reader_invalid_fec_scheme_source_packet) {
 
 TEST(block_writer_reader, reader_invalid_fec_scheme_repair_packet) {
     if (CodecMap::instance().num_schemes() == 1) {
-        return;
+        TEST_SKIP();
     }
 
     for (size_t n_scheme = 0; n_scheme < CodecMap::instance().num_schemes(); ++n_scheme) {
