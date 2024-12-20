@@ -117,6 +117,10 @@ TEST_GROUP(loopback_sender_2_receiver) {
     bool is_ldpc_supported() {
         return fec::CodecMap::instance().has_scheme(packet::FEC_LDPC_Staircase);
     }
+
+    bool running_in_valgrind() {
+        return ExtTestRunner::getCurrent()->runningInValgrind();
+    }
 };
 
 TEST(loopback_sender_2_receiver, bare_rtp) {
@@ -630,7 +634,7 @@ TEST(loopback_sender_2_receiver, multitrack_separate_contexts) {
 
 // Smoke test for various counters, durations, etc.
 TEST(loopback_sender_2_receiver, metrics_measurements) {
-    if (!is_rs8m_supported()) {
+    if (!is_rs8m_supported() || running_in_valgrind()) {
         TEST_SKIP();
     }
 

@@ -1,0 +1,19 @@
+{
+   cpputest_NormalTestTerminator_exitCurrentTest
+   Memcheck:Param
+   write(buf)
+   ...
+   fun:_ZNK20NormalTestTerminator15exitCurrentTestEv
+}
+{
+   cpputest_PlatformSpecificSetJmpImplementation
+   Memcheck:Addr8
+   ...
+   fun:PlatformSpecificSetJmpImplementation
+}
+{
+   cpputest_CommandLineTestRunner_dtor
+   Memcheck:Free
+   fun:_ZdlPvm
+   fun:_ZN21CommandLineTestRunnerD1Ev
+}

@@ -8,6 +8,8 @@
 
 #include "test_harness.h"
 
+#include "roc_core/stddefs.h"
+
 ExtTestOutput::ExtTestOutput()
     : ConsoleTestOutput() {
 }
@@ -36,8 +38,14 @@ ExtTestRunner* ExtTestRunner::getCurrent() {
 
 ExtTestRunner::ExtTestRunner(int argc, const char* const* argv)
     : CommandLineTestRunner(argc, argv, TestRegistry::getCurrentRegistry())
-    , test_skipped_(false) {
+    , test_skipped_(false)
+    , valgrind_detected_(false) {
     current_runner_ = this;
+
+    const char* valgrind = getenv("RUNNING_IN_VALGRIND");
+    if (valgrind && valgrind[0] && strcmp(valgrind, "0") != 0) {
+        valgrind_detected_ = true;
+    }
 }
 
 void ExtTestRunner::markTestStarted() {
@@ -54,6 +62,10 @@ void ExtTestRunner::markTestEnded() {
 
 bool ExtTestRunner::isTestSkipped() const {
     return test_skipped_;
+}
+
+bool ExtTestRunner::runningInValgrind() const {
+    return valgrind_detected_;
 }
 
 TestOutput* ExtTestRunner::createConsoleOutput() {

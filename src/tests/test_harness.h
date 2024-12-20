@@ -39,6 +39,7 @@ public:
     void markTestEnded();
 
     bool isTestSkipped() const;
+    bool runningInValgrind() const;
 
 protected:
     virtual TestOutput* createConsoleOutput();
@@ -46,6 +47,7 @@ protected:
 private:
     static ExtTestRunner* current_runner_;
     bool test_skipped_;
+    bool valgrind_detected_;
 };
 
 #endif // ROC_TEST_HARNESS_H_
