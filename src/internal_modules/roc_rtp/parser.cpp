@@ -30,7 +30,7 @@ status::StatusCode Parser::parse(packet::Packet& packet,
     if (buffer.size() < sizeof(Header)) {
         roc_log(LogDebug, "rtp parser: bad packet: size<%d (rtp header)",
                 (int)sizeof(Header));
-        return status::StatusBadBuffer;
+        return status::StatusBadPacket;
     }
 
     const Header& header = *(const Header*)buffer.data();
@@ -50,7 +50,7 @@ status::StatusCode Parser::parse(packet::Packet& packet,
     if (buffer.size() < header_size) {
         roc_log(LogDebug, "rtp parser: bad packet: size<%d (rtp header + ext header)",
                 (int)header_size);
-        return status::StatusBadBuffer;
+        return status::StatusBadPacket;
     }
 
     if (header.has_extension()) {
@@ -64,7 +64,7 @@ status::StatusCode Parser::parse(packet::Packet& packet,
         roc_log(LogDebug,
                 "rtp parser: bad packet: size<%d (rtp header + ext header + ext data)",
                 (int)header_size);
-        return status::StatusBadBuffer;
+        return status::StatusBadPacket;
     }
 
     size_t payload_begin = header_size;

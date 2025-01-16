@@ -13,6 +13,7 @@
 #define ROC_PACKET_IPARSER_H_
 
 #include "roc_core/allocation_policy.h"
+#include "roc_core/attributes.h"
 #include "roc_core/slice.h"
 #include "roc_packet/packet.h"
 #include "roc_status/status_code.h"
@@ -42,8 +43,8 @@ public:
     //! @returns
     //!  status::StatusOK if the packet was successfully parsed,
     //!  or error code otherwise.
-    virtual status::StatusCode parse(Packet& packet,
-                                     const core::Slice<uint8_t>& buffer) = 0;
+    virtual ROC_ATTR_NODISCARD status::StatusCode
+    parse(Packet& packet, const core::Slice<uint8_t>& buffer) = 0;
 };
 
 } // namespace packet

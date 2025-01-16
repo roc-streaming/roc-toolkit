@@ -212,9 +212,7 @@ private:
             FAIL("can't allocate packet");
         }
 
-        if (parser.parse(*pp, old_pp->buffer()) != status::StatusOK) {
-            FAIL("can't parse packet");
-        }
+        LONGS_EQUAL(status::StatusOK, parser.parse(*pp, old_pp->buffer()));
 
         pp->set_buffer(old_pp->buffer());
 

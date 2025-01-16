@@ -222,12 +222,16 @@ status::StatusCode ReceiverEndpoint::pull_packets(core::nanoseconds_t current_ti
 
 status::StatusCode ReceiverEndpoint::handle_packet_(const packet::PacketPtr& packet,
                                                     core::nanoseconds_t current_time) {
-    if (parser_->parse(*packet, packet->buffer()) != status::StatusOK) {
-        roc_log(LogDebug, "receiver endpoint: dropping bad packet: can't parse");
+    status::StatusCode code = status::NoStatus;
+
+    if ((code = parser_->parse(*packet, packet->buffer())) != status::StatusOK) {
+        roc_log(LogDebug,
+                "receiver endpoint: dropping bad packet: can't parse: status=%s",
+                status::code_to_str(code));
         return status::StatusOK;
     }
 
-    const status::StatusCode code = session_group_.route_packet(packet, current_time);
+    code = session_group_.route_packet(packet, current_time);
 
     if (code == status::StatusNoRoute) {
         roc_log(LogDebug, "receiver endpoint: dropping bad packet: can't route");
