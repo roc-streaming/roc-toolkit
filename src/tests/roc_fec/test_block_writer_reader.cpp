@@ -119,9 +119,9 @@ TEST_GROUP(block_writer_reader) {
 
     void recompose_packet(const packet::PacketPtr& p) {
         if (p->flags() & packet::Packet::FlagRepair) {
-            CHECK(repair_composer().compose(*p));
+            LONGS_EQUAL(status::StatusOK, repair_composer().compose(*p));
         } else {
-            CHECK(source_composer().compose(*p));
+            LONGS_EQUAL(status::StatusOK, source_composer().compose(*p));
         }
     }
 
@@ -145,7 +145,7 @@ TEST_GROUP(block_writer_reader) {
         if (!composer) {
             composer = &source_composer();
         }
-        CHECK(composer->prepare(*pp, bp, rtp_payload_size));
+        LONGS_EQUAL(status::StatusOK, composer->prepare(*pp, bp, rtp_payload_size));
 
         pp->set_buffer(bp);
 
@@ -1651,7 +1651,7 @@ TEST(block_writer_reader, zero_repair_packets) {
                 // two blocks with NES == SBL
                 if ((n_block == 2 || n_block == 4) && (i >= NumSourcePackets)) {
                     p->fec()->block_length = NumSourcePackets;
-                    ldpc_repair_composer.compose(*p);
+                    LONGS_EQUAL(status::StatusOK, ldpc_repair_composer.compose(*p));
                 }
 
                 LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
@@ -2499,7 +2499,7 @@ TEST(block_writer_reader, reader_oversized_source_block) {
             if (i == 0) {
                 // violates: SBL <= MAX_BLEN (for source packets)
                 p->fec()->source_block_length = encoder->max_block_length() + 1;
-                ldpc_source_composer.compose(*p);
+                LONGS_EQUAL(status::StatusOK, ldpc_source_composer.compose(*p));
             }
 
             LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
@@ -2570,7 +2570,7 @@ TEST(block_writer_reader, reader_oversized_repair_block) {
             if (i == NumSourcePackets) {
                 // violates: BLEN <= MAX_BLEN (for repair packets)
                 p->fec()->block_length = encoder->max_block_length() + 1;
-                ldpc_repair_composer.compose(*p);
+                LONGS_EQUAL(status::StatusOK, ldpc_repair_composer.compose(*p));
             }
 
             LONGS_EQUAL(status::StatusOK, dispatcher.write(p));
