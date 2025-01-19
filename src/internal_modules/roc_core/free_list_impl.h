@@ -31,23 +31,22 @@ public:
     //! Get first list node.
     FreeListData* front() const;
 
-    //! Remove first node and return.
-    FreeListData* pop_front();
-
+    //! Try to remove first node and return.
+    FreeListData* try_pop_front();
+    
     //! Insert node into list.
     void push_front(FreeListData* node);
 
 private:
+    // Remove first element under the condition that the list is not being used by anyone 
+    FreeListData* unsafe_pop_front();
+    
     static void check_is_member_(const FreeListData* node, const FreeListImpl* list);
 
     //! Add node knowing that it is not part of a free list.
-    void add_knowing_refcount_is_zero(FreeListData* node);
+    void add_knowing_refcount_is_zero_(FreeListData* node);
 
     Atomic<FreeListData*> head_;
-    static const uint32_t SHOULD_BE_ON_FREELIST = 0x80000000;
-    static const uint32_t REFS_MASK = 0x7FFFFFFF;
-    static const uint32_t SUB_1 = 0xFFFFFFFF;
-    static const uint32_t SUB_2 = 0xFFFFFFFE;
 };
 
 } // namespace core

@@ -13,55 +13,63 @@
 namespace roc {
 namespace core {
 
+static const uint32_t SHOULD_BE_ON_FREELIST = 0x80000000;
+static const uint32_t REFS_MASK = 0x7FFFFFFF;
+static const uint32_t SUB_1 = 0xFFFFFFFF;
+static const uint32_t SUB_2 = 0xFFFFFFFE;
+
 FreeListImpl::FreeListImpl() {
     head_->next = NULL;
 }
 
 FreeListImpl::~FreeListImpl() {
+    while (head_ != NULL) {
+        unsafe_pop_front();
+    }
 }
 
-FreeListData* FreeListImpl::pop_front() {
+FreeListData* FreeListImpl::try_pop_front() {
     FreeListData* current_head = head_;
     if (current_head == NULL) {
-        roc_panic("list: is empty");
+        return NULL;
     }
     while (current_head != NULL) {
         FreeListData* prev_head = current_head;
-        uint32_t refs = current_head->free_list_refs;
+        uint32_t refs = current_head->refs;
         if ((refs & REFS_MASK) == 0
-            || !current_head->free_list_refs.compare_exchange(refs, refs + 1)) {
+            || !current_head->refs.compare_exchange(refs, refs + 1)) {
             current_head = head_;
             continue;
         }
         FreeListData* next = current_head->next;
         if (head_.compare_exchange(current_head, next)) {
-            if (!((current_head->free_list_refs & SHOULD_BE_ON_FREELIST) == 0)) {
+            if (!((current_head->refs & SHOULD_BE_ON_FREELIST) == 0)) {
                 roc_panic("ABA problem");
             }
-            current_head->free_list_refs += SUB_2;
+            current_head->refs += SUB_2;
             return current_head;
         }
-        refs = prev_head->free_list_refs.postfix_add(SUB_1);
+        refs = prev_head->refs.postfix_add(SUB_1);
         if (refs == SHOULD_BE_ON_FREELIST + 1) {
-            add_knowing_refcount_is_zero(prev_head);
+            add_knowing_refcount_is_zero_(prev_head);
         }
     }
     return NULL;
 }
 
 void FreeListImpl::push_front(FreeListData* node) {
-    if (node->free_list_refs.postfix_add(SHOULD_BE_ON_FREELIST) == 0) {
-        add_knowing_refcount_is_zero(node);
+    if (node->refs.postfix_add(SHOULD_BE_ON_FREELIST) == 0) {
+        add_knowing_refcount_is_zero_(node);
     }
 }
 
-void FreeListImpl::add_knowing_refcount_is_zero(FreeListData* node) {
+void FreeListImpl::add_knowing_refcount_is_zero_(FreeListData* node) {
     FreeListData* current_head = head_;
     while (true) {
         node->next = current_head;
-        node->free_list_refs = 1;
+        node->refs = 1;
         if (!head_.compare_exchange(current_head, node)) {
-            if ((node->free_list_refs.postfix_add(SHOULD_BE_ON_FREELIST - 1)) == 1)
+            if ((node->refs.postfix_add(SHOULD_BE_ON_FREELIST - 1)) == 1)
                 continue;
         }
         return;

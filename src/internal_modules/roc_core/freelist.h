@@ -15,7 +15,7 @@
 namespace roc {
 namespace core {
 
-template <class T, class Node = ListNode<> > class List : public NonCopyable<> {
+template <class T, class Node = ListNode<> > : public NonCopyable<> {
 public:
     FreeList()
         : member_initialization {
