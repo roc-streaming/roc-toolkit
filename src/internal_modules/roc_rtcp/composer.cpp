@@ -18,13 +18,13 @@ Composer::Composer(core::IArena& arena)
     : IComposer(arena) {
 }
 
-status::StatusCode Composer::init_status() const {
+ROC_ATTR_NODISCARD status::StatusCode Composer::init_status() const {
     return status::StatusOK;
 }
 
-bool Composer::align(core::Slice<uint8_t>& buffer,
-                     size_t header_size,
-                     size_t payload_alignment) {
+ROC_ATTR_NODISCARD status::StatusCode Composer::align(core::Slice<uint8_t>& buffer,
+                                                      size_t header_size,
+                                                      size_t payload_alignment) {
     if ((unsigned long)buffer.data() % payload_alignment != 0) {
         roc_panic("rtcp composer: unexpected non-aligned buffer");
     }
@@ -35,16 +35,16 @@ bool Composer::align(core::Slice<uint8_t>& buffer,
         roc_log(LogDebug,
                 "rtcp composer: not enough space for alignment: padding=%lu cap=%lu",
                 (unsigned long)padding, (unsigned long)buffer.capacity());
-        return false;
+        return status::StatusBadBuffer;
     }
 
     buffer.reslice(padding, padding);
-    return true;
+    return status::StatusOK;
 }
 
-bool Composer::prepare(packet::Packet& packet,
-                       core::Slice<uint8_t>& buffer,
-                       size_t payload_size) {
+ROC_ATTR_NODISCARD status::StatusCode Composer::prepare(packet::Packet& packet,
+                                                        core::Slice<uint8_t>& buffer,
+                                                        size_t payload_size) {
     buffer.reslice(0, payload_size);
 
     packet.add_flags(packet::Packet::FlagControl);
@@ -52,34 +52,33 @@ bool Composer::prepare(packet::Packet& packet,
 
     packet.rtcp()->payload = buffer;
 
-    return true;
+    return status::StatusOK;
 }
 
-bool Composer::pad(packet::Packet& packet, size_t padding_size) {
+ROC_ATTR_NODISCARD status::StatusCode Composer::pad(packet::Packet& packet,
+                                                    size_t padding_size) {
     // not supported
 
     (void)packet;
     (void)padding_size;
 
-    return false;
+    return status::StatusBadOperation;
 }
 
-bool Composer::compose(packet::Packet& packet) {
+ROC_ATTR_NODISCARD status::StatusCode Composer::compose(packet::Packet& packet) {
     if (!packet.rtcp()) {
         roc_panic("rtcp composer: unexpected non-rctp packet");
     }
 
     if (!packet.rtcp()->payload) {
-        roc_log(LogError, "rtcp composer: unexpected null data");
-        return false;
+        roc_panic("rtcp composer: unexpected null data");
     }
 
     if (packet.rtcp()->payload.size() == 0) {
-        roc_log(LogError, "rtcp composer: unexpected zero data");
-        return false;
+        roc_panic("rtcp composer: unexpected zero data");
     }
 
-    return true;
+    return status::StatusOK;
 }
 
 } // namespace rtcp

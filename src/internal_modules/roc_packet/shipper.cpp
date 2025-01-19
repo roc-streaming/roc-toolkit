@@ -46,9 +46,10 @@ status::StatusCode Shipper::write(const PacketPtr& packet) {
     }
 
     if (!packet->has_flags(Packet::FlagComposed)) {
-        if (!composer_.compose(*packet)) {
+        status::StatusCode status = composer_.compose(*packet);
+        if (status != status::StatusOK) {
             roc_log(LogError, "shipper: can't compose packet");
-            return status::StatusNoMem;
+            return status;
         }
         packet->add_flags(Packet::FlagComposed);
     }
