@@ -7,7 +7,7 @@
  */
 
 //! @file roc_core/free_list_node.h
-//! @brief Linked list node.
+//! @brief Free list node.
 
 #ifndef ROC_CORE_FREE_LIST_NODE_H_
 #define ROC_CORE_FREE_LIST_NODE_H_
@@ -30,11 +30,9 @@ struct FreeListData {
     //! Next free list element.
     // Atomic<FreeListData*> next;
     FreeListData* next;
+    
+    FreeListData() : next(NULL), refs(0) {}
 
-    FreeListData()
-        : next(NULL)
-        , refs(0) {
-    }
 };
 
 //! Base class for Free List element.
