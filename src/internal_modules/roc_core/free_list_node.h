@@ -25,9 +25,11 @@ namespace core {
 struct FreeListData {
     
     //! Reference counter for free list.
-    Atomic<uint32_t> refs;
+    // Atomic<uint32_t> refs;
+    uint32_t refs;
     //! Next free list element.
-    Atomic<FreeListData*> next;
+    // Atomic<FreeListData*> next;
+    FreeListData* next;
 
     FreeListData()
         : next(NULL)

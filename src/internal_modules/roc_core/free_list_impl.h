@@ -19,10 +19,13 @@
 
 namespace roc {
 namespace core {
+// A simple CAS-based lock-free free list. Not the fastest thing in the world under heavy contention,
+// but simple and correct (assuming nodes are never freed until after the free list is destroyed),
+// and fairly speedy under low contention.
 
-//! Intrusive singly-linked list implementation class.
-//! Handles FreeList infrastructure independent of templated type for FreeList.
-//! Ownership handling is left to the main FreeList class.
+// Credits:
+// Based on the article by Cameron:
+// https://moodycamel.com/blog/2014/solving-the-aba-problem-for-lock-free-free-lists.htm
 class FreeListImpl : public NonCopyable<> {
 public:
     FreeListImpl();
@@ -46,7 +49,10 @@ private:
     //! Add node knowing that it is not part of a free list.
     void add_knowing_refcount_is_zero_(FreeListData* node);
 
-    Atomic<FreeListData*> head_;
+    // Atomic<FreeListData*> head_;
+    // Implemented like a stack, but where node order doesn't matter (nodes are
+    // inserted out of order under contention)
+    FreeListData* head_;
 };
 
 } // namespace core
