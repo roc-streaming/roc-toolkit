@@ -200,11 +200,11 @@ public:
                            core::nanoseconds_t base_capture_ts = -1) {
         CHECK(expected_samples <= requested_samples);
 
-        audio::FramePtr frame = read_frame_(
-            expected_samples == requested_samples
-                ? status::StatusOK
-                : expected_samples > 0 ? status::StatusPart : status::StatusDrain,
-            requested_samples, sample_spec, audio::ModeSoft);
+        audio::FramePtr frame =
+            read_frame_(expected_samples == requested_samples ? status::StatusOK
+                            : expected_samples > 0            ? status::StatusPart
+                                                              : status::StatusDrain,
+                        requested_samples, sample_spec, audio::ModeSoft);
 
         if (expected_samples == 0) {
             return;
