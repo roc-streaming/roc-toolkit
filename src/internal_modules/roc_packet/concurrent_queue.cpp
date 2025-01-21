@@ -24,11 +24,9 @@ status::StatusCode ConcurrentQueue::init_status() const {
 }
 
 status::StatusCode ConcurrentQueue::write(const PacketPtr& packet) {
-    if (!packet) {
-        roc_panic("concurrent queue: packet is null");
+    if (packet) {
+        queue_.push_back(*packet);
     }
-
-    queue_.push_back(*packet);
 
     if (write_sem_) {
         write_sem_->post();

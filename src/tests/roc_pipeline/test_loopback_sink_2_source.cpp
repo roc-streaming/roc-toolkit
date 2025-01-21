@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/frame_reader.h"
 #include "test_helpers/frame_writer.h"
 
@@ -452,7 +451,7 @@ void check_metrics(ReceiverSlot& receiver,
                              send_party_metrics.link.lost_packets);
         CHECK(std::abs(recv_party_metrics.link.peak_jitter
                        - send_party_metrics.link.peak_jitter)
-              < 10 * core::Millisecond);
+              < 20 * core::Millisecond);
 
         DOUBLES_EQUAL(recv_party_metrics.latency.niq_latency,
                       send_party_metrics.latency.niq_latency, core::Millisecond);

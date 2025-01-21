@@ -22,18 +22,23 @@ struct Object {
     static long n_objects;
 
     int value;
+    bool valid;
 
     explicit Object(int v = 0)
-        : value(v) {
+        : value(v)
+        , valid(true) {
         n_objects++;
     }
 
     Object(const Object& other)
-        : value(other.value) {
+        : value(other.value)
+        , valid(true) {
         n_objects++;
     }
 
     ~Object() {
+        CHECK(valid);
+        valid = false;
         n_objects--;
     }
 };

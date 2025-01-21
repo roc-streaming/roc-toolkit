@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/packet_dispatcher.h"
 
 #include "roc_core/heap_arena.h"
@@ -97,7 +96,9 @@ TEST_GROUP(block_writer_reader_duration) {
         core::Slice<uint8_t> bp = packet_factory.new_packet_buffer();
         CHECK(bp);
 
-        CHECK(source_composer.prepare(*pp, bp, FECPayloadSize - sizeof(rtp::Header)));
+        LONGS_EQUAL(
+            status::StatusOK,
+            source_composer.prepare(*pp, bp, FECPayloadSize - sizeof(rtp::Header)));
         pp->set_buffer(bp);
 
         pp->add_flags(packet::Packet::FlagAudio | packet::Packet::FlagPrepared);
@@ -113,7 +114,7 @@ TEST_GROUP(block_writer_reader_duration) {
 
 TEST(block_writer_reader_duration, no_losses) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     test::PacketDispatcher dispatcher(source_parser, repair_parser, packet_factory,
@@ -155,7 +156,7 @@ TEST(block_writer_reader_duration, no_losses) {
 
 TEST(block_writer_reader_duration, lost_first_packet_in_first_block) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     test::PacketDispatcher dispatcher(source_parser, repair_parser, packet_factory,
@@ -202,7 +203,7 @@ TEST(block_writer_reader_duration, lost_first_packet_in_first_block) {
 
 TEST(block_writer_reader_duration, lost_first_packet_in_third_block) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     test::PacketDispatcher dispatcher(source_parser, repair_parser, packet_factory,
@@ -249,7 +250,7 @@ TEST(block_writer_reader_duration, lost_first_packet_in_third_block) {
 
 TEST(block_writer_reader_duration, lost_almost_every_packet) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     test::PacketDispatcher dispatcher(source_parser, repair_parser, packet_factory,
@@ -297,7 +298,7 @@ TEST(block_writer_reader_duration, lost_almost_every_packet) {
 
 TEST(block_writer_reader_duration, lost_single_block) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     test::PacketDispatcher dispatcher(source_parser, repair_parser, packet_factory,
@@ -349,7 +350,7 @@ TEST(block_writer_reader_duration, lost_single_block) {
 
 TEST(block_writer_reader_duration, resize_block_middle) {
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     test::PacketDispatcher dispatcher(source_parser, repair_parser, packet_factory,

@@ -174,7 +174,10 @@ jobs:
           - script: linux-checks/sanitizers
             image: rocstreaming/env-ubuntu
 
-          - script: linux-checks/valgrind
+          - script: linux-checks/valgrind-debug
+            image: rocstreaming/env-ubuntu
+
+          - script: linux-checks/valgrind-release
             image: rocstreaming/env-ubuntu
 
           - script: linux-checks/check-formatting
@@ -424,10 +427,6 @@ jobs:
 
           - macos-arch: x86_64
             macos-version: 13
-            script: standard-build
-
-          - macos-arch: x86_64
-            macos-version: 12
             script: standard-build
 
     runs-on: macos-${{ matrix.macos-version }}

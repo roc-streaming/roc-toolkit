@@ -62,7 +62,9 @@ packet::PacketPtr new_packet(IFrameEncoder& encoder,
     core::Slice<uint8_t> bp = packet_factory.new_packet_buffer();
     CHECK(bp);
 
-    CHECK(rtp_composer.prepare(*pp, bp, encoder.encoded_byte_count(SamplesPerPacket)));
+    LONGS_EQUAL(
+        status::StatusOK,
+        rtp_composer.prepare(*pp, bp, encoder.encoded_byte_count(SamplesPerPacket)));
 
     pp->set_buffer(bp);
 
@@ -82,7 +84,7 @@ packet::PacketPtr new_packet(IFrameEncoder& encoder,
 
     encoder.end_frame();
 
-    CHECK(rtp_composer.compose(*pp));
+    LONGS_EQUAL(status::StatusOK, rtp_composer.compose(*pp));
 
     return pp;
 }

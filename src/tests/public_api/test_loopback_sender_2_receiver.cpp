@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/context.h"
 #include "test_helpers/proxy.h"
 #include "test_helpers/receiver.h"
@@ -118,6 +117,10 @@ TEST_GROUP(loopback_sender_2_receiver) {
     bool is_ldpc_supported() {
         return fec::CodecMap::instance().has_scheme(packet::FEC_LDPC_Staircase);
     }
+
+    bool running_in_valgrind() {
+        return ExtTestRunner::getCurrent()->runningInValgrind();
+    }
 };
 
 TEST(loopback_sender_2_receiver, bare_rtp) {
@@ -139,8 +142,7 @@ TEST(loopback_sender_2_receiver, bare_rtp) {
 
     CHECK(sender.start());
     receiver.receive();
-    sender.stop();
-    sender.join();
+    sender.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, rtp_rtcp) {
@@ -162,13 +164,12 @@ TEST(loopback_sender_2_receiver, rtp_rtcp) {
 
     CHECK(sender.start());
     receiver.receive();
-    sender.stop();
-    sender.join();
+    sender.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, rs8m_without_losses) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     enum { Flags = test::FlagRS8M, SampleRate = 44100, FrameChans = 2, PacketChans = 2 };
@@ -189,13 +190,12 @@ TEST(loopback_sender_2_receiver, rs8m_without_losses) {
 
     CHECK(sender.start());
     receiver.receive();
-    sender.stop();
-    sender.join();
+    sender.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, rs8m_with_losses) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     enum {
@@ -222,17 +222,20 @@ TEST(loopback_sender_2_receiver, rs8m_with_losses) {
 
     sender.connect(proxy.source_endpoint(), proxy.repair_endpoint(), NULL);
 
+    CHECK(proxy.start());
     CHECK(sender.start());
+
     receiver.receive();
-    sender.stop();
-    sender.join();
+
+    sender.stop_and_join();
+    proxy.stop_and_join();
 
     CHECK(proxy.n_dropped_packets() > 0);
 }
 
 TEST(loopback_sender_2_receiver, ldpc_without_losses) {
     if (!is_ldpc_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     enum { Flags = test::FlagLDPC, SampleRate = 44100, FrameChans = 2, PacketChans = 2 };
@@ -253,13 +256,12 @@ TEST(loopback_sender_2_receiver, ldpc_without_losses) {
 
     CHECK(sender.start());
     receiver.receive();
-    sender.stop();
-    sender.join();
+    sender.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, ldpc_with_losses) {
     if (!is_ldpc_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     enum {
@@ -286,10 +288,13 @@ TEST(loopback_sender_2_receiver, ldpc_with_losses) {
 
     sender.connect(proxy.source_endpoint(), proxy.repair_endpoint(), NULL);
 
+    CHECK(proxy.start());
     CHECK(sender.start());
+
     receiver.receive();
-    sender.stop();
-    sender.join();
+
+    sender.stop_and_join();
+    proxy.stop_and_join();
 
     CHECK(proxy.n_dropped_packets() > 0);
 }
@@ -313,8 +318,7 @@ TEST(loopback_sender_2_receiver, separate_context) {
 
     CHECK(sender.start());
     receiver.receive();
-    sender.stop();
-    sender.join();
+    sender.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, multiple_senders_one_receiver_sequential) {
@@ -336,8 +340,7 @@ TEST(loopback_sender_2_receiver, multiple_senders_one_receiver_sequential) {
 
     CHECK(sender_1.start());
     receiver.receive();
-    sender_1.stop();
-    sender_1.join();
+    sender_1.stop_and_join();
 
     receiver.wait_zeros(test::TotalSamples / 2);
 
@@ -348,8 +351,7 @@ TEST(loopback_sender_2_receiver, multiple_senders_one_receiver_sequential) {
 
     CHECK(sender_2.start());
     receiver.receive();
-    sender_2.stop();
-    sender_2.join();
+    sender_2.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, sender_slots) {
@@ -389,8 +391,7 @@ TEST(loopback_sender_2_receiver, sender_slots) {
     receiver_2.join();
     receiver_1.join();
 
-    sender.stop();
-    sender.join();
+    sender.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, receiver_slots_sequential) {
@@ -420,8 +421,7 @@ TEST(loopback_sender_2_receiver, receiver_slots_sequential) {
 
     CHECK(sender_1.start());
     receiver.receive();
-    sender_1.stop();
-    sender_1.join();
+    sender_1.stop_and_join();
 
     receiver.wait_zeros(test::TotalSamples / 2);
 
@@ -432,8 +432,7 @@ TEST(loopback_sender_2_receiver, receiver_slots_sequential) {
 
     CHECK(sender_2.start());
     receiver.receive();
-    sender_2.stop();
-    sender_2.join();
+    sender_2.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, mono) {
@@ -455,8 +454,7 @@ TEST(loopback_sender_2_receiver, mono) {
 
     CHECK(sender.start());
     receiver.receive();
-    sender.stop();
-    sender.join();
+    sender.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, stereo_mono_stereo) {
@@ -478,8 +476,7 @@ TEST(loopback_sender_2_receiver, stereo_mono_stereo) {
 
     CHECK(sender.start());
     receiver.receive();
-    sender.stop();
-    sender.join();
+    sender.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, mono_stereo_mono) {
@@ -501,8 +498,7 @@ TEST(loopback_sender_2_receiver, mono_stereo_mono) {
 
     CHECK(sender.start());
     receiver.receive();
-    sender.stop();
-    sender.join();
+    sender.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, custom_encoding) {
@@ -534,8 +530,7 @@ TEST(loopback_sender_2_receiver, custom_encoding) {
 
     CHECK(sender.start());
     receiver.receive();
-    sender.stop();
-    sender.join();
+    sender.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, custom_encoding_separate_contextx) {
@@ -573,8 +568,7 @@ TEST(loopback_sender_2_receiver, custom_encoding_separate_contextx) {
 
     CHECK(sender.start());
     receiver.receive();
-    sender.stop();
-    sender.join();
+    sender.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, multitrack) {
@@ -604,8 +598,7 @@ TEST(loopback_sender_2_receiver, multitrack) {
 
     CHECK(sender.start());
     receiver.receive();
-    sender.stop();
-    sender.join();
+    sender.stop_and_join();
 }
 
 TEST(loopback_sender_2_receiver, multitrack_separate_contexts) {
@@ -636,14 +629,18 @@ TEST(loopback_sender_2_receiver, multitrack_separate_contexts) {
 
     CHECK(sender.start());
     receiver.receive();
-    sender.stop();
-    sender.join();
+    sender.stop_and_join();
 }
 
 // Smoke test for various counters, durations, etc.
 TEST(loopback_sender_2_receiver, metrics_measurements) {
+    if (!is_rs8m_supported() || running_in_valgrind()) {
+        TEST_SKIP();
+    }
+
     enum {
-        Flags = test::FlagNonStrict | test::FlagInfinite | test::FlagRTCP,
+        Flags = test::FlagRS8M | test::FlagRTCP | test::FlagNonStrict | test::FlagInfinite
+            | test::FlagDeliveryDelay | test::FlagDeliveryJitter,
         SampleRate = 44100,
         FrameChans = 2,
         PacketChans = 2,
@@ -659,10 +656,14 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
 
     receiver.bind();
 
+    test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
+                      test::SourcePackets, test::RepairPackets, Flags);
+
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
                         Flags);
 
-    sender.connect(receiver.source_endpoint(), NULL, receiver.control_endpoint());
+    sender.connect(proxy.source_endpoint(), proxy.repair_endpoint(),
+                   receiver.control_endpoint());
 
     {
         receiver.query_metrics(MaxSess);
@@ -671,11 +672,12 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
         UNSIGNED_LONGS_EQUAL(0, receiver.conn_metrics_count());
     }
 
+    CHECK(proxy.start());
     CHECK(sender.start());
     CHECK(receiver.start());
 
     for (;;) {
-        core::sleep_for(core::ClockMonotonic, core::Millisecond);
+        core::sleep_for(core::ClockMonotonic, core::Millisecond * 10);
 
         receiver.query_metrics(MaxSess);
 
@@ -733,10 +735,9 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
         break;
     }
 
-    receiver.stop();
-    receiver.join();
-    sender.stop();
-    sender.join();
+    receiver.stop_and_join();
+    sender.stop_and_join();
+    proxy.stop_and_join();
 }
 
 // Check how connection counts are reported.
@@ -838,12 +839,9 @@ TEST(loopback_sender_2_receiver, metrics_connections) {
         break;
     }
 
-    receiver.stop();
-    receiver.join();
-    sender_1.stop();
-    sender_1.join();
-    sender_2.stop();
-    sender_2.join();
+    receiver.stop_and_join();
+    sender_1.stop_and_join();
+    sender_2.stop_and_join();
 }
 
 // Check how connection counters work for multiple slots.
@@ -964,10 +962,8 @@ TEST(loopback_sender_2_receiver, metrics_connections_slots) {
         UNSIGNED_LONGS_EQUAL(1, sender.conn_metrics_count());
     }
 
-    receiver.stop();
-    receiver.join();
-    sender.stop();
-    sender.join();
+    receiver.stop_and_join();
+    sender.stop_and_join();
 }
 
 } // namespace api

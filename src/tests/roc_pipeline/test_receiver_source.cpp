@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/control_reader.h"
 #include "test_helpers/control_writer.h"
 #include "test_helpers/frame_reader.h"
@@ -2084,7 +2083,7 @@ TEST(receiver_source, fec_no_losses) {
     init_with_defaults();
 
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
@@ -2130,7 +2129,7 @@ TEST(receiver_source, fec_lose_source_packets) {
     init_with_defaults();
 
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
@@ -2190,7 +2189,7 @@ TEST(receiver_source, fec_lose_repair_packets) {
     init_with_defaults();
 
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
@@ -2238,7 +2237,7 @@ TEST(receiver_source, fec_delay_source_packets) {
     init_with_defaults();
 
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
@@ -2355,7 +2354,7 @@ TEST(receiver_source, fec_delay_repair_packets) {
     init_with_defaults();
 
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
@@ -2647,7 +2646,7 @@ TEST(receiver_source, soft_read_fec) {
     init_with_defaults();
 
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
@@ -2781,7 +2780,7 @@ TEST(receiver_source, soft_read_delays_fec) {
     init_with_defaults();
 
     if (!fec_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,

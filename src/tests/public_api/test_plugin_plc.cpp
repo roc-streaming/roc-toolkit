@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/context.h"
 #include "test_helpers/proxy.h"
 #include "test_helpers/receiver.h"
@@ -164,6 +163,10 @@ void test_plc_process_loss(void* plugin_instance,
 
     // update stats shared by all plugin instances
     plc->plugin->n_lost_samples += lost_sample_count;
+
+    roc_log(LogNote, "plc plugin: n_hist=%lu n_lost=%lu",
+            (unsigned long)plc->plugin->n_hist_samples,
+            (unsigned long)plc->plugin->n_lost_samples);
 }
 
 TestPlugin::TestPlugin() {
@@ -210,7 +213,7 @@ TEST_GROUP(plugin_plc) {
         receiver_conf.plc_backend = (roc_plc_backend)PluginID;
 
         receiver_conf.latency_tuner_profile = ROC_LATENCY_TUNER_PROFILE_INTACT;
-        receiver_conf.target_latency = test::Latency * 1000000000ull / SampleRate;
+        receiver_conf.target_latency = test::Latency * 1000000000ull / SampleRate * 4;
         receiver_conf.latency_tolerance =
             test::Latency * 1000000000ull / SampleRate * 10000;
         receiver_conf.no_playback_timeout =
@@ -227,7 +230,7 @@ TEST_GROUP(plugin_plc) {
 // Check that all all packets were restored by FEC and not by PLC.
 TEST(plugin_plc, losses_restored_by_fec) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     enum { Flags = test::FlagRS8M | test::FlagLoseSomePkts };
@@ -253,10 +256,13 @@ TEST(plugin_plc, losses_restored_by_fec) {
 
         sender.connect(proxy.source_endpoint(), proxy.repair_endpoint(), NULL);
 
+        CHECK(proxy.start());
         CHECK(sender.start());
+
         receiver.receive();
-        sender.stop();
-        sender.join();
+
+        sender.stop_and_join();
+        proxy.stop_and_join();
 
         // some packets were lost
         CHECK(proxy.n_dropped_packets() > 0);
@@ -277,7 +283,7 @@ TEST(plugin_plc, losses_restored_by_fec) {
 // Check that PLC was used to restore packets.
 TEST(plugin_plc, losses_restored_by_plc) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     enum {
@@ -305,10 +311,13 @@ TEST(plugin_plc, losses_restored_by_plc) {
 
         sender.connect(proxy.source_endpoint(), proxy.repair_endpoint(), NULL);
 
+        CHECK(proxy.start());
         CHECK(sender.start());
+
         receiver.receive();
-        sender.stop();
-        sender.join();
+
+        sender.stop_and_join();
+        proxy.stop_and_join();
 
         // some packets were lost
         CHECK(proxy.n_dropped_packets() > 0);

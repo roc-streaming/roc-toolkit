@@ -17,6 +17,7 @@ import tempfile
 import time
 
 DRY_RUN = False
+TOKEN = None
 
 def error(message):
     print(f'{Fore.RED}{Style.BRIGHT}error:{Style.RESET_ALL} {message}', file=sys.stderr)
@@ -26,15 +27,26 @@ def print_cmd(cmd):
     pretty = ' '.join(['"'+c+'"' if ' ' in c else c for c in map(str, cmd)])
     print(f'{Fore.YELLOW}{pretty}{Style.RESET_ALL}')
 
+def find_token(machine, login):
+    with open(os.path.expanduser('~/.authinfo')) as fp:
+        for line in fp:
+            it = iter(line.split())
+            entry = dict(zip(it, it))
+            if entry.get('machine') == machine and entry.get('login') == login:
+                return entry.get('password')
+
 def run_cmd(cmd, input=None, env=None, retry_fn=None):
     cmd = [str(c) for c in cmd]
 
+    environ = os.environ.copy()
+    if TOKEN:
+        environ['GH_TOKEN'] = TOKEN
+    if env:
+        environ.update(env)
+
     if input:
         input = input.encode()
-    if env:
-        e = os.environ.copy()
-        e.update(env)
-        env = e
+
     stdout = None
     if retry_fn:
         stdout = subprocess.PIPE
@@ -46,7 +58,7 @@ def run_cmd(cmd, input=None, env=None, retry_fn=None):
             print_cmd(cmd)
             if DRY_RUN:
                 return
-            proc = subprocess.run(cmd, input=input, stdout=stdout, env=env, check=True)
+            proc = subprocess.run(cmd, input=input, stdout=stdout, env=environ, check=True)
             if stdout is not None:
                 output = proc.stdout.decode()
                 print(output, end='')
@@ -66,7 +78,7 @@ def run_cmd(cmd, input=None, env=None, retry_fn=None):
 def enter_worktree():
     def random_dir():
         while True:
-            path = '/tmp/rgh_' + ''.join(random.choice(string.ascii_lowercase + string.digits)
+            path = '/tmp/rgh-' + ''.join(random.choice(string.ascii_lowercase + string.digits)
                 for _ in range(8))
             if not os.path.exists(path):
                 return path
@@ -151,6 +163,12 @@ def guess_issue(org, repo, text):
 
     return None
 
+def make_prefix_regexp(org):
+    return r"^(gh-[0-9]+:? *|#[0-9]+:? *|" + org + r"/[^ ]+ *|[Ii]ssue *[0-9]+:? *)?"
+
+def make_suffix_regexp():
+    return r"\.$|\s*\(?#[0-9]+\)?$"
+
 # format prefix for commit message
 def make_prefix(org, repo, issue_link):
     if not issue_link:
@@ -166,9 +184,8 @@ def make_prefix(org, repo, issue_link):
 
 # format commit message
 def make_message(org, repo, issue_link, pr_title):
-    pr_title = re.sub(r'^([Ii]ssue\s+\d+(:\s*)?)', '', pr_title)
-    pr_title = re.sub(r'\s*\(?#\d+\)?$', '', pr_title)
-    pr_title = re.sub(r'\.$', '', pr_title)
+    pr_title = re.sub(make_prefix_regexp(org), '', pr_title)
+    pr_title = re.sub(make_suffix_regexp(), '', pr_title)
 
     if issue_link:
         return '{}: {}'.format(
@@ -431,8 +448,8 @@ def show_pr(org, repo, pr_number, show_json):
         print(json.dumps(json_result, indent=2))
 
 # die if PR does not fulfill all requirements
-def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, no_checks,
-              no_issue, no_milestone):
+def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, no_issue, no_milestone,
+              ignore_actions, ignore_state):
     pr_info = query_pr_info(org, repo, pr_number)
 
     if not no_issue:
@@ -450,13 +467,14 @@ def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, no_checks,
                 error("can't determine milestone associated with issue\n"
                       "assign milestone to issue or use --milestone or --no-milestone")
 
-    if pr_info['pr_state'] != 'open':
-        error("can't proceed on non-open pr")
+    if not ignore_state:
+        if pr_info['pr_state'] != 'open':
+            error("can't proceed on non-open pr")
 
-    if pr_info['pr_draft']:
-        error("can't proceed on draft pr")
+        if pr_info['pr_draft']:
+            error("can't proceed on draft pr")
 
-    if not no_checks:
+    if not ignore_actions:
         for action_name, action_result in query_pr_actions(org, repo, pr_number):
             if action_result != 'success':
                 error("can't proceed on pr with failed checks\n"
@@ -640,8 +658,8 @@ def reword_pr_commits(org, repo, pr_number, title, no_issue):
             f" -e '1s,^.*$,{commit_prefix}{title},'"
     else:
         sed = f"sed -r"+\
-            f" -e '1s,^(gh-[0-9]+:? +|{org}/[^ ]+ +|[Ii]ssue *[0-9]+:? +)?,{commit_prefix},'"+\
-            f" -e '1s,\s*\(?#[0-9]+\)?$,,'"
+          f" -e '1s,{make_prefix_regexp(org)},{commit_prefix},'"+\
+          f" -e '1s,{make_suffix_regexp()},,'"
 
     run_cmd([
         'git', 'filter-branch', '-f', '--msg-filter', sed,
@@ -674,6 +692,14 @@ def force_push_pr(org, repo, pr_number):
         source_remote,
         f'{local_branch}:{source_branch}'
         ])
+
+# tell github to remove draft status from pr
+def undraft_pr(org, repo, pr_number):
+    run_cmd([
+        'gh', 'pr', 'ready',
+        '--repo', f'{org}/{repo}',
+        pr_number,
+    ])
 
 # tell github to merge PR
 def merge_pr(org, repo, pr_number):
@@ -724,10 +750,8 @@ def stb_rebase(base_branch):
 parser = argparse.ArgumentParser(prog='rgh.py')
 
 common_parser = argparse.ArgumentParser(add_help=False)
-common_parser.add_argument('--org', default='roc-streaming',
-                           help='github org')
-common_parser.add_argument('--repo', default='roc-toolkit',
-                           help='github repo')
+common_parser.add_argument('--org', default='roc-streaming', help='github org')
+common_parser.add_argument('--repo', default='roc-toolkit', help='github repo')
 
 subparsers = parser.add_subparsers(dest='command')
 
@@ -761,8 +785,10 @@ merge_pr_parser.add_argument('-m', '--milestone', type=str, dest='milestone_name
                              help="overwrite issue milestone")
 merge_pr_parser.add_argument('-M', '--no-milestone', action='store_true', dest='no_milestone',
                              help="don't set issue milestone")
-merge_pr_parser.add_argument('--no-checks', action='store_true', dest='no_checks',
-                             help="proceed even if pr checks are failed")
+merge_pr_parser.add_argument('--ignore-actions', action='store_true', dest='ignore_actions',
+                             help="proceed even if pr github actions are failed")
+merge_pr_parser.add_argument('--ignore-state', action='store_true', dest='ignore_state',
+                             help="proceed even if pr is closed or draft")
 merge_pr_parser.add_argument('--no-push', action='store_true', dest='no_push',
                              help="don't actually push and merge anything")
 merge_pr_parser.add_argument('-n', '--dry-run', action='store_true', dest='dry_run',
@@ -772,6 +798,11 @@ args = parser.parse_args()
 
 if hasattr(args, 'dry_run'):
     DRY_RUN = args.dry_run
+
+token = find_token('api.github.com', 'rocstreaming-bot')
+if token:
+    print(f"Automatically using token for rocstreaming-bot from ~/.authinfo")
+    TOKEN = token
 
 colorama.init()
 
@@ -787,7 +818,8 @@ if args.command == 'merge_pr':
     if int(bool(args.rebase)) + int(bool(args.squash)) != 1:
         error("either --rebase or --squash should be specified")
     verify_pr(args.org, args.repo, args.pr_number, args.issue_number,
-              args.milestone_name, args.no_checks, args.no_issue, args.no_milestone)
+              args.milestone_name, args.no_issue, args.no_milestone,
+              args.ignore_actions, args.ignore_state)
     # create new worktree in /tmp, where we'll checkout pr's branch
     orig_path = enter_worktree()
     merged = False
@@ -813,6 +845,8 @@ if args.command == 'merge_pr':
         print_pr_commits(args.org, args.repo, args.pr_number)
         if not args.no_push:
             force_push_pr(args.org, args.repo, args.pr_number)
+            if args.ignore_state:
+                undraft_pr(args.org, args.repo, args.pr_number)
             merge_pr(args.org, args.repo, args.pr_number)
             merged = True
     finally:

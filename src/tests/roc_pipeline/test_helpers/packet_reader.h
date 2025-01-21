@@ -143,7 +143,7 @@ private:
         packet::PacketPtr pp = packet_factory_.new_packet();
         CHECK(pp);
 
-        CHECK(parser_->parse(*pp, bp));
+        LONGS_EQUAL(status::StatusOK, parser_->parse(*pp, bp));
         CHECK(pp->flags() & packet::Packet::FlagRTP);
 
         if (first_) {

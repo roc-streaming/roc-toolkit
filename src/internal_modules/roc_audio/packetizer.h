@@ -80,7 +80,7 @@ private:
     status::StatusCode end_packet_();
 
     status::StatusCode create_packet_();
-    void pad_packet_(size_t written_payload_size);
+    status::StatusCode pad_packet_(size_t written_payload_size);
 
     packet::IWriter& writer_;
     packet::IComposer& composer_;

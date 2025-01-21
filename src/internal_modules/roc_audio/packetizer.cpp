@@ -161,12 +161,17 @@ status::StatusCode Packetizer::end_packet_() {
     // Fill protocol-specific fields.
     sequencer_.next(*packet_, packet_cts_, (packet::stream_timestamp_t)packet_pos_);
 
+    status::StatusCode code = status::StatusOK;
     // Apply padding if needed.
     if (packet_pos_ < samples_per_packet_) {
-        pad_packet_(written_payload_size);
+        code = pad_packet_(written_payload_size);
     }
 
-    const status::StatusCode code = writer_.write(packet_);
+    if (code != status::StatusOK) {
+        return code;
+    }
+
+    code = writer_.write(packet_);
     if (code != status::StatusOK) {
         return code;
     }
@@ -196,9 +201,10 @@ status::StatusCode Packetizer::create_packet_() {
         return status::StatusNoMem;
     }
 
-    if (!composer_.prepare(*pp, buffer, payload_size_)) {
+    status::StatusCode status = composer_.prepare(*pp, buffer, payload_size_);
+    if (status != status::StatusOK) {
         roc_log(LogError, "packetizer: can't prepare packet");
-        return status::StatusNoMem;
+        return status;
     }
     pp->add_flags(packet::Packet::FlagPrepared);
 
@@ -208,15 +214,18 @@ status::StatusCode Packetizer::create_packet_() {
     return status::StatusOK;
 }
 
-void Packetizer::pad_packet_(size_t written_payload_size) {
+status::StatusCode Packetizer::pad_packet_(size_t written_payload_size) {
     if (written_payload_size == payload_size_) {
-        return;
+        return status::StatusOK;
     }
 
-    if (!composer_.pad(*packet_, payload_size_ - written_payload_size)) {
-        roc_panic("packetizer: can't pad packet: orig_size=%lu actual_size=%lu",
-                  (unsigned long)payload_size_, (unsigned long)written_payload_size);
+    status::StatusCode status =
+        composer_.pad(*packet_, payload_size_ - written_payload_size);
+    if (status != status::StatusOK) {
+        roc_log(LogError, "packetizer: can't pad packet: orig_size=%lu actual_size=%lu",
+                (unsigned long)payload_size_, (unsigned long)written_payload_size);
     }
+    return status;
 }
 
 } // namespace audio

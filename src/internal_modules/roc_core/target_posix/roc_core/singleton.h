@@ -49,9 +49,11 @@ private:
     static T* instance_;
 };
 
+//! @cond HIDDEN
 template <class T> pthread_once_t Singleton<T>::once_ = PTHREAD_ONCE_INIT;
 template <class T> AlignedStorage<sizeof(T)> Singleton<T>::storage_;
 template <class T> T* Singleton<T>::instance_;
+//! @endcond
 
 } // namespace core
 } // namespace roc
