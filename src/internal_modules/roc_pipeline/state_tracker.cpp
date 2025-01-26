@@ -8,14 +8,104 @@
 
 #include "roc_pipeline/state_tracker.h"
 #include "roc_core/panic.h"
+#include "roc_core/log.h"
 
 namespace roc {
 namespace pipeline {
 
 StateTracker::StateTracker()
-    : halt_state_(-1)
+    : sem_(0)
+    , halt_state_(-1)
     , active_sessions_(0)
-    , pending_packets_(0) {
+    , pending_packets_(0)
+    , sem_is_occupied_(false)
+    , waiting_mask_(0)
+    , waiting_con_(mutex_) {
+}
+
+// StateTracker::~StateTracker() {
+//     mutex_.unlock();
+// }
+
+// This method should block until the state becomes any of the states specified by the
+// mask, or deadline expires. E.g. if mask is ACTIVE | PAUSED, it should block until state
+// becomes either ACTIVE or PAUSED. (Currently only two states are used, but later more
+// states will be needed). Deadline should be an absolute timestamp.
+
+// Questions:
+// - When should the function return true vs false
+bool StateTracker::wait_state(unsigned int state_mask, core::nanoseconds_t deadline) {
+    roc_log(LogDebug,"enter wait state");
+    waiting_mask_ = state_mask;
+    for (;;) {
+        
+        // If no state is specified in state_mask, return immediately
+        if (state_mask == 0) {
+            roc_log(LogDebug,
+            "branch 1");
+            return true;
+        }
+
+        if (static_cast<unsigned>(get_state()) & state_mask) {
+            waiting_mask_ = 0;
+            roc_log(LogDebug, 
+            "branch 2 (correct state) %u %u", static_cast<unsigned>(get_state()), state_mask);
+            return true;
+        }
+
+        if (deadline >= 0 && deadline <= core::timestamp(core::ClockMonotonic)) {
+            roc_log(LogDebug, "branch 3 (timeout) %ld", core::timestamp(core::ClockMonotonic));
+            waiting_mask_ = 0;
+            return false;
+        }
+
+        // if (deadline >= 0) {
+        //     if (!sem_.timed_wait(deadline)) {
+        //         waiting_mask_ = 0;
+        //         return false;
+        //     }
+        // } else {
+        //     sem_.wait();
+        // }
+
+        //change to CAS here.
+        if (sem_is_occupied_.compare_exchange(false, true)) {
+            
+            roc_log(LogDebug,"sleep on sem");
+
+            if (deadline >= 0) {
+                roc_log(LogDebug, "entering timed wait with deadline %ld, current time is: %ld", deadline, core::timestamp(core::ClockMonotonic));
+                sem_.timed_wait(deadline);
+                roc_log(LogDebug, "exiting timed wait");
+
+            } else {
+                roc_log(LogDebug, "untimed wait");
+                sem_.wait();
+            }
+            
+            sem_is_occupied_ = false;
+            waiting_con_.broadcast();
+
+
+        } else {
+
+            core::Mutex::Lock lock(mutex_);
+
+            roc_log(LogDebug,"sleep on cond");
+
+              if (deadline >= 0) {
+                  waiting_con_.timed_wait(deadline);
+              } else {
+                  waiting_con_.wait();
+              }
+
+        }
+        roc_log(LogDebug,"finished this loop");
+
+
+    }
+  roc_log(LogDebug,"exit wait state");
+
 }
 
 sndio::DeviceState StateTracker::get_state() const {
@@ -65,23 +155,52 @@ size_t StateTracker::num_sessions() const {
 }
 
 void StateTracker::register_session() {
-    active_sessions_++;
+    if (active_sessions_++ == 0) {
+        signal_state_change();
+    }
 }
 
 void StateTracker::unregister_session() {
-    if (--active_sessions_ < 0) {
+    int prev_sessions = active_sessions_--;
+    if (prev_sessions == 0) {
         roc_panic("state tracker: unpaired register/unregister session");
+    } else if (prev_sessions == 1 && pending_packets_ == 0) {
+        signal_state_change();
     }
+
+    // if (--active_sessions_ < 0) {
+    //     roc_panic("state tracker: unpaired register/unregister session");
+    // }
 }
 
 void StateTracker::register_packet() {
-    pending_packets_++;
+    if (pending_packets_++ == 0 && active_sessions_ == 0) {
+        signal_state_change();
+    }
 }
 
 void StateTracker::unregister_packet() {
-    if (--pending_packets_ < 0) {
+    int prev_packets = pending_packets_--;
+    if (prev_packets == 0) {
         roc_panic("state tracker: unpaired register/unregister packet");
+    } else if (prev_packets == 1 && active_sessions_ == 0) {
+        signal_state_change();
     }
+
+    // if (--pending_packets_ < 0) {
+    //     roc_panic("state tracker: unpaired register/unregister packet");
+    // }
+}
+
+void StateTracker::signal_state_change() {
+    // if (waiting_mask_ != 0 && (static_cast<unsigned>(get_state()) & waiting_mask_)) {
+    //     sem_.post();
+    // }
+    if (sem_is_occupied_) {
+          roc_log(LogDebug, "signaling");
+          sem_.post();
+    }
+
 }
 
 } // namespace pipeline
