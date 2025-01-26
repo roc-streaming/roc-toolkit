@@ -30,6 +30,8 @@ bool Timer::try_set_deadline(nanoseconds_t new_deadline) {
         next_wakeup = -1;
     }
 
+    // if 1. new deadline is earlier than the scheduled wakeup time; or 2. nextwakeup <0 ,so timer is not active
+    // post only if sem flag is not set (to aviod duplicate signaling)
     if (next_wakeup < 0 || (new_deadline >= 0 && new_deadline < next_wakeup)) {
         if (sem_post_flag_.compare_exchange(false, true)) {
             sem_.post();
@@ -41,14 +43,18 @@ bool Timer::try_set_deadline(nanoseconds_t new_deadline) {
 
 void Timer::wait_deadline() {
     for (;;) {
+        // set a lock on next_wakeup?
         next_wakeup_.exclusive_store(-1);
 
         const nanoseconds_t deadline = deadline_.wait_load();
 
+        // continue if ddl is less than a clock (just because input is less, ddl is never decremented.)
         if (deadline >= 0 && deadline <= timestamp(ClockMonotonic)) {
             break;
         }
 
+        // wait forever if no deadline (will wakeup when other people set deadline)
+        // stuck here until sem timeout if have deadline (will I wake up if other people wake sem?) (do other people come to this statement too?)
         if (deadline > 0) {
             next_wakeup_.exclusive_store(deadline);
             (void)sem_.timed_wait(deadline);
@@ -59,6 +65,7 @@ void Timer::wait_deadline() {
         sem_post_flag_ = false;
     }
 
+    //release the lock
     next_wakeup_.exclusive_store(0);
 }
 

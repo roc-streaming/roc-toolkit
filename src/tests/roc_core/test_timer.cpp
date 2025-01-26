@@ -38,6 +38,7 @@ public:
 private:
     virtual void run() {
         r_ = true;
+        // very likely this is the line that cause deadlock
         t_.wait_deadline();
         r_ = false;
     }
@@ -183,6 +184,34 @@ TEST(timer, async) {
 
             set_deadline(t, 0);
             thr.join();
+        }
+    }
+    { // repeat
+        Timer t;
+        int num = 2;
+
+        TestThread* threads[3];
+        set_deadline(t, 1 * Second);
+
+        for (int i = 0; i < num; i++) {
+            threads[i] = new TestThread(t); // Dynamic allocation
+            CHECK(threads[i]->start());
+            threads[i]->wait_running();
+
+            // moved this line into the loop and solved the never end issue
+            sleep_for(ClockMonotonic, Microsecond * 10000);
+
+        }
+        
+        
+        for (int i = 0; i < num; i++) {
+            CHECK(threads[i]->running());
+        }
+        set_deadline(t, 0);
+        for (int i = 0; i < num; i++) {
+            
+            threads[i]->join();
+            delete threads[i]; // Free the memory
         }
     }
 }

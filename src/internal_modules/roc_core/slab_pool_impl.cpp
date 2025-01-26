@@ -130,6 +130,7 @@ size_t SlabPoolImpl::num_guard_failures() const {
     return num_guard_failures_;
 }
 
+//let user get this piece of memory from slot
 void* SlabPoolImpl::give_slot_to_user_(Slot* slot) {
     slot->~Slot();
 
@@ -148,6 +149,7 @@ void* SlabPoolImpl::give_slot_to_user_(Slot* slot) {
     return memory;
 }
 
+// take this memory from user, check if within same pool
 SlabPoolImpl::Slot* SlabPoolImpl::take_slot_from_user_(void* memory) {
     SlotHeader* slot_hdr =
         ROC_CONTAINER_OF((char*)memory - sizeof(SlotCanary), SlotHeader, data);
@@ -186,6 +188,7 @@ SlabPoolImpl::Slot* SlabPoolImpl::take_slot_from_user_(void* memory) {
     return new (slot_hdr) Slot;
 }
 
+// return a slot (locally) from free slot, used in allocate()
 SlabPoolImpl::Slot* SlabPoolImpl::acquire_slot_() {
     if (free_slots_.is_empty()) {
         allocate_new_slab_();
@@ -200,6 +203,7 @@ SlabPoolImpl::Slot* SlabPoolImpl::acquire_slot_() {
     return slot;
 }
 
+//put the slot back to freeslot
 void SlabPoolImpl::release_slot_(Slot* slot) {
     if (n_used_slots_ == 0) {
         roc_panic("slab pool (%s): unpaired deallocation", name_);
@@ -209,6 +213,7 @@ void SlabPoolImpl::release_slot_(Slot* slot) {
     free_slots_.push_front(*slot);
 }
 
+// add free_slots size by keep adding new slabs
 bool SlabPoolImpl::reserve_slots_(size_t desired_slots) {
     if (desired_slots > free_slots_.size()) {
         increase_slab_size_(desired_slots - free_slots_.size());
@@ -223,6 +228,8 @@ bool SlabPoolImpl::reserve_slots_(size_t desired_slots) {
     return true;
 }
 
+// add free slot size (a helper function to be called)
+// keep doubling cur_slots until it is greater than desired_slots, but limit it under max_slots.
 void SlabPoolImpl::increase_slab_size_(size_t desired_slots) {
     if (desired_slots > slab_max_slots_ && slab_max_slots_ != 0) {
         desired_slots = slab_max_slots_;
@@ -238,6 +245,9 @@ void SlabPoolImpl::increase_slab_size_(size_t desired_slots) {
     }
 }
 
+// allocate memory with size of header+size of all slots right now. 
+// Put a slab on it and put its pointer into slabs list, 
+// fill the memory up with multiple slots, and put them into the freeslot list. (total number of slots will be slab_cur_slots_,)
 bool SlabPoolImpl::allocate_new_slab_() {
     const size_t slab_size_bytes = slot_offset_(slab_cur_slots_);
 
@@ -254,10 +264,12 @@ bool SlabPoolImpl::allocate_new_slab_() {
         free_slots_.push_back(*slot);
     }
 
+    // grows the next slab size because I want to
     increase_slab_size_(slab_cur_slots_ * 2);
     return true;
 }
 
+//remove freeslots and slabs
 void SlabPoolImpl::deallocate_everything_() {
     if (n_used_slots_ != 0) {
         if (report_guard_(SlabPool_LeakGuard)) {
@@ -277,6 +289,7 @@ void SlabPoolImpl::deallocate_everything_() {
     }
 }
 
+// put the memory into free slots
 void SlabPoolImpl::add_preallocated_memory_(void* memory, size_t memory_size) {
     if (memory == NULL) {
         roc_panic("slab pool (%s): preallocated memory is null", name_);
