@@ -10,7 +10,6 @@
 #include "roc_core/cpu_instructions.h"
 #include "roc_core/errno_to_str.h"
 #include "roc_core/panic.h"
-#include "roc_core/log.h"
 
 #include <errno.h>
 #include <time.h>
@@ -58,7 +57,6 @@ bool Semaphore::timed_wait(nanoseconds_t deadline) {
         timespec ts;
         ts.tv_sec = long(converted_deadline / Second);
         ts.tv_nsec = long(converted_deadline % Second);
-        roc_log(LogDebug,"time to wait: %li",ts.tv_sec);
 
         if (HAS_SEM_CLOCKWAIT) {
             if (sem_clockwait(&sem_, core::ClockMonotonic ,&ts) == 0) {
