@@ -76,8 +76,8 @@ private:
     core::Atomic<int> pending_packets_;
     core::Atomic<bool> sem_is_occupied_;
     core::Atomic<unsigned> waiting_mask_;
-    core::Cond waiting_con_;
     core::Mutex mutex_;
+    core::Cond waiting_con_;
 
     void signal_state_change();
 };
