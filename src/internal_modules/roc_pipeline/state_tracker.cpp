@@ -7,8 +7,8 @@
  */
 
 #include "roc_pipeline/state_tracker.h"
-#include "roc_core/panic.h"
 #include "roc_core/log.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace pipeline {
@@ -35,77 +35,44 @@ StateTracker::StateTracker()
 // Questions:
 // - When should the function return true vs false
 bool StateTracker::wait_state(unsigned int state_mask, core::nanoseconds_t deadline) {
-    roc_log(LogDebug,"enter wait state");
     waiting_mask_ = state_mask;
     for (;;) {
-        
         // If no state is specified in state_mask, return immediately
         if (state_mask == 0) {
-            roc_log(LogDebug,
-            "branch 1");
             return true;
         }
 
         if (static_cast<unsigned>(get_state()) & state_mask) {
             waiting_mask_ = 0;
-            roc_log(LogDebug, 
-            "branch 2 (correct state) %u %u", static_cast<unsigned>(get_state()), state_mask);
             return true;
         }
 
         if (deadline >= 0 && deadline <= core::timestamp(core::ClockMonotonic)) {
-            roc_log(LogDebug, "branch 3 (timeout) %ld", core::timestamp(core::ClockMonotonic));
             waiting_mask_ = 0;
             return false;
         }
 
-        // if (deadline >= 0) {
-        //     if (!sem_.timed_wait(deadline)) {
-        //         waiting_mask_ = 0;
-        //         return false;
-        //     }
-        // } else {
-        //     sem_.wait();
-        // }
-
-        //change to CAS here.
         if (sem_is_occupied_.compare_exchange(false, true)) {
-            
-            roc_log(LogDebug,"sleep on sem");
-
             if (deadline >= 0) {
-                roc_log(LogDebug, "entering timed wait with deadline %ld, current time is: %ld", deadline, core::timestamp(core::ClockMonotonic));
                 sem_.timed_wait(deadline);
-                roc_log(LogDebug, "exiting timed wait");
 
             } else {
-                roc_log(LogDebug, "untimed wait");
                 sem_.wait();
             }
-            
+
             sem_is_occupied_ = false;
             waiting_con_.broadcast();
 
-
         } else {
-
             core::Mutex::Lock lock(mutex_);
 
-            roc_log(LogDebug,"sleep on cond");
-
-              if (deadline >= 0) {
-                  waiting_con_.timed_wait(deadline);
-              } else {
-                  waiting_con_.wait();
-              }
-
+            if (deadline >= 0) {
+                waiting_con_.timed_wait(deadline);
+            } else {
+                waiting_con_.wait();
+            }
         }
-        roc_log(LogDebug,"finished this loop");
-
-
     }
-  roc_log(LogDebug,"exit wait state");
-
 }
 
 sndio::DeviceState StateTracker::get_state() const {
@@ -197,10 +164,9 @@ void StateTracker::signal_state_change() {
     //     sem_.post();
     // }
     if (sem_is_occupied_) {
-          roc_log(LogDebug, "signaling");
-          sem_.post();
+        roc_log(LogDebug, "signaling");
+        sem_.post();
     }
-
 }
 
 } // namespace pipeline

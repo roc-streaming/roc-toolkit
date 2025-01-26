@@ -13,13 +13,12 @@
 #define ROC_PIPELINE_STATE_TRACKER_H_
 
 #include "roc_core/atomic.h"
+#include "roc_core/cond.h"
+#include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/semaphore.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
-#include "roc_core/cond.h"
-#include "roc_core/mutex.h"
-#include "roc_core/atomic.h"
 #include "roc_sndio/device_state.h"
 
 namespace roc {
@@ -79,8 +78,6 @@ private:
     core::Atomic<unsigned> waiting_mask_;
     core::Cond waiting_con_;
     core::Mutex mutex_;
-    
-
 
     void signal_state_change();
 };
