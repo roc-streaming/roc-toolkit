@@ -20,7 +20,7 @@ static const uint32_t SUB_1 = 0xFFFFFFFF;
 static const uint32_t SUB_2 = 0xFFFFFFFE;
 
 FreeListImpl::FreeListImpl() {
-    head = NULL;
+    head_ = NULL;
     head_->next = NULL;
 }
 
