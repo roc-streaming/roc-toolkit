@@ -28,7 +28,10 @@ def print_cmd(cmd):
     print(f'{Fore.YELLOW}{pretty}{Style.RESET_ALL}')
 
 def find_token(machine, login):
-    with open(os.path.expanduser('~/.authinfo')) as fp:
+    path = os.path.expanduser('~/.authinfo')
+    if not os.path.exists(path):
+        return
+    with open(path) as fp:
         for line in fp:
             it = iter(line.split())
             entry = dict(zip(it, it))
@@ -799,10 +802,10 @@ args = parser.parse_args()
 if hasattr(args, 'dry_run'):
     DRY_RUN = args.dry_run
 
-token = find_token('api.github.com', 'rocstreaming-bot')
-if token:
-    print(f"Automatically using token for rocstreaming-bot from ~/.authinfo")
-    TOKEN = token
+if not os.environ.get('GH_TOKEN'):
+    token = find_token('api.github.com', 'rocstreaming-bot')
+    if token:
+        TOKEN = token
 
 colorama.init()
 
