@@ -23,15 +23,16 @@ namespace core {
 
 //! Free list node internal data.
 struct FreeListData {
-    
     //! Next free list element.
     FreeListData* next;
-    
+
     //! Reference counter for free list.
     uint32_t refs;
-    
-    FreeListData() : next(NULL), refs(0) {}
 
+    FreeListData()
+        : next(NULL)
+        , refs(0) {
+    }
 };
 
 //! Base class for Free List element.
