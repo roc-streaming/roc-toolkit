@@ -15,12 +15,12 @@ namespace address {
 network_uri_to_str::network_uri_to_str(const NetworkUri& u) {
     core::StringBuilder b(buf_, sizeof(buf_));
 
-    if (!u.verify(NetworkUri::Subset_Full)) {
+    if (!u.is_valid()) {
         b.rewrite("<bad>");
         return;
     }
 
-    if (!format_network_uri(u, NetworkUri::Subset_Full, b)) {
+    if (!format_network_uri(u, b)) {
         b.rewrite("<bad>");
         return;
     }

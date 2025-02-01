@@ -163,8 +163,7 @@ bool build_sender_config(const gengetopt_args_info& args,
         }
     } else if (args.source_given) {
         address::NetworkUri source_endpoint(context.arena());
-        if (!address::parse_network_uri(
-                args.source_arg[0], address::NetworkUri::Subset_Full, source_endpoint)) {
+        if (!address::parse_network_uri(args.source_arg[0], source_endpoint)) {
             roc_log(LogError, "can't parse --source endpoint: %s", args.source_arg[0]);
             return false;
         }
@@ -447,9 +446,7 @@ bool prepare_sender(const gengetopt_args_info& args,
 
     for (size_t slot = 0; slot < (size_t)args.source_given; slot++) {
         address::NetworkUri source_endpoint(context.arena());
-        if (!address::parse_network_uri(args.source_arg[slot],
-                                        address::NetworkUri::Subset_Full,
-                                        source_endpoint)) {
+        if (!address::parse_network_uri(args.source_arg[slot], source_endpoint)) {
             roc_log(LogError, "can't parse --source endpoint: %s", args.source_arg[slot]);
             return false;
         }
@@ -480,9 +477,7 @@ bool prepare_sender(const gengetopt_args_info& args,
 
     for (size_t slot = 0; slot < (size_t)args.repair_given; slot++) {
         address::NetworkUri repair_endpoint(context.arena());
-        if (!address::parse_network_uri(args.repair_arg[slot],
-                                        address::NetworkUri::Subset_Full,
-                                        repair_endpoint)) {
+        if (!address::parse_network_uri(args.repair_arg[slot], repair_endpoint)) {
             roc_log(LogError, "can't parse --repair endpoint: %s", args.repair_arg[slot]);
             return false;
         }
@@ -503,9 +498,7 @@ bool prepare_sender(const gengetopt_args_info& args,
 
     for (size_t slot = 0; slot < (size_t)args.control_given; slot++) {
         address::NetworkUri control_endpoint(context.arena());
-        if (!address::parse_network_uri(args.control_arg[slot],
-                                        address::NetworkUri::Subset_Full,
-                                        control_endpoint)) {
+        if (!address::parse_network_uri(args.control_arg[slot], control_endpoint)) {
             roc_log(LogError, "can't parse --control endpoint: %s",
                     args.control_arg[slot]);
             return false;

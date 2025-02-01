@@ -144,7 +144,7 @@ bool Sender::connect(slot_index_t slot_index,
         return false;
     }
 
-    if (!uri.verify(address::NetworkUri::Subset_Full)) {
+    if (!uri.is_valid()) {
         roc_log(LogError,
                 "sender node: can't connect %s interface of slot %lu: invalid uri",
                 address::interface_to_str(iface), (unsigned long)slot_index);

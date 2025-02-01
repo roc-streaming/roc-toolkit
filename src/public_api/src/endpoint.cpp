@@ -42,8 +42,7 @@ int roc_endpoint_set_uri(roc_endpoint* endpoint, const char* uri) {
 
     address::NetworkUri& imp_endpoint = *(address::NetworkUri*)endpoint;
 
-    if (!address::parse_network_uri(uri, address::NetworkUri::Subset_Full,
-                                    imp_endpoint)) {
+    if (!address::parse_network_uri(uri, imp_endpoint)) {
         roc_log(LogError, "roc_endpoint_set_uri(): invalid arguments: invalid uri");
         return -1;
     }
@@ -116,13 +115,7 @@ int roc_endpoint_set_resource(roc_endpoint* endpoint, const char* encoded_resour
 
     address::NetworkUri& imp_endpoint = *(address::NetworkUri*)endpoint;
 
-    if (!encoded_resource) {
-        imp_endpoint.clear(address::NetworkUri::Subset_Resource);
-        return 0;
-    }
-
-    if (!address::parse_network_uri(encoded_resource,
-                                    address::NetworkUri::Subset_Resource, imp_endpoint)) {
+    if (!address::parse_network_uri_resource(encoded_resource, imp_endpoint)) {
         roc_log(LogError,
                 "roc_endpoint_set_resource(): invalid arguments: invalid resource");
         return -1;
@@ -146,7 +139,7 @@ int roc_endpoint_get_uri(const roc_endpoint* endpoint, char* buf, size_t* bufsz)
 
     core::StringBuilder b(buf, *bufsz);
 
-    if (!address::format_network_uri(imp_endpoint, address::NetworkUri::Subset_Full, b)) {
+    if (!address::format_network_uri(imp_endpoint, b)) {
         roc_log(LogError, "roc_endpoint_get_uri(): endpoint uri is not set");
         return -1;
     }
@@ -262,8 +255,7 @@ int roc_endpoint_get_resource(const roc_endpoint* endpoint, char* buf, size_t* b
 
     core::StringBuilder b(buf, *bufsz);
 
-    if (!address::format_network_uri(imp_endpoint, address::NetworkUri::Subset_Resource,
-                                     b)) {
+    if (!address::format_network_uri_resource(imp_endpoint, b)) {
         roc_log(LogDebug, "roc_endpoint_get_resource(): endpoint resource is not set");
         return -1;
     }

@@ -99,11 +99,11 @@ bool parse_io_uri_imp(const char* str, IoUri& result) {
     if (!success) {
         roc_log(LogError,
                 "parse io uri: expected one of:\n"
-                " 'DEVICE_TYPE://DEVICE_NAME',\n"
-                " 'file:///ABS/PATH',\n"
-                " 'file://localhost/ABS/PATH',\n"
-                " 'file:/ABS/PATH',\n"
-                " 'file:REL/PATH',\n"
+                " '<device_type>://<device_name>',\n"
+                " 'file://<absolute_path>',\n"
+                " 'file://localhost/<absolute_path>',\n"
+                " 'file:<absolute_path>',\n"
+                " 'file:<relative_path>',\n"
                 " 'file://-',\n"
                 " 'file:-',\n"
                 " got '%s'",
