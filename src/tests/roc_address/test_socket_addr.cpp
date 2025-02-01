@@ -157,35 +157,35 @@ TEST(socket_addr, multicast_ipv4) {
         SocketAddr addr;
         CHECK(addr.set_host_port(Family_IPv4, "223.255.255.255", 123));
         CHECK(addr.has_host_port());
-        CHECK(!addr.multicast());
+        CHECK(!addr.is_multicast());
     }
 
     {
         SocketAddr addr;
         CHECK(addr.set_host_port(Family_IPv4, "224.0.0.0", 123));
         CHECK(addr.has_host_port());
-        CHECK(addr.multicast());
+        CHECK(addr.is_multicast());
     }
 
     {
         SocketAddr addr;
         CHECK(addr.set_host_port(Family_IPv4, "227.128.128.128", 123));
         CHECK(addr.has_host_port());
-        CHECK(addr.multicast());
+        CHECK(addr.is_multicast());
     }
 
     {
         SocketAddr addr;
         CHECK(addr.set_host_port(Family_IPv4, "239.255.255.255", 123));
         CHECK(addr.has_host_port());
-        CHECK(addr.multicast());
+        CHECK(addr.is_multicast());
     }
 
     {
         SocketAddr addr;
         CHECK(addr.set_host_port(Family_IPv4, "240.0.0.0", 123));
         CHECK(addr.has_host_port());
-        CHECK(!addr.multicast());
+        CHECK(!addr.is_multicast());
     }
 }
 
@@ -194,21 +194,21 @@ TEST(socket_addr, multicast_ipv6) {
         SocketAddr addr;
         CHECK(addr.set_host_port(Family_IPv6, "fe00::", 123));
         CHECK(addr.has_host_port());
-        CHECK(!addr.multicast());
+        CHECK(!addr.is_multicast());
     }
 
     {
         SocketAddr addr;
         CHECK(addr.set_host_port(Family_IPv6, "ff00::", 123));
         CHECK(addr.has_host_port());
-        CHECK(addr.multicast());
+        CHECK(addr.is_multicast());
     }
 
     {
         SocketAddr addr;
         CHECK(addr.set_host_port(Family_IPv6, "ff11:1:1:1:1:1:1:1", 123));
         CHECK(addr.has_host_port());
-        CHECK(addr.multicast());
+        CHECK(addr.is_multicast());
     }
 
     {
@@ -216,7 +216,7 @@ TEST(socket_addr, multicast_ipv6) {
         CHECK(addr.set_host_port(Family_IPv6, "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
                                  123));
         CHECK(addr.has_host_port());
-        CHECK(addr.multicast());
+        CHECK(addr.is_multicast());
     }
 }
 

@@ -47,7 +47,7 @@ public:
     AddrFamily family() const;
 
     //! Check whether this is multicast address.
-    bool multicast() const;
+    bool is_multicast() const;
 
     //! Get host IP address.
     ROC_ATTR_NODISCARD bool get_host(char* buf, size_t bufsz) const;

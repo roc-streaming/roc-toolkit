@@ -425,7 +425,7 @@ void SenderSession::start_feedback_monitor_() {
         return;
     }
 
-    if (rtcp_outbound_addr_.multicast()) {
+    if (rtcp_outbound_addr_.is_multicast()) {
         // Control endpoint uses multicast, so there are multiple receivers for
         // a sender session. We don't support feedback monitoring in this mode.
         return;
