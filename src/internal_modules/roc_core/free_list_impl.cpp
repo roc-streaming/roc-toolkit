@@ -19,15 +19,23 @@ static const uint32_t REFS_MASK = 0x7FFFFFFF;
 static const uint32_t SUB_1 = 0xFFFFFFFF;
 static const uint32_t SUB_2 = 0xFFFFFFFE;
 
-FreeListImpl::FreeListImpl() {
-    head_ = NULL;
-    head_->next = NULL;
+FreeListImpl::FreeListImpl(): head_(NULL) {
 }
 
 FreeListImpl::~FreeListImpl() {
     while (head_ != NULL) {
         unsafe_pop_front();
     }
+}
+
+bool FreeListImpl::is_empty() {
+    if (head_ == NULL) return true;
+    return false;
+}
+
+FreeListData* FreeListImpl::front() const {
+	FreeListData* front_element = head_;
+	return front_element;
 }
 
 FreeListData* FreeListImpl::unsafe_pop_front() {
@@ -98,7 +106,7 @@ void FreeListImpl::add_knowing_refcount_is_zero_(FreeListData* node) {
     while (true) {
         AtomicOps::store_relaxed(node->next, current_head);
         AtomicOps::store_release(node->refs, static_cast<uint32_t>(1));
-        if (!AtomicOps::compare_exchange_release(head_, current_head, node)) {
+        if (!AtomicOps::compare_exchange_release(current_head, head_, node)) {
             // Hmm, the add failed, but we can only try again when the refcount goes back
             // to zero
             if (AtomicOps::fetch_add_release(node->refs, SHOULD_BE_ON_FREELIST - 1)
@@ -106,8 +114,8 @@ void FreeListImpl::add_knowing_refcount_is_zero_(FreeListData* node) {
                 continue;
             }
         }
+    	return;
     }
-    return;
 }
 } // namespace core
 } // namespace roc
