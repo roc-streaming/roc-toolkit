@@ -51,11 +51,10 @@ public:
     //! Add packet to the queue.
     //! @remarks
     //!  Adds packet to the end of the queue.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
+    virtual ROC_NODISCARD status::StatusCode write(const PacketPtr& packet);
 
     //! Read next packet.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet,
-                                                       PacketReadMode mode);
+    virtual ROC_NODISCARD status::StatusCode read(PacketPtr& packet, PacketReadMode mode);
 
 private:
     core::List<Packet> list_;

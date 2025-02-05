@@ -89,7 +89,7 @@ public:
     //!  After device is paused, there should be no I/O until it's resumed.
     //! @note
     //!  Makes sense only if has_state() is true.
-    virtual ROC_ATTR_NODISCARD status::StatusCode pause();
+    virtual ROC_NODISCARD status::StatusCode pause();
 
     //! Resume device after pause.
     //! @remarks
@@ -98,7 +98,7 @@ public:
     //!  After device is paused, it should be resumed to do I/O again.
     //! @note
     //!  Makes sense only if has_state() is true.
-    virtual ROC_ATTR_NODISCARD status::StatusCode resume();
+    virtual ROC_NODISCARD status::StatusCode resume();
 
     //! Check if the device supports latency reports.
     //! @remarks
@@ -131,7 +131,7 @@ public:
     //!  This method should be called to release resources held by the device.
     //!  If this method is not called before the destructor, it's called
     //!  automatically, but you won't know if error happened.
-    virtual ROC_ATTR_NODISCARD status::StatusCode close() = 0;
+    virtual ROC_NODISCARD status::StatusCode close() = 0;
 
     //! Destroy object and return memory to arena.
     //! @remarks

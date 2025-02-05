@@ -8,8 +8,8 @@
 
 #include "roc_core/attributes.h"
 
-extern "C" ROC_ATTR_NO_SANITIZE_UB ROC_ATTR_EXPORT const char* __ubsan_default_options();
+extern "C" ROC_EXPORT ROC_NOSANITIZE const char* __ubsan_default_options();
 
-extern "C" ROC_ATTR_NO_SANITIZE_UB ROC_ATTR_EXPORT const char* __ubsan_default_options() {
+extern "C" ROC_EXPORT ROC_NOSANITIZE const char* __ubsan_default_options() {
     return "print_stacktrace=1";
 }

@@ -79,19 +79,19 @@ public:
     //!  Reallocates memory if necessary.
     //! @returns
     //!  false if allocation failed.
-    ROC_ATTR_NODISCARD bool push_back(const char* str);
+    ROC_NODISCARD bool push_back(const char* str);
 
     //! Append string from a range to the list.
     //! @remarks
     //!  Reallocates memory if necessary.
     //! @returns
     //!  false if allocation failed.
-    ROC_ATTR_NODISCARD bool push_back(const char* str_begin, const char* str_end);
+    ROC_NODISCARD bool push_back(const char* str_begin, const char* str_end);
 
     //! Remove string from end of the list.
     //! @returns
     //!  false if deallocation failed.
-    ROC_ATTR_NODISCARD bool pop_back();
+    ROC_NODISCARD bool pop_back();
 
     //! Find string in the list.
     //! @returns

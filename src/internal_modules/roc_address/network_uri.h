@@ -75,33 +75,33 @@ public:
     void invalidate_fields(int fields_mask);
 
     //! Copy data from another URI.
-    ROC_ATTR_NODISCARD bool assign(const NetworkUri& other);
+    ROC_NODISCARD bool assign(const NetworkUri& other);
 
     //! Set protocol ID (URI scheme).
-    ROC_ATTR_NODISCARD bool set_proto(Protocol);
+    ROC_NODISCARD bool set_proto(Protocol);
 
     //! Protocol ID (URI scheme).
     Protocol proto() const;
 
     //! Get protocol ID (URI scheme).
-    ROC_ATTR_NODISCARD bool get_proto(Protocol& proto) const;
+    ROC_NODISCARD bool get_proto(Protocol& proto) const;
 
     //! Get URI proto.
-    ROC_ATTR_NODISCARD bool format_proto(core::StringBuilder& dst) const;
+    ROC_NODISCARD bool format_proto(core::StringBuilder& dst) const;
 
     //! Set URI host.
     //! String should be zero-terminated.
-    ROC_ATTR_NODISCARD bool set_host(const char* str);
+    ROC_NODISCARD bool set_host(const char* str);
 
     //! Set URI host.
     //! String should not be zero-terminated.
-    ROC_ATTR_NODISCARD bool set_host(const char* str, size_t str_len);
+    ROC_NODISCARD bool set_host(const char* str, size_t str_len);
 
     //! Hostname or IP address.
     const char* host() const;
 
     //! Get URI host.
-    ROC_ATTR_NODISCARD bool format_host(core::StringBuilder& dst) const;
+    ROC_NODISCARD bool format_host(core::StringBuilder& dst) const;
 
     enum {
         //! Use default port number defined by protocol.
@@ -109,55 +109,55 @@ public:
     };
 
     //! Set port.
-    ROC_ATTR_NODISCARD bool set_port(int port);
+    ROC_NODISCARD bool set_port(int port);
 
     //! TCP or UDP port.
     int port() const;
 
     //! Get URI port.
-    ROC_ATTR_NODISCARD bool get_port(int& port) const;
+    ROC_NODISCARD bool get_port(int& port) const;
 
     //! Get port number, or default port number if port isn't set.
     int port_or_default() const;
 
     //! Set decoded URI path.
-    ROC_ATTR_NODISCARD bool set_path(const char* str);
+    ROC_NODISCARD bool set_path(const char* str);
 
     //! Set decoded URI path.
     //! String should not be zero-terminated.
-    ROC_ATTR_NODISCARD bool set_path(const char* str, size_t str_len);
+    ROC_NODISCARD bool set_path(const char* str, size_t str_len);
 
     //! Set encoded URI path.
     //! String should be percent-encoded.
-    ROC_ATTR_NODISCARD bool set_encoded_path(const char* str);
+    ROC_NODISCARD bool set_encoded_path(const char* str);
 
     //! Set encoded URI path.
     //! String should be percent-encoded.
     //! String should not be zero-terminated.
-    ROC_ATTR_NODISCARD bool set_encoded_path(const char* str, size_t str_len);
+    ROC_NODISCARD bool set_encoded_path(const char* str, size_t str_len);
 
     //! Decoded path.
     const char* path() const;
 
     //! Get URI path.
     //! String will be percent-encoded.
-    ROC_ATTR_NODISCARD bool format_encoded_path(core::StringBuilder& dst) const;
+    ROC_NODISCARD bool format_encoded_path(core::StringBuilder& dst) const;
 
     //! Set query.
     //! String should be percent-encoded.
-    ROC_ATTR_NODISCARD bool set_encoded_query(const char* str);
+    ROC_NODISCARD bool set_encoded_query(const char* str);
 
     //! Set query.
     //! String should be percent-encoded.
     //! String should not be zero-terminated.
-    ROC_ATTR_NODISCARD bool set_encoded_query(const char* str, size_t str_len);
+    ROC_NODISCARD bool set_encoded_query(const char* str, size_t str_len);
 
     //! Raw query.
     const char* encoded_query() const;
 
     //! Get URI query.
     //! String will be percent-encoded.
-    ROC_ATTR_NODISCARD bool format_encoded_query(core::StringBuilder& dst) const;
+    ROC_NODISCARD bool format_encoded_query(core::StringBuilder& dst) const;
 
 private:
     enum FieldState {
@@ -207,14 +207,14 @@ private:
 //!
 //! This parser does not try to perform full URI validation. For example, it does not
 //! check that path contains only allowed symbols. If it can be parsed, it will be.
-ROC_ATTR_NODISCARD bool parse_network_uri(const char* str, NetworkUri& result);
+ROC_NODISCARD bool parse_network_uri(const char* str, NetworkUri& result);
 
 //! Parse resource part of network URI.
 //!
 //! Same as parse_network_uri(), but parses only path and query.
 //! Keeps other fields untouched.
 //! Fails if string contains anything besides path and query.
-ROC_ATTR_NODISCARD bool parse_network_uri_resource(const char* str, NetworkUri& result);
+ROC_NODISCARD bool parse_network_uri_resource(const char* str, NetworkUri& result);
 
 //! Format network URI.
 //!
@@ -225,15 +225,14 @@ ROC_ATTR_NODISCARD bool parse_network_uri_resource(const char* str, NetworkUri& 
 //!
 //! @returns
 //!  true on success or false if the buffer is too small.
-ROC_ATTR_NODISCARD bool format_network_uri(const NetworkUri& uri,
-                                           core::StringBuilder& dst);
+ROC_NODISCARD bool format_network_uri(const NetworkUri& uri, core::StringBuilder& dst);
 
 //! Format resource part of network URI.
 //!
 //! Same as format_network_uri(), but formats only path and query.
 //! Ignores other fields.
-ROC_ATTR_NODISCARD bool format_network_uri_resource(const NetworkUri& uri,
-                                                    core::StringBuilder& dst);
+ROC_NODISCARD bool format_network_uri_resource(const NetworkUri& uri,
+                                               core::StringBuilder& dst);
 
 } // namespace address
 } // namespace roc

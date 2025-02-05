@@ -47,7 +47,7 @@ public:
         reset();
     }
 
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& p) {
+    virtual ROC_NODISCARD status::StatusCode write(const packet::PacketPtr& p) {
         store_(p);
 
         if (++packet_num_ >= num_source_ + num_repair_) {

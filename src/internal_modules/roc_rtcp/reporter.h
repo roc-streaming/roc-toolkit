@@ -113,7 +113,7 @@ public:
 
     //! Begin report processing.
     //! Invoked before process_xxx() functions.
-    ROC_ATTR_NODISCARD status::StatusCode
+    ROC_NODISCARD status::StatusCode
     begin_processing(const address::SocketAddr& report_addr,
                      core::nanoseconds_t report_time);
 
@@ -151,7 +151,7 @@ public:
 
     //! End report processing.
     //! Invoked after process_xxx() functions.
-    ROC_ATTR_NODISCARD status::StatusCode end_processing();
+    ROC_NODISCARD status::StatusCode end_processing();
 
     //! @}
 
@@ -160,8 +160,7 @@ public:
 
     //! Begin report generation.
     //! Invoked before genrate_xxx() functions.
-    ROC_ATTR_NODISCARD status::StatusCode
-    begin_generation(core::nanoseconds_t report_time);
+    ROC_NODISCARD status::StatusCode begin_generation(core::nanoseconds_t report_time);
 
     //! Get number of destination addresses to which to send reports.
     size_t num_dest_addresses() const;
@@ -236,7 +235,7 @@ public:
 
     //! End report generation.
     //! Invoked after generate_xxx() functions.
-    ROC_ATTR_NODISCARD status::StatusCode end_generation();
+    ROC_NODISCARD status::StatusCode end_generation();
 
     //! @}
 

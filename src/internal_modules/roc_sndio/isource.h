@@ -32,7 +32,7 @@ public:
     //! @remarks
     //!  If the source has any sense of "beginning", this operation should rewind
     //!  reading to the beginning. Otherwise it can be no-op.
-    virtual ROC_ATTR_NODISCARD status::StatusCode rewind() = 0;
+    virtual ROC_NODISCARD status::StatusCode rewind() = 0;
 
     //! Adjust source clock to match consumer clock.
     //! @remarks

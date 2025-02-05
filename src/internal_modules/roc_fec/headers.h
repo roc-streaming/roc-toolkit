@@ -46,7 +46,7 @@ enum PayloadID_Pos {
 //!   |    Source Block Length (k)    |
 //!   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class LDPC_Source_PayloadID {
+ROC_PACKED_BEGIN class LDPC_Source_PayloadID {
 private:
     //! Source block number.
     uint16_t sbn_;
@@ -106,7 +106,7 @@ public:
     //! Set number encoding symbols.
     void set_n(uint16_t) {
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! LDPC-Staircase Repair FEC Payload ID.
 //!
@@ -121,7 +121,7 @@ public:
 //!   |    Source Block Length (k)    |  Number Encoding Symbols (n)  |
 //!   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class LDPC_Repair_PayloadID {
+ROC_PACKED_BEGIN class LDPC_Repair_PayloadID {
 private:
     //! Source block number.
     uint16_t sbn_;
@@ -185,7 +185,7 @@ public:
     void set_n(uint16_t val) {
         n_ = core::hton16u(val);
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! Reed-Solomon Source or Repair Payload ID (for m=8).
 //!
@@ -200,7 +200,7 @@ public:
 //!   |    Source Block Length (k)    |
 //!   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class RS8M_PayloadID {
+ROC_PACKED_BEGIN class RS8M_PayloadID {
 private:
     //! Source block number.
     uint8_t sbn_[3];
@@ -264,7 +264,7 @@ public:
     //! Set number encoding symbols.
     void set_n(uint16_t) {
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 } // namespace fec
 } // namespace roc

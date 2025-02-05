@@ -70,7 +70,7 @@ struct Encoding {
 //!
 //! @returns
 //!  false if string can't be parsed.
-ROC_ATTR_NODISCARD bool parse_encoding(const char* str, Encoding& result);
+ROC_NODISCARD bool parse_encoding(const char* str, Encoding& result);
 
 } // namespace rtp
 } // namespace roc

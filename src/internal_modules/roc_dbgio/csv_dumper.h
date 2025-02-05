@@ -74,7 +74,7 @@ public:
     ~CsvDumper();
 
     //! Open file and start background thread.
-    ROC_ATTR_NODISCARD status::StatusCode open();
+    ROC_NODISCARD status::StatusCode open();
 
     //! Stop background thread and close file.
     void close();

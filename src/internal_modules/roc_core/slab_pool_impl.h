@@ -70,7 +70,7 @@ public:
     ~SlabPoolImpl();
 
     //! Reserve memory for given number of objects.
-    ROC_ATTR_NODISCARD bool reserve(size_t n_objects);
+    ROC_NODISCARD bool reserve(size_t n_objects);
 
     //! Allocate memory for an object.
     void* allocate();

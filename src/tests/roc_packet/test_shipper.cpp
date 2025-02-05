@@ -45,7 +45,7 @@ public:
         : code_(code) {
     }
 
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr&) {
+    virtual ROC_NODISCARD status::StatusCode write(const PacketPtr&) {
         return code_;
     }
 
@@ -59,25 +59,25 @@ struct MockComposer : public IComposer, public core::NonCopyable<> {
         , compose_call_count(0) {
     }
 
-    ROC_ATTR_NODISCARD virtual status::StatusCode init_status() const {
+    ROC_NODISCARD virtual status::StatusCode init_status() const {
         return status::StatusOK;
     }
 
-    ROC_ATTR_NODISCARD virtual status::StatusCode
+    ROC_NODISCARD virtual status::StatusCode
     align(core::Slice<uint8_t>&, size_t, size_t) {
         return status::StatusOK;
     }
 
-    ROC_ATTR_NODISCARD virtual status::StatusCode
+    ROC_NODISCARD virtual status::StatusCode
     prepare(Packet&, core::Slice<uint8_t>&, size_t) {
         return status::StatusOK;
     }
 
-    ROC_ATTR_NODISCARD virtual status::StatusCode pad(Packet&, size_t) {
+    ROC_NODISCARD virtual status::StatusCode pad(Packet&, size_t) {
         return status::StatusOK;
     }
 
-    ROC_ATTR_NODISCARD virtual status::StatusCode compose(Packet&) {
+    ROC_NODISCARD virtual status::StatusCode compose(Packet&) {
         ++compose_call_count;
         return status::StatusOK;
     }

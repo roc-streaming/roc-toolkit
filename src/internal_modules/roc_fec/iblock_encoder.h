@@ -43,7 +43,7 @@ public:
     //! the block.
     //! @returns status::StatusOK on success, or a specific error code on failure (e.g.,
     //! status::StatusNoMem if memory allocation fails).
-    virtual ROC_ATTR_NODISCARD status::StatusCode
+    virtual ROC_NODISCARD status::StatusCode
     begin_block(size_t sblen, size_t rblen, size_t payload_size) = 0;
 
     //! Store source or repair packet buffer for current block.

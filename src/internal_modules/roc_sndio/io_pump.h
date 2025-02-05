@@ -59,7 +59,7 @@ public:
     //! @remarks
     //!  Run until the stop() is called or, if oneshot mode is enabled,
     //!  the source becomes inactive.
-    ROC_ATTR_NODISCARD status::StatusCode run();
+    ROC_NODISCARD status::StatusCode run();
 
     //! Stop the pump.
     //! @remarks

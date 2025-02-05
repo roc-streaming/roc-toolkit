@@ -65,13 +65,13 @@ public:
     virtual bool has_clock() const;
 
     //! Write frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode write(audio::Frame& frame);
 
     //! Flush buffered data, if any.
-    virtual ROC_ATTR_NODISCARD status::StatusCode flush();
+    virtual ROC_NODISCARD status::StatusCode flush();
 
     //! Explicitly close the sink.
-    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+    virtual ROC_NODISCARD status::StatusCode close();
 
     //! Destroy object and return memory to arena.
     virtual void dispose();

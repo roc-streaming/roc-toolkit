@@ -151,7 +151,7 @@ public:
     //!  false if the allocation failed.
     //! @note
     //!  has amortized O(1) complexity, O(n) in worst case.
-    ROC_ATTR_NODISCARD bool push_back(const T& value) {
+    ROC_NODISCARD bool push_back(const T& value) {
         if (!grow_exp(size_ + 1)) {
             return false;
         }
@@ -180,7 +180,7 @@ public:
     //!  Calls grow() to ensure that there is enough space in array.
     //! @returns
     //!  false if the allocation failed
-    ROC_ATTR_NODISCARD bool resize(size_t new_size) {
+    ROC_NODISCARD bool resize(size_t new_size) {
         // Move objects to a new memory region if necessary.
         if (!grow(new_size)) {
             return false;
@@ -214,7 +214,7 @@ public:
     //!  region is allocated and the array elements are copied there.
     //! @returns
     //!  false if the allocation failed.
-    ROC_ATTR_NODISCARD bool grow(size_t min_capacity) {
+    ROC_NODISCARD bool grow(size_t min_capacity) {
         if (min_capacity <= capacity_) {
             return true;
         }
@@ -255,7 +255,7 @@ public:
     //!  it reaches some threshold, and then starts growing linearly.
     //! @returns
     //!  false if the allocation failed.
-    ROC_ATTR_NODISCARD bool grow_exp(size_t min_capacity) {
+    ROC_NODISCARD bool grow_exp(size_t min_capacity) {
         if (min_capacity <= capacity_) {
             return true;
         }

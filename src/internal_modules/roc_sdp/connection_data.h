@@ -32,7 +32,7 @@ public:
     void clear();
 
     //! Check and set connection address from a string.
-    ROC_ATTR_NODISCARD bool
+    ROC_NODISCARD bool
     set_connection_address(address::AddrFamily addrtype, const char* str, size_t str_len);
 
     //! The SocketAddr of the ConnectionData.

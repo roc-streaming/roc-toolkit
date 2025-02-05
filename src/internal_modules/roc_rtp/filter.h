@@ -65,8 +65,8 @@ public:
     status::StatusCode init_status() const;
 
     //! Read next packet.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& pp,
-                                                       packet::PacketReadMode mode);
+    virtual ROC_NODISCARD status::StatusCode read(packet::PacketPtr& pp,
+                                                  packet::PacketReadMode mode);
 
 private:
     bool validate_(const packet::PacketPtr& packet);

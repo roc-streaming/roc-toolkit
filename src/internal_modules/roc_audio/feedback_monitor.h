@@ -90,7 +90,7 @@ public:
     //! Write audio frame.
     //! Passes frame to underlying writer.
     //! If feedback monitoring is started, also performs latency tuning.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode write(Frame& frame);
 
     //! Get number of remote participants from which there is feedback.
     size_t num_participants() const;

@@ -20,13 +20,13 @@ Composer::Composer(packet::IComposer* inner_composer, core::IArena& arena)
     , inner_composer_(inner_composer) {
 }
 
-ROC_ATTR_NODISCARD status::StatusCode Composer::init_status() const {
+ROC_NODISCARD status::StatusCode Composer::init_status() const {
     return status::StatusOK;
 }
 
-ROC_ATTR_NODISCARD status::StatusCode Composer::align(core::Slice<uint8_t>& buffer,
-                                                      size_t header_size,
-                                                      size_t payload_alignment) {
+ROC_NODISCARD status::StatusCode Composer::align(core::Slice<uint8_t>& buffer,
+                                                 size_t header_size,
+                                                 size_t payload_alignment) {
     if ((unsigned long)buffer.data() % payload_alignment != 0) {
         roc_panic("rtp composer: unexpected non-aligned buffer");
     }
@@ -50,9 +50,9 @@ ROC_ATTR_NODISCARD status::StatusCode Composer::align(core::Slice<uint8_t>& buff
     }
 }
 
-ROC_ATTR_NODISCARD status::StatusCode Composer::prepare(packet::Packet& packet,
-                                                        core::Slice<uint8_t>& buffer,
-                                                        size_t payload_size) {
+ROC_NODISCARD status::StatusCode Composer::prepare(packet::Packet& packet,
+                                                   core::Slice<uint8_t>& buffer,
+                                                   size_t payload_size) {
     core::Slice<uint8_t> header = buffer.subslice(0, 0);
 
     if (header.capacity() < sizeof(Header)) {
@@ -93,8 +93,8 @@ ROC_ATTR_NODISCARD status::StatusCode Composer::prepare(packet::Packet& packet,
     return status::StatusOK;
 }
 
-ROC_ATTR_NODISCARD status::StatusCode Composer::pad(packet::Packet& packet,
-                                                    size_t padding_size) {
+ROC_NODISCARD status::StatusCode Composer::pad(packet::Packet& packet,
+                                               size_t padding_size) {
     if (inner_composer_) {
         return inner_composer_->pad(packet, padding_size);
     }
@@ -124,7 +124,7 @@ ROC_ATTR_NODISCARD status::StatusCode Composer::pad(packet::Packet& packet,
     return status::StatusOK;
 }
 
-ROC_ATTR_NODISCARD status::StatusCode Composer::compose(packet::Packet& packet) {
+ROC_NODISCARD status::StatusCode Composer::compose(packet::Packet& packet) {
     packet::RTP* rtp = packet.rtp();
     if (!rtp) {
         roc_panic("rtp composer: unexpected non-rtp packet");

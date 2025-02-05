@@ -40,7 +40,7 @@ public:
     //!    were written or not, and no further writes are expected.
     //!
     //! @see status::StatusCode.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame) = 0;
+    virtual ROC_NODISCARD status::StatusCode write(Frame& frame) = 0;
 };
 
 } // namespace audio

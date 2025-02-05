@@ -66,19 +66,18 @@ public:
     virtual bool has_clock() const;
 
     //! Restart reading from beginning.
-    virtual ROC_ATTR_NODISCARD status::StatusCode rewind();
+    virtual ROC_NODISCARD status::StatusCode rewind();
 
     //! Adjust source clock to match consumer clock.
     virtual void reclock(core::nanoseconds_t timestamp);
 
     //! Read frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
-    read(audio::Frame& frame,
-         packet::stream_timestamp_t duration,
-         audio::FrameReadMode mode);
+    virtual ROC_NODISCARD status::StatusCode read(audio::Frame& frame,
+                                                  packet::stream_timestamp_t duration,
+                                                  audio::FrameReadMode mode);
 
     //! Explicitly close the source.
-    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+    virtual ROC_NODISCARD status::StatusCode close();
 
     //! Destroy object and return memory to arena.
     virtual void dispose();

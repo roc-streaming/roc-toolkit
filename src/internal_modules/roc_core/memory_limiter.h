@@ -38,7 +38,7 @@ public:
     //! Track acquired memory.
     //! @returns
     //!  true if successful i.e. maximum limit not breached.
-    ROC_ATTR_NODISCARD bool acquire(size_t num_bytes);
+    ROC_NODISCARD bool acquire(size_t num_bytes);
 
     //! Track released memory.
     //! This will panic if we are releasing more than what is currently acquired.

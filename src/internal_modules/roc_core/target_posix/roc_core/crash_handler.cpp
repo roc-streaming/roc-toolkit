@@ -65,7 +65,7 @@ const char* signal_string(int sig, siginfo_t* si) {
     return "caught unknown signal";
 }
 
-ROC_ATTR_NORETURN void signal_handler(int sig, siginfo_t* si, void*) {
+ROC_NORETURN void signal_handler(int sig, siginfo_t* si, void*) {
     die_gracefully(signal_string(sig, si), false);
 }
 

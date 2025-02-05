@@ -44,7 +44,7 @@ public:
     bool set_scaling(float multiplier);
 
     //! Write audio frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode write(Frame& frame);
 
 private:
     status::StatusCode write_output_(const Frame& in_frame, size_t in_frame_pos);

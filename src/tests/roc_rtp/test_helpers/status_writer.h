@@ -22,7 +22,7 @@ public:
         : code_(code) {
     }
 
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&) {
+    virtual ROC_NODISCARD status::StatusCode write(const packet::PacketPtr&) {
         return code_;
     }
 

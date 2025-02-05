@@ -46,16 +46,16 @@ public:
     status::StatusCode init_status() const;
 
     //! Set interface config.
-    ROC_ATTR_NODISCARD bool configure(slot_index_t slot_index,
-                                      address::Interface iface,
-                                      const netio::UdpConfig& config);
+    ROC_NODISCARD bool configure(slot_index_t slot_index,
+                                 address::Interface iface,
+                                 const netio::UdpConfig& config);
 
     //! Bind to local endpoint.
-    ROC_ATTR_NODISCARD bool
+    ROC_NODISCARD bool
     bind(slot_index_t slot_index, address::Interface iface, address::NetworkUri& uri);
 
     //! Remove slot.
-    ROC_ATTR_NODISCARD bool unlink(slot_index_t slot_index);
+    ROC_NODISCARD bool unlink(slot_index_t slot_index);
 
     //! Callback for slot metrics.
     typedef void (*slot_metrics_func_t)(const pipeline::ReceiverSlotMetrics& slot_metrics,
@@ -68,12 +68,12 @@ public:
         void* party_arg);
 
     //! Get metrics.
-    ROC_ATTR_NODISCARD bool get_metrics(slot_index_t slot_index,
-                                        slot_metrics_func_t slot_metrics_func,
-                                        void* slot_metrics_arg,
-                                        party_metrics_func_t party_metrics_func,
-                                        size_t* party_metrics_size,
-                                        void* party_metrics_arg);
+    ROC_NODISCARD bool get_metrics(slot_index_t slot_index,
+                                   slot_metrics_func_t slot_metrics_func,
+                                   void* slot_metrics_arg,
+                                   party_metrics_func_t party_metrics_func,
+                                   size_t* party_metrics_size,
+                                   void* party_metrics_arg);
 
     //! Check if there are broken slots.
     bool has_broken_slots();
@@ -82,7 +82,7 @@ public:
     //! @remarks
     //!  Performs necessary checks and allocations on top of ISource::read(),
     //!  used when working with raw byte buffers instead of Frame objects.
-    ROC_ATTR_NODISCARD status::StatusCode read_frame(void* bytes, size_t n_bytes);
+    ROC_NODISCARD status::StatusCode read_frame(void* bytes, size_t n_bytes);
 
     //! Get receiver source.
     sndio::ISource& source();

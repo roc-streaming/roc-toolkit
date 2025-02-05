@@ -43,7 +43,7 @@ public:
     //! @returns
     //!  status::StatusOK if the packet was successfully parsed,
     //!  or error code otherwise.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
+    virtual ROC_NODISCARD status::StatusCode
     parse(Packet& packet, const core::Slice<uint8_t>& buffer) = 0;
 };
 

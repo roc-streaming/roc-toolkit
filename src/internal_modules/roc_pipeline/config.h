@@ -112,7 +112,7 @@ struct SenderSinkConfig {
     SenderSinkConfig();
 
     //! Fill unset values with defaults.
-    ROC_ATTR_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
+    ROC_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of sender slot.
@@ -121,7 +121,7 @@ struct SenderSlotConfig {
     SenderSlotConfig();
 
     //! Fill unset values with defaults.
-    ROC_ATTR_NODISCARD bool deduce_defaults();
+    ROC_NODISCARD bool deduce_defaults();
 };
 
 //! Parameters common for all receiver sessions.
@@ -154,7 +154,7 @@ struct ReceiverCommonConfig {
     ReceiverCommonConfig();
 
     //! Fill unset values with defaults.
-    ROC_ATTR_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
+    ROC_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of receiver session.
@@ -190,7 +190,7 @@ struct ReceiverSessionConfig {
     ReceiverSessionConfig();
 
     //! Fill unset values with defaults.
-    ROC_ATTR_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
+    ROC_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of receiver session.
@@ -209,7 +209,7 @@ struct ReceiverSourceConfig {
     ReceiverSourceConfig();
 
     //! Fill unset values with defaults.
-    ROC_ATTR_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
+    ROC_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of receiver slot.
@@ -221,7 +221,7 @@ struct ReceiverSlotConfig {
     ReceiverSlotConfig();
 
     //! Fill unset values with defaults.
-    ROC_ATTR_NODISCARD bool deduce_defaults();
+    ROC_NODISCARD bool deduce_defaults();
 };
 
 //! Converter parameters.
@@ -245,7 +245,7 @@ struct TranscoderConfig {
     TranscoderConfig();
 
     //! Fill unset values with defaults.
-    ROC_ATTR_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
+    ROC_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 } // namespace pipeline

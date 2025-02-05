@@ -85,8 +85,8 @@ struct WatchdogConfig {
     }
 
     //! Automatically fill missing settings.
-    ROC_ATTR_NODISCARD bool deduce_defaults(const core::nanoseconds_t default_latency,
-                                            const core::nanoseconds_t target_latency);
+    ROC_NODISCARD bool deduce_defaults(const core::nanoseconds_t default_latency,
+                                       const core::nanoseconds_t target_latency);
 };
 
 //! Watchdog.
@@ -106,7 +106,7 @@ public:
     //! Read audio frame.
     //! @remarks
     //!  Updates stream state and reads frame from the input reader.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
+    virtual ROC_NODISCARD status::StatusCode
     read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode);
 
 private:

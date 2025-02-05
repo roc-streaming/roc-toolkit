@@ -36,12 +36,12 @@ public:
     }
 
     //! Check if the object was successfully constructed.
-    ROC_ATTR_NODISCARD virtual status::StatusCode init_status() const {
+    ROC_NODISCARD virtual status::StatusCode init_status() const {
         return status::StatusOK;
     }
 
     //! Adjust buffer to align payload.
-    ROC_ATTR_NODISCARD virtual status::StatusCode
+    ROC_NODISCARD virtual status::StatusCode
     align(core::Slice<uint8_t>& buffer, size_t header_size, size_t payload_alignment) {
         if ((unsigned long)buffer.data() % payload_alignment != 0) {
             roc_panic("fec composer: unexpected non-aligned buffer");
@@ -70,7 +70,7 @@ public:
     }
 
     //! Prepare buffer for composing a packet.
-    ROC_ATTR_NODISCARD virtual status::StatusCode
+    ROC_NODISCARD virtual status::StatusCode
     prepare(packet::Packet& packet, core::Slice<uint8_t>& buffer, size_t payload_size) {
         core::Slice<uint8_t> payload_id = buffer.subslice(0, 0);
 
@@ -129,8 +129,8 @@ public:
     }
 
     //! Pad packet.
-    ROC_ATTR_NODISCARD virtual status::StatusCode pad(packet::Packet& packet,
-                                                      size_t padding_size) {
+    ROC_NODISCARD virtual status::StatusCode pad(packet::Packet& packet,
+                                                 size_t padding_size) {
         if (inner_composer_) {
             return inner_composer_->pad(packet, padding_size);
         }
@@ -140,7 +140,7 @@ public:
     }
 
     //! Compose packet to buffer.
-    ROC_ATTR_NODISCARD virtual status::StatusCode compose(packet::Packet& packet) {
+    ROC_NODISCARD virtual status::StatusCode compose(packet::Packet& packet) {
         if (!packet.fec()) {
             roc_panic("fec composer: unexpected non-fec packet");
         }

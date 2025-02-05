@@ -63,7 +63,7 @@ struct FreqEstimatorConfig {
     }
 
     //! Automatically fill missing settings.
-    ROC_ATTR_NODISCARD bool deduce_defaults(LatencyTunerProfile latency_profile);
+    ROC_NODISCARD bool deduce_defaults(LatencyTunerProfile latency_profile);
 };
 
 //! Evaluates sender's frequency to receiver's frequency ratio.

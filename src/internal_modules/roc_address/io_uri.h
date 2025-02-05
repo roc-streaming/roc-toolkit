@@ -45,7 +45,7 @@ public:
 
     //! Set URI scheme.
     //! String should not be zero-terminated.
-    ROC_ATTR_NODISCARD bool set_scheme(const char* str, size_t str_len);
+    ROC_NODISCARD bool set_scheme(const char* str, size_t str_len);
 
     //! URI path.
     //! May be device name or file path depending on scheme.
@@ -54,11 +54,11 @@ public:
     //! Set URI path.
     //! String should be percent-encoded.
     //! String should not be zero-terminated.
-    ROC_ATTR_NODISCARD bool set_encoded_path(const char* str, size_t str_len);
+    ROC_NODISCARD bool set_encoded_path(const char* str, size_t str_len);
 
     //! Get URI path.
     //! String will be percent-encoded.
-    ROC_ATTR_NODISCARD bool format_encoded_path(core::StringBuilder& dst) const;
+    ROC_NODISCARD bool format_encoded_path(core::StringBuilder& dst) const;
 
 private:
     core::StringBuffer scheme_;

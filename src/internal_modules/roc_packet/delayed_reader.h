@@ -62,8 +62,7 @@ public:
     status::StatusCode init_status() const;
 
     //! Read packet.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet,
-                                                       PacketReadMode mode);
+    virtual ROC_NODISCARD status::StatusCode read(PacketPtr& packet, PacketReadMode mode);
 
 private:
     status::StatusCode load_queue_();

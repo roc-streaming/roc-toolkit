@@ -28,9 +28,9 @@ enum {
 };
 
 //! Print supported protocols, formats, etc.
-ROC_ATTR_NODISCARD bool print_supported(unsigned flags,
-                                        sndio::BackendDispatcher& backend_dispatcher,
-                                        core::IArena& arena);
+ROC_NODISCARD bool print_supported(unsigned flags,
+                                   sndio::BackendDispatcher& backend_dispatcher,
+                                   core::IArena& arena);
 
 } // namespace dbgio
 } // namespace roc

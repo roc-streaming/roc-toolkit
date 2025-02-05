@@ -68,12 +68,12 @@ public:
     status::StatusCode init_status() const;
 
     //! Create transport sub-pipeline.
-    ROC_ATTR_NODISCARD status::StatusCode
+    ROC_NODISCARD status::StatusCode
     create_transport_pipeline(SenderEndpoint* source_endpoint,
                               SenderEndpoint* repair_endpoint);
 
     //! Create control sub-pipeline.
-    ROC_ATTR_NODISCARD status::StatusCode
+    ROC_NODISCARD status::StatusCode
     create_control_pipeline(SenderEndpoint* control_endpoint);
 
     //! Get frame writer.
@@ -88,16 +88,16 @@ public:
     //!  Should be invoked before reading each frame.
     //!  If there are no frames for a while, should be invoked no
     //!  later than the deadline returned via @p next_deadline.
-    ROC_ATTR_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
-                                                  core::nanoseconds_t& next_deadline);
+    ROC_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
+                                             core::nanoseconds_t& next_deadline);
 
     //! Route a packet to the session.
     //! @remarks
     //!  This way feedback packets from receiver reach sender pipeline.
     //!  Packets are stored inside internal pipeline queues, and then fetched
     //!  when frame are passed from frame_writer().
-    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
-                                                       core::nanoseconds_t current_time);
+    ROC_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
+                                                  core::nanoseconds_t current_time);
 
     //! Get slot metrics.
     //! @remarks

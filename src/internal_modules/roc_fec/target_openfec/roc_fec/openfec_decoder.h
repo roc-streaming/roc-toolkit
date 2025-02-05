@@ -45,7 +45,7 @@ public:
     virtual size_t max_block_length() const;
 
     //! Start block.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
+    virtual ROC_NODISCARD status::StatusCode
     begin_block(size_t sblen, size_t rblen, size_t payload_size);
 
     //! Store source or repair packet buffer for current block.

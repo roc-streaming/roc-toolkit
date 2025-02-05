@@ -38,7 +38,7 @@ public:
     const address::SocketAddr& outbound_address() const;
 
     //! Write outgoing packet.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
+    virtual ROC_NODISCARD status::StatusCode write(const PacketPtr& packet);
 
 private:
     IComposer& composer_;

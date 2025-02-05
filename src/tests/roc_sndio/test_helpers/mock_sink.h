@@ -80,7 +80,7 @@ public:
         return status::StatusOK;
     }
 
-    virtual ROC_ATTR_NODISCARD status::StatusCode flush() {
+    virtual ROC_NODISCARD status::StatusCode flush() {
         return status::StatusOK;
     }
 

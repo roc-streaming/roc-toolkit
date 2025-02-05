@@ -60,7 +60,7 @@ bool Mixer::has_input(IFrameReader& reader) {
     return false;
 }
 
-ROC_ATTR_NODISCARD status::StatusCode Mixer::add_input(IFrameReader& reader) {
+ROC_NODISCARD status::StatusCode Mixer::add_input(IFrameReader& reader) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     Input input;

@@ -240,7 +240,7 @@ public:
     //!  Insertion speed is higher when insert to remove ratio is close to one or lower,
     //!  and slows down when it becomes higher than one. The slow down is caused by
     //!  the incremental rehashing algorithm.
-    ROC_ATTR_NODISCARD bool insert(T& elem) {
+    ROC_NODISCARD bool insert(T& elem) {
         HashmapData* data = to_node_data_(elem);
         if (!insert_(elem.key(), data)) {
             return false;
@@ -284,7 +284,7 @@ public:
     //!  - doesn't computes key hashes
     //!  - makes allocations and deallocations
     //!  - doesn't proceed lazy rehashing
-    ROC_ATTR_NODISCARD bool grow() {
+    ROC_NODISCARD bool grow() {
         return impl_.grow();
     }
 

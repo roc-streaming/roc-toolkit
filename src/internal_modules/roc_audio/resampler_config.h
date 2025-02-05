@@ -68,9 +68,9 @@ struct ResamplerConfig {
     }
 
     //! Automatically fill missing settings.
-    ROC_ATTR_NODISCARD bool deduce_defaults(class ProcessorMap& processor_map,
-                                            LatencyTunerBackend latency_backend,
-                                            LatencyTunerProfile latency_profile);
+    ROC_NODISCARD bool deduce_defaults(class ProcessorMap& processor_map,
+                                       LatencyTunerBackend latency_backend,
+                                       LatencyTunerProfile latency_profile);
 };
 
 //! Get string name of resampler backend.

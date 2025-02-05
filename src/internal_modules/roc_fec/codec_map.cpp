@@ -24,9 +24,9 @@ namespace fec {
 namespace {
 
 template <class I, class T>
-ROC_ATTR_UNUSED I* ctor_func(const CodecConfig& config,
-                             packet::PacketFactory& packet_factory,
-                             core::IArena& arena) {
+ROC_NOUNUSED I* ctor_func(const CodecConfig& config,
+                          packet::PacketFactory& packet_factory,
+                          core::IArena& arena) {
     return new (arena) T(config, packet_factory, arena);
 }
 

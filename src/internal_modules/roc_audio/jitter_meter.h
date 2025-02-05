@@ -104,7 +104,7 @@ struct JitterMeterConfig {
     }
 
     //! Automatically fill missing settings.
-    ROC_ATTR_NODISCARD bool deduce_defaults(audio::LatencyTunerProfile latency_profile);
+    ROC_NODISCARD bool deduce_defaults(audio::LatencyTunerProfile latency_profile);
 };
 
 //! Jitter metrics.

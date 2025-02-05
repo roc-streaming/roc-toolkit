@@ -718,7 +718,7 @@ template <class T> struct pcm_sample;
 template <> struct pcm_sample<{{ type }}> {
     union {
         {{ type }} value;
-        ROC_ATTR_PACKED_BEGIN struct {
+        ROC_PACKED_BEGIN struct {
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
 {% for n in reversed(range(size)) %}
             uint8_t octet{{ n }};
@@ -728,7 +728,7 @@ template <> struct pcm_sample<{{ type }}> {
             uint8_t octet{{ n }};
 {% endfor %}
 #endif
-        } ROC_ATTR_PACKED_END octets;
+        } ROC_PACKED_END octets;
     };
 };
 

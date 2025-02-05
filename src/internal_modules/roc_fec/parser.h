@@ -39,8 +39,8 @@ public:
     }
 
     //! Parse packet from buffer.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
-    parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
+    virtual ROC_NODISCARD status::StatusCode parse(packet::Packet& packet,
+                                                   const core::Slice<uint8_t>& buffer) {
         if (buffer.size() < sizeof(PayloadID)) {
             roc_log(LogDebug, "fec parser: bad packet, size < %d (payload id)",
                     (int)sizeof(PayloadID));

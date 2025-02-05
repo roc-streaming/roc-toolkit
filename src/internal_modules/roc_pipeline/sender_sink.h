@@ -72,8 +72,8 @@ public:
     //!  Should be invoked before reading each frame.
     //!  If there are no frames for a while, should be invoked no
     //!  later than the deadline returned via @p next_deadline.
-    ROC_ATTR_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
-                                                  core::nanoseconds_t* next_deadline);
+    ROC_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
+                                             core::nanoseconds_t* next_deadline);
 
     //! Get type (sink or source).
     virtual sndio::DeviceType type() const;
@@ -97,10 +97,10 @@ public:
     virtual sndio::DeviceState state() const;
 
     //! Pause sink.
-    virtual ROC_ATTR_NODISCARD status::StatusCode pause();
+    virtual ROC_NODISCARD status::StatusCode pause();
 
     //! Resume sink.
-    virtual ROC_ATTR_NODISCARD status::StatusCode resume();
+    virtual ROC_NODISCARD status::StatusCode resume();
 
     //! Check if the sink supports latency reports.
     virtual bool has_latency() const;
@@ -112,13 +112,13 @@ public:
     virtual bool has_clock() const;
 
     //! Write frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode write(audio::Frame& frame);
 
     //! Flush buffered data, if any.
-    virtual ROC_ATTR_NODISCARD status::StatusCode flush();
+    virtual ROC_NODISCARD status::StatusCode flush();
 
     //! Explicitly close the sink.
-    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+    virtual ROC_NODISCARD status::StatusCode close();
 
     //! Destroy object and return memory to arena.
     virtual void dispose();

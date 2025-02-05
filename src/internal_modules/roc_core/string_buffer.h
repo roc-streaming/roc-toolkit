@@ -48,13 +48,13 @@ public:
     //! @p str should be zero-terminated.
     //! @returns
     //!  false if allocation failed.
-    ROC_ATTR_NODISCARD bool assign(const char* str);
+    ROC_NODISCARD bool assign(const char* str);
 
     //! Copy given range into buffer.
     //! Buffer will be automatically zero-terminated.
     //! @returns
     //!  false if allocation failed.
-    ROC_ATTR_NODISCARD bool assign(const char* str_begin, const char* str_end);
+    ROC_NODISCARD bool assign(const char* str_begin, const char* str_end);
 
     //! Extend buffer by requested number of characters.
     //! @remarks
@@ -62,19 +62,19 @@ public:
     //!  It's the caller responsibility to fill them.
     //! @returns
     //!  NULL if allocation failed.
-    ROC_ATTR_NODISCARD char* extend(size_t n_chars);
+    ROC_NODISCARD char* extend(size_t n_chars);
 
     //! Grow capacity to be able to hold desired number of characters.
     //! Capacity is increased linearly.
     //! @returns
     //!  false if allocation failed.
-    ROC_ATTR_NODISCARD bool grow(size_t desired_len);
+    ROC_NODISCARD bool grow(size_t desired_len);
 
     //! Grow capacity to be able to hold desired number of characters.
     //! Capacity is increased exponentially.
     //! @returns
     //!  false if allocation failed.
-    ROC_ATTR_NODISCARD bool grow_exp(size_t desired_len);
+    ROC_NODISCARD bool grow_exp(size_t desired_len);
 
 private:
     Array<char, 32> data_;
