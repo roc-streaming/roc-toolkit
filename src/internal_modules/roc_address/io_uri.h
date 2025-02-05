@@ -112,7 +112,7 @@ private:
 //!
 //! This parser does not try to perform full URI validation. For example, it does not
 //! check that path contains only allowed symbols. If it can be parsed, it will be.
-bool parse_io_uri(const char* str, IoUri& result);
+ROC_NODISCARD bool parse_io_uri(const char* str, IoUri& result);
 
 //! Format IoUri to string.
 //!
@@ -125,7 +125,7 @@ bool parse_io_uri(const char* str, IoUri& result);
 //!
 //! @returns
 //!  true on success or false if the buffer is too small.
-bool format_io_uri(const IoUri& uri, core::StringBuilder& dst);
+ROC_NODISCARD bool format_io_uri(const IoUri& uri, core::StringBuilder& dst);
 
 } // namespace address
 } // namespace roc
