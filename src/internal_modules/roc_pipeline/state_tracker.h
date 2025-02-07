@@ -14,7 +14,9 @@
 
 #include "roc_core/atomic.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/semaphore.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/time.h"
 #include "roc_sndio/device_state.h"
 
 namespace roc {
@@ -31,6 +33,9 @@ class StateTracker : public core::NonCopyable<> {
 public:
     //! Initialize all counters to zero.
     StateTracker();
+
+    //! Block until state becomes any of the ones specified by state_mask.
+    bool wait_state(unsigned state_mask, core::nanoseconds_t deadline);
 
     //! Compute current state.
     sndio::DeviceState get_state() const;
@@ -63,9 +68,12 @@ public:
     void unregister_packet();
 
 private:
+    core::Semaphore sem_;
     core::Atomic<int> halt_state_;
     core::Atomic<int> active_sessions_;
     core::Atomic<int> pending_packets_;
+    core::Atomic<unsigned> waiting_mask_;
+    void signal_state_change();
 };
 
 } // namespace pipeline
