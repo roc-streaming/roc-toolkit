@@ -15,7 +15,7 @@
 #include "roc_core/atomic.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
-#include "roc_sndio/device_state.h"
+#include "roc_sndio/device_defs.h"
 
 namespace roc {
 namespace pipeline {

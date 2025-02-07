@@ -19,7 +19,7 @@
 #include "roc_core/array.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
-#include "roc_sndio/driver.h"
+#include "roc_sndio/driver_defs.h"
 #include "roc_sndio/io_config.h"
 #include "roc_sndio/isink.h"
 

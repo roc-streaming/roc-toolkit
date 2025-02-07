@@ -10,7 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/stddefs.h"
-#include "roc_sndio/driver.h"
+#include "roc_sndio/driver_defs.h"
 #include "roc_sndio/pulseaudio_device.h"
 #include "roc_status/code_to_str.h"
 

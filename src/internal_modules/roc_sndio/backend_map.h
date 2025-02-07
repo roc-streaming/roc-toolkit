@@ -15,7 +15,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/singleton.h"
-#include "roc_sndio/driver.h"
+#include "roc_sndio/driver_defs.h"
 #include "roc_sndio/ibackend.h"
 
 #ifdef ROC_TARGET_PULSEAUDIO

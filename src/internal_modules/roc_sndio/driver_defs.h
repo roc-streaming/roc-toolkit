@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_sndio/driver.h
-//! @brief Driver information.
+//! @file roc_sndio/driver_defs.h
+//! @brief Driver definitions.
 
-#ifndef ROC_SNDIO_DRIVER_H_
-#define ROC_SNDIO_DRIVER_H_
+#ifndef ROC_SNDIO_DRIVER_DEFS_H_
+#define ROC_SNDIO_DRIVER_DEFS_H_
 
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
@@ -115,4 +115,4 @@ struct FormatInfo {
 } // namespace sndio
 } // namespace roc
 
-#endif // ROC_SNDIO_DRIVER_H_
+#endif // ROC_SNDIO_DRIVER_DEFS_H_

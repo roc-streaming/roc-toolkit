@@ -16,8 +16,7 @@
 #include "roc_core/attributes.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
-#include "roc_sndio/device_state.h"
-#include "roc_sndio/device_type.h"
+#include "roc_sndio/device_defs.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
