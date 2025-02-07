@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_stat/mov_aggregate.h
-//! @brief Rolling window average, variance, minimum, maximum.
+//! @file roc_stat/mov_min_max.h
+//! @brief Rolling window minimum and maximum.
 
-#ifndef ROC_STAT_MOV_AGGREGATE_H_
-#define ROC_STAT_MOV_AGGREGATE_H_
+#ifndef ROC_STAT_MOV_MIN_MAX_H_
+#define ROC_STAT_MOV_MIN_MAX_H_
 
 #include "roc_core/array.h"
 #include "roc_core/iarena.h"
@@ -20,25 +20,19 @@
 namespace roc {
 namespace stat {
 
-//! Rolling window average, variance, minimum, maximum.
+//! Rolling window minimum and maximum.
 //!
-//! Efficiently implements moving average and variance based on Welford's method:
-//!  - https://www.johndcook.com/blog/standard_deviation (incremental)
-//!  - https://stackoverflow.com/a/6664212/3169754 (rolling window)
-//!
-//! And moving minimum/maximum based on "sorted deque" algorithm:
+//! Implements moving minimum/maximum based on "sorted deque" algorithm from here:
 //!  https://www.geeksforgeeks.org/sliding-window-maximum-maximum-of-all-subarrays-of-size-k/
 //!
 //! @tparam T defines a sample type.
-template <typename T> class MovAggregate {
+template <typename T> class MovMinMax {
 public:
     //! Initialize.
-    MovAggregate(core::IArena& arena, const size_t win_len)
+    MovMinMax(core::IArena& arena, const size_t win_len)
         : win_len_(win_len)
         , buffer_(arena)
         , buffer_i_(0)
-        , movmean_(0)
-        , movvar_(0)
         , full_(false)
         , queue_max_(arena, win_len)
         , curr_max_(T(0))
@@ -46,7 +40,7 @@ public:
         , curr_min_(T(0))
         , valid_(false) {
         if (win_len == 0) {
-            roc_panic("mov stats: window length must be greater than 0");
+            roc_panic("mov min max: window length must be greater than 0");
         }
 
         if (!queue_max_.is_valid() || !queue_min_.is_valid()) {
@@ -67,39 +61,6 @@ public:
     //! Check if the window is fully filled.
     size_t is_full() const {
         return full_;
-    }
-
-    //! Get moving average.
-    //! @note
-    //!  Has O(1) complexity.
-    T mov_avg() const {
-        roc_panic_if(!valid_);
-
-        T ret;
-        double_2_t_(movmean_, ret);
-        return ret;
-    }
-
-    //! Get moving variance.
-    //! @note
-    //!  Has O(1) complexity.
-    T mov_var() const {
-        roc_panic_if(!valid_);
-
-        T ret;
-        double_2_t_(movvar_ > 0 ? movvar_ : 0, ret);
-        return ret;
-    }
-
-    //! Get moving standard deviation.
-    //! @note
-    //!  Has O(1) complexity.
-    T mov_std() const {
-        roc_panic_if(!valid_);
-
-        T ret;
-        double_2_t_(sqrt(movvar_ > 0 ? movvar_ : 0), ret);
-        return ret;
     }
 
     //! Min value in sliding window.
@@ -129,8 +90,6 @@ public:
         const T x_old = buffer_[buffer_i_];
         buffer_[buffer_i_] = x;
 
-        update_sums_(x, x_old);
-
         buffer_i_++;
         if (buffer_i_ == win_len_) {
             buffer_i_ = 0;
@@ -142,27 +101,6 @@ public:
     }
 
 private:
-    // Update moving average and moving variance.
-    void update_sums_(const T& x, const T x_old) {
-        if (full_) {
-            // Since window is full, use rolling window adaption of Welford's method.
-            // Operations are reordered to avoid overflows.
-            const double movmean_old = movmean_;
-            movmean_ += double(x - x_old) / win_len_;
-            movvar_ += ((x - movmean_) + (x_old - movmean_old)) / win_len_ * (x - x_old);
-        } else {
-            // Until window is full, use original Welford's method.
-            // Operations are reordered to avoid overflows.
-            const double movmean_old = movmean_;
-            const double n = buffer_i_;
-            movmean_ += (x - movmean_) / (n + 1);
-            if (n > 0) {
-                movvar_ =
-                    (movvar_ + (x - movmean_old) / n * (x - movmean_)) * (n / (n + 1));
-            }
-        }
-    }
-
     // Keeping a sliding max by using a sorted deque.
     // The wedge is always sorted in descending order.
     // The current max is always at the front of the wedge.
@@ -224,9 +162,6 @@ private:
     core::Array<T> buffer_;
     size_t buffer_i_;
 
-    double movmean_;
-    double movvar_;
-
     bool full_;
 
     core::RingQueue<T> queue_max_;
@@ -240,4 +175,4 @@ private:
 } // namespace stat
 } // namespace roc
 
-#endif // ROC_STAT_MOV_AGGREGATE_H_
+#endif // ROC_STAT_MOV_MIN_MAX_H_
