@@ -19,7 +19,7 @@
 #include "roc_core/time.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_rtp/encoding_map.h"
-#include "roc_stat/mov_aggregate.h"
+#include "roc_stat/mov_min_max.h"
 
 // This file contains tests for ReceiverSource. ReceiverSource can be seen as a big
 // composite processor (consisting of chained smaller processors) that transforms
@@ -3437,7 +3437,7 @@ TEST(receiver_source, adaptive_latency_increase) {
     packet_writer.set_jitter(jitter - tolerance, jitter + tolerance);
 
     // wait until we reach stable latency
-    stat::MovAggregate<core::nanoseconds_t> latency_hist(arena, stabilization_window);
+    stat::MovMinMax<core::nanoseconds_t> latency_hist(arena, stabilization_window);
     CHECK(latency_hist.is_valid());
 
     for (;;) {
@@ -3515,7 +3515,7 @@ TEST(receiver_source, adaptive_latency_decrease) {
     packet_writer.set_jitter(jitter - tolerance, jitter + tolerance);
 
     // wait until we reach stable latency
-    stat::MovAggregate<core::nanoseconds_t> latency_hist(arena, stabilization_window);
+    stat::MovMinMax<core::nanoseconds_t> latency_hist(arena, stabilization_window);
     CHECK(latency_hist.is_valid());
 
     for (;;) {
