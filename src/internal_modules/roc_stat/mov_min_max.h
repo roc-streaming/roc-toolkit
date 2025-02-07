@@ -90,14 +90,14 @@ public:
         const T x_old = buffer_[buffer_i_];
         buffer_[buffer_i_] = x;
 
+        slide_max_(x, x_old);
+        slide_min_(x, x_old);
+
         buffer_i_++;
         if (buffer_i_ == win_len_) {
             buffer_i_ = 0;
             full_ = true;
         }
-
-        slide_max_(x, x_old);
-        slide_min_(x, x_old);
     }
 
 private:
@@ -109,7 +109,7 @@ private:
             queue_max_.push_back(x);
             curr_max_ = x;
         } else {
-            if (queue_max_.front() == x_old) {
+            if (queue_max_.front() == x_old && full_) {
                 queue_max_.pop_front();
                 curr_max_ = queue_max_.is_empty() ? x : queue_max_.front();
             }
@@ -131,7 +131,7 @@ private:
             queue_min_.push_back(x);
             curr_min_ = x;
         } else {
-            if (queue_min_.front() == x_old) {
+            if (queue_min_.front() == x_old && full_) {
                 queue_min_.pop_front();
                 curr_min_ = queue_min_.is_empty() ? x : queue_min_.front();
             }
