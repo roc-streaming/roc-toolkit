@@ -166,7 +166,7 @@ AddOption('--enable-tests',
 AddOption('--enable-benchmarks',
           dest='enable_benchmarks',
           action='store_true',
-          help='enable bechmarks building and running (requires Google Benchmark)')
+          help='enable benchmarks building and running (requires Google Benchmark)')
 
 AddOption('--enable-examples',
           dest='enable_examples',
@@ -273,7 +273,7 @@ AddOption('--macos-arch',
                 " comma-separated list, supported values: {}".format(
                     ', '.join(["'{}'".format(s) for s in supported_macos_archs])) +
                 " (default is current OS arch, pass multiple values"
-                " or 'all' for univeral binaries)"))
+                " or 'all' for universal binaries)"))
 
 AddOption('--build-3rdparty',
           dest='build_3rdparty',
@@ -444,13 +444,13 @@ doc_env = env.DeepClone()
 doc_env.SConscript('docs/SConscript',
                    duplicate=0, exports='doc_env')
 
-# run scons self-test
-env.AlwaysBuild(env.Alias('selftest', [], [
-    env.SelfTest(),
+# run python doctests
+env.AlwaysBuild(env.Alias('doctest', [], [
+    env.DocTest('#scripts/scons_helpers/build-3rdparty.py'),
 ]))
 
 # exit early if there is nothing to build
-non_build_targets = ['fmt', 'docs', 'sphinx', 'doxygen', 'selftest']
+non_build_targets = ['fmt', 'docs', 'sphinx', 'doxygen', 'doctest']
 if set(COMMAND_LINE_TARGETS) \
   and set(COMMAND_LINE_TARGETS).intersection(non_build_targets) == set(COMMAND_LINE_TARGETS):
     Return()

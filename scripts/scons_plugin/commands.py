@@ -33,11 +33,16 @@ def HeaderFormat(env, src_dir):
             src_dir=quote(env.Dir(src_dir).path)),
         env.PrettyCommand('FMT', env.Dir(src_dir).path, 'yellow'))
 
-def SelfTest(env):
+def DocTest(env, path):
+    try:
+        path = env.Dir(path).path
+    except:
+        path = env.File(path).path
     return env.Action(
-        '{python} scripts/scons_helpers/build-3rdparty.py --self-test'.format(
-            python=quote(env.GetPythonExecutable())),
-        env.PrettyCommand('TEST', 'build-3rdparty.py', 'green'))
+        '{python} scripts/scons_helpers/doctests.py {module}'.format(
+            python=quote(env.GetPythonExecutable()),
+            module=quote(path)),
+        env.PrettyCommand('DOCTEST', path, 'green'))
 
 def Doxygen(env, build_dir='', html_dir=None, config='', sources=[], werror=False):
     target = os.path.join(build_dir, 'commit')
@@ -297,7 +302,7 @@ def Artifact(env, dst, src):
 def init(env):
     env.AddMethod(ClangFormat, 'ClangFormat')
     env.AddMethod(HeaderFormat, 'HeaderFormat')
-    env.AddMethod(SelfTest, 'SelfTest')
+    env.AddMethod(DocTest, 'DocTest')
     env.AddMethod(Doxygen, 'Doxygen')
     env.AddMethod(Sphinx, 'Sphinx')
     env.AddMethod(Ragel, 'Ragel')
