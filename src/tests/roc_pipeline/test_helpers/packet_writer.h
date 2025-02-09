@@ -267,14 +267,15 @@ private:
             sample_offset_++;
         }
 
-        payload_encoder_->begin_frame(pp->rtp()->payload.data(),
-                                      pp->rtp()->payload.size());
+        LONGS_EQUAL(status::StatusOK,
+                    payload_encoder_->begin_frame(pp->rtp()->payload.data(),
+                                                  pp->rtp()->payload.size()));
 
         UNSIGNED_LONGS_EQUAL(
             samples_per_packet,
             payload_encoder_->write_samples(samples, samples_per_packet));
 
-        payload_encoder_->end_frame();
+        LONGS_EQUAL(status::StatusOK, payload_encoder_->end_frame());
 
         return pp;
     }

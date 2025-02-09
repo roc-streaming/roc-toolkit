@@ -77,12 +77,14 @@ packet::PacketPtr new_packet(IFrameEncoder& encoder,
         samples[n] = value;
     }
 
-    encoder.begin_frame(pp->rtp()->payload.data(), pp->rtp()->payload.size());
+    LONGS_EQUAL(
+        status::StatusOK,
+        encoder.begin_frame(pp->rtp()->payload.data(), pp->rtp()->payload.size()));
 
     UNSIGNED_LONGS_EQUAL(SamplesPerPacket,
                          encoder.write_samples(samples, SamplesPerPacket));
 
-    encoder.end_frame();
+    LONGS_EQUAL(status::StatusOK, encoder.end_frame());
 
     LONGS_EQUAL(status::StatusOK, rtp_composer.compose(*pp));
 
@@ -218,6 +220,68 @@ public:
 
 private:
     packet::IReader& reader_;
+    status::StatusCode code_;
+};
+
+class MockDecoder : public IFrameDecoder {
+public:
+    explicit MockDecoder(IFrameDecoder& decoder, core::IArena& arena)
+        : IFrameDecoder(arena)
+        , decoder_(decoder)
+        , code_(status::NoStatus) {
+    }
+
+    status::StatusCode virtual init_status() const {
+        if (code_ != status::NoStatus && code_ != status::StatusOK) {
+            return code_;
+        }
+
+        return decoder_.init_status();
+    }
+
+    ROC_NODISCARD virtual status::StatusCode
+    begin_frame(packet::stream_timestamp_t frame_position,
+                const void* frame_data,
+                size_t frame_size) {
+        if (code_ != status::NoStatus && code_ != status::StatusOK) {
+            return code_;
+        }
+
+        return decoder_.begin_frame(frame_position, frame_data, frame_size);
+    }
+
+    ROC_NODISCARD virtual status::StatusCode end_frame() {
+        if (code_ != status::NoStatus && code_ != status::StatusOK) {
+            return code_;
+        }
+
+        return decoder_.end_frame();
+    }
+    virtual status::StatusCode init_status() {
+        return decoder_.init_status();
+    }
+    virtual packet::stream_timestamp_t position() const {
+        return decoder_.position();
+    }
+    virtual packet::stream_timestamp_t available() const {
+        return decoder_.available();
+    }
+    virtual size_t decoded_sample_count(const void* frame_data, size_t frame_size) const {
+        return decoder_.decoded_sample_count(frame_data, frame_size);
+    }
+    virtual size_t read_samples(sample_t* samples, size_t n_samples) {
+        return decoder_.read_samples(samples, n_samples);
+    }
+    virtual size_t drop_samples(size_t n_samples) {
+        return decoder_.drop_samples(n_samples);
+    }
+
+    void set_status(status::StatusCode code) {
+        code_ = code;
+    }
+
+private:
+    IFrameDecoder& decoder_;
     status::StatusCode code_;
 };
 
@@ -1298,6 +1362,22 @@ TEST(depacketizer, preallocated_buffer) {
         LONGS_EQUAL(FrameSz, frame->num_raw_samples());
         LONGS_EQUAL(FrameSz * sizeof(sample_t), frame->num_bytes());
     }
+}
+
+TEST(depacketizer, handle_decoder_error) {
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
+    MockDecoder mock_decoder(decoder, arena);
+
+    packet::FifoQueue queue;
+    Depacketizer dp(queue, mock_decoder, frame_factory, frame_spec, NULL);
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
+
+    mock_decoder.set_status(status::StatusBadArg);
+
+    write_packet(queue, new_packet(encoder, 0, 0.11f, 0));
+
+    expect_error(status::StatusBadArg, dp, SamplesPerPacket);
 }
 
 } // namespace audio

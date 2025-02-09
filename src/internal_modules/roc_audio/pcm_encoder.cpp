@@ -33,8 +33,11 @@ size_t PcmEncoder::encoded_byte_count(size_t num_samples) const {
     return pcm_mapper_.output_byte_count(num_samples * n_chans_);
 }
 
-void PcmEncoder::begin_frame(void* frame_data, size_t frame_size) {
-    roc_panic_if_not(frame_data);
+ROC_NODISCARD status::StatusCode PcmEncoder::begin_frame(void* frame_data,
+                                                         size_t frame_size) {
+    if (!frame_data) {
+        return status::StatusBadArg;
+    }
 
     if (frame_data_) {
         roc_panic("pcm encoder: unpaired begin/end");
@@ -42,6 +45,8 @@ void PcmEncoder::begin_frame(void* frame_data, size_t frame_size) {
 
     frame_data_ = frame_data;
     frame_byte_size_ = frame_size;
+
+    return status::StatusOK;
 }
 
 size_t PcmEncoder::write_samples(const sample_t* samples, size_t n_samples) {
@@ -63,7 +68,7 @@ size_t PcmEncoder::write_samples(const sample_t* samples, size_t n_samples) {
     return n_mapped_samples;
 }
 
-void PcmEncoder::end_frame() {
+ROC_NODISCARD status::StatusCode PcmEncoder::end_frame() {
     if (!frame_data_) {
         roc_panic("pcm encoder: unpaired begin/end");
     }
@@ -71,6 +76,8 @@ void PcmEncoder::end_frame() {
     frame_data_ = NULL;
     frame_byte_size_ = 0;
     frame_bit_off_ = 0;
+
+    return status::StatusOK;
 }
 
 } // namespace audio
