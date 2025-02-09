@@ -9,7 +9,6 @@
 #include "roc_packet/interleaver.h"
 #include "roc_core/fast_random.h"
 #include "roc_core/log.h"
-#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace packet {

@@ -7,9 +7,9 @@
  */
 
 #include "roc_rtp/identity.h"
-#include "roc_core/fast_random.h"
 #include "roc_core/log.h"
-#include "roc_core/macro_helpers.h"
+#include "roc_core/secure_random.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace rtp {
@@ -45,9 +45,11 @@ packet::stream_source_t Identity::ssrc() const {
 }
 
 status::StatusCode Identity::change_ssrc() {
-    ssrc_ =
-        (packet::stream_source_t)core::fast_random_range(1, packet::stream_source_t(-1));
-
+    bool ok = (packet::stream_source_t)core::secure_random_range_32(
+        1, packet::stream_source_t(-1), ssrc_);
+    if (!ok) {
+        return status::StatusErrRand;
+    }
     roc_log(LogDebug, "rtp identity: ssrc=%lu cname=%s", (unsigned long)ssrc_, cname_);
 
     return status::StatusOK;

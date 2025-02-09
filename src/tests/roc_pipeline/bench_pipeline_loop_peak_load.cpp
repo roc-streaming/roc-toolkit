@@ -6,8 +6,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <benchmark/benchmark.h>
-
 #include "roc_core/atomic.h"
 #include "roc_core/fast_random.h"
 #include "roc_core/heap_arena.h"
@@ -18,6 +16,8 @@
 #include "roc_ctl/control_task_executor.h"
 #include "roc_ctl/control_task_queue.h"
 #include "roc_pipeline/pipeline_loop.h"
+
+#include <benchmark/benchmark.h>
 
 namespace roc {
 namespace pipeline {

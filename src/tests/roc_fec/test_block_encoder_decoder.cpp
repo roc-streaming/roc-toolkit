@@ -11,8 +11,10 @@
 
 #include "roc_core/array.h"
 #include "roc_core/fast_random.h"
+#include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/secure_random.h"
 #include "roc_fec/codec_map.h"
 
 namespace roc {
@@ -92,9 +94,11 @@ private:
     core::Slice<uint8_t> make_buffer_(size_t p_size) {
         core::Slice<uint8_t> buf = packet_factory_.new_packet_buffer();
         buf.reslice(0, p_size);
+
         for (size_t j = 0; j < buf.size(); ++j) {
             buf.data()[j] = (uint8_t)core::fast_random_range(0, 0xff);
         }
+
         return buf;
     }
 
