@@ -6,6 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_core/log.h"
+#include "roc_fec/block_writer.h"
 #include "test_harness.h"
 #include "test_helpers/control_reader.h"
 #include "test_helpers/control_writer.h"
@@ -20,6 +22,7 @@
 #include "roc_pipeline/receiver_source.h"
 #include "roc_rtp/encoding_map.h"
 #include "roc_stat/mov_aggregate.h"
+#include <CppUTest/UtestMacros.h>
 
 // This file contains tests for ReceiverSource. ReceiverSource can be seen as a big
 // composite processor (consisting of chained smaller processors) that transforms
@@ -3400,18 +3403,7 @@ TEST(receiver_source, timestamp_mapping_remixing) {
 }
 
 TEST(receiver_source, packet_buffer) {
-    enum {
-        OutputRate = 48000,
-        PacketRate = 44100,
-        OutputChans = Chans_Stereo,
-        PacketChans = Chans_Mono
-    };
-
-    const audio::PcmSubformat OutputFormat = Format_S16_Ne;
-    const audio::PcmSubformat PacketFormat = Format_S16_Be;
-
-    init_with_specs(OutputRate, OutputChans, OutputFormat, PacketRate, PacketChans,
-                    PacketFormat);
+    init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
                             packet_pool, packet_buffer_pool, frame_pool,
@@ -3419,45 +3411,29 @@ TEST(receiver_source, packet_buffer) {
     LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlot* slot = create_slot(receiver);
-    CHECK(slot);
 
-    packet::FifoQueue queue;
     packet::FifoQueue source_queue;
     packet::FifoQueue repair_queue;
 
     packet::IWriter* source_endpoint_writer = create_transport_endpoint(
         slot, address::Iface_AudioSource, address::Proto_RTP_RS8M_Source, dst_addr1);
 
-    packet::IWriter* repair_endpoint_writer = create_transport_endpoint(
-        slot, address::Iface_AudioRepair, address::Proto_RS8M_Repair, dst_addr2);
+    packet::IWriter* repair_endpoint_writer =
+        create_control_endpoint(slot, address::Iface_AudioRepair,
+                                address::Proto_RS8M_Repair, dst_addr2, repair_queue);
 
-    fec::BlockWriterConfig fec_config;
-
-    test::PacketWriter packet_writer(
-        arena, *source_endpoint_writer, *repair_endpoint_writer, encoding_map,
-        packet_factory, src_id1, src_addr1, dst_addr1, dst_addr2, PayloadType_Ch2,
-        packet::FEC_ReedSolomon_M8, fec_config);
+    test::PacketWriter packet_writer(arena, *source_endpoint_writer,
+                                     *repair_endpoint_writer, encoding_map,
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     dst_addr2, PayloadType_Ch2, fec_scheme, fec_config);
 
     // setup reader
     test::FrameReader frame_reader(receiver, frame_factory);
 
-    packet_writer.write_packets(fec_config.n_source_packets, SamplesPerPacket,
-                                output_sample_spec);
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                packet_sample_spec);
 
-    for (int i = 0; i < ManyPackets; ++i) {
-        packet::PacketPtr pp;
-        LONGS_EQUAL(status::StatusOK, queue.read(pp, packet::ModeFetch));
-        CHECK(pp);
-
-        if (pp->flags() & packet::Packet::FlagAudio) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, source_queue.write(pp));
-        }
-        if (pp->flags() & packet::Packet::FlagRepair) {
-            UNSIGNED_LONGS_EQUAL(status::StatusOK, repair_queue.write(pp));
-        }
-    }
-
-    LONGS_EQUAL(status::StatusOK, receiver.refresh(frame_reader.refresh_ts(), NULL));
+    refresh_source(receiver, frame_reader.refresh_ts());
     frame_reader.read_nonzero_samples(SamplesPerFrame, output_sample_spec);
     UNSIGNED_LONGS_EQUAL(1, receiver.num_sessions());
 }

@@ -96,7 +96,7 @@ bool ReceiverSessionConfig::deduce_defaults(audio::ProcessorMap& processor_map) 
         return false;
     }
 
-    if(!prebuf_len) {
+    if (!prebuf_len) {
         prebuf_len = latency.target_latency;
     }
 
