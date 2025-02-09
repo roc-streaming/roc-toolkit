@@ -313,6 +313,19 @@ bool build_receiver_config(const gengetopt_args_info& args,
         }
     }
 
+    if (args.prebuf_len_given) {
+        if (!core::parse_duration(
+                args.prebuf_len_arg, 
+                receiver_config.session_defaults.prebuf_len)) {
+            roc_log(LogError, "invalid --prebuf-len: bad format");
+            return false;
+        }
+        if (receiver_config.session_defaults.prebuf_len) {
+            roc_log(LogError, "invalid --prebuf-len: should be > 0");
+            return false;
+        }
+    }
+
     if (args.choppy_play_timeout_given) {
         if (!core::parse_duration(
                 args.choppy_play_timeout_arg,

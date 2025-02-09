@@ -186,6 +186,9 @@ struct ReceiverSessionConfig {
     //! Watchdog parameters.
     audio::WatchdogConfig watchdog;
 
+    //! Packet prebuffer length, nanoseconds.
+    core::nanoseconds_t prebuf_len;
+
     //! Initialize config.
     ReceiverSessionConfig();
 
@@ -204,6 +207,9 @@ struct ReceiverSourceConfig {
 
     //! Default parameters for a session.
     ReceiverSessionConfig session_defaults;
+
+    //! Maximum number of packets per session.
+    size_t max_session_packets;
 
     //! Initialize config.
     ReceiverSourceConfig();
