@@ -8,7 +8,6 @@
 
 #include "roc_address/io_uri.h"
 #include "roc_address/network_uri.h"
-#include "roc_address/protocol_map.h"
 #include "roc_core/crash_handler.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
@@ -314,9 +313,8 @@ bool build_receiver_config(const gengetopt_args_info& args,
     }
 
     if (args.prebuf_len_given) {
-        if (!core::parse_duration(
-                args.prebuf_len_arg, 
-                receiver_config.session_defaults.prebuf_len)) {
+        if (!core::parse_duration(args.prebuf_len_arg,
+                                  receiver_config.session_defaults.prebuf_len)) {
             roc_log(LogError, "invalid --prebuf-len: bad format");
             return false;
         }

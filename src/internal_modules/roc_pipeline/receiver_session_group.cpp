@@ -331,7 +331,6 @@ ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
     }
 
     if (sess) {
-        enqueue_prebuf_packet_(packet);
         // Session found, route packet to it.
         return sess->route_packet(packet);
     }
@@ -339,6 +338,9 @@ ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
     // Session not found, auto-create session if possible.
     if (can_create_session_(packet)) {
         return create_session_(packet);
+    } else {
+        // else, put packet in pre session buffer
+        enqueue_prebuf_packet_(packet);
     }
 
     return status::StatusNoRoute;
@@ -508,7 +510,7 @@ void ReceiverSessionGroup::dequeue_prebuf_packet_(ReceiverSession& sess) {
     for (curr = prebuf_packets_.front(); curr; curr = next) {
         next = prebuf_packets_.nextof(*curr);
 
-        // if packet is too old, remote it from the queue
+        // if packet is too old, remove it from the queue
         core::nanoseconds_t received = curr->udp()->receive_timestamp;
         if (now - received > source_config_.session_defaults.prebuf_len) {
             prebuf_packets_.remove(*curr);
