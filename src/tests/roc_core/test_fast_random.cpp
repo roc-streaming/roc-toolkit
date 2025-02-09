@@ -6,12 +6,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-// see also test_secure_random.cpp
-
-#include <CppUTest/TestHarness.h>
-
 #include "roc_core/fast_random.h"
 #include "roc_core/stddefs.h"
+
+#include <CppUTest/TestHarness.h>
 
 namespace roc {
 namespace core {

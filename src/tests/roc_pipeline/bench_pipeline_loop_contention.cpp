@@ -8,8 +8,8 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roc_core/fast_random.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/secure_random.h"
 #include "roc_ctl/control_task_executor.h"
 #include "roc_ctl/control_task_queue.h"
 #include "roc_pipeline/pipeline_loop.h"

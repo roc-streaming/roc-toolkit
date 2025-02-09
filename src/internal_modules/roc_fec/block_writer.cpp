@@ -7,11 +7,11 @@
  */
 
 #include "roc_fec/block_writer.h"
-#include "roc_core/fast_random.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_core/secure_random.h"
 #include "roc_packet/fec_scheme.h"
-#include "roc_status/code_to_str.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace fec {
@@ -46,9 +46,16 @@ BlockWriter::BlockWriter(const BlockWriterConfig& config,
         return;
     }
 
-    cur_sbn_ = (packet::blknum_t)core::fast_random_range(0, packet::blknum_t(-1));
-    cur_block_repair_sn_ =
-        (packet::seqnum_t)core::fast_random_range(0, packet::seqnum_t(-1));
+    bool ok = core::secure_random(&cur_sbn_, sizeof(cur_sbn_));
+    if (!ok) {
+        init_status_ = status::StatusErrRand;
+        return;
+    }
+    ok = core::secure_random(&cur_block_repair_sn_, sizeof(cur_block_repair_sn_));
+    if (!ok) {
+        init_status_ = status::StatusErrRand;
+        return;
+    }
 
     if ((init_status_ = resize(config.n_source_packets, config.n_repair_packets))
         != status::StatusOK) {

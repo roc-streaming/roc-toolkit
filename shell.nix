@@ -1,34 +1,41 @@
 { pkgs ? import <nixpkgs> {} }:
 
-  pkgs.mkShell {
-    buildInputs = [
-      # build deps
-      pkgs.autoconf
-      pkgs.automake
-      pkgs.clang
-      pkgs.cmake
-      pkgs.gcc
-      pkgs.gengetopt
-      pkgs.gnumake
-      pkgs.intltool
-      pkgs.libtool
-      pkgs.meson
-      pkgs.pkg-config
-      pkgs.ragel
-      pkgs.scons
+pkgs.clangStdenv.mkDerivation {
+  name = "clang-shell";
 
-      # other deps
-      pkgs.libpulseaudio
-      pkgs.libsndfile
-      pkgs.libunwind
-      pkgs.libuv
-      pkgs.openssl
-      pkgs.sox
-      pkgs.speexdsp
+  nativeBuildInputs = [
+    pkgs.clang-tools
+    # A properly wrapped clangd is already made available by the clang-tools derivation.
+    # clang-tools has to come before clang to set precedence in PATH for clangd.
+    pkgs.clang
 
-      # optional deps: formatting, tests, ...
-      pkgs.clang-tools
-      pkgs.cpputest
-      pkgs.gbenchmark
-    ];
-  }
+    # build deps
+    pkgs.autoconf
+    pkgs.automake
+    pkgs.cmake
+    pkgs.gengetopt
+    pkgs.gnumake
+    pkgs.intltool
+    pkgs.libtool
+    pkgs.meson
+    pkgs.pkg-config
+    pkgs.ragel
+    pkgs.scons
+  ];
+
+  buildInputs = [
+    # other deps
+    pkgs.libpulseaudio
+    pkgs.libsndfile
+    pkgs.libunwind
+    pkgs.libuuid
+    pkgs.libuv
+    pkgs.openssl
+    pkgs.sox
+    pkgs.speexdsp
+
+    # optional deps: formatting, tests, ...
+    pkgs.cpputest
+    pkgs.gbenchmark
+  ];
+}
