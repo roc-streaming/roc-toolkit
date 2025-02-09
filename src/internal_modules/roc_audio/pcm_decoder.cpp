@@ -46,10 +46,13 @@ size_t PcmDecoder::decoded_sample_count(const void* frame_data, size_t frame_siz
     return pcm_mapper_.input_sample_count(frame_size) / n_chans_;
 }
 
-void PcmDecoder::begin_frame(packet::stream_timestamp_t frame_position,
-                             const void* frame_data,
-                             size_t frame_size) {
-    roc_panic_if_not(frame_data);
+ROC_NODISCARD status::StatusCode
+PcmDecoder::begin_frame(packet::stream_timestamp_t frame_position,
+                        const void* frame_data,
+                        size_t frame_size) {
+    if (!frame_data) {
+        return status::StatusBadArg;
+    }
 
     if (frame_data_) {
         roc_panic("pcm decoder: unpaired begin/end");
@@ -61,6 +64,8 @@ void PcmDecoder::begin_frame(packet::stream_timestamp_t frame_position,
     stream_pos_ = frame_position;
     stream_avail_ =
         packet::stream_timestamp_t(pcm_mapper_.input_sample_count(frame_size) / n_chans_);
+
+    return status::StatusOK;
 }
 
 size_t PcmDecoder::read_samples(sample_t* samples, size_t n_samples) {
@@ -106,7 +111,7 @@ size_t PcmDecoder::drop_samples(size_t n_samples) {
     return n_samples;
 }
 
-void PcmDecoder::end_frame() {
+ROC_NODISCARD status::StatusCode PcmDecoder::end_frame() {
     if (!frame_data_) {
         roc_panic("pcm decoder: unpaired begin/end");
     }
@@ -116,6 +121,8 @@ void PcmDecoder::end_frame() {
     frame_data_ = NULL;
     frame_byte_size_ = 0;
     frame_bit_off_ = 0;
+
+    return status::StatusOK;
 }
 
 } // namespace audio

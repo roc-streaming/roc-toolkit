@@ -145,9 +145,8 @@ status::StatusCode Packetizer::begin_packet_() {
     packet_cts_ = capture_ts_;
 
     // Begin encoding samples into packet.
-    payload_encoder_.begin_frame(packet_->payload().data(), packet_->payload().size());
-
-    return status::StatusOK;
+    return payload_encoder_.begin_frame(packet_->payload().data(),
+                                        packet_->payload().size());
 }
 
 status::StatusCode Packetizer::end_packet_() {
@@ -155,13 +154,18 @@ status::StatusCode Packetizer::end_packet_() {
     const size_t written_payload_size = payload_encoder_.encoded_byte_count(packet_pos_);
     roc_panic_if_not(written_payload_size <= payload_size_);
 
+    status::StatusCode code = status::StatusOK;
+
     // Finish encoding samples into packet.
-    payload_encoder_.end_frame();
+    code = payload_encoder_.end_frame();
+
+    if (code != status::StatusOK) {
+        return code;
+    }
 
     // Fill protocol-specific fields.
     sequencer_.next(*packet_, packet_cts_, (packet::stream_timestamp_t)packet_pos_);
 
-    status::StatusCode code = status::StatusOK;
     // Apply padding if needed.
     if (packet_pos_ < samples_per_packet_) {
         code = pad_packet_(written_payload_size);

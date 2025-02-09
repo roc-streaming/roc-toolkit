@@ -100,8 +100,7 @@ status::StatusCode Depacketizer::read(Frame& frame,
 
     while (buff_ptr < buff_end) {
         const size_t requested_samples = size_t(buff_end - buff_ptr);
-        const status::StatusCode code =
-            update_packet_(requested_samples, mode, frame_stats);
+        status::StatusCode code = update_packet_(requested_samples, mode, frame_stats);
 
         if (code == status::StatusDrain && mode == ModeSoft) {
             break; // In soft read mode, stop on packet loss.
@@ -110,12 +109,13 @@ status::StatusCode Depacketizer::read(Frame& frame,
             return code;
         }
 
-        sample_t* next_buff_ptr = read_samples_(buff_ptr, buff_end, mode, frame_stats);
-        if (!next_buff_ptr) { // Partial or drained read.
+        code = read_samples_(&buff_ptr, buff_end, mode, frame_stats);
+        if (code == status::StatusDrain) {
             break;
         }
-
-        buff_ptr = next_buff_ptr;
+        if (code != status::StatusOK) {
+            return code;
+        }
     }
 
     const size_t frame_samples = size_t(buff_ptr - frame.raw_samples());
@@ -138,10 +138,10 @@ status::StatusCode Depacketizer::read(Frame& frame,
     return frame.duration() == requested_duration ? status::StatusOK : status::StatusPart;
 }
 
-sample_t* Depacketizer::read_samples_(sample_t* buff_ptr,
-                                      sample_t* buff_end,
-                                      FrameReadMode mode,
-                                      FrameStats& stats) {
+ROC_NODISCARD status::StatusCode Depacketizer::read_samples_(sample_t** buff_ptr,
+                                                             sample_t* buff_end,
+                                                             FrameReadMode mode,
+                                                             FrameStats& stats) {
     if (packet_) {
         packet::stream_timestamp_t next_decoder_ts = payload_decoder_.position();
 
@@ -160,18 +160,18 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr,
                 // In soft mode, stop reading on gap.
                 // Also, in any mode, don't mix signal and gaps in one frame.
                 roc_panic_if_not(mode == ModeSoft || stats.n_written_samples > 0);
-                return NULL;
+                return status::StatusDrain;
             }
 
-            const size_t max_samples = (size_t)(buff_end - buff_ptr);
+            const size_t max_samples = (size_t)(buff_end - *buff_ptr);
             const size_t mis_samples =
                 (size_t)packet::stream_timestamp_diff(next_decoder_ts, stream_ts_)
                 * sample_spec_.num_channels();
 
             const size_t n_samples = std::min(mis_samples, max_samples);
 
-            sample_t* next_buff_ptr =
-                read_missing_samples_(buff_ptr, buff_ptr + n_samples);
+            const status::StatusCode code =
+                read_missing_samples_(buff_ptr, *buff_ptr + n_samples);
 
             stats.n_written_samples += n_samples;
             stats.n_missing_samples += n_samples;
@@ -181,7 +181,7 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr,
                     - sample_spec_.samples_overall_2_ns(stats.n_written_samples);
             }
 
-            return next_buff_ptr;
+            return code;
         } else {
             // If stream timestamp is aligned with packet decoder timestamp, decode
             // samples from packet into frame.
@@ -199,12 +199,14 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr,
             if (stats.n_missing_samples != 0) {
                 // Don't mix signal and losses in one frame.
                 roc_panic_if_not(mode == ModeSoft || stats.n_written_samples > 0);
-                return NULL;
+                return status::StatusDrain;
             }
 
-            sample_t* next_buff_ptr = read_decoded_samples_(buff_ptr, buff_end);
+            sample_t* next_buff_ptr = *buff_ptr;
+            const status::StatusCode code =
+                read_decoded_samples_(&next_buff_ptr, buff_end);
 
-            const size_t n_samples = size_t(next_buff_ptr - buff_ptr);
+            const size_t n_samples = size_t(next_buff_ptr - *buff_ptr);
 
             if (n_samples && !stats.capture_ts && valid_capture_ts_) {
                 stats.capture_ts = next_capture_ts_
@@ -217,7 +219,8 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr,
             stats.n_written_samples += n_samples;
             stats.n_decoded_samples += n_samples;
 
-            return next_buff_ptr;
+            *buff_ptr = next_buff_ptr;
+            return code;
         }
     } else {
         // If there is no packet, fill requested buffer with zeros.
@@ -230,10 +233,10 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr,
             // In soft mode, stop reading on loss.
             // Also, in any mode, don't mix signal and losses in one frame.
             roc_panic_if_not(mode == ModeSoft || stats.n_written_samples > 0);
-            return NULL;
+            return status::StatusDrain;
         }
 
-        const size_t n_samples = size_t(buff_end - buff_ptr);
+        const size_t n_samples = size_t(buff_end - *buff_ptr);
 
         if (!stats.capture_ts && valid_capture_ts_) {
             stats.capture_ts = next_capture_ts_
@@ -246,18 +249,17 @@ sample_t* Depacketizer::read_samples_(sample_t* buff_ptr,
         stats.n_written_samples += n_samples;
         stats.n_missing_samples += n_samples;
 
-        sample_t* next_buff_ptr = read_missing_samples_(buff_ptr, buff_end);
-
-        return next_buff_ptr;
+        return read_missing_samples_(buff_ptr, buff_end);
     }
 }
 
-sample_t* Depacketizer::read_decoded_samples_(sample_t* buff_ptr, sample_t* buff_end) {
+ROC_NODISCARD status::StatusCode Depacketizer::read_decoded_samples_(sample_t** buff_ptr,
+                                                                     sample_t* buff_end) {
     const size_t requested_samples =
-        size_t(buff_end - buff_ptr) / sample_spec_.num_channels();
+        size_t(buff_end - *buff_ptr) / sample_spec_.num_channels();
 
     const size_t decoded_samples =
-        payload_decoder_.read_samples(buff_ptr, requested_samples);
+        payload_decoder_.read_samples(*buff_ptr, requested_samples);
 
     stream_ts_ += (packet::stream_timestamp_t)decoded_samples;
     decoded_samples_ += decoded_samples;
@@ -269,18 +271,24 @@ sample_t* Depacketizer::read_decoded_samples_(sample_t* buff_ptr, sample_t* buff
     }
 
     if (decoded_samples < requested_samples) {
-        payload_decoder_.end_frame();
+        const status::StatusCode code = payload_decoder_.end_frame();
         packet_ = NULL;
+        if (code != status::StatusOK) {
+            return code;
+        }
     }
 
-    return (buff_ptr + decoded_samples * sample_spec_.num_channels());
+    *buff_ptr = (*buff_ptr + decoded_samples * sample_spec_.num_channels());
+    return status::StatusOK;
 }
 
-sample_t* Depacketizer::read_missing_samples_(sample_t* buff_ptr, sample_t* buff_end) {
+ROC_NODISCARD status::StatusCode Depacketizer::read_missing_samples_(sample_t** buff_ptr,
+                                                                     sample_t* buff_end) {
     const size_t missing_samples =
-        (size_t)(buff_end - buff_ptr) / sample_spec_.num_channels();
+        (size_t)(buff_end - *buff_ptr) / sample_spec_.num_channels();
 
-    memset(buff_ptr, 0, missing_samples * sample_spec_.num_channels() * sizeof(sample_t));
+    memset(*buff_ptr, 0,
+           missing_samples * sample_spec_.num_channels() * sizeof(sample_t));
 
     stream_ts_ += (packet::stream_timestamp_t)missing_samples;
     missing_samples_ += missing_samples;
@@ -288,7 +296,8 @@ sample_t* Depacketizer::read_missing_samples_(sample_t* buff_ptr, sample_t* buff
         metrics_.missing_samples += missing_samples;
     }
 
-    return (buff_ptr + missing_samples * sample_spec_.num_channels());
+    *buff_ptr = (*buff_ptr + missing_samples * sample_spec_.num_channels());
+    return status::StatusOK;
 }
 
 status::StatusCode Depacketizer::update_packet_(size_t requested_samples,
@@ -387,8 +396,13 @@ status::StatusCode Depacketizer::fetch_packet_(size_t requested_samples,
 status::StatusCode Depacketizer::start_packet_() {
     roc_panic_if(!packet_);
 
-    payload_decoder_.begin_frame(packet_->stream_timestamp(), packet_->payload().data(),
-                                 packet_->payload().size());
+    status::StatusCode status_code = payload_decoder_.begin_frame(
+        packet_->stream_timestamp(), packet_->payload().data(),
+        packet_->payload().size());
+
+    if (status_code != status::StatusOK) {
+        return status_code;
+    }
 
     const packet::stream_timestamp_t pkt_begin = payload_decoder_.position();
     const packet::stream_timestamp_t pkt_end = pkt_begin + payload_decoder_.available();
@@ -409,10 +423,10 @@ status::StatusCode Depacketizer::start_packet_() {
         metrics_.late_samples += pkt_end - pkt_begin;
         metrics_.late_packets++;
 
-        payload_decoder_.end_frame();
+        status_code = payload_decoder_.end_frame();
         packet_ = NULL;
 
-        return status::StatusOK;
+        return status_code;
     }
 
     next_capture_ts_ = packet_->capture_timestamp();
