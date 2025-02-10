@@ -3403,6 +3403,10 @@ TEST(receiver_source, timestamp_mapping_remixing) {
 }
 
 TEST(receiver_source, packet_buffer) {
+    if (!fec_supported()) {
+        TEST_SKIP();
+    }
+
     init_with_defaults();
 
     ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
@@ -3425,7 +3429,7 @@ TEST(receiver_source, packet_buffer) {
     test::PacketWriter packet_writer(arena, *source_endpoint_writer,
                                      *repair_endpoint_writer, encoding_map,
                                      packet_factory, src_id1, src_addr1, dst_addr1,
-                                     dst_addr2, PayloadType_Ch2, fec_scheme, fec_config);
+                                     dst_addr2, PayloadType_Ch1, fec_scheme, fec_config);
 
     // setup reader
     test::FrameReader frame_reader(receiver, frame_factory);
