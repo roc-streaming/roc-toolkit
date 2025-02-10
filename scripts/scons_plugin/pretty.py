@@ -1,14 +1,31 @@
+from __future__ import print_function
 import SCons.Script
-import sys
+import os
 import re
+import sys
 
 _COLORS = {}
 _COMPACT = False
 
+def _have_colors():
+    if os.name != 'posix':
+        return False
+    if os.environ.get('NO_COLOR', None):
+        return False
+    try:
+        if int(os.environ.get('FORCE_COLOR', '0')) > 0:
+            return True
+    except:
+        pass
+    if not os.environ.get('TERM', None) or \
+       os.environ.get('TERM', '').startswith('dumb'):
+        return False
+    return sys.stdout.isatty()
+
 def _init_colors():
     global _COLORS
 
-    if sys.stdout.isatty():
+    if _have_colors():
         _COLORS['cyan']   = '\033[0;36m'
         _COLORS['purple'] = '\033[0;35m'
         _COLORS['blue']   = '\033[0;34m'
