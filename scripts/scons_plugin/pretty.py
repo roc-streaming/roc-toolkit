@@ -88,8 +88,13 @@ def PrettyCommand(env, command, args, color, cmdline=None):
     else:
         return '$CMDLINE'
 
+def ColorPrint(env, color, fmt, *args):
+    print('{}{}{}'.format(_COLORS[color], fmt.format(*args), _COLORS['end']),
+          file=sys.stderr)
+
 def init(env):
     env.AddMethod(PrettyCommand, 'PrettyCommand')
+    env.AddMethod(ColorPrint, 'ColorPrint')
     _init_colors()
     _init_compact()
     _init_pretty(env)

@@ -522,6 +522,15 @@ if not meta.compiler_ver:
         env.Die("can't detect compiler version for compiler '{}'",
                 '-'.join([s for s in [meta.toolchain, meta.compiler] if s]))
 
+if GetOption('compiler') and env.HasArgument('CXX'):
+    detected_compiler = env.ParseCompilerType(env['CXX'])
+    if detected_compiler and detected_compiler != meta.compiler:
+        env.Warn("forcing compiler '{}-{}' from '--compiler={}' option,"+
+                 " but detected compiler '{}' from 'CXX={}' variable",
+                 meta.compiler, '.'.join(map(str, meta.compiler_ver)),
+                 GetOption('compiler'),
+                 detected_compiler, env['CXX'])
+
 conf = Configure(env, custom_tests=env.CustomTests)
 
 if meta.compiler == 'clang':
