@@ -402,12 +402,12 @@ for p in ['bin',
         clean_all += [env.DeleteFile(f)]
 
 env.AlwaysBuild(env.Alias('clean', [], clean_all))
-env.AlwaysBuild(env.Alias('cleanbuild', [], clean_build))
-env.AlwaysBuild(env.Alias('cleandocs', [], clean_doc))
+env.AlwaysBuild(env.Alias('clean_build', [], clean_build))
+env.AlwaysBuild(env.Alias('clean_docs', [], clean_doc))
 
-if set(COMMAND_LINE_TARGETS).intersection(['clean', 'cleanbuild', 'cleandocs']) or \
+if set(COMMAND_LINE_TARGETS).intersection(['clean', 'clean_build', 'clean_docs']) or \
   env.GetOption('clean'):
-    if set(COMMAND_LINE_TARGETS) - set(['clean', 'cleanbuild', 'cleandocs']):
+    if set(COMMAND_LINE_TARGETS) - set(['clean', 'clean_build', 'clean_docs']):
         env.Die("combining 'clean*' targets with other targets is not allowed")
     if env.GetOption('clean'):
         if clean_all:
