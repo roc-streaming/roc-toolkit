@@ -74,10 +74,10 @@ TEST_GROUP(state_tracker) {};
 TEST(state_tracker, simple_timeout) {
     StateTracker state_tracker;
     TestThread thr(state_tracker, sndio::DeviceState_Active,
-                   core::timestamp(core::ClockMonotonic) + core::Second * 0.1);
+                   core::timestamp(core::ClockMonotonic) + core::Millisecond * 500);
 
     CHECK(thr.start());
-    core::sleep_for(core::ClockMonotonic, core::Second * 0.5);
+    core::sleep_for(core::ClockMonotonic, core::Millisecond * 500);
     CHECK(!(thr.running()));
     thr.join();
 }
@@ -88,7 +88,7 @@ TEST(state_tracker, multiple_timeout) {
     for (int i = 0; i < 10; i++) {
         threads_ptr[i] =
             new TestThread(state_tracker, sndio::DeviceState_Active,
-                           core::timestamp(core::ClockMonotonic) + core::Second * 1);
+                           core::timestamp(core::ClockMonotonic) + core::Millisecond * 1000);
     }
 
     for (int i = 0; i < 10; i++) {
@@ -123,15 +123,15 @@ TEST(state_tracker, multiple_switch) {
     }
 
     roc_log(LogDebug, "started running");
-    core::sleep_for(core::ClockMonotonic, core::Second * 0.5);
+    core::sleep_for(core::ClockMonotonic, core::Millisecond * 500);
 
     for (int i = 0; i < 10; i++) {
         CHECK(threads_ptr[i]->running());
     }
 
-    core::sleep_for(core::ClockMonotonic, core::Second * 0.5);
+    core::sleep_for(core::ClockMonotonic, core::Millisecond * 500);
     state_tracker.register_packet();
-    core::sleep_for(core::ClockMonotonic, core::Second * 0.5);
+    core::sleep_for(core::ClockMonotonic, core::Millisecond * 500);
 
     for (int i = 0; i < 10; i++) {
         CHECK(!(threads_ptr[i]->running()));
