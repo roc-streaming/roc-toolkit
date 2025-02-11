@@ -32,6 +32,10 @@ status::StatusCode PcmDecoder::init_status() const {
     return status::StatusOK;
 }
 
+bool PcmDecoder::initialize_headers(const uint8_t* headers, size_t headers_size) {
+    return true;
+}
+
 packet::stream_timestamp_t PcmDecoder::position() const {
     return stream_pos_;
 }

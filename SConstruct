@@ -209,6 +209,11 @@ AddOption('--disable-sox',
           action='store_true',
           help='disable SoX support in tools')
 
+AddOption('--disable-libvorbis',
+          dest='disable_libvorbis',
+          action='store_true',
+          help='disable libvorbis support in tools')
+
 AddOption('--disable-sndfile',
           dest='disable_sndfile',
           action='store_true',
@@ -872,6 +877,10 @@ else:
         if not GetOption('disable_pulseaudio') and meta.platform in ['linux']:
             env.Append(ROC_TARGETS=[
                 'target_pulseaudio',
+            ])
+        if not GetOption('disable_libvorbis'):
+            env.Append(ROC_TARGETS=[
+                'target_libvorbis',
             ])
 
     if 'target_gnu' not in env['ROC_TARGETS']:

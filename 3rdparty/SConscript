@@ -18,9 +18,11 @@ thirdparty_versions = {
     'alsa':             '1.1.9',
     'json-c':           '0.12-20140410',
     'libatomic_ops':    '7.6.10',
+    'libogg':           '1.3.4',
     'libunwind':        '1.2.1',
     'libuuid':          '2.33.2',
     'libuv':            '1.35.0',
+    'libvorbis':        '1.3.7',
     'ltdl':             '2.4.6',
     'openfec':          '1.4.2.11',
     'openssl':          '3.0.8',
@@ -48,6 +50,9 @@ external_dependencies.add('ragel')
 # ensures we don't build sndfile twice
 if 'pulseaudio' in external_dependencies:
     external_dependencies.add('sndfile')
+
+if 'libvorbis' in external_dependencies:
+    external_dependencies.add('libogg')
 
 # on Linux, PulseAudio needs ALSA
 if meta.platform in ['linux'] and 'pulseaudio' in external_dependencies:
@@ -268,6 +273,31 @@ elif 'sndfile' in system_dependencies:
     else:
         if not conf.CheckLibWithHeaderExt('sndfile', 'sndfile.h', 'C', run=False):
             env.Die("libsndfile not found (see 'config.log' for details)")
+
+    env = conf.Finish()
+
+# dep: libogg
+if 'libogg' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_versions, 'libogg')
+
+# dep: libvorbis
+if 'libvorbis' in autobuild_dependencies:
+    pa_deps = [
+        'libogg',
+    ]
+
+    env.BuildThirdParty(thirdparty_versions, 'libogg')
+    env.BuildThirdParty(thirdparty_versions, 'libvorbis',
+                        deps=pa_deps)
+
+elif 'libvorbis' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('vorbis', '--cflags --libs', exclude_from_pc=True):
+        conf.env.AddManualDependency(libs=['vorbis', 'vorbisenc', 'vorbisfile'], exclude_from_pc=True)
+
+    if not conf.CheckLibWithHeaderExt('vorbis', 'vorbis/vorbisenc.h', 'C', run=False):
+        env.Die("libvorbis not found (see 'config.log' for details)")
 
     env = conf.Finish()
 

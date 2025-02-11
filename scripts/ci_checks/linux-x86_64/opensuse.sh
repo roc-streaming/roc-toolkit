@@ -7,5 +7,5 @@ scons -Q \
       --enable-tests \
       --enable-benchmarks \
       --enable-examples \
-      --build-3rdparty=openfec,cpputest \
+      --build-3rdparty=openfec,cpputest,libvorbis \
       test

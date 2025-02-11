@@ -33,6 +33,14 @@ size_t PcmEncoder::encoded_byte_count(size_t num_samples) const {
     return pcm_mapper_.output_byte_count(num_samples * n_chans_);
 }
 
+const uint8_t* PcmEncoder::get_headers_frame() const {
+    return NULL;
+}
+
+size_t PcmEncoder::get_headers_frame_size() const {
+    return 0;
+}
+
 void PcmEncoder::begin_frame(void* frame_data, size_t frame_size) {
     roc_panic_if_not(frame_data);
 

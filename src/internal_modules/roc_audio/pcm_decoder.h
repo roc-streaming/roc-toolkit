@@ -32,6 +32,9 @@ public:
     //! Check if the object was successfully constructed.
     virtual status::StatusCode init_status() const;
 
+    //! Get the header information before start decoding
+    virtual bool initialize_headers(const uint8_t* headers, size_t headers_size);
+
     //! Get current stream position.
     virtual packet::stream_timestamp_t position() const;
 
