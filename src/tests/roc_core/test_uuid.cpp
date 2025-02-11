@@ -19,7 +19,7 @@ TEST(uuid, generate) {
     char a_uuid[UuidLen + 1];
     memset(a_uuid, 0xcc, sizeof(a_uuid));
 
-    CHECK(uuid_generare(a_uuid, sizeof(a_uuid)) == true);
+    CHECK(uuid_generate(a_uuid, sizeof(a_uuid)) == true);
     CHECK(a_uuid[8] == '-');
     CHECK(a_uuid[13] == '-');
     CHECK(a_uuid[18] == '-');
@@ -31,7 +31,7 @@ TEST(uuid, generated_with_bigger_buffer) {
     char a_uuid[UuidLen + 1 + 4];
     memset(a_uuid, 0xcc, sizeof(a_uuid));
 
-    CHECK(uuid_generare(a_uuid, sizeof(a_uuid)) == true);
+    CHECK(uuid_generate(a_uuid, sizeof(a_uuid)) == true);
     CHECK(a_uuid[8] == '-');
     CHECK(a_uuid[13] == '-');
     CHECK(a_uuid[18] == '-');

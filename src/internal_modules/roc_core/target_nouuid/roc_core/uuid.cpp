@@ -26,7 +26,7 @@ namespace core {
 //
 // In text form, UUID is 36 characters long (32 hex chars + 4 dashes),
 // plus terminating zero bye.
-bool uuid_generare(char* buf, size_t buf_sz) {
+bool uuid_generate(char* buf, size_t buf_sz) {
     if (!buf) {
         roc_panic("uuid: buffer is null");
     }
