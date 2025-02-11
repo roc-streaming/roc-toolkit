@@ -29,26 +29,28 @@ class FreeListImpl : public NonCopyable<> {
 public:
     FreeListImpl();
     ~FreeListImpl();
-
-    //! Get first list node.
-    FreeListData* front() const;
-
     //! Try to remove first node and return.
     FreeListData* try_pop_front();
     
-    //! Insert node into list.
-    void push_front(FreeListData* node);
-	
-    //! Check if list contains no nodes.
-    bool is_empty();
-
-private:
     // Remove first element under the condition that the list is not being used by anyone 
     FreeListData* unsafe_pop_front();
+
+    FreeListData* front() const;
+
+    // Is list empty?
+    bool is_empty();
+    
+    //! Insert node into list.
+    void push_front(FreeListData* node);
     
     //! Add node knowing that it is not part of a free list.
     void add_knowing_refcount_is_zero_(FreeListData* node);
 
+private:
+    
+    static void check_is_member_(const FreeListData* node, const FreeListImpl* list);
+
+    // Atomic<FreeListData*> head_;
     // Implemented like a stack, but where node order doesn't matter (nodes are
     // inserted out of order under contention)
     FreeListData* head_;

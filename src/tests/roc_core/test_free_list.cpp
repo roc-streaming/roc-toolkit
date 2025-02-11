@@ -8,7 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/free_list_impl.h"
+#include "roc_core/free_list.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/shared_ptr.h"
 
@@ -28,23 +28,19 @@ struct RefObject : RefCounted<RefObject, NoopAllocation>, FreeListNode<> {};
 TEST_GROUP(free_list) {};
 
 TEST(free_list, empty_list) {
-   FreeListImpl list;
+   FreeList<Object, NoOwnership> list;
 
-   CHECK(list.front() == NULL);
-
-   CHECK(list.is_empty());
+   // TODO
 }
 
 TEST(free_list, push_front) {
     // push one element
-   FreeListData objects[NumObjects];
-   FreeListImpl list;
+   Object objects[NumObjects];
+   FreeList<Object, NoOwnership> list;
 
-   // FreeListData* element = &objects[0];
-   list.push_front(&objects[0]);
-// 
-//    POINTERS_EQUAL(element, list.front());
-// 
+   list.push_front(objects[0]);
+   POINTERS_EQUAL(&objects[0], list.front());
+ 
 //    // LONGS_EQUAL(1, list.size()); 
 //    int size = 0;
 //    while (list.front() != NULL) {

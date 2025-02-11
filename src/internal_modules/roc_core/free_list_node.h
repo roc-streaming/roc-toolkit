@@ -44,7 +44,7 @@ template <class Tag = void> class FreeListNode : public NonCopyable<FreeListNode
 public:
     //! Get pointer to parent node from pointer to internal data.
     static FreeListNode* list_node(FreeListData* data) {
-        return ROC_CONTAINER_OF(data, FreeListNode, list_data_);
+        return ROC_CONTAINER_OF(data, FreeListNode, free_list_data_);
     }
 
     //! Get pointer to internal data.
