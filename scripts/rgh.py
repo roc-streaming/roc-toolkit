@@ -5,6 +5,7 @@ from colorama import Fore, Style
 import argparse
 import colorama
 import functools
+import itertools
 import json
 import os
 import os.path
@@ -166,11 +167,37 @@ def guess_issue(org, repo, text):
 
     return None
 
-def make_prefix_regexp(org):
-    return r"^(gh-[0-9]+:? *|#[0-9]+:? *|" + org + r"/[^ ]+ *|[Ii]ssue *[0-9]+:? *)?"
+def make_prefix_suffix_regexp(org, repo, is_prefix):
+    kv_rx = [
+        "issue",
+        "ticket",
+        "task",
+    ]
+    nm_rx = [
+        r"gh-[0-9]+",
+        r"#?[0-9]+",
+        f"{org}/[^ ]+",
+        f"{repo}#[^ ]+",
+    ]
 
-def make_suffix_regexp():
-    return r"\.$|\s*\(?#[0-9]+\)?$"
+    prod_rx = nm_rx[:]
+    for kv, nm in itertools.product(kv_rx, nm_rx):
+        prod_rx.append(f"{kv}\\s+{nm}")
+
+    sep = r"[\[\]():{}]"
+
+    rx = f"\\s*{sep}?\\s*({'|'.join(prod_rx)})\\s*{sep}?\\s*"
+
+    if is_prefix:
+        return f"^({rx})?"
+    else:
+        return f"(({rx})?\\.?\\s*$)"
+
+def make_prefix_regexp(org, repo):
+    return make_prefix_suffix_regexp(org, repo, is_prefix=True)
+
+def make_suffix_regexp(org, repo):
+    return make_prefix_suffix_regexp(org, repo, is_prefix=False)
 
 # format prefix for commit message
 def make_prefix(org, repo, issue_link):
@@ -187,8 +214,8 @@ def make_prefix(org, repo, issue_link):
 
 # format commit message
 def make_message(org, repo, issue_link, pr_title):
-    pr_title = re.sub(make_prefix_regexp(org), '', pr_title)
-    pr_title = re.sub(make_suffix_regexp(), '', pr_title)
+    pr_title = re.sub(make_prefix_regexp(org, repo), '', pr_title, flags=re.IGNORECASE)
+    pr_title = re.sub(make_suffix_regexp(org, repo), '', pr_title, flags=re.IGNORECASE)
 
     if issue_link:
         return '{}: {}'.format(
@@ -481,7 +508,7 @@ def verify_pr(org, repo, pr_number, issue_number, issue_miletsone, no_issue, no_
         for action_name, action_result in query_pr_actions(org, repo, pr_number):
             if action_result != 'success':
                 error("can't proceed on pr with failed checks\n"
-                      "use --no-checks to proceed anyway")
+                      "use --ignore-actions to proceed anyway")
 
 # checkout PR's branch
 def checkout_pr(org, repo, pr_number):
@@ -661,8 +688,8 @@ def reword_pr_commits(org, repo, pr_number, title, no_issue):
             f" -e '1s,^.*$,{commit_prefix}{title},'"
     else:
         sed = f"sed -r"+\
-          f" -e '1s,{make_prefix_regexp(org)},{commit_prefix},'"+\
-          f" -e '1s,{make_suffix_regexp()},,'"
+          f" -e '1s,{make_prefix_regexp(org, repo)},{commit_prefix},I'"+\
+          f" -e '1s,{make_suffix_regexp(org, repo)},,I'"
 
     run_cmd([
         'git', 'filter-branch', '-f', '--msg-filter', sed,
