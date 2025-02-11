@@ -16,7 +16,7 @@ namespace rtp {
 
 Identity::Identity()
     : init_status_(status::NoStatus) {
-    if (!core::uuid_generare(cname_, sizeof(cname_))) {
+    if (!core::uuid_generate(cname_, sizeof(cname_))) {
         init_status_ = status::StatusErrRand;
         return;
     }

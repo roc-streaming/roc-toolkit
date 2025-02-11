@@ -26,7 +26,7 @@ enum {
 //! @note
 //!  Generated string has UuidLen characters + null terminator.
 //!  Panics if @p buf is null or @p buf_sz is less than UuidLen + 1.
-bool uuid_generare(char* buf, size_t buf_sz);
+bool uuid_generate(char* buf, size_t buf_sz);
 
 } // namespace core
 } // namespace roc
