@@ -19,6 +19,7 @@
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session_group.h"
+#include "roc_core/semaphore.h"
 
 namespace roc {
 namespace pipeline {
@@ -144,7 +145,6 @@ TEST(state_tracker, multiple_switch) {
     roc_log(LogDebug, "finished joining");
 }
 
-#include "roc_core/semaphore.h"
 TEST(state_tracker, semaphore_test) {
     core::Semaphore sem(0);
     if (sem.timed_wait(1 * core::Second + core::timestamp(core::ClockMonotonic)))
