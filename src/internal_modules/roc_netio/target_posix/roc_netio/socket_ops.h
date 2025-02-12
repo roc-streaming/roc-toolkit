@@ -54,62 +54,59 @@ typedef int SocketHandle;
 const SocketHandle SocketInvalid = -1;
 
 //! Create non-blocking socket.
-ROC_ATTR_NODISCARD bool
+ROC_NODISCARD bool
 socket_create(address::AddrFamily family, SocketType type, SocketHandle& new_sock);
 
 //! Accept incoming connection.
-ROC_ATTR_NODISCARD bool socket_accept(SocketHandle sock,
-                                      SocketHandle& new_sock,
-                                      address::SocketAddr& remote_address);
+ROC_NODISCARD bool socket_accept(SocketHandle sock,
+                                 SocketHandle& new_sock,
+                                 address::SocketAddr& remote_address);
 
 //! Set socket options.
-ROC_ATTR_NODISCARD bool socket_setup(SocketHandle sock, const SocketOpts& options);
+ROC_NODISCARD bool socket_setup(SocketHandle sock, const SocketOpts& options);
 
 //! Bind socket to local address.
-ROC_ATTR_NODISCARD bool socket_bind(SocketHandle sock,
-                                    address::SocketAddr& local_address);
+ROC_NODISCARD bool socket_bind(SocketHandle sock, address::SocketAddr& local_address);
 
 //! Start listening for incoming connections.
-ROC_ATTR_NODISCARD bool socket_listen(SocketHandle sock, size_t backlog);
+ROC_NODISCARD bool socket_listen(SocketHandle sock, size_t backlog);
 
 //! Initiate connecting to remote peer.
 //! @returns true if connection was successfully initiated.
 //! Sets @p completed_immediately to true if connection was established
 //! immediately and there is no need to wait for it.
-ROC_ATTR_NODISCARD bool socket_begin_connect(SocketHandle sock,
-                                             const address::SocketAddr& remote_address,
-                                             bool& completed_immediately);
+ROC_NODISCARD bool socket_begin_connect(SocketHandle sock,
+                                        const address::SocketAddr& remote_address,
+                                        bool& completed_immediately);
 
 //! Finish connecting to remote peer.
 //! @returns true if connection was successfully established.
-ROC_ATTR_NODISCARD bool socket_end_connect(SocketHandle sock);
+ROC_NODISCARD bool socket_end_connect(SocketHandle sock);
 
 //! Try to read bytes from socket without blocking.
 //! @returns number of bytes read (>= 0) or SocketError (< 0).
-ROC_ATTR_NODISCARD ssize_t socket_try_recv(SocketHandle sock, void* buf, size_t bufsz);
+ROC_NODISCARD ssize_t socket_try_recv(SocketHandle sock, void* buf, size_t bufsz);
 
 //! Try to write bytes to socket without blocking.
 //! @returns number of bytes written (>= 0) or SocketError (< 0).
-ROC_ATTR_NODISCARD ssize_t socket_try_send(SocketHandle sock,
-                                           const void* buf,
-                                           size_t bufsz);
+ROC_NODISCARD ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz);
 
 //! Try to send datagram via socket to given address, without blocking.
 //! @returns number of bytes written (>= 0) or SocketError (< 0).
-ROC_ATTR_NODISCARD ssize_t socket_try_send_to(SocketHandle sock,
-                                              const void* buf,
-                                              size_t bufsz,
-                                              const address::SocketAddr& remote_address);
+ROC_NODISCARD ssize_t socket_try_send_to(SocketHandle sock,
+                                         const void* buf,
+                                         size_t bufsz,
+                                         const address::SocketAddr& remote_address);
 
 //! Gracefully shutdown connection.
-ROC_ATTR_NODISCARD bool socket_shutdown(SocketHandle sock);
+ROC_NODISCARD bool socket_shutdown(SocketHandle sock);
 
 //! Close socket.
-ROC_ATTR_NODISCARD bool socket_close(SocketHandle sock);
+ROC_NODISCARD bool socket_close(SocketHandle sock);
 
 //! Close socket and send reset to remote peer.
 //! Remote peer will get error when reading from connection.
-ROC_ATTR_NODISCARD bool socket_close_with_reset(SocketHandle sock);
+ROC_NODISCARD bool socket_close_with_reset(SocketHandle sock);
 
 } // namespace netio
 } // namespace roc

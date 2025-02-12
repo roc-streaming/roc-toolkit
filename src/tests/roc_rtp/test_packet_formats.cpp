@@ -166,7 +166,7 @@ void check_parse_decode(const test::PacketInfo& pi) {
     packet->set_buffer(buffer);
 
     Parser parser(NULL, encoding_map, arena);
-    CHECK(parser.parse(*packet, packet->buffer()));
+    LONGS_EQUAL(status::StatusOK, parser.parse(*packet, packet->buffer()));
 
     const Encoding* encoding = encoding_map.find_by_pt(packet->rtp()->payload_type);
     CHECK(encoding);
@@ -202,17 +202,18 @@ void check_compose_encode(const test::PacketInfo& pi) {
 
     Composer composer(NULL, arena);
 
-    CHECK(composer.prepare(*packet, buffer, pi.payload_size + pi.padding_size));
+    LONGS_EQUAL(status::StatusOK,
+                composer.prepare(*packet, buffer, pi.payload_size + pi.padding_size));
     packet->set_buffer(buffer);
 
     encode_samples(*encoder, *packet, pi);
     set_packet_fields(*packet, pi);
 
     if (pi.padding_size != 0) {
-        composer.pad(*packet, pi.padding_size);
+        LONGS_EQUAL(status::StatusOK, composer.pad(*packet, pi.padding_size));
     }
 
-    CHECK(composer.compose(*packet));
+    LONGS_EQUAL(status::StatusOK, composer.compose(*packet));
 
     check_format_info(*encoding, pi);
     check_packet_fields(*packet, pi);

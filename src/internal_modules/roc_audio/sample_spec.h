@@ -117,7 +117,7 @@ public:
     //!  string format name to the file I/O library.
     //! @returns
     //!  false if name is too long.
-    ROC_ATTR_NODISCARD bool set_custom_format(const char* name);
+    ROC_NODISCARD bool set_custom_format(const char* name);
 
     //! True if sub-format is set.
     bool has_subformat() const;
@@ -148,7 +148,7 @@ public:
     //!  See comment for set_custom_format() for rationale.
     //! @returns
     //!  false if name is too long.
-    ROC_ATTR_NODISCARD bool set_custom_subformat(const char* name);
+    ROC_NODISCARD bool set_custom_subformat(const char* name);
 
     //! True if rate is set to non-zero value.
     bool has_sample_rate() const;
@@ -359,7 +359,7 @@ private:
 //!
 //! @returns
 //!  false if string can't be parsed.
-ROC_ATTR_NODISCARD bool parse_sample_spec(const char* str, SampleSpec& result);
+ROC_NODISCARD bool parse_sample_spec(const char* str, SampleSpec& result);
 
 //! Format sample spec to string.
 void format_sample_spec(const SampleSpec& sample_spec, core::StringBuilder& bld);

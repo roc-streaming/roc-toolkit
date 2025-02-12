@@ -43,7 +43,7 @@ public:
         , code_(status::NoStatus) {
     }
 
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& pp) {
+    virtual ROC_NODISCARD status::StatusCode write(const PacketPtr& pp) {
         ++call_count_;
 
         if (code_enabled_) {

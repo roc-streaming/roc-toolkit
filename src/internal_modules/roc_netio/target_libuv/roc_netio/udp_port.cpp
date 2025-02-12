@@ -74,7 +74,7 @@ bool UdpPort::open() {
     handle_initialized_ = true;
 
     unsigned flags = 0;
-    if ((config_.enable_reuseaddr || config_.bind_address.multicast())
+    if ((config_.enable_reuseaddr || config_.bind_address.is_multicast())
         && config_.bind_address.port() > 0) {
         flags |= UV_UDP_REUSEADDR;
     }
@@ -520,7 +520,7 @@ void UdpPort::start_closing_() {
 }
 
 bool UdpPort::join_multicast_group_() {
-    if (!config_.bind_address.multicast()) {
+    if (!config_.bind_address.is_multicast()) {
         roc_log(LogError,
                 "udp port: %s: can't use multicast group for non-multicast address",
                 descriptor());

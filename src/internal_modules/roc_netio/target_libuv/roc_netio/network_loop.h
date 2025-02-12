@@ -213,7 +213,7 @@ public:
     //! Should not be called from schedule() callback.
     //! @returns
     //!  true if the task succeeded or false if it failed.
-    ROC_ATTR_NODISCARD bool schedule_and_wait(NetworkTask& task);
+    ROC_NODISCARD bool schedule_and_wait(NetworkTask& task);
 
 private:
     static void task_sem_cb_(uv_async_t* handle);

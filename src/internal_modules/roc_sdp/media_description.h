@@ -71,22 +71,22 @@ public:
     const ConnectionData& connection_data(size_t i) const;
 
     //! Set media type.
-    ROC_ATTR_NODISCARD bool set_type(MediaType type);
+    ROC_NODISCARD bool set_type(MediaType type);
 
     //! Set proto.
-    ROC_ATTR_NODISCARD bool set_transport(MediaTransport transport);
+    ROC_NODISCARD bool set_transport(MediaTransport transport);
 
     //! Set transport port.
-    ROC_ATTR_NODISCARD bool set_port(long port);
+    ROC_NODISCARD bool set_port(long port);
 
     //! Set number of transport port(s).
-    ROC_ATTR_NODISCARD bool set_nb_ports(long nb_ports);
+    ROC_NODISCARD bool set_nb_ports(long nb_ports);
 
     //! Add a media payload id.
-    ROC_ATTR_NODISCARD bool add_payload_id(unsigned payload_id);
+    ROC_NODISCARD bool add_payload_id(unsigned payload_id);
 
     //! Add a connection field from a string.
-    ROC_ATTR_NODISCARD bool
+    ROC_NODISCARD bool
     add_connection_data(address::AddrFamily addrtype, const char* str, size_t str_len);
 
 private:

@@ -46,7 +46,7 @@ public:
     bool has_output(IFrameWriter& writer);
 
     //! Add output writer.
-    ROC_ATTR_NODISCARD status::StatusCode add_output(IFrameWriter& writer);
+    ROC_NODISCARD status::StatusCode add_output(IFrameWriter& writer);
 
     //! Remove output writer.
     void remove_output(IFrameWriter& writer);
@@ -54,7 +54,7 @@ public:
     //! Write audio frame.
     //! @remarks
     //!  Writes samples to every output writer.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode write(Frame& frame);
 
 private:
     struct Output {

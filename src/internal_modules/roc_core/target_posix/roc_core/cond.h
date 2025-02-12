@@ -35,7 +35,7 @@ public:
 
     //! Wait with timeout.
     //! @returns false if timeout expired.
-    ROC_ATTR_NODISCARD bool timed_wait(nanoseconds_t timeout) const;
+    ROC_NODISCARD bool timed_wait(nanoseconds_t timeout) const;
 
     //! Wait.
     void wait() const;

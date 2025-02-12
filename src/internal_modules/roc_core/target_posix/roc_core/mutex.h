@@ -40,7 +40,7 @@ public:
     ~Mutex();
 
     //! Try to lock the mutex.
-    ROC_ATTR_NODISCARD inline bool try_lock() const {
+    ROC_NODISCARD inline bool try_lock() const {
         const int err = pthread_mutex_trylock(&mutex_);
 
         if (err != 0 && err != EBUSY && err != EAGAIN) {

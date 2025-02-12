@@ -44,7 +44,7 @@ struct PlcConfig {
     }
 
     //! Automatically fill missing settings.
-    ROC_ATTR_NODISCARD bool deduce_defaults();
+    ROC_NODISCARD bool deduce_defaults();
 };
 
 //! Get string name of PLC backend.

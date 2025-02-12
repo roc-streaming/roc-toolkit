@@ -108,7 +108,7 @@ public:
     //!    Additional streams may be associated with same session via link_source() call.
     //!  - @p source_addr defines source address which will be routed to the session.
     //!    If other streams share the same source address, they will be routed to it.
-    ROC_ATTR_NODISCARD status::StatusCode
+    ROC_NODISCARD status::StatusCode
     add_session(const core::SharedPtr<ReceiverSession>& session,
                 packet::stream_source_t source_id,
                 const address::SocketAddr& source_addr);
@@ -123,8 +123,8 @@ public:
     //!  Remembers what SSRCs are linked together by sharing the same CNAME.
     //!  If/when one of the linked SSRCs is associated with a session using add_session(),
     //!  all linked SSRCs become being routed to that session.
-    ROC_ATTR_NODISCARD status::StatusCode link_source(packet::stream_source_t source_id,
-                                                      const char* cname);
+    ROC_NODISCARD status::StatusCode link_source(packet::stream_source_t source_id,
+                                                 const char* cname);
 
     //! Unlink source id from session.
     //! @remarks

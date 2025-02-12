@@ -65,8 +65,8 @@ public:
     //!  Should be invoked before reading each frame.
     //!  If there are no frames for a while, should be invoked no
     //!  later than the deadline returned via @p next_deadline.
-    ROC_ATTR_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
-                                                  core::nanoseconds_t& next_deadline);
+    ROC_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
+                                             core::nanoseconds_t& next_deadline);
 
     //! Adjust sessions clock to match consumer clock.
     //! @remarks

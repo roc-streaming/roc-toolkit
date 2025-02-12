@@ -166,7 +166,7 @@ AddOption('--enable-tests',
 AddOption('--enable-benchmarks',
           dest='enable_benchmarks',
           action='store_true',
-          help='enable bechmarks building and running (requires Google Benchmark)')
+          help='enable benchmarks building and running (requires Google Benchmark)')
 
 AddOption('--enable-examples',
           dest='enable_examples',
@@ -273,7 +273,7 @@ AddOption('--macos-arch',
                 " comma-separated list, supported values: {}".format(
                     ', '.join(["'{}'".format(s) for s in supported_macos_archs])) +
                 " (default is current OS arch, pass multiple values"
-                " or 'all' for univeral binaries)"))
+                " or 'all' for universal binaries)"))
 
 AddOption('--build-3rdparty',
           dest='build_3rdparty',
@@ -407,12 +407,12 @@ for p in ['bin',
         clean_all += [env.DeleteFile(f)]
 
 env.AlwaysBuild(env.Alias('clean', [], clean_all))
-env.AlwaysBuild(env.Alias('cleanbuild', [], clean_build))
-env.AlwaysBuild(env.Alias('cleandocs', [], clean_doc))
+env.AlwaysBuild(env.Alias('clean_build', [], clean_build))
+env.AlwaysBuild(env.Alias('clean_docs', [], clean_doc))
 
-if set(COMMAND_LINE_TARGETS).intersection(['clean', 'cleanbuild', 'cleandocs']) or \
+if set(COMMAND_LINE_TARGETS).intersection(['clean', 'clean_build', 'clean_docs']) or \
   env.GetOption('clean'):
-    if set(COMMAND_LINE_TARGETS) - set(['clean', 'cleanbuild', 'cleandocs']):
+    if set(COMMAND_LINE_TARGETS) - set(['clean', 'clean_build', 'clean_docs']):
         env.Die("combining 'clean*' targets with other targets is not allowed")
     if env.GetOption('clean'):
         if clean_all:
@@ -444,13 +444,13 @@ doc_env = env.DeepClone()
 doc_env.SConscript('docs/SConscript',
                    duplicate=0, exports='doc_env')
 
-# run scons self-test
-env.AlwaysBuild(env.Alias('selftest', [], [
-    env.SelfTest(),
+# run python doctests
+env.AlwaysBuild(env.Alias('doctest', [], [
+    env.DocTest('#scripts/scons_helpers/build-3rdparty.py'),
 ]))
 
 # exit early if there is nothing to build
-non_build_targets = ['fmt', 'docs', 'sphinx', 'doxygen', 'selftest']
+non_build_targets = ['fmt', 'docs', 'sphinx', 'doxygen', 'doctest']
 if set(COMMAND_LINE_TARGETS) \
   and set(COMMAND_LINE_TARGETS).intersection(non_build_targets) == set(COMMAND_LINE_TARGETS):
     Return()
@@ -521,6 +521,15 @@ if not meta.compiler_ver:
     if meta.compiler not in ['cc']:
         env.Die("can't detect compiler version for compiler '{}'",
                 '-'.join([s for s in [meta.toolchain, meta.compiler] if s]))
+
+if GetOption('compiler') and env.HasArgument('CXX'):
+    detected_compiler = env.ParseCompilerType(env['CXX'])
+    if detected_compiler and detected_compiler != meta.compiler:
+        env.Warn("forcing compiler '{}-{}' from '--compiler={}' option,"+
+                 " but detected compiler '{}' from 'CXX={}' variable",
+                 meta.compiler, '.'.join(map(str, meta.compiler_ver)),
+                 GetOption('compiler'),
+                 detected_compiler, env['CXX'])
 
 conf = Configure(env, custom_tests=env.CustomTests)
 
@@ -660,6 +669,10 @@ if GetOption('compiler_launcher'):
 if meta.platform == 'darwin':
     conf.FindTool('LIPO', [''], [('lipo', None)], required=False)
     conf.FindTool('INSTALL_NAME_TOOL', [''], [('install_name_tool', None)], required=False)
+
+if meta.compiler == 'gcc' or meta.compiler == 'clang':
+    if conf.CheckLib('atomic'):
+        env.AddManualDependency(libs=['atomic']) # explicitly needed by libcrypto (openssl)
 
 meta.c11_support = False
 if not GetOption('disable_c11'):

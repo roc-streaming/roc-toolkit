@@ -17,8 +17,8 @@
 #include "roc_core/attributes.h"
 #include "roc_core/iarena.h"
 #include "roc_core/string_list.h"
-#include "roc_sndio/device_type.h"
-#include "roc_sndio/driver.h"
+#include "roc_sndio/device_defs.h"
+#include "roc_sndio/driver_defs.h"
 #include "roc_sndio/idevice.h"
 #include "roc_sndio/io_config.h"
 #include "roc_status/status_code.h"
@@ -38,23 +38,22 @@ public:
     virtual const char* name() const = 0;
 
     //! Append supported drivers to the list.
-    virtual ROC_ATTR_NODISCARD bool
+    virtual ROC_NODISCARD bool
     discover_drivers(core::Array<DriverInfo, MaxDrivers>& result) = 0;
 
     //! Append supported formats to the list.
-    virtual ROC_ATTR_NODISCARD bool
+    virtual ROC_NODISCARD bool
     discover_formats(core::Array<FormatInfo, MaxFormats>& result) = 0;
 
     //! Append supported groups of sub-formats to the list.
-    virtual ROC_ATTR_NODISCARD bool
-    discover_subformat_groups(core::StringList& result) = 0;
+    virtual ROC_NODISCARD bool discover_subformat_groups(core::StringList& result) = 0;
 
     //! Append supported sub-formats of a group to the list.
-    virtual ROC_ATTR_NODISCARD bool discover_subformats(const char* group,
-                                                        core::StringList& result) = 0;
+    virtual ROC_NODISCARD bool discover_subformats(const char* group,
+                                                   core::StringList& result) = 0;
 
     //! Create and open a sink or source.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
+    virtual ROC_NODISCARD status::StatusCode
     open_device(DeviceType device_type,
                 const char* driver,
                 const char* path,

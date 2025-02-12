@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import argparse
-import doctest
 import fileinput
 import fnmatch
 import glob
@@ -985,648 +984,642 @@ def die(text, *args):
     exit(1)
 
 #
-# Parse command-line options.
+# Don't proceed if loaded as module from doctests.py.
 #
 
-if '--self-test' in sys.argv:
-    failures, total = doctest.testmod(report=True)
+if __name__ == '__main__':
 
-    if failures == 0:
-        print('OK: {} tests passed'.format(total))
-        exit(0)
-    else:
-        exit(1)
+    #
+    # Parse command-line options.
+    #
 
-parser = argparse.ArgumentParser(description='build third-party packages')
+    parser = argparse.ArgumentParser(description='build third-party packages')
 
-parser.add_argument('--self-test', action='store_true',
-                    help='run doctests and exit')
+    parser.add_argument('--root-dir', dest='root_dir', type=str, required=True,
+                        help='path to project root')
 
-parser.add_argument('--root-dir', dest='root_dir', type=str, required=True,
-                    help='path to project root')
+    parser.add_argument('--work-dir', dest='work_dir', type=str, required=True,
+                        help='path to working directory')
 
-parser.add_argument('--work-dir', dest='work_dir', type=str, required=True,
-                    help='path to working directory')
+    parser.add_argument('--dist-dir', dest='dist_dir', type=str, required=True,
+                        help='path to vendored distfiles directory')
 
-parser.add_argument('--dist-dir', dest='dist_dir', type=str, required=True,
-                    help='path to vendored distfiles directory')
+    parser.add_argument('--build', dest='build', type=str, required=True,
+                        help='system when package is built (e.g. x86_64-pc-linux-gnu)')
 
-parser.add_argument('--build', dest='build', type=str, required=True,
-                    help='system when package is built (e.g. x86_64-pc-linux-gnu)')
+    parser.add_argument('--host', dest='host', type=str, required=True,
+                        help='system when package will run (e.g. aarch64-linux-gnu)')
 
-parser.add_argument('--host', dest='host', type=str, required=True,
-                    help='system when package will run (e.g. aarch64-linux-gnu)')
+    parser.add_argument('--toolchain', dest='toolchain', type=str,
+                        help='toolchain prefix (e.g. aarch64-linux-gnu)')
 
-parser.add_argument('--toolchain', dest='toolchain', type=str,
-                    help='toolchain prefix (e.g. aarch64-linux-gnu)')
+    parser.add_argument('--variant', dest='variant', type=str, required=True,
+                        help='build variant', choices=['debug', 'release'])
 
-parser.add_argument('--variant', dest='variant', type=str, required=True,
-                    help='build variant', choices=['debug', 'release'])
+    parser.add_argument('--package', dest='package', type=str, required=True,
+                        help='package name and version (e.g. openssl-3.0.7-rc1)')
 
-parser.add_argument('--package', dest='package', type=str, required=True,
-                    help='package name and version (e.g. openssl-3.0.7-rc1)')
+    parser.add_argument('--deps', dest='deps', type=str, nargs='*',
+                        help='package dependencies (should be built previously)')
 
-parser.add_argument('--deps', dest='deps', type=str, nargs='*',
-                    help='package dependencies (should be built previously)')
+    parser.add_argument('--vars', dest='vars', type=str, nargs='*',
+                        help='environment variables (e.g. CC=gcc CXX=g++ ...)')
 
-parser.add_argument('--vars', dest='vars', type=str, nargs='*',
-                    help='environment variables (e.g. CC=gcc CXX=g++ ...)')
+    parser.add_argument('--android-platform', dest='android_platform', type=str,
+                        help='android target platform version')
 
-parser.add_argument('--android-platform', dest='android_platform', type=str,
-                    help='android target platform version')
+    parser.add_argument('--macos-platform', dest='macos_platform', type=str,
+                        help='macos target platform version')
 
-parser.add_argument('--macos-platform', dest='macos_platform', type=str,
-                    help='macos target platform version')
+    parser.add_argument('--macos-arch', dest='macos_arch', type=str, nargs='*',
+                        help='macos target architecture(s)')
 
-parser.add_argument('--macos-arch', dest='macos_arch', type=str, nargs='*',
-                    help='macos target architecture(s)')
+    args = parser.parse_args()
 
-args = parser.parse_args()
+    #
+    # Setup context.
+    #
 
-#
-# Setup context.
-#
+    ctx = Context()
 
-ctx = Context()
+    ctx.pkg = args.package
+    ctx.pkg_name, ctx.pkg_ver = parse_dep(args.package)
+    ctx.pkg_ver_major, ctx.pkg_ver_minor, ctx.pkg_ver_patch = parse_ver(ctx.pkg_ver, count=3)
+    ctx.pkg_deps = args.deps or []
 
-ctx.pkg = args.package
-ctx.pkg_name, ctx.pkg_ver = parse_dep(args.package)
-ctx.pkg_ver_major, ctx.pkg_ver_minor, ctx.pkg_ver_patch = parse_ver(ctx.pkg_ver, count=3)
-ctx.pkg_deps = args.deps or []
+    ctx.build = args.build
+    ctx.host = args.host
+    ctx.toolchain = args.toolchain or ''
+    ctx.variant = args.variant
+    ctx.android_platform = args.android_platform
+    ctx.macos_platform = args.macos_platform
+    ctx.macos_arch = args.macos_arch
 
-ctx.build = args.build
-ctx.host = args.host
-ctx.toolchain = args.toolchain or ''
-ctx.variant = args.variant
-ctx.android_platform = args.android_platform
-ctx.macos_platform = args.macos_platform
-ctx.macos_arch = args.macos_arch
+    ctx.unparsed_env = args.vars or []
+    ctx.env = parse_env(args.vars)
 
-ctx.unparsed_env = args.vars or []
-ctx.env = parse_env(args.vars)
+    os.chdir(args.root_dir)
 
-os.chdir(args.root_dir)
+    ctx.root_dir = os.path.abspath('.')
+    ctx.work_dir = os.path.abspath(args.work_dir)
+    ctx.dist_dir = os.path.abspath(args.dist_dir)
 
-ctx.root_dir = os.path.abspath('.')
-ctx.work_dir = os.path.abspath(args.work_dir)
-ctx.dist_dir = os.path.abspath(args.dist_dir)
+    ctx.pkg_dir = os.path.join(ctx.work_dir, ctx.pkg)
 
-ctx.pkg_dir = os.path.join(ctx.work_dir, ctx.pkg)
+    ctx.pkg_src_dir = os.path.join(ctx.pkg_dir, 'src')
+    ctx.pkg_bin_dir = os.path.join(ctx.pkg_dir, 'bin')
+    ctx.pkg_lib_dir = os.path.join(ctx.pkg_dir, 'lib')
+    ctx.pkg_inc_dir = os.path.join(ctx.pkg_dir, 'include')
+    ctx.pkg_rpath_dir = os.path.join(ctx.pkg_dir, 'rpath')
 
-ctx.pkg_src_dir = os.path.join(ctx.pkg_dir, 'src')
-ctx.pkg_bin_dir = os.path.join(ctx.pkg_dir, 'bin')
-ctx.pkg_lib_dir = os.path.join(ctx.pkg_dir, 'lib')
-ctx.pkg_inc_dir = os.path.join(ctx.pkg_dir, 'include')
-ctx.pkg_rpath_dir = os.path.join(ctx.pkg_dir, 'rpath')
+    ctx.log_file = os.path.join(ctx.pkg_dir, 'build.log')
+    ctx.commit_file = os.path.join(ctx.pkg_dir, 'commit')
 
-ctx.log_file = os.path.join(ctx.pkg_dir, 'build.log')
-ctx.commit_file = os.path.join(ctx.pkg_dir, 'commit')
+    ctx.prefer_cmake = bool(args.macos_platform or args.android_platform)
 
-ctx.prefer_cmake = bool(args.macos_platform or args.android_platform)
+    #
+    # Build package.
+    #
 
-#
-# Build package.
-#
+    rmpath(ctx.commit_file)
+    mkpath(ctx.pkg_src_dir)
 
-rmpath(ctx.commit_file)
-mkpath(ctx.pkg_src_dir)
+    changedir(ctx, ctx.pkg_dir)
 
-changedir(ctx, ctx.pkg_dir)
-
-if ctx.pkg_name == 'libuv':
-    download(
-        ctx,
-        'https://dist.libuv.org/dist/v{ctx.pkg_ver}/libuv-v{ctx.pkg_ver}.tar.gz',
-        'libuv-v{ctx.pkg_ver}.tar.gz')
-    unpack(
-        ctx,
-        'libuv-v{ctx.pkg_ver}.tar.gz',
-        'libuv-v{ctx.pkg_ver}')
-    changedir(ctx, 'src/libuv-v{ctx.pkg_ver}')
-    if ctx.prefer_cmake:
-        mkpath('build')
-        changedir(ctx, 'build')
-        execute_cmake(ctx, '..', args=[
-            '-DLIBUV_BUILD_TESTS=OFF',
-            ])
-        execute_cmake_build(ctx)
-        if os.path.isfile('libuv_a.a'):
-            shutil.copy('libuv_a.a', '../libuv.a')
+    if ctx.pkg_name == 'libuv':
+        download(
+            ctx,
+            'https://dist.libuv.org/dist/v{ctx.pkg_ver}/libuv-v{ctx.pkg_ver}.tar.gz',
+            'libuv-v{ctx.pkg_ver}.tar.gz')
+        unpack(
+            ctx,
+            'libuv-v{ctx.pkg_ver}.tar.gz',
+            'libuv-v{ctx.pkg_ver}')
+        changedir(ctx, 'src/libuv-v{ctx.pkg_ver}')
+        if ctx.prefer_cmake:
+            mkpath('build')
+            changedir(ctx, 'build')
+            execute_cmake(ctx, '..', args=[
+                '-DLIBUV_BUILD_TESTS=OFF',
+                ])
+            execute_cmake_build(ctx)
+            if os.path.isfile('libuv_a.a'):
+                shutil.copy('libuv_a.a', '../libuv.a')
+            else:
+                shutil.copy('libuv.a', '../libuv.a')
+            changedir(ctx, '..')
         else:
-            shutil.copy('libuv.a', '../libuv.a')
-        changedir(ctx, '..')
-    else:
-        subst_files(ctx, 'src/unix/core.c', ' dup3', ' uv__dup3')
-        execute(ctx, './autogen.sh')
+            subst_files(ctx, 'src/unix/core.c', ' dup3', ' uv__dup3')
+            execute(ctx, './autogen.sh')
+            execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
+                host=ctx.toolchain,
+                vars=format_vars(ctx),
+                flags=format_flags(ctx),
+                opts=' '.join([
+                    '--with-pic',
+                    '--enable-static',
+                ])))
+            execute_make(ctx)
+            shutil.copy('.libs/libuv.a', 'libuv.a')
+        install_tree(ctx, 'include', ctx.pkg_inc_dir)
+        install_files(ctx, 'libuv.a', ctx.pkg_lib_dir)
+    elif ctx.pkg_name == 'libatomic_ops':
+        download(
+            ctx,
+            'https://github.com/ivmai/libatomic_ops/releases/download/'
+                'v{ctx.pkg_ver}/libatomic_ops-{ctx.pkg_ver}.tar.gz',
+            'libatomic_ops-{ctx.pkg_ver}.tar.gz')
+        unpack(ctx,
+               'libatomic_ops-{ctx.pkg_ver}.tar.gz',
+               'libatomic_ops-{ctx.pkg_ver}')
+        changedir(ctx, 'src/libatomic_ops-{ctx.pkg_ver}')
         execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
             host=ctx.toolchain,
             vars=format_vars(ctx),
-            flags=format_flags(ctx),
+            flags=format_flags(ctx, cflags='-fPIC'),
             opts=' '.join([
-                '--with-pic',
+                '--disable-docs',
+                '--disable-shared',
+                '--enable-static',
+               ])))
+        execute_make(ctx)
+        install_tree(ctx, 'src', ctx.pkg_inc_dir, include=['*.h'])
+        install_files(ctx, 'src/.libs/libatomic_ops.a', ctx.pkg_lib_dir)
+    elif ctx.pkg_name == 'libunwind':
+        download(
+            ctx,
+            'http://download.savannah.nongnu.org/releases/libunwind/'
+                'libunwind-{ctx.pkg_ver}.tar.gz',
+            'libunwind-{ctx.pkg_ver}.tar.gz')
+        unpack(ctx,
+               'libunwind-{ctx.pkg_ver}.tar.gz',
+               'libunwind-{ctx.pkg_ver}')
+        changedir(ctx, 'src/libunwind-{ctx.pkg_ver}')
+        execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
+            host=ctx.toolchain,
+            vars=format_vars(ctx),
+            flags=format_flags(ctx, cflags='-fcommon -fPIC'),
+            opts=' '.join([
+                '--disable-coredump',
+                '--disable-minidebuginfo',
+                '--disable-ptrace',
+                '--disable-setjmp',
+                '--disable-shared',
+                '--enable-static',
+               ])))
+        execute_make(ctx)
+        install_files(ctx, 'include/*.h', ctx.pkg_inc_dir)
+        install_files(ctx, 'src/.libs/libunwind.a', ctx.pkg_lib_dir)
+    elif ctx.pkg_name == 'libuuid':
+        download(
+            ctx,
+            'https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/'+
+                'v{ctx.pkg_ver_major}.{ctx.pkg_ver_minor}/util-linux-{ctx.pkg_ver}.tar.gz',
+            'util-linux-{ctx.pkg_ver}.tar.gz')
+        unpack(ctx,
+               'util-linux-{ctx.pkg_ver}.tar.gz',
+               'util-linux-{ctx.pkg_ver}')
+        changedir(ctx, 'src/util-linux-{ctx.pkg_ver}')
+        execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
+            host=ctx.toolchain,
+            vars=format_vars(ctx),
+            flags=format_flags(ctx, cflags='-fcommon -fPIC'),
+            opts=' '.join([
+                '--disable-year2038',
+                '--disable-all-programs',
+                '--enable-libuuid',
+               ])))
+        execute_make(ctx)
+        install_files(ctx, 'libuuid/src/uuid.h', ctx.pkg_inc_dir)
+        install_files(ctx, '.libs/libuuid.a', ctx.pkg_lib_dir)
+    elif ctx.pkg_name == 'openfec':
+        if ctx.variant == 'debug':
+            setattr(ctx, 'res_dir', 'bin/Debug')
+        else:
+            setattr(ctx, 'res_dir', 'bin/Release')
+        download(
+            ctx,
+            'https://github.com/roc-streaming/openfec/archive/v{ctx.pkg_ver}.tar.gz',
+            'openfec_v{ctx.pkg_ver}.tar.gz')
+        unpack(ctx,
+               'openfec_v{ctx.pkg_ver}.tar.gz',
+               'openfec-{ctx.pkg_ver}')
+        changedir(ctx, 'src/openfec-{ctx.pkg_ver}')
+        mkpath('build')
+        changedir(ctx, 'build')
+        execute_cmake(ctx, '..', args=[
+            '-DBUILD_STATIC_LIBS=ON',
+            '-DDEBUG:STRING=%s' % ('ON' if ctx.variant == 'debug' else 'OFF'),
+            ])
+        execute_cmake_build(ctx)
+        changedir(ctx, '..')
+        install_tree(ctx, 'src', ctx.pkg_inc_dir, include=['*.h'])
+        install_files(ctx, '{ctx.res_dir}/libopenfec.a', ctx.pkg_lib_dir)
+    elif ctx.pkg_name == 'openssl':
+        download(
+            ctx,
+            'https://www.openssl.org/source/openssl-{ctx.pkg_ver}.tar.gz',
+            'openssl-{ctx.pkg_ver}.tar.gz')
+        unpack(
+            ctx,
+            'openssl-{ctx.pkg_ver}.tar.gz',
+            'openssl-{ctx.pkg_ver}')
+        changedir(ctx, 'src/openssl-{ctx.pkg_ver}')
+        # see https://github.com/openssl/openssl/blob/master/INSTALL.md#configuration-options
+        execute(ctx, '{vars} {flags} ./Configure {platform} {variant} {options}'.format(
+            vars=format_vars(ctx, disable_launcher=True),
+            flags=format_flags(ctx),
+            platform=detect_openssl_platform(ctx.host),
+            variant='--debug' if ctx.variant == 'debug' else '--release',
+            options=' '.join([
+                'no-asan',
+                'no-buildtest-c++',
+                'no-external-tests',
+                'no-fuzz-afl',
+                'no-fuzz-libfuzzer',
+                'no-shared',
+                'no-tests',
+                'no-ubsan',
+                'no-ui-console',
+                'no-unit-test',
+            ])))
+        execute_make(ctx)
+        install_tree(ctx, 'include', ctx.pkg_inc_dir)
+        install_files(ctx, 'libssl.a', ctx.pkg_lib_dir)
+        install_files(ctx, 'libcrypto.a', ctx.pkg_lib_dir)
+    elif ctx.pkg_name == 'speexdsp':
+        if ctx.pkg_ver.split('.', 1) > ['1', '2'] and (
+                not re.match('^1.2[a-z]', ctx.pkg_ver) or ctx.pkg_ver == '1.2rc3'):
+            setattr(ctx, 'pkg_repo', 'speexdsp')
+        else:
+            setattr(ctx, 'pkg_repo', 'speex')
+        download(
+            ctx,
+            'http://downloads.xiph.org/releases/speex/{ctx.pkg_repo}-{ctx.pkg_ver}.tar.gz',
+            '{ctx.pkg_repo}-{ctx.pkg_ver}.tar.gz')
+        unpack(
+            ctx,
+            '{ctx.pkg_repo}-{ctx.pkg_ver}.tar.gz',
+            '{ctx.pkg_repo}-{ctx.pkg_ver}')
+        changedir(ctx, 'src/{ctx.pkg_repo}-{ctx.pkg_ver}')
+        execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
+            host=ctx.toolchain,
+            vars=format_vars(ctx),
+            flags=format_flags(ctx, cflags='-fPIC'),
+            opts=' '.join([
+                '--disable-examples',
+                '--disable-shared',
+                '--enable-static',
+               ])))
+        execute_make(ctx)
+        install_tree(ctx, 'include', ctx.pkg_inc_dir)
+        install_files(ctx, 'lib{ctx.pkg_repo}/.libs/libspeexdsp.a', ctx.pkg_lib_dir)
+    elif ctx.pkg_name == 'sndfile':
+        download(
+            ctx,
+            'http://www.mega-nerd.com/libsndfile/files/libsndfile-{ctx.pkg_ver}.tar.gz',
+            'libsndfile-{ctx.pkg_ver}.tar.gz')
+        unpack(
+            ctx,
+            'libsndfile-{ctx.pkg_ver}.tar.gz',
+            'libsndfile-{ctx.pkg_ver}')
+        changedir(ctx, 'src/libsndfile-{ctx.pkg_ver}')
+        execute(ctx, '{configure} --host={host} {vars} {flags} {opts}'.format(
+            configure=' '.join(filter(None, [
+                # workaround for outdated config.sub
+                'ac_cv_host=%s' % ctx.toolchain if ctx.toolchain else '',
+                # configure
+                './configure',
+            ])),
+            host=ctx.toolchain,
+            vars=format_vars(ctx),
+            # explicitly enable -pthread because libtool doesn't add it on some platforms
+            flags=format_flags(ctx, cflags='-fPIC', pthread=True),
+            opts=' '.join([
+                '--disable-external-libs',
+                '--disable-shared',
                 '--enable-static',
             ])))
         execute_make(ctx)
-        shutil.copy('.libs/libuv.a', 'libuv.a')
-    install_tree(ctx, 'include', ctx.pkg_inc_dir)
-    install_files(ctx, 'libuv.a', ctx.pkg_lib_dir)
-elif ctx.pkg_name == 'libatomic_ops':
-    download(
-        ctx,
-        'https://github.com/ivmai/libatomic_ops/releases/download/'
-            'v{ctx.pkg_ver}/libatomic_ops-{ctx.pkg_ver}.tar.gz',
-        'libatomic_ops-{ctx.pkg_ver}.tar.gz')
-    unpack(ctx,
-           'libatomic_ops-{ctx.pkg_ver}.tar.gz',
-           'libatomic_ops-{ctx.pkg_ver}')
-    changedir(ctx, 'src/libatomic_ops-{ctx.pkg_ver}')
-    execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
-        host=ctx.toolchain,
-        vars=format_vars(ctx),
-        flags=format_flags(ctx, cflags='-fPIC'),
-        opts=' '.join([
-            '--disable-docs',
-            '--disable-shared',
-            '--enable-static',
-           ])))
-    execute_make(ctx)
-    install_tree(ctx, 'src', ctx.pkg_inc_dir, include=['*.h'])
-    install_files(ctx, 'src/.libs/libatomic_ops.a', ctx.pkg_lib_dir)
-elif ctx.pkg_name == 'libunwind':
-    download(
-        ctx,
-        'http://download.savannah.nongnu.org/releases/libunwind/'
-            'libunwind-{ctx.pkg_ver}.tar.gz',
-        'libunwind-{ctx.pkg_ver}.tar.gz')
-    unpack(ctx,
-           'libunwind-{ctx.pkg_ver}.tar.gz',
-           'libunwind-{ctx.pkg_ver}')
-    changedir(ctx, 'src/libunwind-{ctx.pkg_ver}')
-    execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
-        host=ctx.toolchain,
-        vars=format_vars(ctx),
-        flags=format_flags(ctx, cflags='-fcommon -fPIC'),
-        opts=' '.join([
-            '--disable-coredump',
-            '--disable-minidebuginfo',
-            '--disable-ptrace',
-            '--disable-setjmp',
-            '--disable-shared',
-            '--enable-static',
-           ])))
-    execute_make(ctx)
-    install_files(ctx, 'include/*.h', ctx.pkg_inc_dir)
-    install_files(ctx, 'src/.libs/libunwind.a', ctx.pkg_lib_dir)
-elif ctx.pkg_name == 'libuuid':
-    download(
-        ctx,
-        'https://mirrors.edge.kernel.org/pub/linux/utils/util-linux/'+
-            'v{ctx.pkg_ver_major}.{ctx.pkg_ver_minor}/util-linux-{ctx.pkg_ver}.tar.gz',
-        'util-linux-{ctx.pkg_ver}.tar.gz')
-    unpack(ctx,
-           'util-linux-{ctx.pkg_ver}.tar.gz',
-           'util-linux-{ctx.pkg_ver}')
-    changedir(ctx, 'src/util-linux-{ctx.pkg_ver}')
-    execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
-        host=ctx.toolchain,
-        vars=format_vars(ctx),
-        flags=format_flags(ctx, cflags='-fcommon -fPIC'),
-        opts=' '.join([
-            '--disable-year2038',
-            '--disable-all-programs',
-            '--enable-libuuid',
-           ])))
-    execute_make(ctx)
-    install_files(ctx, 'libuuid/src/uuid.h', ctx.pkg_inc_dir)
-    install_files(ctx, '.libs/libuuid.a', ctx.pkg_lib_dir)
-elif ctx.pkg_name == 'openfec':
-    if ctx.variant == 'debug':
-        setattr(ctx, 'res_dir', 'bin/Debug')
-    else:
-        setattr(ctx, 'res_dir', 'bin/Release')
-    download(
-        ctx,
-        'https://github.com/roc-streaming/openfec/archive/v{ctx.pkg_ver}.tar.gz',
-        'openfec_v{ctx.pkg_ver}.tar.gz')
-    unpack(ctx,
-           'openfec_v{ctx.pkg_ver}.tar.gz',
-           'openfec-{ctx.pkg_ver}')
-    changedir(ctx, 'src/openfec-{ctx.pkg_ver}')
-    mkpath('build')
-    changedir(ctx, 'build')
-    execute_cmake(ctx, '..', args=[
-        '-DBUILD_STATIC_LIBS=ON',
-        '-DDEBUG:STRING=%s' % ('ON' if ctx.variant == 'debug' else 'OFF'),
-        ])
-    execute_cmake_build(ctx)
-    changedir(ctx, '..')
-    install_tree(ctx, 'src', ctx.pkg_inc_dir, include=['*.h'])
-    install_files(ctx, '{ctx.res_dir}/libopenfec.a', ctx.pkg_lib_dir)
-elif ctx.pkg_name == 'openssl':
-    download(
-        ctx,
-        'https://www.openssl.org/source/openssl-{ctx.pkg_ver}.tar.gz',
-        'openssl-{ctx.pkg_ver}.tar.gz')
-    unpack(
-        ctx,
-        'openssl-{ctx.pkg_ver}.tar.gz',
-        'openssl-{ctx.pkg_ver}')
-    changedir(ctx, 'src/openssl-{ctx.pkg_ver}')
-    # see https://github.com/openssl/openssl/blob/master/INSTALL.md#configuration-options
-    execute(ctx, '{vars} {flags} ./Configure {platform} {variant} {options}'.format(
-        vars=format_vars(ctx, disable_launcher=True),
-        flags=format_flags(ctx),
-        platform=detect_openssl_platform(ctx.host),
-        variant='--debug' if ctx.variant == 'debug' else '--release',
-        options=' '.join([
-            'no-asan',
-            'no-buildtest-c++',
-            'no-external-tests',
-            'no-fuzz-afl',
-            'no-fuzz-libfuzzer',
-            'no-shared',
-            'no-tests',
-            'no-ubsan',
-            'no-ui-console',
-            'no-unit-test',
-        ])))
-    execute_make(ctx)
-    install_tree(ctx, 'include', ctx.pkg_inc_dir)
-    install_files(ctx, 'libssl.a', ctx.pkg_lib_dir)
-    install_files(ctx, 'libcrypto.a', ctx.pkg_lib_dir)
-elif ctx.pkg_name == 'speexdsp':
-    if ctx.pkg_ver.split('.', 1) > ['1', '2'] and (
-            not re.match('^1.2[a-z]', ctx.pkg_ver) or ctx.pkg_ver == '1.2rc3'):
-        setattr(ctx, 'pkg_repo', 'speexdsp')
-    else:
-        setattr(ctx, 'pkg_repo', 'speex')
-    download(
-        ctx,
-        'http://downloads.xiph.org/releases/speex/{ctx.pkg_repo}-{ctx.pkg_ver}.tar.gz',
-        '{ctx.pkg_repo}-{ctx.pkg_ver}.tar.gz')
-    unpack(
-        ctx,
-        '{ctx.pkg_repo}-{ctx.pkg_ver}.tar.gz',
-        '{ctx.pkg_repo}-{ctx.pkg_ver}')
-    changedir(ctx, 'src/{ctx.pkg_repo}-{ctx.pkg_ver}')
-    execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
-        host=ctx.toolchain,
-        vars=format_vars(ctx),
-        flags=format_flags(ctx, cflags='-fPIC'),
-        opts=' '.join([
-            '--disable-examples',
-            '--disable-shared',
-            '--enable-static',
-           ])))
-    execute_make(ctx)
-    install_tree(ctx, 'include', ctx.pkg_inc_dir)
-    install_files(ctx, 'lib{ctx.pkg_repo}/.libs/libspeexdsp.a', ctx.pkg_lib_dir)
-elif ctx.pkg_name == 'sndfile':
-    download(
-        ctx,
-        'http://www.mega-nerd.com/libsndfile/files/libsndfile-{ctx.pkg_ver}.tar.gz',
-        'libsndfile-{ctx.pkg_ver}.tar.gz')
-    unpack(
-        ctx,
-        'libsndfile-{ctx.pkg_ver}.tar.gz',
-        'libsndfile-{ctx.pkg_ver}')
-    changedir(ctx, 'src/libsndfile-{ctx.pkg_ver}')
-    execute(ctx, '{configure} --host={host} {vars} {flags} {opts}'.format(
-        configure=' '.join(filter(None, [
-            # workaround for outdated config.sub
-            'ac_cv_host=%s' % ctx.toolchain if ctx.toolchain else '',
-            # configure
-            './configure',
-        ])),
-        host=ctx.toolchain,
-        vars=format_vars(ctx),
-        # explicitly enable -pthread because libtool doesn't add it on some platforms
-        flags=format_flags(ctx, cflags='-fPIC', pthread=True),
-        opts=' '.join([
-            '--disable-external-libs',
-            '--disable-shared',
-            '--enable-static',
-        ])))
-    execute_make(ctx)
-    install_files(ctx, 'src/sndfile.h', ctx.pkg_inc_dir)
-    install_files(ctx, 'src/.libs/libsndfile.a', ctx.pkg_lib_dir)
-elif ctx.pkg_name == 'sox':
-    download(
-        ctx,
-        'https://downloads.sourceforge.net/project/sox/sox/'
-            '{ctx.pkg_ver}/sox-{ctx.pkg_ver}.tar.gz',
-        'sox-{ctx.pkg_ver}.tar.gz')
-    unpack(
-        ctx,
-        'sox-{ctx.pkg_ver}.tar.gz',
-        'sox-{ctx.pkg_ver}')
-    changedir(ctx, 'src/sox-{ctx.pkg_ver}')
-    execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
-        host=ctx.toolchain,
-        vars=format_vars(ctx),
-        flags=format_flags(ctx, cflags='-w -Wno-incompatible-function-pointer-types'),
-        opts=' '.join([
-            '--disable-openmp',
-            '--disable-shared',
-            '--enable-static',
-            '--with-amrnb=no',
-            '--with-amrwb=no',
-            '--with-ao=no',
-            '--with-flac=no',
-            '--with-gsm=no',
-            '--with-lpc10=no',
-            '--with-mp3=no',
-            '--with-oggvorbis=no',
-            '--with-opus=no',
-            '--with-pulseaudio=no',
-            '--with-sndfile=no',
-            '--with-sndio=no',
-            '--with-wavpack=no',
-            '--without-ao',
-            '--without-id3tag',
-            '--without-ladspa',
-            '--without-lame',
-            '--without-libltdl',
-            '--without-mad',
-            '--without-magic',
-            '--without-opus',
-            '--without-png',
-            '--without-twolame',
-        ])))
-    execute_make(ctx)
-    install_files(ctx, 'src/sox.h', ctx.pkg_inc_dir)
-    install_files(ctx, 'src/.libs/libsox.a', ctx.pkg_lib_dir)
-elif ctx.pkg_name == 'alsa':
-    download(
-        ctx,
-        'https://www.alsa-project.org/files/pub/lib/alsa-lib-{ctx.pkg_ver}.tar.bz2',
-        'alsa-lib-{ctx.pkg_ver}.tar.bz2')
-    unpack(ctx,
-           'alsa-lib-{ctx.pkg_ver}.tar.bz2',
-           'alsa-lib-{ctx.pkg_ver}')
-    changedir(ctx, 'src/alsa-lib-{ctx.pkg_ver}')
-    execute(ctx, './configure --host={host} {vars} {opts}'.format(
-        host=ctx.toolchain,
-        vars=format_vars(ctx),
-        opts=' '.join([
-            '--disable-python',
-            '--disable-static',
-            '--enable-shared',
-        ])))
-    execute_make(ctx)
-    install_tree(ctx, 'include/alsa',
-            os.path.join(ctx.pkg_inc_dir, 'alsa'),
-            exclude=['alsa'])
-    install_files(ctx, 'src/.libs/libasound.so', ctx.pkg_lib_dir)
-    install_files(ctx, 'src/.libs/libasound.so.*', ctx.pkg_rpath_dir)
-elif ctx.pkg_name == 'pulseaudio':
-    download(
-        ctx,
-        'https://freedesktop.org/software/pulseaudio/releases/'
-            'pulseaudio-{ctx.pkg_ver}.tar.gz',
-        'pulseaudio-{ctx.pkg_ver}.tar.gz')
-    unpack(
-        ctx,
-        'pulseaudio-{ctx.pkg_ver}.tar.gz',
-        'pulseaudio-{ctx.pkg_ver}')
-    pa_ver = parse_ver(ctx.pkg_ver, int)
-    if (8, 99, 1) <= pa_ver < (11, 99, 1):
-        apply_patch(
+        install_files(ctx, 'src/sndfile.h', ctx.pkg_inc_dir)
+        install_files(ctx, 'src/.libs/libsndfile.a', ctx.pkg_lib_dir)
+    elif ctx.pkg_name == 'sox':
+        download(
             ctx,
-            'src/pulseaudio-{ctx.pkg_ver}',
-            'https://bugs.freedesktop.org/attachment.cgi?id=136927',
-            '0001-memfd-wrappers-only-define-memfd_create-if-not-alrea.patch')
-    if pa_ver < (12, 99, 1):
-        subst_tree(ctx, 'src/pulseaudio-{ctx.pkg_ver}', ['*.h', '*.c'],
-                   from_='#include <asoundlib.h>',
-                   to='#include <alsa/asoundlib.h>')
-    changedir(ctx, 'src/pulseaudio-{ctx.pkg_ver}')
-    if pa_ver < (14, 99, 1):
-        # workaround for "missing acolocal-1.15" and "missing automake-1.15" errors
-        # on some systems; since we're not modifying any autotools stuff, it's safe
-        # to replace corresponding commands with "true" command
-        if os.path.exists('Makefile.in'):
-            subst_files(ctx, 'Makefile.in', '@ACLOCAL@', 'true')
-            subst_files(ctx, 'Makefile.in', '@AUTOMAKE@', 'true')
-        execute(ctx, './configure --host={host} {vars} {flags} {deps} {opts}'.format(
+            'https://downloads.sourceforge.net/project/sox/sox/'
+                '{ctx.pkg_ver}/sox-{ctx.pkg_ver}.tar.gz',
+            'sox-{ctx.pkg_ver}.tar.gz')
+        unpack(
+            ctx,
+            'sox-{ctx.pkg_ver}.tar.gz',
+            'sox-{ctx.pkg_ver}')
+        changedir(ctx, 'src/sox-{ctx.pkg_ver}')
+        execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
             host=ctx.toolchain,
             vars=format_vars(ctx),
-            flags=format_flags(ctx, cflags='-w -Wno-implicit-function-declaration' + \
-                ' -fomit-frame-pointer -O2'),
-            deps=' '.join([
-                'LIBJSON_CFLAGS=" "',
-                'LIBJSON_LIBS="-ljson-c"',
-                'LIBSNDFILE_CFLAGS=" "',
-                'LIBSNDFILE_LIBS="-lsndfile"',
-            ]),
+            flags=format_flags(ctx, cflags='-w -Wno-incompatible-function-pointer-types'),
             opts=' '.join([
-                '--disable-manpages',
-                '--disable-neon-opt',
-                '--disable-openssl',
-                '--disable-orc',
-                '--disable-static',
-                '--disable-tests',
-                '--disable-webrtc-aec',
-                '--enable-shared',
-                '--without-caps',
+                '--disable-openmp',
+                '--disable-shared',
+                '--enable-static',
+                '--with-amrnb=no',
+                '--with-amrwb=no',
+                '--with-ao=no',
+                '--with-flac=no',
+                '--with-gsm=no',
+                '--with-lpc10=no',
+                '--with-mp3=no',
+                '--with-oggvorbis=no',
+                '--with-opus=no',
+                '--with-pulseaudio=no',
+                '--with-sndfile=no',
+                '--with-sndio=no',
+                '--with-wavpack=no',
+                '--without-ao',
+                '--without-id3tag',
+                '--without-ladspa',
+                '--without-lame',
+                '--without-libltdl',
+                '--without-mad',
+                '--without-magic',
+                '--without-opus',
+                '--without-png',
+                '--without-twolame',
             ])))
         execute_make(ctx)
-        install_files(ctx, 'config.h', ctx.pkg_inc_dir)
-        install_tree(ctx, 'src/pulse', os.path.join(ctx.pkg_inc_dir, 'pulse'),
-                     include=['*.h'])
-        install_files(ctx, 'src/.libs/libpulse.so', ctx.pkg_lib_dir)
-        install_files(ctx, 'src/.libs/libpulse.so.0', ctx.pkg_rpath_dir)
-        install_files(ctx, 'src/.libs/libpulse-simple.so', ctx.pkg_lib_dir)
-        install_files(ctx, 'src/.libs/libpulse-simple.so.0', ctx.pkg_rpath_dir)
-        install_files(ctx, 'src/.libs/libpulsecommon-*.so', ctx.pkg_lib_dir)
-        install_files(ctx, 'src/.libs/libpulsecommon-*.so', ctx.pkg_rpath_dir)
-    else:
-        mkpath('builddir')
-        changedir(ctx, 'builddir')
-        mkpath('pcdir')
-        generate_pc_files(ctx, 'pcdir')
-        generate_meson_crossfile(ctx, 'pcdir', 'crossfile.txt')
-        execute(ctx, 'meson .. {opts}'.format(
+        install_files(ctx, 'src/sox.h', ctx.pkg_inc_dir)
+        install_files(ctx, 'src/.libs/libsox.a', ctx.pkg_lib_dir)
+    elif ctx.pkg_name == 'alsa':
+        download(
+            ctx,
+            'https://www.alsa-project.org/files/pub/lib/alsa-lib-{ctx.pkg_ver}.tar.bz2',
+            'alsa-lib-{ctx.pkg_ver}.tar.bz2')
+        unpack(ctx,
+               'alsa-lib-{ctx.pkg_ver}.tar.bz2',
+               'alsa-lib-{ctx.pkg_ver}')
+        changedir(ctx, 'src/alsa-lib-{ctx.pkg_ver}')
+        execute(ctx, './configure --host={host} {vars} {opts}'.format(
+            host=ctx.toolchain,
+            vars=format_vars(ctx),
             opts=' '.join([
-                '--cross-file=crossfile.txt',
-                '-Ddaemon=false',
-                '-Ddoxygen=false',
-                '-Dgcov=false',
-                '-Dman=false',
-                '-Dtests=false',
+                '--disable-python',
+                '--disable-static',
+                '--enable-shared',
             ])))
-        execute(ctx, 'ninja')
-        execute(ctx, 'DESTDIR=../instdir ninja install')
-        changedir(ctx, '..')
-        install_tree(ctx, 'instdir/usr/local/include/pulse',
-                     os.path.join(ctx.pkg_inc_dir, 'pulse'),
-                     include=['*.h'])
-        install_files(ctx, 'builddir/src/pulse/libpulse.so', ctx.pkg_lib_dir)
-        install_files(ctx, 'builddir/src/pulse/libpulse.so.0', ctx.pkg_rpath_dir)
-        install_files(ctx, 'builddir/src/pulse/libpulse-simple.so', ctx.pkg_lib_dir)
-        install_files(ctx, 'builddir/src/pulse/libpulse-simple.so.0', ctx.pkg_rpath_dir)
-        install_files(ctx, 'builddir/src/libpulsecommon-*.so', ctx.pkg_lib_dir)
-        install_files(ctx, 'builddir/src/libpulsecommon-*.so', ctx.pkg_rpath_dir)
-elif ctx.pkg_name == 'ltdl':
-    download(
-        ctx,
-        'https://ftp.gnu.org/gnu/libtool/libtool-{ctx.pkg_ver}.tar.gz',
-        'libtool-{ctx.pkg_ver}.tar.gz')
-    unpack(
-        ctx,
-        'libtool-{ctx.pkg_ver}.tar.gz',
-        'libtool-{ctx.pkg_ver}')
-    changedir(ctx, 'src/libtool-{ctx.pkg_ver}')
-    execute(ctx, './configure --host={host} {vars} {opts}'.format(
-        host=ctx.toolchain,
-        vars=format_vars(ctx),
-        opts=' '.join([
-            '--disable-static',
-            '--enable-shared',
-        ])))
-    execute_make(ctx)
-    install_files(ctx, 'libltdl/ltdl.h', ctx.pkg_inc_dir)
-    install_tree(ctx, 'libltdl/libltdl', os.path.join(ctx.pkg_inc_dir, 'libltdl'))
-    install_files(ctx, 'libltdl/.libs/libltdl.so', ctx.pkg_lib_dir)
-    install_files(ctx, 'libltdl/.libs/libltdl.so.*', ctx.pkg_rpath_dir)
-elif ctx.pkg_name == 'json-c':
-    download(
-        ctx,
-        'https://github.com/json-c/json-c/archive/json-c-{ctx.pkg_ver}.tar.gz',
-        'json-c-{ctx.pkg_ver}.tar.gz')
-    unpack(
-        ctx,
-        'json-c-{ctx.pkg_ver}.tar.gz',
-        'json-c-json-c-{ctx.pkg_ver}')
-    changedir(ctx, 'src/json-c-json-c-{ctx.pkg_ver}')
-    execute(ctx, '{configure} --host={host} {vars} {flags} {opts}'.format(
-        configure=' '.join(filter(None, [
-            # workaround for outdated config.sub
-            'ac_cv_host=%s' % ctx.toolchain if ctx.toolchain else '',
-            # disable rpl_malloc and rpl_realloc
-            'ac_cv_func_malloc_0_nonnull=yes',
-            'ac_cv_func_realloc_0_nonnull=yes',
-            # configure
-            './configure',
-        ])),
-        host=ctx.toolchain,
-        vars=format_vars(ctx),
-        flags=format_flags(ctx, cflags='-w -fPIC'),
-        opts=' '.join([
-            '--enable-static',
-            '--disable-shared',
-        ])))
-    execute_make(ctx, cpu_count=0) # -j is buggy for json-c
-    install_tree(ctx, '.', ctx.pkg_inc_dir, include=['*.h'])
-    install_files(ctx, '.libs/libjson-c.a', ctx.pkg_lib_dir)
-elif ctx.pkg_name == 'gengetopt':
-    native_compilers = detect_native_cc_cxx_compilers();
-    download(
-        ctx,
-        'https://ftp.gnu.org/gnu/gengetopt/gengetopt-{ctx.pkg_ver}.tar.gz',
-        'gengetopt-{ctx.pkg_ver}.tar.gz')
-    unpack(
-        ctx,
-        'gengetopt-{ctx.pkg_ver}.tar.gz',
-        'gengetopt-{ctx.pkg_ver}')
-    changedir(ctx, 'src/gengetopt-{ctx.pkg_ver}')
-    execute(ctx, './configure {vars}'.format(
-        vars=format_vars(ctx, False, env={
-            'CC' : native_compilers.get('CC', None),
-            'CXX' : native_compilers.get('CXX', None),
-            'COMPILER_LAUNCHER' : ctx.env.get('COMPILER_LAUNCHER', None),
-        }),
-        clear_env=True))
-    execute_make(ctx, cpu_count=0) # -j is buggy for gengetopt
-    install_files(ctx, 'src/gengetopt', ctx.pkg_bin_dir)
-elif ctx.pkg_name == 'ragel':
-    native_compilers = detect_native_cc_cxx_compilers();
-    download(
-        ctx,
-        'https://www.colm.net/files/ragel/ragel-{ctx.pkg_ver}.tar.gz',
-        'ragel-{ctx.pkg_ver}.tar.gz')
-    unpack(
-        ctx,
-        'ragel-{ctx.pkg_ver}.tar.gz',
-        'ragel-{ctx.pkg_ver}')
-    changedir(ctx, 'src/ragel-{ctx.pkg_ver}')
-    execute(ctx, './configure {vars}'.format(
-        vars=format_vars(ctx, False, env={
-            'CC' : native_compilers.get('CC', None),
-            'CXX' : native_compilers.get('CXX', None),
-            'COMPILER_LAUNCHER' : ctx.env.get('COMPILER_LAUNCHER', None),
-        }),
-        clear_env=True))
-    execute_make(ctx)
-    install_files(ctx, 'ragel/ragel', ctx.pkg_bin_dir)
-elif ctx.pkg_name == 'cpputest':
-    download(
-        ctx,
-        'https://github.com/cpputest/cpputest/releases/download/'
-            'v{ctx.pkg_ver}/cpputest-{ctx.pkg_ver}.tar.gz',
-        'cpputest-{ctx.pkg_ver}.tar.gz')
-    unpack(
-        ctx,
-        'cpputest-{ctx.pkg_ver}.tar.gz',
-        'cpputest-{ctx.pkg_ver}')
-    changedir(ctx, 'src/cpputest-{ctx.pkg_ver}')
-    if ctx.prefer_cmake:
+        execute_make(ctx)
+        install_tree(ctx, 'include/alsa',
+                os.path.join(ctx.pkg_inc_dir, 'alsa'),
+                exclude=['alsa'])
+        install_files(ctx, 'src/.libs/libasound.so', ctx.pkg_lib_dir)
+        install_files(ctx, 'src/.libs/libasound.so.*', ctx.pkg_rpath_dir)
+    elif ctx.pkg_name == 'pulseaudio':
+        download(
+            ctx,
+            'https://freedesktop.org/software/pulseaudio/releases/'
+                'pulseaudio-{ctx.pkg_ver}.tar.gz',
+            'pulseaudio-{ctx.pkg_ver}.tar.gz')
+        unpack(
+            ctx,
+            'pulseaudio-{ctx.pkg_ver}.tar.gz',
+            'pulseaudio-{ctx.pkg_ver}')
+        pa_ver = parse_ver(ctx.pkg_ver, int)
+        if (8, 99, 1) <= pa_ver < (11, 99, 1):
+            apply_patch(
+                ctx,
+                'src/pulseaudio-{ctx.pkg_ver}',
+                'https://bugs.freedesktop.org/attachment.cgi?id=136927',
+                '0001-memfd-wrappers-only-define-memfd_create-if-not-alrea.patch')
+        if pa_ver < (12, 99, 1):
+            subst_tree(ctx, 'src/pulseaudio-{ctx.pkg_ver}', ['*.h', '*.c'],
+                       from_='#include <asoundlib.h>',
+                       to='#include <alsa/asoundlib.h>')
+        changedir(ctx, 'src/pulseaudio-{ctx.pkg_ver}')
+        if pa_ver < (14, 99, 1):
+            # workaround for "missing acolocal-1.15" and "missing automake-1.15" errors
+            # on some systems; since we're not modifying any autotools stuff, it's safe
+            # to replace corresponding commands with "true" command
+            if os.path.exists('Makefile.in'):
+                subst_files(ctx, 'Makefile.in', '@ACLOCAL@', 'true')
+                subst_files(ctx, 'Makefile.in', '@AUTOMAKE@', 'true')
+            execute(ctx, './configure --host={host} {vars} {flags} {deps} {opts}'.format(
+                host=ctx.toolchain,
+                vars=format_vars(ctx),
+                flags=format_flags(ctx, cflags='-w -Wno-implicit-function-declaration' + \
+                    ' -fomit-frame-pointer -O2'),
+                deps=' '.join([
+                    'LIBJSON_CFLAGS=" "',
+                    'LIBJSON_LIBS="-ljson-c"',
+                    'LIBSNDFILE_CFLAGS=" "',
+                    'LIBSNDFILE_LIBS="-lsndfile"',
+                ]),
+                opts=' '.join([
+                    '--disable-manpages',
+                    '--disable-neon-opt',
+                    '--disable-openssl',
+                    '--disable-orc',
+                    '--disable-static',
+                    '--disable-tests',
+                    '--disable-webrtc-aec',
+                    '--enable-shared',
+                    '--without-caps',
+                ])))
+            execute_make(ctx)
+            install_files(ctx, 'config.h', ctx.pkg_inc_dir)
+            install_tree(ctx, 'src/pulse', os.path.join(ctx.pkg_inc_dir, 'pulse'),
+                         include=['*.h'])
+            install_files(ctx, 'src/.libs/libpulse.so', ctx.pkg_lib_dir)
+            install_files(ctx, 'src/.libs/libpulse.so.0', ctx.pkg_rpath_dir)
+            install_files(ctx, 'src/.libs/libpulse-simple.so', ctx.pkg_lib_dir)
+            install_files(ctx, 'src/.libs/libpulse-simple.so.0', ctx.pkg_rpath_dir)
+            install_files(ctx, 'src/.libs/libpulsecommon-*.so', ctx.pkg_lib_dir)
+            install_files(ctx, 'src/.libs/libpulsecommon-*.so', ctx.pkg_rpath_dir)
+        else:
+            mkpath('builddir')
+            changedir(ctx, 'builddir')
+            mkpath('pcdir')
+            generate_pc_files(ctx, 'pcdir')
+            generate_meson_crossfile(ctx, 'pcdir', 'crossfile.txt')
+            execute(ctx, 'meson .. {opts}'.format(
+                opts=' '.join([
+                    '--cross-file=crossfile.txt',
+                    '-Ddaemon=false',
+                    '-Ddoxygen=false',
+                    '-Dgcov=false',
+                    '-Dman=false',
+                    '-Dtests=false',
+                ])))
+            execute(ctx, 'ninja')
+            execute(ctx, 'DESTDIR=../instdir ninja install')
+            changedir(ctx, '..')
+            install_tree(ctx, 'instdir/usr/local/include/pulse',
+                         os.path.join(ctx.pkg_inc_dir, 'pulse'),
+                         include=['*.h'])
+            install_files(ctx, 'builddir/src/pulse/libpulse.so', ctx.pkg_lib_dir)
+            install_files(ctx, 'builddir/src/pulse/libpulse.so.0', ctx.pkg_rpath_dir)
+            install_files(ctx, 'builddir/src/pulse/libpulse-simple.so', ctx.pkg_lib_dir)
+            install_files(ctx, 'builddir/src/pulse/libpulse-simple.so.0', ctx.pkg_rpath_dir)
+            install_files(ctx, 'builddir/src/libpulsecommon-*.so', ctx.pkg_lib_dir)
+            install_files(ctx, 'builddir/src/libpulsecommon-*.so', ctx.pkg_rpath_dir)
+    elif ctx.pkg_name == 'ltdl':
+        download(
+            ctx,
+            'https://ftp.gnu.org/gnu/libtool/libtool-{ctx.pkg_ver}.tar.gz',
+            'libtool-{ctx.pkg_ver}.tar.gz')
+        unpack(
+            ctx,
+            'libtool-{ctx.pkg_ver}.tar.gz',
+            'libtool-{ctx.pkg_ver}')
+        changedir(ctx, 'src/libtool-{ctx.pkg_ver}')
+        execute(ctx, './configure --host={host} {vars} {opts}'.format(
+            host=ctx.toolchain,
+            vars=format_vars(ctx),
+            opts=' '.join([
+                '--disable-static',
+                '--enable-shared',
+            ])))
+        execute_make(ctx)
+        install_files(ctx, 'libltdl/ltdl.h', ctx.pkg_inc_dir)
+        install_tree(ctx, 'libltdl/libltdl', os.path.join(ctx.pkg_inc_dir, 'libltdl'))
+        install_files(ctx, 'libltdl/.libs/libltdl.so', ctx.pkg_lib_dir)
+        install_files(ctx, 'libltdl/.libs/libltdl.so.*', ctx.pkg_rpath_dir)
+    elif ctx.pkg_name == 'json-c':
+        download(
+            ctx,
+            'https://github.com/json-c/json-c/archive/json-c-{ctx.pkg_ver}.tar.gz',
+            'json-c-{ctx.pkg_ver}.tar.gz')
+        unpack(
+            ctx,
+            'json-c-{ctx.pkg_ver}.tar.gz',
+            'json-c-json-c-{ctx.pkg_ver}')
+        changedir(ctx, 'src/json-c-json-c-{ctx.pkg_ver}')
+        execute(ctx, '{configure} --host={host} {vars} {flags} {opts}'.format(
+            configure=' '.join(filter(None, [
+                # workaround for outdated config.sub
+                'ac_cv_host=%s' % ctx.toolchain if ctx.toolchain else '',
+                # disable rpl_malloc and rpl_realloc
+                'ac_cv_func_malloc_0_nonnull=yes',
+                'ac_cv_func_realloc_0_nonnull=yes',
+                # configure
+                './configure',
+            ])),
+            host=ctx.toolchain,
+            vars=format_vars(ctx),
+            flags=format_flags(ctx, cflags='-w -fPIC'),
+            opts=' '.join([
+                '--enable-static',
+                '--disable-shared',
+            ])))
+        execute_make(ctx, cpu_count=0) # -j is buggy for json-c
+        install_tree(ctx, '.', ctx.pkg_inc_dir, include=['*.h'])
+        install_files(ctx, '.libs/libjson-c.a', ctx.pkg_lib_dir)
+    elif ctx.pkg_name == 'gengetopt':
+        native_compilers = detect_native_cc_cxx_compilers();
+        download(
+            ctx,
+            'https://ftp.gnu.org/gnu/gengetopt/gengetopt-{ctx.pkg_ver}.tar.gz',
+            'gengetopt-{ctx.pkg_ver}.tar.gz')
+        unpack(
+            ctx,
+            'gengetopt-{ctx.pkg_ver}.tar.gz',
+            'gengetopt-{ctx.pkg_ver}')
+        changedir(ctx, 'src/gengetopt-{ctx.pkg_ver}')
+        execute(ctx, './configure {vars}'.format(
+            vars=format_vars(ctx, False, env={
+                'CC' : native_compilers.get('CC', None),
+                'CXX' : native_compilers.get('CXX', None),
+                'COMPILER_LAUNCHER' : ctx.env.get('COMPILER_LAUNCHER', None),
+            }),
+            clear_env=True))
+        execute_make(ctx, cpu_count=0) # -j is buggy for gengetopt
+        install_files(ctx, 'src/gengetopt', ctx.pkg_bin_dir)
+    elif ctx.pkg_name == 'ragel':
+        native_compilers = detect_native_cc_cxx_compilers();
+        download(
+            ctx,
+            'https://www.colm.net/files/ragel/ragel-{ctx.pkg_ver}.tar.gz',
+            'ragel-{ctx.pkg_ver}.tar.gz')
+        unpack(
+            ctx,
+            'ragel-{ctx.pkg_ver}.tar.gz',
+            'ragel-{ctx.pkg_ver}')
+        changedir(ctx, 'src/ragel-{ctx.pkg_ver}')
+        execute(ctx, './configure {vars}'.format(
+            vars=format_vars(ctx, False, env={
+                'CC' : native_compilers.get('CC', None),
+                'CXX' : native_compilers.get('CXX', None),
+                'COMPILER_LAUNCHER' : ctx.env.get('COMPILER_LAUNCHER', None),
+            }),
+            clear_env=True))
+        execute_make(ctx)
+        install_files(ctx, 'ragel/ragel', ctx.pkg_bin_dir)
+    elif ctx.pkg_name == 'cpputest':
+        download(
+            ctx,
+            'https://github.com/cpputest/cpputest/releases/download/'
+                'v{ctx.pkg_ver}/cpputest-{ctx.pkg_ver}.tar.gz',
+            'cpputest-{ctx.pkg_ver}.tar.gz')
+        unpack(
+            ctx,
+            'cpputest-{ctx.pkg_ver}.tar.gz',
+            'cpputest-{ctx.pkg_ver}')
+        changedir(ctx, 'src/cpputest-{ctx.pkg_ver}')
+        if ctx.prefer_cmake:
+            mkpath('build')
+            changedir(ctx, 'build')
+            execute_cmake(ctx, '..', args=[
+                '-DMEMORY_LEAK_DETECTION=OFF',
+                '-DTESTS=OFF',
+                '-DBUILD_SHARED_LIBS=OFF',
+                ])
+            execute_cmake_build(ctx)
+            shutil.copy('src/CppUTest/libCppUTest.a', '../libCppUTest.a')
+            changedir(ctx, '..')
+        else:
+            execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
+                    host=ctx.toolchain,
+                    vars=format_vars(ctx),
+                    # disable warnings, since CppUTest uses -Werror and may fail to
+                    # build on old GCC versions
+                    flags=format_flags(ctx, cflags='-w'),
+                    opts=' '.join([
+                        # disable memory leak detection which is too hard to use properly
+                        '--disable-memory-leak-detection',
+                        # doesn't work on older platforms
+                        '--disable-extensions',
+                        '--enable-static',
+                    ])))
+            execute_make(ctx)
+            shutil.copy('lib/libCppUTest.a', 'libCppUTest.a')
+        install_tree(ctx, 'include', ctx.pkg_inc_dir)
+        install_files(ctx, 'libCppUTest.a', ctx.pkg_lib_dir)
+    elif ctx.pkg_name == 'google-benchmark':
+        download(
+            ctx,
+            'https://github.com/google/benchmark/archive/v{ctx.pkg_ver}.tar.gz',
+            'benchmark_v{ctx.pkg_ver}.tar.gz')
+        unpack(
+            ctx,
+            'benchmark_v{ctx.pkg_ver}.tar.gz',
+            'benchmark-{ctx.pkg_ver}')
+        changedir(ctx, 'src/benchmark-{ctx.pkg_ver}')
+        bench_ver = parse_ver(ctx.pkg_ver, int)
+        if bench_ver < (1, 7, 1) and not which('python') and which('python3'):
+            subst_tree(
+                ctx, 'tools', ['*.py'],
+                from_='#!/usr/bin/env python', to='#!/usr/bin/env python3')
         mkpath('build')
         changedir(ctx, 'build')
         execute_cmake(ctx, '..', args=[
-            '-DMEMORY_LEAK_DETECTION=OFF',
-            '-DTESTS=OFF',
-            '-DBUILD_SHARED_LIBS=OFF',
+            '-DBENCHMARK_ENABLE_GTEST_TESTS=OFF',
+            '-DCMAKE_CXX_FLAGS=-w',
             ])
         execute_cmake_build(ctx)
-        shutil.copy('src/CppUTest/libCppUTest.a', '../libCppUTest.a')
         changedir(ctx, '..')
+        install_tree(ctx, 'include', ctx.pkg_inc_dir, include=['*.h'])
+        install_files(ctx, 'build/src/libbenchmark.a', ctx.pkg_lib_dir)
+    # end of deps
     else:
-        execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
-                host=ctx.toolchain,
-                vars=format_vars(ctx),
-                # disable warnings, since CppUTest uses -Werror and may fail to
-                # build on old GCC versions
-                flags=format_flags(ctx, cflags='-w'),
-                opts=' '.join([
-                    # disable memory leak detection which is too hard to use properly
-                    '--disable-memory-leak-detection',
-                    # doesn't work on older platforms
-                    '--disable-extensions',
-                    '--enable-static',
-                ])))
-        execute_make(ctx)
-        shutil.copy('lib/libCppUTest.a', 'libCppUTest.a')
-    install_tree(ctx, 'include', ctx.pkg_inc_dir)
-    install_files(ctx, 'libCppUTest.a', ctx.pkg_lib_dir)
-elif ctx.pkg_name == 'google-benchmark':
-    download(
-        ctx,
-        'https://github.com/google/benchmark/archive/v{ctx.pkg_ver}.tar.gz',
-        'benchmark_v{ctx.pkg_ver}.tar.gz')
-    unpack(
-        ctx,
-        'benchmark_v{ctx.pkg_ver}.tar.gz',
-        'benchmark-{ctx.pkg_ver}')
-    changedir(ctx, 'src/benchmark-{ctx.pkg_ver}')
-    bench_ver = parse_ver(ctx.pkg_ver, int)
-    if bench_ver < (1, 7, 1) and not which('python') and which('python3'):
-        subst_tree(
-            ctx, 'tools', ['*.py'],
-            from_='#!/usr/bin/env python', to='#!/usr/bin/env python3')
-    mkpath('build')
-    changedir(ctx, 'build')
-    execute_cmake(ctx, '..', args=[
-        '-DBENCHMARK_ENABLE_GTEST_TESTS=OFF',
-        '-DCMAKE_CXX_FLAGS=-w',
-        ])
-    execute_cmake_build(ctx)
-    changedir(ctx, '..')
-    install_tree(ctx, 'include', ctx.pkg_inc_dir, include=['*.h'])
-    install_files(ctx, 'build/src/libbenchmark.a', ctx.pkg_lib_dir)
-# end of deps
-else:
-    die("unknown 3rdparty '{}'", ctx.pkg)
+        die("unknown 3rdparty '{}'", ctx.pkg)
 
-# commit successful build
-touch(ctx.commit_file)
+    # commit successful build
+    touch(ctx.commit_file)

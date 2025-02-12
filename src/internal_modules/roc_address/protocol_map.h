@@ -69,10 +69,10 @@ public:
     const ProtocolAttrs* find_by_scheme(const char* scheme) const;
 
     //! Get list of interfaces with at least one protocol.
-    ROC_ATTR_NODISCARD bool get_supported_interfaces(core::Array<Interface>&);
+    ROC_NODISCARD bool get_supported_interfaces(core::Array<Interface>&);
 
     //! Get all supported protocols.
-    ROC_ATTR_NODISCARD bool get_supported_protocols(Interface, core::StringList&);
+    ROC_NODISCARD bool get_supported_protocols(Interface, core::StringList&);
 
 private:
     friend class core::Singleton<ProtocolMap>;

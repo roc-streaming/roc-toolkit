@@ -47,17 +47,17 @@ public:
     status::StatusCode init_status() const;
 
     //! Set interface config.
-    ROC_ATTR_NODISCARD bool configure(slot_index_t slot_index,
-                                      address::Interface iface,
-                                      const netio::UdpConfig& config);
+    ROC_NODISCARD bool configure(slot_index_t slot_index,
+                                 address::Interface iface,
+                                 const netio::UdpConfig& config);
 
     //! Connect to remote endpoint.
-    ROC_ATTR_NODISCARD bool connect(slot_index_t slot_index,
-                                    address::Interface iface,
-                                    const address::NetworkUri& uri);
+    ROC_NODISCARD bool connect(slot_index_t slot_index,
+                               address::Interface iface,
+                               const address::NetworkUri& uri);
 
     //! Remove slot.
-    ROC_ATTR_NODISCARD bool unlink(slot_index_t slot_index);
+    ROC_NODISCARD bool unlink(slot_index_t slot_index);
 
     //! Callback for slot metrics.
     typedef void (*slot_metrics_func_t)(const pipeline::SenderSlotMetrics& slot_metrics,
@@ -70,12 +70,12 @@ public:
         void* party_arg);
 
     //! Get metrics.
-    ROC_ATTR_NODISCARD bool get_metrics(slot_index_t slot_index,
-                                        slot_metrics_func_t slot_metrics_func,
-                                        void* slot_metrics_arg,
-                                        party_metrics_func_t party_metrics_func,
-                                        size_t* party_metrics_size,
-                                        void* party_metrics_arg);
+    ROC_NODISCARD bool get_metrics(slot_index_t slot_index,
+                                   slot_metrics_func_t slot_metrics_func,
+                                   void* slot_metrics_arg,
+                                   party_metrics_func_t party_metrics_func,
+                                   size_t* party_metrics_size,
+                                   void* party_metrics_arg);
 
     //! Check if there are incomplete or broken slots.
     bool has_incomplete_slots();
@@ -87,7 +87,7 @@ public:
     //! @remarks
     //!  Performs necessary checks and allocations on top of ISink::write(),
     //!  needed when working with byte buffers instead of Frame objects.
-    ROC_ATTR_NODISCARD status::StatusCode write_frame(const void* bytes, size_t n_bytes);
+    ROC_NODISCARD status::StatusCode write_frame(const void* bytes, size_t n_bytes);
 
     //! Get sender sink.
     sndio::ISink& sink();

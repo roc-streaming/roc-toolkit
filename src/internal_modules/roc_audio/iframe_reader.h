@@ -76,7 +76,7 @@ public:
     //!  - Otherwise, returns an error.
     //!
     //! @see status::StatusCode.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
+    virtual ROC_NODISCARD status::StatusCode
     read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode) = 0;
 };
 

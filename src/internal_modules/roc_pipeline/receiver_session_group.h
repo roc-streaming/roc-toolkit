@@ -72,7 +72,7 @@ public:
     //!  it's created separately using this method. On the other hand,
     //!  transport sub-pipeline is per-session and is created automatically
     //!  when a session is created within group.
-    ROC_ATTR_NODISCARD status::StatusCode
+    ROC_NODISCARD status::StatusCode
     create_control_pipeline(ReceiverEndpoint* control_endpoint);
 
     //! Refresh pipeline according to current time.
@@ -80,9 +80,8 @@ public:
     //!  Should be invoked before reading each frame.
     //!  If there are no frames for a while, should be invoked no
     //!  later than the deadline returned via @p next_deadline.
-    ROC_ATTR_NODISCARD status::StatusCode
-    refresh_sessions(core::nanoseconds_t current_time,
-                     core::nanoseconds_t& next_deadline);
+    ROC_NODISCARD status::StatusCode refresh_sessions(core::nanoseconds_t current_time,
+                                                      core::nanoseconds_t& next_deadline);
 
     //! Adjust session clock to match consumer clock.
     //! @remarks
@@ -91,8 +90,8 @@ public:
     void reclock_sessions(core::nanoseconds_t playback_time);
 
     //! Route packet to session.
-    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
-                                                       core::nanoseconds_t current_time);
+    ROC_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
+                                                  core::nanoseconds_t current_time);
 
     //! Get number of sessions in group.
     size_t num_sessions() const;

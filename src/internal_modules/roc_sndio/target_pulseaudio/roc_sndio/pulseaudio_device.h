@@ -66,10 +66,10 @@ public:
     virtual DeviceState state() const;
 
     //! Pause device.
-    virtual ROC_ATTR_NODISCARD status::StatusCode pause();
+    virtual ROC_NODISCARD status::StatusCode pause();
 
     //! Resume device.
-    virtual ROC_ATTR_NODISCARD status::StatusCode resume();
+    virtual ROC_NODISCARD status::StatusCode resume();
 
     //! Check if the device supports latency reports.
     virtual bool has_latency() const;
@@ -81,7 +81,7 @@ public:
     virtual bool has_clock() const;
 
     //! Restart reading from beginning.
-    virtual ROC_ATTR_NODISCARD status::StatusCode rewind();
+    virtual ROC_NODISCARD status::StatusCode rewind();
 
     //! Adjust device clock to match consumer clock.
     virtual void reclock(core::nanoseconds_t timestamp);
@@ -89,21 +89,20 @@ public:
     //! Write frame.
     //! @note
     //!  Used if device is sink.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode write(audio::Frame& frame);
 
     //! Read frame.
     //! @note
     //!  Used if device is source.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
-    read(audio::Frame& frame,
-         packet::stream_timestamp_t duration,
-         audio::FrameReadMode mode);
+    virtual ROC_NODISCARD status::StatusCode read(audio::Frame& frame,
+                                                  packet::stream_timestamp_t duration,
+                                                  audio::FrameReadMode mode);
 
     //! Flush buffered data, if any.
-    virtual ROC_ATTR_NODISCARD status::StatusCode flush();
+    virtual ROC_NODISCARD status::StatusCode flush();
 
     //! Explicitly close the device.
-    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+    virtual ROC_NODISCARD status::StatusCode close();
 
     //! Destroy object and return memory to arena.
     virtual void dispose();

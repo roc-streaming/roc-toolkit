@@ -88,8 +88,8 @@ public:
     //!  Should be invoked before reading each frame.
     //!  If there are no frames for a while, should be invoked no
     //!  later than the deadline returned via @p next_deadline.
-    ROC_ATTR_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
-                                                  core::nanoseconds_t& next_deadline);
+    ROC_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
+                                             core::nanoseconds_t& next_deadline);
 
     //! Adjust session clock to match consumer clock.
     //! @remarks
@@ -102,7 +102,7 @@ public:
     //!  This way packets from sender reach receiver pipeline.
     //!  Packets are stored inside internal pipeline queues, and then fetched
     //!  when frame are requested from frame_reader().
-    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet);
+    ROC_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet);
 
     //! Get number of RTCP reports to be generated.
     size_t num_reports() const;

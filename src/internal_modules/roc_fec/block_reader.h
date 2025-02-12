@@ -72,8 +72,8 @@ public:
     //! Read packet.
     //! @remarks
     //!  When a packet loss is detected, try to restore it from repair packets.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& packet,
-                                                       packet::PacketReadMode mode);
+    virtual ROC_NODISCARD status::StatusCode read(packet::PacketPtr& packet,
+                                                  packet::PacketReadMode mode);
 
 private:
     status::StatusCode try_start_();

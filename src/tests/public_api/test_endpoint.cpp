@@ -380,31 +380,7 @@ TEST(endpoint, clear_parts) {
 
         CHECK(roc_endpoint_deallocate(endp) == 0);
     }
-    { // clear resource (NULL)
-        roc_endpoint* endp = NULL;
-        CHECK(roc_endpoint_allocate(&endp) == 0);
-
-        // set uri with resource
-        CHECK(roc_endpoint_set_uri(endp, "rtsp://1.2.3.4:567/path") == 0);
-
-        // resource: yes
-        bufsz = sizeof(buf);
-        CHECK(roc_endpoint_get_resource(endp, buf, &bufsz) == 0);
-
-        // clear resource
-        CHECK(roc_endpoint_set_resource(endp, NULL) == 0);
-
-        // resource: no
-        bufsz = sizeof(buf);
-        CHECK(roc_endpoint_get_resource(endp, buf, &bufsz) == -1);
-
-        // uri: yes
-        bufsz = sizeof(buf);
-        CHECK(roc_endpoint_get_uri(endp, buf, &bufsz) == 0);
-
-        CHECK(roc_endpoint_deallocate(endp) == 0);
-    }
-    { // clear resource ("")
+    { // clear resource
         roc_endpoint* endp = NULL;
         CHECK(roc_endpoint_allocate(&endp) == 0);
 
@@ -1073,10 +1049,10 @@ TEST(endpoint, bad_args_set) {
 
     // resource: ok
     CHECK(roc_endpoint_set_resource(endp, "/path") == 0);
-    CHECK(roc_endpoint_set_resource(endp, NULL) == 0);
     CHECK(roc_endpoint_set_resource(endp, "") == 0);
 
     // resource: not ok
+    CHECK(roc_endpoint_set_resource(endp, NULL) == -1);
     CHECK(roc_endpoint_set_resource(NULL, "/path") == -1);
     CHECK(roc_endpoint_set_resource(endp, "BAD") == -1);
 

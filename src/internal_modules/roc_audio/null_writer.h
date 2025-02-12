@@ -22,7 +22,7 @@ namespace audio {
 class NullWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Write audio frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode write(Frame& frame);
 };
 
 } // namespace audio

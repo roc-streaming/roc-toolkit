@@ -2,4 +2,4 @@
 
 set -euo pipefail
 
-scons -Q selftest
+scons -Q doctest

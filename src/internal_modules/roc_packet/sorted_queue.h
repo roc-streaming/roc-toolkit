@@ -66,14 +66,13 @@ public:
     //!  - if the maximum queue size is reached, packet is dropped
     //!  - if packet is equal to another packet in the queue, it is dropped
     //!  - otherwise, packet is inserted into the queue, keeping the queue sorted
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
+    virtual ROC_NODISCARD status::StatusCode write(const PacketPtr& packet);
 
     //! Read next packet.
     //!
     //! @remarks
     //!  Removes returned packet from the queue.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet,
-                                                       PacketReadMode mode);
+    virtual ROC_NODISCARD status::StatusCode read(PacketPtr& packet, PacketReadMode mode);
 
 private:
     core::List<Packet> list_;

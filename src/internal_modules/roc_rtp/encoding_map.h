@@ -38,7 +38,7 @@ public:
     explicit EncodingMap(core::IArena& arena);
 
     //! Add encoding to the map.
-    ROC_ATTR_NODISCARD status::StatusCode register_encoding(Encoding enc);
+    ROC_NODISCARD status::StatusCode register_encoding(Encoding enc);
 
     //! Find encoding by payload type.
     //! @returns

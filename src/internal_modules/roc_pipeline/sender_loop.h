@@ -154,7 +154,7 @@ private:
     virtual core::nanoseconds_t latency() const;
     virtual bool has_clock() const;
     virtual status::StatusCode write(audio::Frame& frame);
-    virtual ROC_ATTR_NODISCARD status::StatusCode flush();
+    virtual ROC_NODISCARD status::StatusCode flush();
     virtual status::StatusCode close();
     virtual void dispose();
 

@@ -31,7 +31,7 @@ namespace core {
 //!
 //! @returns
 //!  false if string can't be parsed.
-ROC_ATTR_NODISCARD bool parse_duration(const char* string, nanoseconds_t& result);
+ROC_NODISCARD bool parse_duration(const char* string, nanoseconds_t& result);
 
 //! Parse size from string.
 //!
@@ -44,7 +44,7 @@ ROC_ATTR_NODISCARD bool parse_duration(const char* string, nanoseconds_t& result
 //!
 //! @returns
 //!  false if string can't be parsed.
-ROC_ATTR_NODISCARD bool parse_size(const char* string, size_t& result);
+ROC_NODISCARD bool parse_size(const char* string, size_t& result);
 
 } // namespace core
 } // namespace roc

@@ -117,7 +117,7 @@ int SocketAddr::port() const {
     }
 }
 
-bool SocketAddr::multicast() const {
+bool SocketAddr::is_multicast() const {
     switch (saddr_family_()) {
     case AF_INET:
         return IN_MULTICAST(core::ntoh32u(saddr_.addr4.sin_addr.s_addr));

@@ -29,7 +29,7 @@ public:
     virtual ~ISink();
 
     //! Flush buffered data, if any.
-    virtual ROC_ATTR_NODISCARD status::StatusCode flush() = 0;
+    virtual ROC_NODISCARD status::StatusCode flush() = 0;
 };
 
 } // namespace sndio

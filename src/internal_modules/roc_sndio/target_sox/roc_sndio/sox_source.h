@@ -20,7 +20,7 @@
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/string_buffer.h"
-#include "roc_sndio/driver.h"
+#include "roc_sndio/driver_defs.h"
 #include "roc_sndio/io_config.h"
 #include "roc_sndio/isource.h"
 
@@ -67,10 +67,10 @@ public:
     virtual DeviceState state() const;
 
     //! Pause source.
-    virtual ROC_ATTR_NODISCARD status::StatusCode pause();
+    virtual ROC_NODISCARD status::StatusCode pause();
 
     //! Resume source.
-    virtual ROC_ATTR_NODISCARD status::StatusCode resume();
+    virtual ROC_NODISCARD status::StatusCode resume();
 
     //! Check if the source supports latency reports.
     virtual bool has_latency() const;
@@ -79,19 +79,18 @@ public:
     virtual bool has_clock() const;
 
     //! Restart reading from beginning.
-    virtual ROC_ATTR_NODISCARD status::StatusCode rewind();
+    virtual ROC_NODISCARD status::StatusCode rewind();
 
     //! Adjust source clock to match consumer clock.
     virtual void reclock(core::nanoseconds_t timestamp);
 
     //! Read frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
-    read(audio::Frame& frame,
-         packet::stream_timestamp_t duration,
-         audio::FrameReadMode mode);
+    virtual ROC_NODISCARD status::StatusCode read(audio::Frame& frame,
+                                                  packet::stream_timestamp_t duration,
+                                                  audio::FrameReadMode mode);
 
     //! Explicitly close the source.
-    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+    virtual ROC_NODISCARD status::StatusCode close();
 
     //! Destroy object and return memory to arena.
     virtual void dispose();

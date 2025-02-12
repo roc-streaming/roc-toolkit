@@ -36,12 +36,12 @@ public:
     }
 
     //! Check if the object was successfully constructed.
-    virtual status::StatusCode init_status() const {
+    ROC_NODISCARD virtual status::StatusCode init_status() const {
         return status::StatusOK;
     }
 
     //! Adjust buffer to align payload.
-    virtual bool
+    ROC_NODISCARD virtual status::StatusCode
     align(core::Slice<uint8_t>& buffer, size_t header_size, size_t payload_alignment) {
         if ((unsigned long)buffer.data() % payload_alignment != 0) {
             roc_panic("fec composer: unexpected non-aligned buffer");
@@ -59,18 +59,18 @@ public:
                     LogDebug,
                     "fec composer: not enough space for alignment: padding=%lu cap=%lu",
                     (unsigned long)padding, (unsigned long)buffer.capacity());
-                return false;
+                return status::StatusBadBuffer;
             }
 
             buffer.reslice(padding, padding);
-            return true;
+            return status::StatusOK;
         } else {
             return inner_composer_->align(buffer, header_size, payload_alignment);
         }
     }
 
     //! Prepare buffer for composing a packet.
-    virtual bool
+    ROC_NODISCARD virtual status::StatusCode
     prepare(packet::Packet& packet, core::Slice<uint8_t>& buffer, size_t payload_size) {
         core::Slice<uint8_t> payload_id = buffer.subslice(0, 0);
 
@@ -80,7 +80,7 @@ public:
                         "fec composer: not enough space for fec header: size=%lu cap=%lu",
                         (unsigned long)sizeof(PayloadID),
                         (unsigned long)payload_id.capacity());
-                return false;
+                return status::StatusBadBuffer;
             }
             payload_id.reslice(0, sizeof(PayloadID));
         }
@@ -89,8 +89,10 @@ public:
             payload_id.subslice(payload_id.size(), payload_id.size());
 
         if (inner_composer_) {
-            if (!inner_composer_->prepare(packet, payload, payload_size)) {
-                return false;
+            status::StatusCode result =
+                inner_composer_->prepare(packet, payload, payload_size);
+            if (result != status::StatusOK) {
+                return result;
             }
         } else {
             payload.reslice(0, payload_size);
@@ -104,7 +106,7 @@ public:
                         "fec composer: not enough space for fec header: size=%lu cap=%lu",
                         (unsigned long)sizeof(PayloadID),
                         (unsigned long)payload_id.capacity());
-                return false;
+                return status::StatusBadBuffer;
             }
             payload_id.reslice(0, sizeof(PayloadID));
         }
@@ -123,21 +125,22 @@ public:
 
         buffer.reslice(0, payload_id.size() + payload.size());
 
-        return true;
+        return status::StatusOK;
     }
 
     //! Pad packet.
-    virtual bool pad(packet::Packet& packet, size_t padding_size) {
+    ROC_NODISCARD virtual status::StatusCode pad(packet::Packet& packet,
+                                                 size_t padding_size) {
         if (inner_composer_) {
             return inner_composer_->pad(packet, padding_size);
         }
 
         // padding not supported
-        return false;
+        return status::StatusBadOperation;
     }
 
     //! Compose packet to buffer.
-    virtual bool compose(packet::Packet& packet) {
+    ROC_NODISCARD virtual status::StatusCode compose(packet::Packet& packet) {
         if (!packet.fec()) {
             roc_panic("fec composer: unexpected non-fec packet");
         }
@@ -167,7 +170,7 @@ public:
             return inner_composer_->compose(packet);
         }
 
-        return true;
+        return status::StatusOK;
     }
 
 private:

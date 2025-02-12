@@ -38,7 +38,7 @@ public:
 
     //! Write text.
     //! @returns size of formatted string (excluding terminating zero byte).
-    ROC_ATTR_PRINTF(2, 3) size_t writef(const char* format, ...);
+    ROC_PRINTF(2, 3) size_t writef(const char* format, ...);
 
 private:
     void flush_(bool force);

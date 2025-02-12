@@ -14,64 +14,56 @@
 
 #include <hedley.h>
 
-//! Explicitly specify a default visibility for a specific symbol.
-#define ROC_ATTR_EXPORT HEDLEY_PUBLIC
+//! Set "default" visibility for symbol.
+//! Without this, "hidden" visibility is used for symbols.
+#define ROC_EXPORT HEDLEY_PUBLIC
 
-//! Declares that the return operator is not reachable.
-#define ROC_ATTR_UNREACHABLE_RETURN HEDLEY_UNREACHABLE_RETURN
+#if HEDLEY_HAS_ATTRIBUTE(aligned)
+//! Align structure field.
+#define ROC_ALIGNED(x) __attribute__((aligned(x)))
+#endif
 
-//! Function never returns.
-#define ROC_ATTR_NORETURN HEDLEY_NO_RETURN
+#if HEDLEY_HAS_ATTRIBUTE(packed) || HEDLEY_GCC_VERSION
+//! Pack structure fields.
+//! Place these before class or struct keyword.
+#define ROC_PACKED_BEGIN
+//! Pack structure fields.
+//! Place these between '}' and ';'.
+#define ROC_PACKED_END __attribute__((packed))
+#endif
+
+//! Hint for compiler that function takes printf-like arguments.
+//! Compiler will emit warnings on mis-use.
+#define ROC_PRINTF(fmt_pos, args_pos) HEDLEY_PRINTF_FORMAT(fmt_pos, args_pos)
+
+//! Hint for compiler that function never returns.
+#define ROC_NORETURN HEDLEY_NO_RETURN
 
 #ifdef HEDLEY_GCC_VERSION
 //! Emit warning if function result is not checked.
-#define ROC_ATTR_NODISCARD // GCC is too aggressive for this attribute.
+#define ROC_NODISCARD // GCC is too aggressive with this attribute.
 #else
 //! Emit warning if function result is not checked.
-#define ROC_ATTR_NODISCARD HEDLEY_WARN_UNUSED_RESULT
+#define ROC_NODISCARD HEDLEY_WARN_UNUSED_RESULT
 #endif
-
-//! Function gets printf-like arguments.
-#define ROC_ATTR_PRINTF(fmt_pos, args_pos) HEDLEY_PRINTF_FORMAT(fmt_pos, args_pos)
 
 #if HEDLEY_HAS_ATTRIBUTE(unused)
-//! Function or variable is never used but no warning should be generated.
-#define ROC_ATTR_UNUSED __attribute__((unused))
+//! Don't emit warning if function or variable is never used.
+#define ROC_NOUNUSED __attribute__((unused))
 #else
-//! Function or variable is never used but no warning should be generated.
-#define ROC_ATTR_UNUSED
-#endif
-
-#if HEDLEY_HAS_ATTRIBUTE(packed)
-//! Pack structure fields.
-//! Place these before class or struct keyword.
-#define ROC_ATTR_PACKED_BEGIN
-//! Pack structure fields.
-//! Place these between '}' and ';'.
-#define ROC_ATTR_PACKED_END __attribute__((packed))
-#else
-//! Pack structure fields.
-//! Place these before class or struct keyword.
-#define ROC_ATTR_PACKED_BEGIN
-//! Pack structure fields.
-//! Place these between '}' and ';'.
-#define ROC_ATTR_PACKED_END
-#endif
-
-#if HEDLEY_HAS_ATTRIBUTE(aligned)
-//! The filed should have given alignment.
-#define ROC_ATTR_ALIGNED(x) __attribute__((aligned(x)))
+//! Don't emit warning if function or variable is never used.
+#define ROC_NOUNUSED
 #endif
 
 #if HEDLEY_HAS_ATTRIBUTE(no_sanitize)
-//! Suppress undefined behavior sanitizer for a particular function.
-#define ROC_ATTR_NO_SANITIZE_UB __attribute__((no_sanitize("undefined")))
+//! Suppress sanitizers for a particular function.
+#define ROC_NOSANITIZE __attribute__((no_sanitize("undefined")))
 #elif HEDLEY_HAS_ATTRIBUTE(no_sanitize_undefined)
-//! Suppress undefined behavior sanitizer for a particular function.
-#define ROC_ATTR_NO_SANITIZE_UB __attribute__((no_sanitize_undefined))
+//! Suppress sanitizers for a particular function.
+#define ROC_NOSANITIZE __attribute__((no_sanitize_undefined))
 #else
-//! Suppress undefined behavior sanitizer for a particular function.
-#define ROC_ATTR_NO_SANITIZE_UB
+//! Suppress sanitizers for a particular function.
+#define ROC_NOSANITIZE
 #endif
 
 #endif // ROC_CORE_ATTRIBUTES_H_

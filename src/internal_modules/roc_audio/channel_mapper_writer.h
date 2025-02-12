@@ -38,7 +38,7 @@ public:
     status::StatusCode init_status() const;
 
     //! Write audio frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode write(Frame& frame);
 
 private:
     FrameFactory& frame_factory_;

@@ -306,7 +306,7 @@ protected:
     const Stats& stats_ref() const;
 
     //! Split frame and process subframes and some of the enqueued tasks.
-    ROC_ATTR_NODISCARD status::StatusCode
+    ROC_NODISCARD status::StatusCode
     process_subframes_and_tasks(audio::Frame& frame,
                                 packet::stream_timestamp_t frame_duration,
                                 audio::FrameReadMode mode);

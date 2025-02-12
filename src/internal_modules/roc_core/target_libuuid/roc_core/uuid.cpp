@@ -15,7 +15,7 @@ namespace roc {
 namespace core {
 
 // Uses libuuid to generate the uuid.
-bool uuid_generare(char* buf, size_t buf_sz) {
+bool uuid_generate(char* buf, size_t buf_sz) {
     if (!buf) {
         roc_panic("uuid: buffer is null");
     }

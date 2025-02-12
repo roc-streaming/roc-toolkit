@@ -20,7 +20,8 @@ status::StatusCode Parser::init_status() const {
     return status::StatusOK;
 }
 
-bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
+status::StatusCode Parser::parse(packet::Packet& packet,
+                                 const core::Slice<uint8_t>& buffer) {
     if (!buffer) {
         roc_panic("rtcp parser: buffer is null");
     }
@@ -30,7 +31,7 @@ bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
 
     packet.rtcp()->payload = buffer;
 
-    return true;
+    return status::StatusOK;
 }
 
 } // namespace rtcp

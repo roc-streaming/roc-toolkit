@@ -20,13 +20,13 @@ Composer::Composer(packet::IComposer* inner_composer, core::IArena& arena)
     , inner_composer_(inner_composer) {
 }
 
-status::StatusCode Composer::init_status() const {
+ROC_NODISCARD status::StatusCode Composer::init_status() const {
     return status::StatusOK;
 }
 
-bool Composer::align(core::Slice<uint8_t>& buffer,
-                     size_t header_size,
-                     size_t payload_alignment) {
+ROC_NODISCARD status::StatusCode Composer::align(core::Slice<uint8_t>& buffer,
+                                                 size_t header_size,
+                                                 size_t payload_alignment) {
     if ((unsigned long)buffer.data() % payload_alignment != 0) {
         roc_panic("rtp composer: unexpected non-aligned buffer");
     }
@@ -40,26 +40,26 @@ bool Composer::align(core::Slice<uint8_t>& buffer,
             roc_log(LogDebug,
                     "rtp composer: not enough space for alignment: padding=%lu cap=%lu",
                     (unsigned long)padding, (unsigned long)buffer.capacity());
-            return false;
+            return status::StatusBadBuffer;
         }
 
         buffer.reslice(padding, padding);
-        return true;
+        return status::StatusOK;
     } else {
         return inner_composer_->align(buffer, header_size, payload_alignment);
     }
 }
 
-bool Composer::prepare(packet::Packet& packet,
-                       core::Slice<uint8_t>& buffer,
-                       size_t payload_size) {
+ROC_NODISCARD status::StatusCode Composer::prepare(packet::Packet& packet,
+                                                   core::Slice<uint8_t>& buffer,
+                                                   size_t payload_size) {
     core::Slice<uint8_t> header = buffer.subslice(0, 0);
 
     if (header.capacity() < sizeof(Header)) {
         roc_log(LogDebug,
                 "rtp composer: not enough space for rtp header: size=%lu cap=%lu",
                 (unsigned long)sizeof(Header), (unsigned long)header.capacity());
-        return false;
+        return status::StatusBadBuffer;
     }
     header.reslice(0, sizeof(Header));
 
@@ -70,12 +70,14 @@ bool Composer::prepare(packet::Packet& packet,
             roc_log(LogDebug,
                     "rtp composer: not enough space for rtp payload: size=%lu cap=%lu",
                     (unsigned long)payload_size, (unsigned long)payload.capacity());
-            return false;
+            return status::StatusBadBuffer;
         }
         payload.reslice(0, payload_size);
     } else {
-        if (!inner_composer_->prepare(packet, payload, payload_size)) {
-            return false;
+        status::StatusCode status =
+            inner_composer_->prepare(packet, payload, payload_size);
+        if (status != status::StatusOK) {
+            return status;
         }
     }
 
@@ -88,10 +90,11 @@ bool Composer::prepare(packet::Packet& packet,
 
     buffer.reslice(0, header.size() + payload.size());
 
-    return true;
+    return status::StatusOK;
 }
 
-bool Composer::pad(packet::Packet& packet, size_t padding_size) {
+ROC_NODISCARD status::StatusCode Composer::pad(packet::Packet& packet,
+                                               size_t padding_size) {
     if (inner_composer_) {
         return inner_composer_->pad(packet, padding_size);
     }
@@ -112,16 +115,16 @@ bool Composer::pad(packet::Packet& packet, size_t padding_size) {
                 "rtp composer: padding is larger than payload size:"
                 " payload_size=%lu padding_size=%lu",
                 (unsigned long)rtp->payload.size(), (unsigned long)padding_size);
-        return false;
+        return status::StatusBadBuffer;
     }
 
     rtp->padding = rtp->payload.subslice(payload_size - padding_size, payload_size);
     rtp->payload = rtp->payload.subslice(0, payload_size - padding_size);
 
-    return true;
+    return status::StatusOK;
 }
 
-bool Composer::compose(packet::Packet& packet) {
+ROC_NODISCARD status::StatusCode Composer::compose(packet::Packet& packet) {
     packet::RTP* rtp = packet.rtp();
     if (!rtp) {
         roc_panic("rtp composer: unexpected non-rtp packet");
@@ -152,7 +155,7 @@ bool Composer::compose(packet::Packet& packet) {
                     "rtp composer: padding is larger than supported by rtp:"
                     " pad_size=%lu max_size=%lu",
                     (unsigned long)padding_size, (unsigned long)(uint8_t)-1);
-            return false;
+            return status::StatusBadBuffer;
         }
 
         if (padding_size > 1) {
@@ -165,7 +168,7 @@ bool Composer::compose(packet::Packet& packet) {
         return inner_composer_->compose(packet);
     }
 
-    return true;
+    return status::StatusOK;
 }
 
 } // namespace rtp

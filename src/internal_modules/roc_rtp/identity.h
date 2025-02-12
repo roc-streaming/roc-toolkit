@@ -42,7 +42,7 @@ public:
 
     //! Regenerate SSRC.
     //! Used in case of SSRC collision.
-    ROC_ATTR_NODISCARD status::StatusCode change_ssrc();
+    ROC_NODISCARD status::StatusCode change_ssrc();
 
 private:
     char cname_[core::UuidLen + 1];

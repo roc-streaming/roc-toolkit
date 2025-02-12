@@ -20,8 +20,8 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_core/string_list.h"
-#include "roc_sndio/device_type.h"
-#include "roc_sndio/driver.h"
+#include "roc_sndio/device_defs.h"
+#include "roc_sndio/driver_defs.h"
 #include "roc_sndio/ibackend.h"
 #include "roc_sndio/isink.h"
 #include "roc_sndio/isource.h"
@@ -38,35 +38,35 @@ public:
                       core::IArena& arena);
 
     //! Create and open default sink.
-    ROC_ATTR_NODISCARD status::StatusCode
-    open_default_sink(const IoConfig& io_config, core::ScopedPtr<ISink>& result);
+    ROC_NODISCARD status::StatusCode open_default_sink(const IoConfig& io_config,
+                                                       core::ScopedPtr<ISink>& result);
 
     //! Create and open default source.
-    ROC_ATTR_NODISCARD status::StatusCode
+    ROC_NODISCARD status::StatusCode
     open_default_source(const IoConfig& io_config, core::ScopedPtr<ISource>& result);
 
     //! Create and open a sink.
-    ROC_ATTR_NODISCARD status::StatusCode open_sink(const address::IoUri& uri,
-                                                    const IoConfig& io_config,
-                                                    core::ScopedPtr<ISink>& result);
+    ROC_NODISCARD status::StatusCode open_sink(const address::IoUri& uri,
+                                               const IoConfig& io_config,
+                                               core::ScopedPtr<ISink>& result);
 
     //! Create and open a source.
-    ROC_ATTR_NODISCARD status::StatusCode open_source(const address::IoUri& uri,
-                                                      const IoConfig& io_config,
-                                                      core::ScopedPtr<ISource>& result);
+    ROC_NODISCARD status::StatusCode open_source(const address::IoUri& uri,
+                                                 const IoConfig& io_config,
+                                                 core::ScopedPtr<ISource>& result);
 
     //! Get all supported URI schemes.
-    ROC_ATTR_NODISCARD bool get_supported_schemes(core::StringList& result);
+    ROC_NODISCARD bool get_supported_schemes(core::StringList& result);
 
     //! Get all supported file formats.
-    ROC_ATTR_NODISCARD bool get_supported_formats(core::StringList& result);
+    ROC_NODISCARD bool get_supported_formats(core::StringList& result);
 
     //! Get all groups of sub-formats.
-    ROC_ATTR_NODISCARD bool get_supported_subformat_groups(core::StringList& result);
+    ROC_NODISCARD bool get_supported_subformat_groups(core::StringList& result);
 
     //! Get all sub-formats in group.
-    ROC_ATTR_NODISCARD bool get_supported_subformats(const char* group,
-                                                     core::StringList& result);
+    ROC_NODISCARD bool get_supported_subformats(const char* group,
+                                                core::StringList& result);
 
 private:
     status::StatusCode open_default_device_(DeviceType device_type,

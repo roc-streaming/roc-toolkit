@@ -178,7 +178,7 @@ public:
     //!  the end of the queue.
     //! @returns
     //!  false if the allocation failed
-    ROC_ATTR_NODISCARD bool resize(size_t new_capacity) {
+    ROC_NODISCARD bool resize(size_t new_capacity) {
         const size_t old_capacity = capacity();
         if (new_capacity == old_capacity) {
             return true;

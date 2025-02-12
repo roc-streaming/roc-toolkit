@@ -73,8 +73,8 @@ public:
     //!  Should be invoked before reading each frame.
     //!  If there are no frames for a while, should be invoked no
     //!  later than the deadline returned via @p next_deadline.
-    ROC_ATTR_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
-                                                  core::nanoseconds_t* next_deadline);
+    ROC_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
+                                             core::nanoseconds_t* next_deadline);
 
     //! Get type (sink or source).
     virtual sndio::DeviceType type() const;
@@ -98,10 +98,10 @@ public:
     virtual sndio::DeviceState state() const;
 
     //! Pause source.
-    virtual ROC_ATTR_NODISCARD status::StatusCode pause();
+    virtual ROC_NODISCARD status::StatusCode pause();
 
     //! Resume source.
-    virtual ROC_ATTR_NODISCARD status::StatusCode resume();
+    virtual ROC_NODISCARD status::StatusCode resume();
 
     //! Check if the source supports latency reports.
     virtual bool has_latency() const;
@@ -113,7 +113,7 @@ public:
     virtual bool has_clock() const;
 
     //! Restart reading from beginning.
-    virtual ROC_ATTR_NODISCARD status::StatusCode rewind();
+    virtual ROC_NODISCARD status::StatusCode rewind();
 
     //! Adjust sessions clock to match consumer clock.
     //! @remarks
@@ -121,13 +121,12 @@ public:
     virtual void reclock(core::nanoseconds_t playback_time);
 
     //! Read frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
-    read(audio::Frame& frame,
-         packet::stream_timestamp_t duration,
-         audio::FrameReadMode mode);
+    virtual ROC_NODISCARD status::StatusCode read(audio::Frame& frame,
+                                                  packet::stream_timestamp_t duration,
+                                                  audio::FrameReadMode mode);
 
     //! Explicitly close the source.
-    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+    virtual ROC_NODISCARD status::StatusCode close();
 
     //! Destroy object and return memory to arena.
     virtual void dispose();

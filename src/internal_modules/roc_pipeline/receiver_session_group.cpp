@@ -190,7 +190,7 @@ rtcp::ParticipantInfo ReceiverSessionGroup::participant_info() {
     part_info.cname = identity_->cname();
     part_info.source_id = identity_->ssrc();
 
-    if (rtcp_inbound_addr_.multicast()) {
+    if (rtcp_inbound_addr_.is_multicast()) {
         part_info.report_mode = rtcp::Report_ToAddress;
         part_info.report_address = rtcp_inbound_addr_;
     } else {

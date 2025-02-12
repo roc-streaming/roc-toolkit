@@ -47,8 +47,7 @@ TEST(resolve, ipv4) {
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     address::NetworkUri endpoint_uri(arena);
-    CHECK(address::parse_network_uri("rtp://127.0.0.1:123",
-                                     address::NetworkUri::Subset_Full, endpoint_uri));
+    CHECK(address::parse_network_uri("rtp://127.0.0.1:123", endpoint_uri));
 
     address::SocketAddr address;
     CHECK(resolve_endpoint_address(net_loop, endpoint_uri, address));
@@ -62,8 +61,7 @@ TEST(resolve, ipv6) {
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     address::NetworkUri endpoint_uri(arena);
-    CHECK(address::parse_network_uri("rtp://[::1]:123", address::NetworkUri::Subset_Full,
-                                     endpoint_uri));
+    CHECK(address::parse_network_uri("rtp://[::1]:123", endpoint_uri));
 
     address::SocketAddr address;
     CHECK(resolve_endpoint_address(net_loop, endpoint_uri, address));
@@ -77,8 +75,7 @@ TEST(resolve, hostname) {
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     address::NetworkUri endpoint_uri(arena);
-    CHECK(address::parse_network_uri("rtp://localhost:123",
-                                     address::NetworkUri::Subset_Full, endpoint_uri));
+    CHECK(address::parse_network_uri("rtp://localhost:123", endpoint_uri));
 
     address::SocketAddr address;
     CHECK(resolve_endpoint_address(net_loop, endpoint_uri, address));
@@ -98,8 +95,7 @@ TEST(resolve, standard_port) {
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     address::NetworkUri endpoint_uri(arena);
-    CHECK(address::parse_network_uri("rtsp://127.0.0.1", address::NetworkUri::Subset_Full,
-                                     endpoint_uri));
+    CHECK(address::parse_network_uri("rtsp://127.0.0.1", endpoint_uri));
 
     address::SocketAddr address;
     CHECK(resolve_endpoint_address(net_loop, endpoint_uri, address));
@@ -113,24 +109,21 @@ TEST(resolve, bad_host) {
 
     { // bad ipv4
         address::NetworkUri endpoint_uri(arena);
-        CHECK(address::parse_network_uri("rtp://300.0.0.1:123",
-                                         address::NetworkUri::Subset_Full, endpoint_uri));
+        CHECK(address::parse_network_uri("rtp://300.0.0.1:123", endpoint_uri));
 
         address::SocketAddr address;
         CHECK(!resolve_endpoint_address(net_loop, endpoint_uri, address));
     }
     { // bad ipv6
         address::NetworkUri endpoint_uri(arena);
-        CHECK(address::parse_network_uri("rtp://[11::22::]:123",
-                                         address::NetworkUri::Subset_Full, endpoint_uri));
+        CHECK(address::parse_network_uri("rtp://[11::22::]:123", endpoint_uri));
 
         address::SocketAddr address;
         CHECK(!resolve_endpoint_address(net_loop, endpoint_uri, address));
     }
     { // bad hostname
         address::NetworkUri endpoint_uri(arena);
-        CHECK(address::parse_network_uri("rtp://_:123", address::NetworkUri::Subset_Full,
-                                         endpoint_uri));
+        CHECK(address::parse_network_uri("rtp://_:123", endpoint_uri));
 
         address::SocketAddr address;
         CHECK(!resolve_endpoint_address(net_loop, endpoint_uri, address));

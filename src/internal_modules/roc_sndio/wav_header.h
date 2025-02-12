@@ -32,7 +32,7 @@ const uint16_t WAV_FORMAT_IEEE_FLOAT = 0x0003;
 class WavHeader {
 public:
     //! WAV header data
-    ROC_ATTR_PACKED_BEGIN struct WavHeaderData {
+    ROC_PACKED_BEGIN struct WavHeaderData {
         //! Constructor
         WavHeaderData(uint32_t chunk_id,
                       uint32_t chunk_size,
@@ -78,7 +78,7 @@ public:
         const uint32_t subchunk2_id;
         //! Subchunk2 size
         uint32_t subchunk2_size;
-    } ROC_ATTR_PACKED_END;
+    } ROC_PACKED_END;
 
     //! Initialize
     WavHeader(const uint16_t format_tag,

@@ -24,8 +24,8 @@ enum { DefaultSlot = 0 };
 core::HeapArena arena;
 
 void parse_uri(address::NetworkUri& uri, const char* str) {
-    CHECK(address::parse_network_uri(str, address::NetworkUri::Subset_Full, uri));
-    CHECK(uri.verify(address::NetworkUri::Subset_Full));
+    CHECK(address::parse_network_uri(str, uri));
+    CHECK(uri.is_valid());
 }
 
 void write_slot_metrics(const pipeline::SenderSlotMetrics& slot_metrics, void* slot_arg) {

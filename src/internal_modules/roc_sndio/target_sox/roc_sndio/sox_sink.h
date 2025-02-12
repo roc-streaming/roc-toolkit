@@ -19,7 +19,7 @@
 #include "roc_core/array.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
-#include "roc_sndio/driver.h"
+#include "roc_sndio/driver_defs.h"
 #include "roc_sndio/io_config.h"
 #include "roc_sndio/isink.h"
 
@@ -66,10 +66,10 @@ public:
     virtual DeviceState state() const;
 
     //! Pause sink.
-    virtual ROC_ATTR_NODISCARD status::StatusCode pause();
+    virtual ROC_NODISCARD status::StatusCode pause();
 
     //! Resume sink.
-    virtual ROC_ATTR_NODISCARD status::StatusCode resume();
+    virtual ROC_NODISCARD status::StatusCode resume();
 
     //! Check if the sink supports latency reports.
     virtual bool has_latency() const;
@@ -78,13 +78,13 @@ public:
     virtual bool has_clock() const;
 
     //! Write frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(audio::Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode write(audio::Frame& frame);
 
     //! Flush buffered data, if any.
-    virtual ROC_ATTR_NODISCARD status::StatusCode flush();
+    virtual ROC_NODISCARD status::StatusCode flush();
 
     //! Explicitly close the sink.
-    virtual ROC_ATTR_NODISCARD status::StatusCode close();
+    virtual ROC_NODISCARD status::StatusCode close();
 
     //! Destroy object and return memory to arena.
     virtual void dispose();

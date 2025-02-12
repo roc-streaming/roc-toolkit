@@ -68,7 +68,7 @@ public:
                              void* backend_owner);
 
     //! Register custom PLC backend.
-    ROC_ATTR_NODISCARD status::StatusCode
+    ROC_NODISCARD status::StatusCode
     register_plc(int backend_id, void* backend_owner, PlcFunc ctor_fn);
 
     //! Check if given backend is supported.

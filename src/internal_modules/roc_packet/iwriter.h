@@ -37,7 +37,7 @@ public:
     //!    e.g. part of the packet may be written.
     //!
     //! @see status::StatusCode.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr&) = 0;
+    virtual ROC_NODISCARD status::StatusCode write(const PacketPtr&) = 0;
 };
 
 } // namespace packet

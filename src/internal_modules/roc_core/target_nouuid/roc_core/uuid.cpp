@@ -7,9 +7,9 @@
  */
 
 #include "roc_core/uuid.h"
-#include "roc_core/fast_random.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_core/panic.h"
+#include "roc_core/secure_random.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -26,7 +26,7 @@ namespace core {
 //
 // In text form, UUID is 36 characters long (32 hex chars + 4 dashes),
 // plus terminating zero bye.
-bool uuid_generare(char* buf, size_t buf_sz) {
+bool uuid_generate(char* buf, size_t buf_sz) {
     if (!buf) {
         roc_panic("uuid: buffer is null");
     }
@@ -35,8 +35,9 @@ bool uuid_generare(char* buf, size_t buf_sz) {
     }
 
     uint8_t bytes[16];
-    for (size_t i = 0; i < ROC_ARRAY_SIZE(bytes); i++) {
-        bytes[i] = (uint8_t)fast_random_range(0, 255);
+    bool ok = core::secure_random(bytes, ROC_ARRAY_SIZE(bytes));
+    if (!ok) {
+        return false;
     }
 
     // Set variant to OSF DCE UUID.

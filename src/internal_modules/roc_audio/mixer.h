@@ -63,7 +63,7 @@ public:
     bool has_input(IFrameReader& reader);
 
     //! Add input reader.
-    ROC_ATTR_NODISCARD status::StatusCode add_input(IFrameReader& reader);
+    ROC_NODISCARD status::StatusCode add_input(IFrameReader& reader);
 
     //! Remove input reader.
     void remove_input(IFrameReader& reader);
@@ -75,7 +75,7 @@ public:
     //! @note
     //!  Requested @p duration is allowed to be larger than maximum buffer
     //!  size, but only if @p frame has pre-allocated buffer big enough.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
+    virtual ROC_NODISCARD status::StatusCode
     read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode);
 
 private:

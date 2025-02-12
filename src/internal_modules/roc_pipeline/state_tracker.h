@@ -16,11 +16,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/semaphore.h"
 #include "roc_core/stddefs.h"
-#include "roc_core/time.h"
-#include "roc_core/cond.h"
-#include "roc_core/mutex.h"
-#include "roc_core/atomic.h"
-#include "roc_sndio/device_state.h"
+#include "roc_sndio/device_defs.h"
 
 namespace roc {
 namespace pipeline {

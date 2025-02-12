@@ -242,8 +242,10 @@ private:
         core::Slice<uint8_t> bp = packet_factory_.new_packet_buffer();
         CHECK(bp);
 
-        CHECK(source_composer_->prepare(
-            *pp, bp, payload_encoder_->encoded_byte_count(samples_per_packet)));
+        LONGS_EQUAL(
+            status::StatusOK,
+            source_composer_->prepare(
+                *pp, bp, payload_encoder_->encoded_byte_count(samples_per_packet)));
 
         pp->set_buffer(bp);
 
@@ -290,12 +292,12 @@ private:
             packet::PacketPtr fp;
             while (fec_queue_.read(fp, packet::ModeFetch) == status::StatusOK) {
                 if (fp->has_flags(packet::Packet::FlagAudio)) {
-                    CHECK(source_composer_->compose(*fp));
+                    LONGS_EQUAL(status::StatusOK, source_composer_->compose(*fp));
                     LONGS_EQUAL(
                         status::StatusOK,
                         source_writer_->write(prepare_for_delivery_(fp, sample_spec)));
                 } else {
-                    CHECK(repair_composer_->compose(*fp));
+                    LONGS_EQUAL(status::StatusOK, repair_composer_->compose(*fp));
                     LONGS_EQUAL(
                         status::StatusOK,
                         repair_writer_->write(prepare_for_delivery_(fp, sample_spec)));
@@ -303,7 +305,7 @@ private:
             }
         } else {
             // compose and "deliver" packet
-            CHECK(source_composer_->compose(*pp));
+            LONGS_EQUAL(status::StatusOK, source_composer_->compose(*pp));
             LONGS_EQUAL(status::StatusOK,
                         source_writer_->write(prepare_for_delivery_(pp, sample_spec)));
         }

@@ -2159,13 +2159,13 @@ template <class T> struct pcm_sample;
 template <> struct pcm_sample<int8_t> {
     union {
         int8_t value;
-        ROC_ATTR_PACKED_BEGIN struct {
+        ROC_PACKED_BEGIN struct {
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
             uint8_t octet0;
 #else
             uint8_t octet0;
 #endif
-        } ROC_ATTR_PACKED_END octets;
+        } ROC_PACKED_END octets;
     };
 };
 
@@ -2173,13 +2173,13 @@ template <> struct pcm_sample<int8_t> {
 template <> struct pcm_sample<uint8_t> {
     union {
         uint8_t value;
-        ROC_ATTR_PACKED_BEGIN struct {
+        ROC_PACKED_BEGIN struct {
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
             uint8_t octet0;
 #else
             uint8_t octet0;
 #endif
-        } ROC_ATTR_PACKED_END octets;
+        } ROC_PACKED_END octets;
     };
 };
 
@@ -2187,7 +2187,7 @@ template <> struct pcm_sample<uint8_t> {
 template <> struct pcm_sample<int16_t> {
     union {
         int16_t value;
-        ROC_ATTR_PACKED_BEGIN struct {
+        ROC_PACKED_BEGIN struct {
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
             uint8_t octet1;
             uint8_t octet0;
@@ -2195,7 +2195,7 @@ template <> struct pcm_sample<int16_t> {
             uint8_t octet0;
             uint8_t octet1;
 #endif
-        } ROC_ATTR_PACKED_END octets;
+        } ROC_PACKED_END octets;
     };
 };
 
@@ -2203,7 +2203,7 @@ template <> struct pcm_sample<int16_t> {
 template <> struct pcm_sample<uint16_t> {
     union {
         uint16_t value;
-        ROC_ATTR_PACKED_BEGIN struct {
+        ROC_PACKED_BEGIN struct {
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
             uint8_t octet1;
             uint8_t octet0;
@@ -2211,7 +2211,7 @@ template <> struct pcm_sample<uint16_t> {
             uint8_t octet0;
             uint8_t octet1;
 #endif
-        } ROC_ATTR_PACKED_END octets;
+        } ROC_PACKED_END octets;
     };
 };
 
@@ -2219,7 +2219,7 @@ template <> struct pcm_sample<uint16_t> {
 template <> struct pcm_sample<int32_t> {
     union {
         int32_t value;
-        ROC_ATTR_PACKED_BEGIN struct {
+        ROC_PACKED_BEGIN struct {
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
             uint8_t octet3;
             uint8_t octet2;
@@ -2231,7 +2231,7 @@ template <> struct pcm_sample<int32_t> {
             uint8_t octet2;
             uint8_t octet3;
 #endif
-        } ROC_ATTR_PACKED_END octets;
+        } ROC_PACKED_END octets;
     };
 };
 
@@ -2239,7 +2239,7 @@ template <> struct pcm_sample<int32_t> {
 template <> struct pcm_sample<uint32_t> {
     union {
         uint32_t value;
-        ROC_ATTR_PACKED_BEGIN struct {
+        ROC_PACKED_BEGIN struct {
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
             uint8_t octet3;
             uint8_t octet2;
@@ -2251,7 +2251,7 @@ template <> struct pcm_sample<uint32_t> {
             uint8_t octet2;
             uint8_t octet3;
 #endif
-        } ROC_ATTR_PACKED_END octets;
+        } ROC_PACKED_END octets;
     };
 };
 
@@ -2259,7 +2259,7 @@ template <> struct pcm_sample<uint32_t> {
 template <> struct pcm_sample<int64_t> {
     union {
         int64_t value;
-        ROC_ATTR_PACKED_BEGIN struct {
+        ROC_PACKED_BEGIN struct {
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
             uint8_t octet7;
             uint8_t octet6;
@@ -2279,7 +2279,7 @@ template <> struct pcm_sample<int64_t> {
             uint8_t octet6;
             uint8_t octet7;
 #endif
-        } ROC_ATTR_PACKED_END octets;
+        } ROC_PACKED_END octets;
     };
 };
 
@@ -2287,7 +2287,7 @@ template <> struct pcm_sample<int64_t> {
 template <> struct pcm_sample<uint64_t> {
     union {
         uint64_t value;
-        ROC_ATTR_PACKED_BEGIN struct {
+        ROC_PACKED_BEGIN struct {
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
             uint8_t octet7;
             uint8_t octet6;
@@ -2307,7 +2307,7 @@ template <> struct pcm_sample<uint64_t> {
             uint8_t octet6;
             uint8_t octet7;
 #endif
-        } ROC_ATTR_PACKED_END octets;
+        } ROC_PACKED_END octets;
     };
 };
 
@@ -2315,7 +2315,7 @@ template <> struct pcm_sample<uint64_t> {
 template <> struct pcm_sample<float> {
     union {
         float value;
-        ROC_ATTR_PACKED_BEGIN struct {
+        ROC_PACKED_BEGIN struct {
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
             uint8_t octet3;
             uint8_t octet2;
@@ -2327,7 +2327,7 @@ template <> struct pcm_sample<float> {
             uint8_t octet2;
             uint8_t octet3;
 #endif
-        } ROC_ATTR_PACKED_END octets;
+        } ROC_PACKED_END octets;
     };
 };
 
@@ -2335,7 +2335,7 @@ template <> struct pcm_sample<float> {
 template <> struct pcm_sample<double> {
     union {
         double value;
-        ROC_ATTR_PACKED_BEGIN struct {
+        ROC_PACKED_BEGIN struct {
 #if ROC_CPU_ENDIAN == ROC_CPU_BE
             uint8_t octet7;
             uint8_t octet6;
@@ -2355,7 +2355,7 @@ template <> struct pcm_sample<double> {
             uint8_t octet6;
             uint8_t octet7;
 #endif
-        } ROC_ATTR_PACKED_END octets;
+        } ROC_PACKED_END octets;
     };
 };
 

@@ -44,14 +44,13 @@ public:
 
     //! Add packet to the queue.
     //! Wait-free operation.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
+    virtual ROC_NODISCARD status::StatusCode write(const PacketPtr& packet);
 
     //! Read next packet.
     //! If queue is blocking, blocks until queue is non-empty.
     //! If queue is non-blocking, and there are no concurrent read calls,
     //! then read is a lock-free and wait-free operation.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet,
-                                                       PacketReadMode mode);
+    virtual ROC_NODISCARD status::StatusCode read(PacketPtr& packet, PacketReadMode mode);
 
 private:
     core::Optional<core::Semaphore> write_sem_;

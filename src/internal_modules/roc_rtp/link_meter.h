@@ -70,7 +70,7 @@ public:
     //! Write packet and update metrics.
     //! @remarks
     //!  Invoked early in pipeline right after the packet is received.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
+    virtual ROC_NODISCARD status::StatusCode write(const packet::PacketPtr& packet);
 
 private:
     void update_metrics_(const packet::Packet& packet);

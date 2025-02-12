@@ -68,13 +68,13 @@ public:
     //! Set number of source packets per block.
     //! @note
     //!  Actual reallocation may happen later.
-    ROC_ATTR_NODISCARD status::StatusCode resize(size_t sblen, size_t rblen);
+    ROC_NODISCARD status::StatusCode resize(size_t sblen, size_t rblen);
 
     //! Write packet.
     //! @remarks
     //!  - writes the given source packet to the output writer
     //!  - generates repair packets and also writes them to the output writer
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&);
+    virtual ROC_NODISCARD status::StatusCode write(const packet::PacketPtr&);
 
 private:
     status::StatusCode begin_block_(const packet::PacketPtr& pp);

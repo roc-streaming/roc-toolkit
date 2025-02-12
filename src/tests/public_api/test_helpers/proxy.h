@@ -174,7 +174,7 @@ private:
         }
     }
 
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& pp) {
+    virtual ROC_NODISCARD status::StatusCode write(const packet::PacketPtr& pp) {
         pp->udp()->src_addr = send_config_.bind_address;
 
         if (pp->udp()->dst_addr == recv_source_config_.bind_address) {

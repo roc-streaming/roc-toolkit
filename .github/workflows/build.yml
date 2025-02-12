@@ -183,7 +183,7 @@ jobs:
           - script: linux-checks/check-formatting
             image: rocstreaming/env-ubuntu
 
-          - script: linux-checks/check-scons
+          - script: linux-checks/check-doctests
             image: rocstreaming/env-ubuntu
 
           - script: linux-checks/pulseaudio-versions

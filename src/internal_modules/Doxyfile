@@ -41,12 +41,16 @@ ENABLE_PREPROCESSING    = YES
 MACRO_EXPANSION         = YES
 EXPAND_ONLY_PREDEF      = YES
 
-PREDEFINED              =      \
-    ROC_ATTR_NORETURN=         \
-    ROC_ATTR_NODISCARD=        \
-    ROC_ATTR_PRINTF(x,y)=      \
-    ROC_ATTR_PACKED_BEGIN=     \
-    ROC_ATTR_PACKED_END=
+PREDEFINED              =   \
+    ROC_EXPORT=             \
+    ROC_ALIGNED=            \
+    ROC_PACKED_BEGIN=       \
+    ROC_PACKED_END=         \
+    ROC_PRINTF(x,y)=        \
+    ROC_NORETURN=           \
+    ROC_NODISCARD=          \
+    ROC_NOUNUSED=           \
+    ROC_NOSANITIZE=
 
 OUTPUT_DIRECTORY        = ../../build/docs/internal_modules
 HTML_OUTPUT             = ../../../docs/html/doxygen

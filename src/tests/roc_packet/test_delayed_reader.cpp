@@ -68,8 +68,7 @@ public:
         : code_(code) {
     }
 
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& pp,
-                                                       PacketReadMode mode) {
+    virtual ROC_NODISCARD status::StatusCode read(PacketPtr& pp, PacketReadMode mode) {
         return code_;
     }
 

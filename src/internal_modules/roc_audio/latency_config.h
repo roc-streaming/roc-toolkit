@@ -186,8 +186,8 @@ struct LatencyConfig {
     }
 
     //! Automatically fill missing settings.
-    ROC_ATTR_NODISCARD bool deduce_defaults(core::nanoseconds_t default_latency,
-                                            bool is_receiver);
+    ROC_NODISCARD bool deduce_defaults(core::nanoseconds_t default_latency,
+                                       bool is_receiver);
 };
 
 //! Latency-related metrics.

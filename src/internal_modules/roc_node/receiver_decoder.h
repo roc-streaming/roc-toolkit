@@ -41,7 +41,7 @@ public:
     status::StatusCode init_status() const;
 
     //! Activate interface.
-    ROC_ATTR_NODISCARD bool activate(address::Interface iface, address::Protocol proto);
+    ROC_NODISCARD bool activate(address::Interface iface, address::Protocol proto);
 
     //! Callback for slot metrics.
     typedef void (*slot_metrics_func_t)(const pipeline::ReceiverSlotMetrics& slot_metrics,
@@ -54,26 +54,26 @@ public:
         void* party_arg);
 
     //! Get metrics.
-    ROC_ATTR_NODISCARD bool get_metrics(slot_metrics_func_t slot_metrics_func,
-                                        void* slot_metrics_arg,
-                                        party_metrics_func_t party_metrics_func,
-                                        void* party_metrics_arg);
+    ROC_NODISCARD bool get_metrics(slot_metrics_func_t slot_metrics_func,
+                                   void* slot_metrics_arg,
+                                   party_metrics_func_t party_metrics_func,
+                                   void* party_metrics_arg);
 
     //! Write packet for decoding.
-    ROC_ATTR_NODISCARD status::StatusCode
+    ROC_NODISCARD status::StatusCode
     write_packet(address::Interface iface, const void* bytes, size_t n_bytes);
 
     //! Read encoded packet.
     //! @note
     //!  Typically used to generate control packets with feedback for sender.
-    ROC_ATTR_NODISCARD status::StatusCode
+    ROC_NODISCARD status::StatusCode
     read_packet(address::Interface iface, void* bytes, size_t* n_bytes);
 
     //! Read frame into byte buffer.
     //! @remarks
     //!  Performs necessary checks and allocations on top of ISource::read(),
     //!  needed when working with byte buffers instead of Frame objects.
-    ROC_ATTR_NODISCARD status::StatusCode read_frame(void* bytes, size_t n_bytes);
+    ROC_NODISCARD status::StatusCode read_frame(void* bytes, size_t n_bytes);
 
     //! Source for reading decoded frames.
     sndio::ISource& source();

@@ -42,7 +42,7 @@ TEST(composer, align_footer) {
     UNSIGNED_LONGS_EQUAL((unsigned long)buffer->data(), slice.data());
 
     Composer<RS8M_PayloadID, Source, Footer> composer(NULL, arena);
-    CHECK(composer.align(slice, 0, Alignment));
+    LONGS_EQUAL(status::StatusOK, composer.align(slice, 0, Alignment));
 
     UNSIGNED_LONGS_EQUAL(0, slice.size());
     UNSIGNED_LONGS_EQUAL(BufferSize, slice.capacity());
@@ -65,7 +65,7 @@ TEST(composer, align_header) {
     CHECK(((unsigned long)slice.data() + sizeof(RS8M_PayloadID)) % Alignment != 0);
 
     Composer<RS8M_PayloadID, Source, Header> composer(NULL, arena);
-    CHECK(composer.align(slice, 0, Alignment));
+    LONGS_EQUAL(status::StatusOK, composer.align(slice, 0, Alignment));
 
     UNSIGNED_LONGS_EQUAL(0, slice.size());
     UNSIGNED_LONGS_EQUAL(BufferSize - (Alignment - sizeof(RS8M_PayloadID)),
@@ -93,7 +93,7 @@ TEST(composer, align_outer_header) {
           != 0);
 
     Composer<RS8M_PayloadID, Source, Header> composer(NULL, arena);
-    CHECK(composer.align(slice, OuterHeader, Alignment));
+    LONGS_EQUAL(status::StatusOK, composer.align(slice, OuterHeader, Alignment));
 
     UNSIGNED_LONGS_EQUAL(0, slice.size());
     UNSIGNED_LONGS_EQUAL(BufferSize
@@ -117,12 +117,12 @@ TEST(composer, packet_size) {
 
     Composer<RS8M_PayloadID, Source, Header> composer(NULL, arena);
 
-    CHECK(composer.align(buffer, 0, Alignment));
-    CHECK(composer.prepare(*packet, buffer, PayloadSize));
+    LONGS_EQUAL(status::StatusOK, composer.align(buffer, 0, Alignment));
+    LONGS_EQUAL(status::StatusOK, composer.prepare(*packet, buffer, PayloadSize));
 
     packet->set_buffer(buffer);
 
-    CHECK(composer.compose(*packet));
+    LONGS_EQUAL(status::StatusOK, composer.compose(*packet));
 
     UNSIGNED_LONGS_EQUAL(sizeof(RS8M_PayloadID) + PayloadSize, packet->buffer().size());
 }

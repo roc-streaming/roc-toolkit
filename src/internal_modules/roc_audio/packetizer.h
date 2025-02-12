@@ -68,19 +68,19 @@ public:
     const PacketizerMetrics& metrics() const;
 
     //! Write audio frame.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode write(Frame& frame);
 
     //! Flush buffered packet, if any.
     //! @remarks
     //!  Packet is padded to match fixed size.
-    ROC_ATTR_NODISCARD status::StatusCode flush();
+    ROC_NODISCARD status::StatusCode flush();
 
 private:
     status::StatusCode begin_packet_();
     status::StatusCode end_packet_();
 
     status::StatusCode create_packet_();
-    void pad_packet_(size_t written_payload_size);
+    status::StatusCode pad_packet_(size_t written_payload_size);
 
     packet::IWriter& writer_;
     packet::IComposer& composer_;

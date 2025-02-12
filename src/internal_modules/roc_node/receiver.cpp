@@ -142,7 +142,7 @@ bool Receiver::bind(slot_index_t slot_index,
         return false;
     }
 
-    if (!uri.verify(address::NetworkUri::Subset_Full)) {
+    if (!uri.is_valid()) {
         roc_log(LogError,
                 "receiver node:"
                 " can't bind %s interface of slot %lu:"
