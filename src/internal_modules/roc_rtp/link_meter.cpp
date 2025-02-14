@@ -168,7 +168,7 @@ void LinkMeter::dump_(const packet::Packet& packet) {
     e.n_fields = 5;
     e.fields[0] = packet.udp()->queue_timestamp;
     e.fields[1] = packet.rtp()->stream_timestamp;
-    e.fields[2] = (double)jit_metrics.curr_jitter / core::Millisecond;
+    e.fields[2] = jit_metrics.curr_jitter;
     e.fields[3] = jit_metrics.peak_jitter;
     e.fields[4] = jit_metrics.curr_envelope;
 
