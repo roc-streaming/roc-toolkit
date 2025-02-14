@@ -42,7 +42,7 @@ TcpConnectionPort::TcpConnectionPort(TcpConnectionType type,
     , writable_status_(Io_NotAvailable)
     , readable_status_(Io_NotAvailable)
     , got_stream_end_(false)
-    , report_limiter_(StatsReportInterval) {
+    , report_limiter_(StatsReportInterval, 1) {
     BasicPort::update_descriptor();
 }
 

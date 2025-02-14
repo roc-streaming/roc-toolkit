@@ -33,7 +33,7 @@ FeedbackMonitor::FeedbackMonitor(IFrameWriter& writer,
     , resampler_(resampler)
     , enable_scaling_(latency_config.tuner_profile != LatencyTunerProfile_Intact)
     , source_(0)
-    , source_change_limiter_(feedback_config.source_cooldown)
+    , source_change_limiter_(feedback_config.source_cooldown, 1)
     , sample_spec_(sample_spec)
     , started_(false)
     , init_status_(status::NoStatus) {

@@ -49,7 +49,7 @@ Communicator::Communicator(const Config& config,
     , error_count_(0)
     , processed_packet_count_(0)
     , generated_packet_count_(0)
-    , log_limiter_(LogInterval)
+    , log_limiter_(LogInterval, 1)
     , init_status_(status::NoStatus) {
     if ((init_status_ = reporter_.init_status()) != status::StatusOK) {
         return;

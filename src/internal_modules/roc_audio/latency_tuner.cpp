@@ -82,7 +82,7 @@ LatencyTuner::LatencyTuner(const LatencyConfig& latency_config,
           latency_config.latency_decrease_relative_threshold))
     , lat_update_inc_step_(lower_thrs_to_step_lat_update(
           latency_config.latency_decrease_relative_threshold))
-    , last_lat_limiter_(LogInterval)
+    , last_lat_limiter_(LogInterval, 1)
     , dumper_(dumper)
     , init_status_(status::NoStatus) {
     roc_log(

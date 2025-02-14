@@ -176,7 +176,7 @@ private:
     core::Mutex sink_mutex_;
 
     core::Optional<core::Ticker> ticker_;
-    core::Ticker::ticks_t ticker_ts_;
+    core::ticks_t ticker_ts_;
 
     const bool auto_cts_;
 

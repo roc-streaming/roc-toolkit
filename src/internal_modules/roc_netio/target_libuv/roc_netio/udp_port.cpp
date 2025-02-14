@@ -43,7 +43,7 @@ UdpPort::UdpPort(const UdpConfig& config,
     , fd_()
     , packet_factory_(packet_factory)
     , inbound_writer_(NULL)
-    , rate_limiter_(PacketLogInterval) {
+    , rate_limiter_(PacketLogInterval, 1) {
     BasicPort::update_descriptor();
 }
 

@@ -28,7 +28,7 @@ TimestampInjector::TimestampInjector(packet::IReader& reader,
     , reader_(reader)
     , sample_spec_(sample_spec)
     , n_drops_(0)
-    , rate_limiter_(ReportInterval) {
+    , rate_limiter_(ReportInterval, 1) {
 }
 
 status::StatusCode TimestampInjector::init_status() const {

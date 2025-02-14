@@ -39,7 +39,7 @@ Depacketizer::Depacketizer(packet::IReader& packet_reader,
     , late_samples_(0)
     , recovered_samples_(0)
     , is_started_(false)
-    , rate_limiter_(LogInterval)
+    , rate_limiter_(LogInterval, 1)
     , dumper_(dumper)
     , init_status_(status::NoStatus) {
     roc_panic_if_msg(!sample_spec_.is_complete() || !sample_spec_.is_raw(),

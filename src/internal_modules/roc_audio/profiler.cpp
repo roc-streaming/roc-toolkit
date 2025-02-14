@@ -18,7 +18,7 @@ namespace audio {
 Profiler::Profiler(core::IArena& arena,
                    const SampleSpec& sample_spec,
                    ProfilerConfig profiler_config)
-    : rate_limiter_(profiler_config.profiling_interval)
+    : rate_limiter_(profiler_config.profiling_interval, 1)
     , interval_(profiler_config.profiling_interval)
     , chunk_length_(
           (size_t)(sample_spec.sample_rate()

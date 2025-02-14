@@ -7,12 +7,25 @@
  */
 
 #include "roc_core/ticker.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace core {
 
-Ticker::Ticker(ticks_t freq)
-    : ratio_(double(freq) / Second)
+namespace {
+
+ticks_t ns_2_ticks(nanoseconds_t ns, double ticks_per_second) {
+    return (ticks_t)round(double(ns) / Second * ticks_per_second);
+}
+
+nanoseconds_t ticks_2_ns(ticks_t ticks, double ticks_per_second) {
+    return (nanoseconds_t)round(double(ticks) / ticks_per_second * Second);
+}
+
+} // namespace
+
+Ticker::Ticker(ticks_t ticks_per_second)
+    : ticks_per_second_((double)ticks_per_second)
     , start_(0)
     , started_(false) {
 }
@@ -25,12 +38,12 @@ void Ticker::start() {
     started_ = true;
 }
 
-Ticker::ticks_t Ticker::elapsed() {
+ticks_t Ticker::elapsed() {
     if (!started_) {
         start();
         return 0;
     } else {
-        return ticks_t(double(timestamp(ClockMonotonic) - start_) * ratio_);
+        return ns_2_ticks(timestamp(ClockMonotonic) - start_, ticks_per_second_);
     }
 }
 
@@ -38,7 +51,7 @@ void Ticker::wait(ticks_t ticks) {
     if (!started_) {
         start();
     }
-    sleep_until(ClockMonotonic, start_ + nanoseconds_t(ticks / ratio_));
+    sleep_until(ClockMonotonic, start_ + ticks_2_ns(ticks, ticks_per_second_));
 }
 
 } // namespace core

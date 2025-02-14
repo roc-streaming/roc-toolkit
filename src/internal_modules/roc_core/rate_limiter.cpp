@@ -7,31 +7,41 @@
  */
 
 #include "roc_core/rate_limiter.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace core {
 
-RateLimiter::RateLimiter(nanoseconds_t period)
-    : period_(Ticker::ticks_t(period))
-    , pos_(0)
-    , ticker_(Second / Nanosecond) {
-    if (period <= 0) {
-        roc_panic("rate limiter: expected positive period, got %ld", (long)period);
-    }
+RateLimiter::RateLimiter(nanoseconds_t period, size_t burst)
+    : period_((ticks_t)period)
+    , burst_(burst)
+    , ticker_(Second / Nanosecond) // 1 tick = 1 ns
+    , token_expiration_(0)
+    , token_count_(0) {
+    roc_panic_if_msg(period <= 0, "rate limiter: period must be > 0");
+    roc_panic_if_msg(burst <= 0, "rate limiter: burst must be > 0");
 }
 
 bool RateLimiter::would_allow() {
-    return ticker_.elapsed() >= pos_;
+    const ticks_t elapsed = ticker_.elapsed();
+
+    return elapsed >= token_expiration_ || token_count_ > 0;
 }
 
 bool RateLimiter::allow() {
-    const Ticker::ticks_t elapsed = ticker_.elapsed();
-    if (elapsed >= pos_) {
-        pos_ = (elapsed / period_ + 1) * period_;
-        return true;
-    } else {
-        return false;
+    const ticks_t elapsed = ticker_.elapsed();
+
+    if (elapsed >= token_expiration_) {
+        token_expiration_ = (elapsed / period_ + 1) * period_;
+        token_count_ = burst_;
     }
+
+    if (token_count_ > 0) {
+        token_count_--;
+        return true;
+    }
+
+    return false;
 }
 
 } // namespace core

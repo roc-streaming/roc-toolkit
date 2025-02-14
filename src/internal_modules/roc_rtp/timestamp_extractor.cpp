@@ -26,7 +26,7 @@ TimestampExtractor::TimestampExtractor(packet::IWriter& writer,
     , capt_ts_(0)
     , rtp_ts_(0)
     , sample_spec_(sample_spec)
-    , rate_limiter_(ReportInterval) {
+    , rate_limiter_(ReportInterval, 1) {
 }
 
 status::StatusCode TimestampExtractor::init_status() const {

@@ -181,7 +181,7 @@ private:
     core::Mutex source_mutex_;
 
     core::Optional<core::Ticker> ticker_;
-    core::Ticker::ticks_t ticker_ts_;
+    core::ticks_t ticker_ts_;
 
     const bool auto_reclock_;
 

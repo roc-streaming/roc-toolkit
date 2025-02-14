@@ -43,7 +43,7 @@ PipelineLoop::PipelineLoop(IPipelineTaskScheduler& scheduler,
     , subframe_tasks_deadline_(0)
     , samples_processed_(0)
     , enough_samples_to_process_tasks_(false)
-    , rate_limiter_(StatsReportInterval) {
+    , rate_limiter_(StatsReportInterval, 1) {
 }
 
 PipelineLoop::~PipelineLoop() {

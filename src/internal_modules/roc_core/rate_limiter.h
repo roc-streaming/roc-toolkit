@@ -13,7 +13,9 @@
 #define ROC_CORE_RATE_LIMITER_H_
 
 #include "roc_core/noncopyable.h"
+#include "roc_core/stddefs.h"
 #include "roc_core/ticker.h"
+#include "roc_core/time.h"
 
 namespace roc {
 namespace core {
@@ -23,8 +25,9 @@ class RateLimiter : public NonCopyable<> {
 public:
     //! Initialize rate limiter.
     //! @remarks
-    //!  @p period is tick duration in nanoseconds.
-    explicit RateLimiter(nanoseconds_t period);
+    //!  @p period is duration of one tick, in nanoseconds.
+    //!  @p burst is how much events is allowed per one tick.
+    RateLimiter(nanoseconds_t period, size_t burst);
 
     //! Check whether allow() would succeed.
     bool would_allow();
@@ -33,9 +36,13 @@ public:
     bool allow();
 
 private:
-    const Ticker::ticks_t period_;
-    Ticker::ticks_t pos_;
+    const ticks_t period_;
+    const size_t burst_;
+
     Ticker ticker_;
+
+    ticks_t token_expiration_;
+    size_t token_count_;
 };
 
 } // namespace core

@@ -151,7 +151,7 @@ PulseaudioDevice::PulseaudioDevice(audio::FrameFactory& frame_factory,
     , stream_(NULL)
     , timer_(NULL)
     , timer_deadline_ns_(0)
-    , rate_limiter_(ReportInterval)
+    , rate_limiter_(ReportInterval, 1)
     , init_status_(status::NoStatus) {
     if (io_config.sample_spec.has_format()
         && io_config.sample_spec.format() != audio::Format_Pcm) {

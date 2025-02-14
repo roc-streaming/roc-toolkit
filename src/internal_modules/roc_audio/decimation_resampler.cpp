@@ -43,7 +43,7 @@ DecimationResampler::DecimationResampler(
     , out_acc_(0)
     , total_count_(0)
     , decim_count_(0)
-    , report_limiter_(LogReportInterval)
+    , report_limiter_(LogReportInterval, 1)
     , init_status_(status::NoStatus) {
     if (!in_spec.is_complete() || !out_spec.is_complete() || !in_spec.is_raw()
         || !out_spec.is_raw()) {
