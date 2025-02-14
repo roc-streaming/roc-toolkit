@@ -52,15 +52,23 @@ struct CsvConfig {
     //! If queue becomes larger, entries are dropped.
     size_t max_queued;
 
-    //! Maximum allowed interval between subsequent entries of same type.
-    //! If zero, there is no limit.
-    //! If non-zero, each entry type is rate-limited according to this.
-    core::nanoseconds_t max_interval;
+    //! Minimum interval between subsequent burst of entries of same type.
+    //! Each entry type is rate-limited separately.
+    //! While rate limit is reached, entries are dropped.
+    core::nanoseconds_t min_burst_interval;
+
+    //! Maximum number of entries in burst of entries of same type.
+    //! After this limit is reached, next entry of same time may be written
+    //! only after @p min_burst_interval expires.
+    //! Each entry type is rate-limited separately.
+    //! While rate limit is reached, entries are dropped.
+    size_t max_burst_size;
 
     CsvConfig()
         : dump_file(NULL)
         , max_queued(1000)
-        , max_interval(core::Millisecond) {
+        , min_burst_interval(core::Millisecond)
+        , max_burst_size(10) {
     }
 };
 

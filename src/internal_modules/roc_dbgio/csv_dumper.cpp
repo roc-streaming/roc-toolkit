@@ -127,8 +127,8 @@ core::RateLimiter& CsvDumper::limiter_(char type) {
     const size_t idx = (size_t)type;
 
     if (!rate_lims_[idx]) {
-        rate_lims_[idx].reset(new (rate_lims_[idx])
-                                  core::RateLimiter(config_.max_interval));
+        rate_lims_[idx].reset(new (rate_lims_[idx]) core::RateLimiter(
+            config_.min_burst_interval, config_.max_burst_size));
     }
 
     return *rate_lims_[idx];
