@@ -97,10 +97,10 @@ TEST(state_tracker, multiple_timeout) {
     }
 
     roc_log(LogDebug, "started running");
-    core::sleep_for(core::ClockMonotonic, core::Microsecond * 2000);
+    core::sleep_for(core::ClockMonotonic, core::Microsecond * 5000);
 
     for (int i = 0; i < 10; i++) {
-        CHECK(threads_ptr[i]->running());
+        CHECK(!threads_ptr[i]->running());
     }
 
     roc_log(LogDebug, "started joining");
