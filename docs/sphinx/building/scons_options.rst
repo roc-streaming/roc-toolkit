@@ -143,10 +143,10 @@ Targets
 ``clean``
     full clean, including build results, downloaded third-parties, generated documentation, and scons database
 
-``cleanbuild``
+``clean_build``
     remove only build results
 
-``cleandocs``
+``clean_docs``
     remove only generated documentation
 
 ``install``
