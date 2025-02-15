@@ -74,7 +74,7 @@ private:
     core::Atomic<int> halt_state_;
     core::Atomic<int> active_sessions_;
     core::Atomic<int> pending_packets_;
-    core::Atomic<bool> sem_is_occupied_;
+    core::Atomic<int> sem_is_occupied_;
     core::Atomic<unsigned> waiting_mask_;
     core::Mutex mutex_;
     core::Cond waiting_con_;

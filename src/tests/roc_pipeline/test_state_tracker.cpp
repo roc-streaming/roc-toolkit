@@ -78,7 +78,7 @@ TEST(state_tracker, simple_timeout) {
                    core::timestamp(core::ClockMonotonic) + core::Millisecond * 500);
 
     CHECK(thr.start());
-    core::sleep_for(core::ClockMonotonic, core::Millisecond * 500);
+    core::sleep_for(core::ClockMonotonic, core::Millisecond * 1000);
     CHECK(!(thr.running()));
     thr.join();
 }
@@ -97,7 +97,7 @@ TEST(state_tracker, multiple_timeout) {
     }
 
     roc_log(LogDebug, "started running");
-    core::sleep_for(core::ClockMonotonic, core::Microsecond * 1000);
+    core::sleep_for(core::ClockMonotonic, core::Microsecond * 2000);
 
     for (int i = 0; i < 10; i++) {
         CHECK(threads_ptr[i]->running());

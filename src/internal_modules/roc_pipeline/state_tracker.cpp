@@ -18,7 +18,7 @@ StateTracker::StateTracker()
     , halt_state_(-1)
     , active_sessions_(0)
     , pending_packets_(0)
-    , sem_is_occupied_(false)
+    , sem_is_occupied_(0)
     , waiting_mask_(0)
     , mutex_()
     , waiting_con_(mutex_) {
@@ -53,7 +53,7 @@ bool StateTracker::wait_state(unsigned int state_mask, core::nanoseconds_t deadl
             return false;
         }
 
-        if (sem_is_occupied_.compare_exchange(false, true)) {
+        if (sem_is_occupied_.compare_exchange(0, 1)) {
             if (deadline >= 0) {
                 (void)sem_.timed_wait(deadline);
 
@@ -61,7 +61,7 @@ bool StateTracker::wait_state(unsigned int state_mask, core::nanoseconds_t deadl
                 sem_.wait();
             }
 
-            sem_is_occupied_ = false;
+            sem_is_occupied_ = 0;
             waiting_con_.broadcast();
 
         } else {
