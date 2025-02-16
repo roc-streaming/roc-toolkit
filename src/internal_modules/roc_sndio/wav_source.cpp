@@ -27,6 +27,12 @@ WavSource::WavSource(core::IArena& arena, const Config& config)
         return;
     }
 
+    if (!config.sample_spec.is_raw()) {
+        roc_log(LogError, "wav source: sample format can be only \"-\" or \"%s\"",
+                audio::pcm_format_to_str(audio::Sample_RawFormat));
+        return;
+    }
+
     valid_ = true;
 }
 
