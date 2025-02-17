@@ -161,6 +161,11 @@ bool WavSink::open_(const char* path) {
         return false;
     }
 
+    if (*path == '-') {
+        roc_log(LogDebug, "wav sink: output file to stdout");
+        output_file_ = stdout;
+    }
+
     roc_log(LogInfo,
             "wav sink: opened output file:"
             " path=%s out_bits=%lu out_rate=%lu out_ch=%lu",
