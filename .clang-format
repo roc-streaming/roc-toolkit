@@ -1,7 +1,7 @@
 # https://clang.llvm.org/docs/ClangFormatStyleOptions.html
 #
 ---
-BasedOnStyle: WebKit # http://www.webkit.org/coding/coding-style.html
+BasedOnStyle: WebKit # https://www.webkit.org/code-style-guidelines/
 
 Standard: Cpp03
 

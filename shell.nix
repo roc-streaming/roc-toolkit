@@ -1,3 +1,7 @@
+# Development shell initialization for NixOS.
+#
+# Details: https://roc-streaming.org/toolkit/docs/building/dependencies.html
+
 { pkgs ? import <nixpkgs> {} }:
 
 pkgs.clangStdenv.mkDerivation {
