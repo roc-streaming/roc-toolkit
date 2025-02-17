@@ -124,6 +124,10 @@ Runtime dependencies
 
    SpeexDSP (libspeexdsp) below 1.2rc3 was part of Speex (libspeex) package.
 
+.. note::
+
+   For OpenSSL, you may need to install ``libatomic1`` library package on some systems.
+
 Development dependencies
 ========================
 

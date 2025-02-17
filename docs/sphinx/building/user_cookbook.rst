@@ -238,7 +238,7 @@ Raspberry Pi (64-bit)
     $ scp ./bin/aarch64-linux-gnu/libroc.so.*.* <address>:/usr/lib
 
     # install Roc dependencies
-    $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
+    $ ssh <address> apt-get install libasound2 libpulse0 libltdl7 libatomic1
 
 Raspberry Pi 2 and later (32-bit)
 ---------------------------------
@@ -266,7 +266,7 @@ Raspberry Pi 2 and later (32-bit)
     $ scp ./bin/arm-linux-gnueabihf/libroc.so.*.* <address>:/usr/lib
 
     # install Roc dependencies
-    $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
+    $ ssh <address> apt-get install libasound2 libpulse0 libltdl7 libatomic1
 
 Raspberry Pi 1 and Zero (32-bit)
 --------------------------------
@@ -293,7 +293,7 @@ Raspberry Pi 1 and Zero (32-bit)
     $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/libroc.so.*.* <address>:/usr/lib
 
     # install Roc dependencies
-    $ ssh <address> apt-get install libasound2 libpulse0 libltdl7
+    $ ssh <address> apt-get install libasound2 libpulse0 libltdl7 libatomic1
 
 OpenWrt (MIPS32 24Kc, Artheos, musl)
 ------------------------------------

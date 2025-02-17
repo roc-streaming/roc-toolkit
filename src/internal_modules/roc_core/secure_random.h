@@ -15,9 +15,6 @@
 #include "roc_core/attributes.h"
 #include "roc_core/stddefs.h"
 
-//! @warning On some platforms CSPRNG is not available. In this case a non-secure version
-//! may be used instead (e.g. @p fast_random*()).
-
 namespace roc {
 namespace core {
 
@@ -25,6 +22,9 @@ namespace core {
 //! Thread-safe. Uniformly distributed.
 //!
 //! @returns @p true in case of success, @p false in case of failure.
+//!
+//! @warning On some platforms CSPRNG is not available. In this case a non-secure version
+//! may be used instead (e.g. @p fast_random*()).
 ROC_NODISCARD
 bool secure_random(void* buf, size_t bufsz);
 
@@ -32,6 +32,9 @@ bool secure_random(void* buf, size_t bufsz);
 //! Thread-safe. Uniformly distributed.
 //!
 //! @returns @p true in case of success, @p false in case of failure.
+//!
+//! @warning On some platforms CSPRNG is not available. In this case a non-secure version
+//! may be used instead (e.g. @p fast_random*()).
 ROC_NODISCARD
 bool secure_random_range_32(uint32_t from, uint32_t to, uint32_t& dest);
 
@@ -39,6 +42,9 @@ bool secure_random_range_32(uint32_t from, uint32_t to, uint32_t& dest);
 //! Thread-safe. Uniformly distributed.
 //!
 //! @returns @p true in case of success, @p false in case of failure.
+//!
+//! @warning On some platforms CSPRNG is not available. In this case a non-secure version
+//! may be used instead (e.g. @p fast_random*()).
 ROC_NODISCARD
 bool secure_random_range_64(uint64_t from, uint64_t to, uint64_t& dest);
 
