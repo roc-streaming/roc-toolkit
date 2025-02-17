@@ -30,22 +30,21 @@ public:
     explicit Composer(core::IArena& arena);
 
     //! Check if the object was successfully constructed.
-    ROC_NODISCARD virtual status::StatusCode init_status() const;
+    virtual status::StatusCode init_status() const;
 
     //! Adjust buffer to align payload.
-    ROC_NODISCARD virtual status::StatusCode
+    virtual bool
     align(core::Slice<uint8_t>& buffer, size_t header_size, size_t payload_alignment);
 
     //! Prepare buffer for composing a packet.
-    ROC_NODISCARD virtual status::StatusCode
+    virtual bool
     prepare(packet::Packet& packet, core::Slice<uint8_t>& buffer, size_t payload_size);
 
     //! Pad packet.
-    ROC_NODISCARD virtual status::StatusCode pad(packet::Packet& packet,
-                                                 size_t padding_size);
+    virtual bool pad(packet::Packet& packet, size_t padding_size);
 
     //! Compose packet to buffer.
-    ROC_NODISCARD virtual status::StatusCode compose(packet::Packet& packet);
+    virtual bool compose(packet::Packet& packet);
 };
 
 } // namespace rtcp

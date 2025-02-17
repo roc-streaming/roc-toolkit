@@ -314,10 +314,10 @@ status::StatusCode BlockReader::parse_repaired_packet_(const core::Slice<uint8_t
         return status::StatusNoMem;
     }
 
-    const status::StatusCode code = parser_.parse(*pp, buffer);
-    if (code != status::StatusOK) {
+    if (!parser_.parse(*pp, buffer)) {
         roc_log(LogDebug, "fec block reader: can't parse repaired packet");
-        return code;
+        // Upper code expects StatusBadPacket in this case.
+        return status::StatusBadPacket;
     }
 
     pp->set_buffer(buffer);

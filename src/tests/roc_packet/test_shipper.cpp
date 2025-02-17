@@ -13,7 +13,6 @@
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/shipper.h"
 #include "roc_rtp/headers.h"
-#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
@@ -45,7 +44,7 @@ public:
         : code_(code) {
     }
 
-    virtual ROC_NODISCARD status::StatusCode write(const PacketPtr&) {
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr&) {
         return code_;
     }
 
@@ -59,27 +58,25 @@ struct MockComposer : public IComposer, public core::NonCopyable<> {
         , compose_call_count(0) {
     }
 
-    ROC_NODISCARD virtual status::StatusCode init_status() const {
+    virtual status::StatusCode init_status() const {
         return status::StatusOK;
     }
 
-    ROC_NODISCARD virtual status::StatusCode
-    align(core::Slice<uint8_t>&, size_t, size_t) {
-        return status::StatusOK;
+    virtual bool align(core::Slice<uint8_t>&, size_t, size_t) {
+        return true;
     }
 
-    ROC_NODISCARD virtual status::StatusCode
-    prepare(Packet&, core::Slice<uint8_t>&, size_t) {
-        return status::StatusOK;
+    virtual bool prepare(Packet&, core::Slice<uint8_t>&, size_t) {
+        return true;
     }
 
-    ROC_NODISCARD virtual status::StatusCode pad(Packet&, size_t) {
-        return status::StatusOK;
+    virtual bool pad(Packet&, size_t) {
+        return true;
     }
 
-    ROC_NODISCARD virtual status::StatusCode compose(Packet&) {
+    virtual bool compose(Packet&) {
         ++compose_call_count;
-        return status::StatusOK;
+        return true;
     }
 
     unsigned compose_call_count;

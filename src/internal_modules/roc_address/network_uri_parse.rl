@@ -21,17 +21,19 @@ namespace address {
 
 namespace {
 
-bool parse_network_uri_imp(const char* str, NetworkUri& result, bool only_resource) {
+bool parse_network_uri_imp(const char* str, NetworkUri::Subset subset, NetworkUri& result) {
     if (!str) {
         roc_log(LogError, "parse endpoint uri: input string is null");
         return false;
     }
 
+    result.clear(subset);
+
     // for ragel
     const char* p = str;
-    const char* pe = str + strlen(str);
+    const char *pe = str + strlen(str);
 
-    const char* eof = pe;
+    const char *eof = pe;
     int cs = 0;
 
     // for actions
@@ -47,12 +49,6 @@ bool parse_network_uri_imp(const char* str, NetworkUri& result, bool only_resour
         }
 
         action set_proto {
-            if (only_resource) {
-                roc_log(LogError,
-                        "parse endpoint uri: protocol field not allowed");
-                return false;
-            }
-
             char scheme[16] = {};
             if (p - start_p >= sizeof(scheme)) {
                 roc_log(LogError, "parse endpoint uri: invalid protocol");
@@ -73,12 +69,11 @@ bool parse_network_uri_imp(const char* str, NetworkUri& result, bool only_resour
         }
 
         action set_host {
-            if (only_resource) {
+            if (subset != NetworkUri::Subset_Full) {
                 roc_log(LogError,
-                        "parse endpoint uri: protocol field not allowed");
+                        "parse endpoint uri: unexpected host when parsing resource");
                 return false;
             }
-
             if (!result.set_host(start_p, p - start_p)) {
                 roc_log(LogError, "parse endpoint uri: invalid host");
                 return false;
@@ -86,9 +81,9 @@ bool parse_network_uri_imp(const char* str, NetworkUri& result, bool only_resour
         }
 
         action set_port {
-            if (only_resource) {
+            if (subset != NetworkUri::Subset_Full) {
                 roc_log(LogError,
-                        "parse endpoint uri: port field not allowed");
+                        "parse endpoint uri: unexpected port when parsing resource");
                 return false;
             }
 
@@ -140,47 +135,38 @@ bool parse_network_uri_imp(const char* str, NetworkUri& result, bool only_resour
         write exec;
     }%%
 
-    return success;
-}
-
-} // namespace
-
-bool parse_network_uri(const char* str, NetworkUri& result) {
-    result.clear_fields(NetworkUri::FieldsAll);
-
-    const bool success = parse_network_uri_imp(str, result, false);
-
-    if (!success || !result.is_valid()) {
-        roc_log(LogError,
-                "parse endpoint uri: expected"
-                " '<proto>://<host>[:<port>][/<path>][?<query>]',\n"
-                " got '%s'",
-                str);
+    if (!success) {
+        if (subset == NetworkUri::Subset_Full) {
+            roc_log(LogError,
+                    "parse endpoint uri: expected"
+                    " 'PROTO://HOST[:PORT][/PATH][?QUERY]',\n"
+                    " got '%s'",
+                    str);
+        } else {
+            roc_log(LogError,
+                    "parse endpoint uri: expected"
+                    " '[/PATH][?QUERY]',\n"
+                    " got '%s'",
+                    str);
+        }
         return false;
+    }
 
-        result.invalidate_fields(NetworkUri::FieldsAll);
+    if (!result.verify(subset)) {
+        roc_log(LogError, "parse endpoint uri: invalid uri");
         return false;
     }
 
     return true;
 }
 
-bool parse_network_uri_resource(const char* str, NetworkUri& result) {
-    result.clear_fields(NetworkUri::FieldsResource);
+} // namespace
 
-    const bool success = parse_network_uri_imp(str, result, true);
-
-    if (!success) {
-        roc_log(LogError,
-                "parse endpoint uri: expected"
-                " '[/<path>][?<query>]',\n"
-                " got '%s'",
-                str);
-
-        result.invalidate_fields(NetworkUri::FieldsResource);
+bool parse_network_uri(const char* str, NetworkUri::Subset subset, NetworkUri& result) {
+    if (!parse_network_uri_imp(str, subset, result)) {
+        result.invalidate(subset);
         return false;
     }
-
     return true;
 }
 

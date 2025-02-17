@@ -13,16 +13,14 @@
 namespace roc {
 namespace address {
 
-namespace {
+bool format_network_uri(const NetworkUri& u,
+                        NetworkUri::Subset subset,
+                        core::StringBuilder& dst) {
+    if (!u.verify(subset)) {
+        return false;
+    }
 
-bool format_network_uri_imp(const NetworkUri& u,
-                            core::StringBuilder& dst,
-                            bool only_resource) {
-    if (!only_resource) {
-        if (!u.is_valid()) {
-            return false;
-        }
-
+    if (subset == NetworkUri::Subset_Full) {
         if (!u.format_proto(dst)) {
             return false;
         }
@@ -39,7 +37,7 @@ bool format_network_uri_imp(const NetworkUri& u,
         }
     }
 
-    if (only_resource) {
+    if (subset == NetworkUri::Subset_Resource) {
         if (!u.path() && !u.encoded_query()) {
             return false;
         }
@@ -59,16 +57,6 @@ bool format_network_uri_imp(const NetworkUri& u,
     }
 
     return true;
-}
-
-} // namespace
-
-bool format_network_uri(const NetworkUri& u, core::StringBuilder& dst) {
-    return format_network_uri_imp(u, dst, false);
-}
-
-bool format_network_uri_resource(const NetworkUri& u, core::StringBuilder& dst) {
-    return format_network_uri_imp(u, dst, true);
 }
 
 } // namespace address

@@ -261,10 +261,10 @@ Clean build results except third-parties and documentation:
 
 .. code::
 
-   $ scons -Q clean_build
+   $ scons -Q cleanbuild
 
 Clean only built documentation:
 
 .. code::
 
-   $ scons -Q clean_docs
+   $ scons -Q cleandocs

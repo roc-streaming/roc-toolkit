@@ -86,7 +86,7 @@ public:
     void remove(HashmapData* node, bool skip_rehash);
 
     //! Grow hashtable capacity.
-    ROC_NODISCARD bool grow();
+    ROC_ATTR_NODISCARD bool grow();
 
 private:
     HashmapData* find_in_bucket_(const Bucket& bucket,

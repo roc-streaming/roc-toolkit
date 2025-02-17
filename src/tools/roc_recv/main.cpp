@@ -497,7 +497,8 @@ bool prepare_receiver(const gengetopt_args_info& args,
     for (size_t slot = 0; slot < (size_t)args.source_given; slot++) {
         address::NetworkUri endpoint(context.arena());
 
-        if (!address::parse_network_uri(args.source_arg[slot], endpoint)) {
+        if (!address::parse_network_uri(args.source_arg[slot],
+                                        address::NetworkUri::Subset_Full, endpoint)) {
             roc_log(LogError, "can't parse --source endpoint: %s", args.source_arg[slot]);
             return false;
         }
@@ -529,7 +530,8 @@ bool prepare_receiver(const gengetopt_args_info& args,
     for (size_t slot = 0; slot < (size_t)args.repair_given; slot++) {
         address::NetworkUri endpoint(context.arena());
 
-        if (!address::parse_network_uri(args.repair_arg[slot], endpoint)) {
+        if (!address::parse_network_uri(args.repair_arg[slot],
+                                        address::NetworkUri::Subset_Full, endpoint)) {
             roc_log(LogError, "can't parse --repair endpoint: %s", args.source_arg[slot]);
             return false;
         }
@@ -561,7 +563,8 @@ bool prepare_receiver(const gengetopt_args_info& args,
     for (size_t slot = 0; slot < (size_t)args.control_given; slot++) {
         address::NetworkUri endpoint(context.arena());
 
-        if (!address::parse_network_uri(args.control_arg[slot], endpoint)) {
+        if (!address::parse_network_uri(args.control_arg[slot],
+                                        address::NetworkUri::Subset_Full, endpoint)) {
             roc_log(LogError, "can't parse --control endpoint: %s",
                     args.control_arg[slot]);
             return false;

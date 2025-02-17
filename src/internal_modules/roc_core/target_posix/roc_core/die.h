@@ -20,12 +20,12 @@ namespace core {
 //! Terminate program.
 //! @remarks
 //!  Terminates immediately without calling destructors and exit handlers.
-ROC_NORETURN void die_fast(int code);
+ROC_ATTR_NORETURN void die_fast(int code);
 
 //! Terminate program with error message and backtrace.
 //! @remarks
 //!  Prints error message, backtraces, and terminates program with error.
-ROC_NORETURN void die_gracefully(const char* message, bool full_backtrace);
+ROC_ATTR_NORETURN void die_gracefully(const char* message, bool full_backtrace);
 
 } // namespace core
 } // namespace roc

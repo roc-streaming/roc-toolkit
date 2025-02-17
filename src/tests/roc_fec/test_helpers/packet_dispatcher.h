@@ -47,7 +47,7 @@ public:
         reset();
     }
 
-    virtual ROC_NODISCARD status::StatusCode write(const packet::PacketPtr& p) {
+    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr& p) {
         store_(p);
 
         if (++packet_num_ >= num_source_ + num_repair_) {
@@ -212,7 +212,9 @@ private:
             FAIL("can't allocate packet");
         }
 
-        LONGS_EQUAL(status::StatusOK, parser.parse(*pp, old_pp->buffer()));
+        if (!parser.parse(*pp, old_pp->buffer())) {
+            FAIL("can't parse packet");
+        }
 
         pp->set_buffer(old_pp->buffer());
 

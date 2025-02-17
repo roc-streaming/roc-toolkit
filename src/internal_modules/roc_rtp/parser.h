@@ -37,8 +37,7 @@ public:
     virtual status::StatusCode init_status() const;
 
     //! Parse packet from buffer.
-    virtual ROC_NODISCARD status::StatusCode parse(packet::Packet& packet,
-                                                   const core::Slice<uint8_t>& buffer);
+    virtual bool parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer);
 
 private:
     const EncodingMap& encoding_map_;

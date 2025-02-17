@@ -576,10 +576,9 @@ status::StatusCode Communicator::generate_packet_(PacketType packet_type,
     packet_buffer.reslice(0, 0);
 
     // Prepare packet to be able to hold our RTCP packet data
-    status = packet_composer_.prepare(*packet, packet_buffer, payload_buffer.size());
-    if (status != status::StatusOK) {
+    if (!packet_composer_.prepare(*packet, packet_buffer, payload_buffer.size())) {
         roc_log(LogError, "rtcp communicator: can't prepare packet");
-        return status;
+        return status::StatusNoMem;
     }
     packet->add_flags(packet::Packet::FlagPrepared);
 

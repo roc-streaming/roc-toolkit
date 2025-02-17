@@ -7,11 +7,11 @@
  */
 
 #include "roc_fec/block_writer.h"
+#include "roc_core/fast_random.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/secure_random.h"
 #include "roc_packet/fec_scheme.h"
-#include "roc_status/status_code.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace fec {
@@ -46,16 +46,9 @@ BlockWriter::BlockWriter(const BlockWriterConfig& config,
         return;
     }
 
-    bool ok = core::secure_random(&cur_sbn_, sizeof(cur_sbn_));
-    if (!ok) {
-        init_status_ = status::StatusErrRand;
-        return;
-    }
-    ok = core::secure_random(&cur_block_repair_sn_, sizeof(cur_block_repair_sn_));
-    if (!ok) {
-        init_status_ = status::StatusErrRand;
-        return;
-    }
+    cur_sbn_ = (packet::blknum_t)core::fast_random_range(0, packet::blknum_t(-1));
+    cur_block_repair_sn_ =
+        (packet::seqnum_t)core::fast_random_range(0, packet::seqnum_t(-1));
 
     if ((init_status_ = resize(config.n_source_packets, config.n_repair_packets))
         != status::StatusOK) {
@@ -230,10 +223,9 @@ status::StatusCode BlockWriter::write_source_packet_(const packet::PacketPtr& pp
 
     fill_packet_fec_fields_(pp, (packet::seqnum_t)cur_packet_);
 
-    status::StatusCode status = source_composer_.compose(*pp);
-    if (status != status::StatusOK) {
-        roc_log(LogError, "fec block writer: can't compose packet");
-        return status;
+    if (!source_composer_.compose(*pp)) {
+        // TODO(gh-183): forward status from composer
+        return status::StatusBadBuffer;
     }
     pp->add_flags(packet::Packet::FlagComposed);
 
@@ -269,17 +261,16 @@ status::StatusCode BlockWriter::make_repair_packet_(packet::seqnum_t pack_n,
         return status::StatusNoMem;
     }
 
-    status::StatusCode status =
-        repair_composer_.align(buffer, 0, block_encoder_.buffer_alignment());
-    if (status != status::StatusOK) {
+    if (!repair_composer_.align(buffer, 0, block_encoder_.buffer_alignment())) {
         roc_log(LogError, "fec block writer: can't align packet buffer");
-        return status;
+        // TODO(gh-183): forward status from composer
+        return status::StatusBadBuffer;
     }
 
-    status = repair_composer_.prepare(*packet, buffer, cur_payload_size_);
-    if (status != status::StatusOK) {
+    if (!repair_composer_.prepare(*packet, buffer, cur_payload_size_)) {
         roc_log(LogError, "fec block writer: can't prepare packet");
-        return status;
+        // TODO(gh-183): forward status from composer
+        return status::StatusBadBuffer;
     }
     packet->add_flags(packet::Packet::FlagPrepared);
 
@@ -313,10 +304,9 @@ status::StatusCode BlockWriter::compose_repair_packets_() {
             continue;
         }
 
-        status::StatusCode status = repair_composer_.compose(*rp);
-        if (status != status::StatusOK) {
-            roc_log(LogError, "fec block writer: can't compose packet");
-            return status;
+        if (!repair_composer_.compose(*rp)) {
+            // TODO(gh-183): forward status from composer
+            return status::StatusBadBuffer;
         }
         rp->add_flags(packet::Packet::FlagComposed);
     }

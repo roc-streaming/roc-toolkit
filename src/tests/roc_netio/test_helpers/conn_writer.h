@@ -9,6 +9,8 @@
 #ifndef ROC_NETIO_TEST_HELPERS_CONN_WRITER_H_
 #define ROC_NETIO_TEST_HELPERS_CONN_WRITER_H_
 
+#include <CppUTest/TestHarness.h>
+
 #include "roc_core/fast_random.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
@@ -16,8 +18,6 @@
 #include "roc_netio/iconn.h"
 
 #include "test_helpers/mock_conn_handler.h"
-
-#include <CppUTest/TestHarness.h>
 
 namespace roc {
 namespace netio {

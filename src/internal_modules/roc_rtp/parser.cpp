@@ -25,12 +25,11 @@ status::StatusCode Parser::init_status() const {
     return status::StatusOK;
 }
 
-status::StatusCode Parser::parse(packet::Packet& packet,
-                                 const core::Slice<uint8_t>& buffer) {
+bool Parser::parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
     if (buffer.size() < sizeof(Header)) {
         roc_log(LogDebug, "rtp parser: bad packet: size<%d (rtp header)",
                 (int)sizeof(Header));
-        return status::StatusBadPacket;
+        return false;
     }
 
     const Header& header = *(const Header*)buffer.data();
@@ -38,7 +37,7 @@ status::StatusCode Parser::parse(packet::Packet& packet,
     if (header.version() != V2) {
         roc_log(LogDebug, "rtp parser: bad version: get=%d expected=%d",
                 (int)header.version(), (int)V2);
-        return status::StatusBadPacket;
+        return false;
     }
 
     size_t header_size = header.header_size();
@@ -50,7 +49,7 @@ status::StatusCode Parser::parse(packet::Packet& packet,
     if (buffer.size() < header_size) {
         roc_log(LogDebug, "rtp parser: bad packet: size<%d (rtp header + ext header)",
                 (int)header_size);
-        return status::StatusBadPacket;
+        return false;
     }
 
     if (header.has_extension()) {
@@ -64,7 +63,7 @@ status::StatusCode Parser::parse(packet::Packet& packet,
         roc_log(LogDebug,
                 "rtp parser: bad packet: size<%d (rtp header + ext header + ext data)",
                 (int)header_size);
-        return status::StatusBadPacket;
+        return false;
     }
 
     size_t payload_begin = header_size;
@@ -76,20 +75,20 @@ status::StatusCode Parser::parse(packet::Packet& packet,
         if (payload_begin == payload_end) {
             roc_log(LogDebug,
                     "rtp parser: bad packet: empty payload but padding flag is set");
-            return status::StatusBadPacket;
+            return false;
         }
 
         pad_size = buffer.data()[payload_end - 1];
 
         if (pad_size == 0) {
             roc_log(LogDebug, "rtp parser: bad packet: padding size octet is zero");
-            return status::StatusBadPacket;
+            return false;
         }
 
         if (size_t(payload_end - payload_begin) < size_t(pad_size)) {
             roc_log(LogDebug, "rtp parser: bad packet: padding_size>%d (payload size)",
                     (int)(payload_end - payload_begin));
-            return status::StatusBadPacket;
+            return false;
         }
 
         payload_end -= pad_size;
@@ -119,7 +118,7 @@ status::StatusCode Parser::parse(packet::Packet& packet,
         return inner_parser_->parse(packet, rtp.payload);
     }
 
-    return status::StatusOK;
+    return true;
 }
 
 } // namespace rtp
