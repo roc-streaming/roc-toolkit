@@ -19,21 +19,20 @@ static const uint32_t REFS_MASK = 0x7FFFFFFF;
 static const uint32_t SUB_1 = 0xFFFFFFFF;
 static const uint32_t SUB_2 = 0xFFFFFFFE;
 
-FreeListImpl::FreeListImpl(): head_(NULL) {
+FreeListImpl::FreeListImpl()
+    : head_(NULL) {
 }
 
 FreeListImpl::~FreeListImpl() {
-    while (head_ != NULL) {
-        unsafe_pop_front();
-    }
 }
 
 FreeListData* FreeListImpl::front() const {
-   return head_;
+    return head_;
 }
 
 bool FreeListImpl::is_empty() {
-    if (head_ == NULL) return true;
+    if (head_ == NULL)
+        return true;
     return false;
 }
 
