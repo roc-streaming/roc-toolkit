@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2015 Roc Streaming authors
  *
@@ -7,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/list.h
+//! @file roc_core/free_list.h
 //! @brief Intrusive doubly-linked list.
 
-#ifndef ROC_CORE_LIST_H_
-#define ROC_CORE_LIST_H_
+#ifndef ROC_CORE_FREE_LIST_H_
+#define ROC_CORE_FREE_LIST_H_
 
 #include "roc_core/free_list_impl.h"
 #include "roc_core/free_list_node.h"
@@ -51,8 +50,11 @@ public:
 
     //! Release ownership of containing objects.
     ~FreeList() {
+        while (!is_empty()) {
+            unsafe_pop_front();
+        }
     }
-    
+
     //! Get first list element.
     //! @returns
     //!  first element or NULL if list is empty.
@@ -84,13 +86,16 @@ public:
     //!
     //! @pre
     //!  the list should not be empty.
-    void pop_front() {
+    void try_pop_front() {
         FreeListData* data = impl_.try_pop_front();
         T* elem = from_free_node_data_(data);
 
         OwnershipPolicy<T>::release(*elem);
     }
 
+    bool is_empty() {
+        return impl_.is_empty();
+    }
 
 private:
     static FreeListData* to_free_node_data_(const T& elem) {
@@ -101,10 +106,17 @@ private:
         return static_cast<T*>(static_cast<Node*>(Node::list_node(data)));
     }
 
+    void unsafe_pop_front() {
+        FreeListData* data = impl_.unsafe_pop_front();
+        T* elem = from_free_node_data_(data);
+
+        OwnershipPolicy<T>::release(*elem);
+    }
+
     FreeListImpl impl_;
 };
 
 } // namespace core
 } // namespace roc
 
-#endif // ROC_CORE_LIST_H_
+#endif // ROC_CORE_FREE_LIST_H_
