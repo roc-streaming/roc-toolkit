@@ -42,6 +42,8 @@ struct FreeListData {
 //!  object into multiple lists.
 template <class Tag = void> class FreeListNode : public NonCopyable<FreeListNode<Tag> > {
 public:
+    ~FreeListNode() {
+    }
     //! Get pointer to parent node from pointer to internal data.
     static FreeListNode* list_node(FreeListData* data) {
         return ROC_CONTAINER_OF(data, FreeListNode, free_list_data_);
