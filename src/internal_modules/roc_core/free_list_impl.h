@@ -19,13 +19,15 @@
 
 namespace roc {
 namespace core {
-// A simple CAS-based lock-free free list. Not the fastest thing in the world under heavy
-// contention, but simple and correct (assuming nodes are never freed until after the free
-// list is destroyed), and fairly speedy under low contention.
+//! A simple CAS-based lock-free free list. Not the fastest thing in the world under heavy
+//! contention, but simple and correct (assuming nodes are never freed until after the
+//! free list is destroyed), and fairly speedy under low contention. Implemented like a
+//! stack, but where node order doesn't matter (nodes are inserted out of order under
+//! contention)
 
-// Credits:
-// Based on the article by Cameron:
-// https://moodycamel.com/blog/2014/solving-the-aba-problem-for-lock-free-free-lists.htm
+//! Credits:
+//! Based on the article by Cameron:
+//! https://moodycamel.com/blog/2014/solving-the-aba-problem-for-lock-free-free-lists.htm
 class FreeListImpl : public NonCopyable<> {
 public:
     FreeListImpl();
@@ -34,12 +36,13 @@ public:
     //! Try to remove first node and return.
     FreeListData* try_pop_front();
 
-    // Remove first element under the condition that the list is not being used by anyone
+    //! Remove first element under the condition that the list is not being used by anyone
     FreeListData* unsafe_pop_front();
 
+    //! Get first element of list, i.e., head
     FreeListData* front() const;
 
-    // Is list empty?
+    //! Check if list is empty
     bool is_empty();
 
     //! Insert node into list.
@@ -51,9 +54,6 @@ public:
 private:
     static void check_is_member_(const FreeListData* node, const FreeListImpl* list);
 
-    // Atomic<FreeListData*> head_;
-    // Implemented like a stack, but where node order doesn't matter (nodes are
-    // inserted out of order under contention)
     FreeListData* head_;
 };
 
