@@ -96,11 +96,6 @@ public:
         return AtomicOps::fetch_add_seq_cst(var_, val) + val;
     }
 
-    //! Atomic addition (postfix).
-    inline T postfix_add(T val) {
-        return AtomicOps::fetch_add_seq_cst(var_, val);
-    }
-
     //! Atomic subtraction.
     inline T operator-=(T val) {
         return AtomicOps::fetch_sub_seq_cst(var_, val) - val;
