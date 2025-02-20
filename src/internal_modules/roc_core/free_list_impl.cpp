@@ -118,4 +118,3 @@ void FreeListImpl::add_knowing_refcount_is_zero_(FreeListData* node) {
 }
 } // namespace core
 } // namespace roc
-  // namespace roc

@@ -21,18 +21,15 @@
 namespace roc {
 namespace core {
 
-//! Intrusive doubly-linked list.
+//! A simple CAS-based lock-free free list
 //!
-//! Does not perform allocations.
-//! Provides O(1) size check, membership check, insertion, and removal.
-//!
-//! @tparam T defines object type, it must inherit ListNode.
+//! @tparam T defines object type, it must inherit FreeListNode.
 //!
 //! @tparam OwnershipPolicy defines ownership policy which is used to acquire an
 //! element ownership when it's added to the list and release ownership when it's
 //! removed from the list.
 //!
-//! @tparam Node defines base class of list nodes. It is needed if ListNode is
+//! @tparam Node defines base class of list nodes. It is needed if FreeListNode is
 //! used with non-default tag.
 template <class T,
           template <class TT> class OwnershipPolicy = RefCountedOwnership,

@@ -52,8 +52,6 @@ public:
     void add_knowing_refcount_is_zero_(FreeListData* node);
 
 private:
-    static void check_is_member_(const FreeListData* node, const FreeListImpl* list);
-
     FreeListData* head_;
 };
 
