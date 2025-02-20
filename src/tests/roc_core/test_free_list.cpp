@@ -129,16 +129,16 @@ TEST(free_list, ownership_destructor) {
     LONGS_EQUAL(0, obj.getref());
 }
 
-// TEST(list, shared_pointers) {
-//     RefObject obj;
-//     FreeListImpl list;
-//
-//     list.push_front(obj);
-//
-//     POINTERS_EQUAL(&obj, list.front().get());
-//
-//     LONGS_EQUAL(2, list.front()->getref());
-// }
+TEST(free_list, shared_pointers) {
+    RefObject obj;
+    FreeList<RefObject, RefCountedOwnership> list;
+
+    list.push_front(obj);
+
+    POINTERS_EQUAL(&obj, list.front().get());
+
+    LONGS_EQUAL(2, list.front()->getref());
+}
 } // namespace core
 
 } // namespace roc
