@@ -77,8 +77,7 @@ TEST(free_list, try_pop_front) {
 
     CHECK(list.front() == NULL);
 }
-//
-// // TODO: test a destructor / unsafe_pop_front - which is a private method
+
 TEST(free_list, iteration) {
     Object objects[NumObjects];
     FreeList<Object, NoOwnership> list;
@@ -116,21 +115,20 @@ TEST(free_list, ownership_operations) {
         LONGS_EQUAL(0, obj1.getref());
     }
 }
-//
-// TEST(list, ownership_destructor) {
-//     RefObject obj;
-//
-//     {
-//         FreeListImpl list;
-//
-//         list.push_front(obj);
-//
-//         LONGS_EQUAL(1, obj.getref());
-//     }
-//
-//     LONGS_EQUAL(0, obj.getref());
-// }
-//
+
+TEST(free_list, ownership_destructor) {
+    RefObject obj;
+    {
+        FreeList<RefObject, RefCountedOwnership> list;
+
+        list.push_front(obj);
+
+        LONGS_EQUAL(1, obj.getref());
+    }
+
+    LONGS_EQUAL(0, obj.getref());
+}
+
 // TEST(list, shared_pointers) {
 //     RefObject obj;
 //     FreeListImpl list;
