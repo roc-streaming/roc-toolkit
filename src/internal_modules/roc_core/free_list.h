@@ -90,6 +90,7 @@ public:
         OwnershipPolicy<T>::release(*elem);
     }
 
+    //! Checks if list is empty
     bool is_empty() {
         return impl_.is_empty();
     }
