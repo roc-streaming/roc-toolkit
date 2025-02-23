@@ -213,6 +213,15 @@ elif 'openfec' in system_dependencies:
 if 'openssl' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_versions, 'openssl')
 
+    if meta.compiler in ['gcc', 'clang']:
+        conf = Configure(env, custom_tests=env.CustomTests)
+
+        # -latomic may be needed by libcrypto when present in toolchain
+        if conf.CheckLib('atomic'):
+            env.AddManualDependency(libs=['atomic'])
+
+        env = conf.Finish()
+
 elif 'openssl' in system_dependencies:
     ossl_prefix = None
     # macOS: fallback to use a brew-installed openssl

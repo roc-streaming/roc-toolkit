@@ -118,15 +118,15 @@ Runtime dependencies
 
 .. note::
 
+   On some systems (e.g. Raspbian), you may need to explicitly install ``libatomic1``. It is part of GCC runtime, but is packaged separately and is not pre-installed everywhere.
+
+.. note::
+
    libuv versions before 1.5.0 may have problems on 64-bit ARMs.
 
 .. note::
 
    SpeexDSP (libspeexdsp) below 1.2rc3 was part of Speex (libspeex) package.
-
-.. note::
-
-   For OpenSSL, you may need to install ``libatomic1`` library package on some systems.
 
 Development dependencies
 ========================

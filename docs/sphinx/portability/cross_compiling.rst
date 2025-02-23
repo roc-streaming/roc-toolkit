@@ -354,6 +354,12 @@ You can either copy their binaries from ``3rdparty/<toolchain>/rpath`` directory
 
 Here are examples for Raspbian:
 
+Install ``libatomic1``:
+
+.. code::
+
+   $ apt-get install libatomic1
+
 If ALSA support is enabled, install ``libasound``:
 
 .. code::
@@ -367,12 +373,6 @@ If PulseAudio support is enabled, install ``libltdl`` and ``libpulse``:
    $ apt-get install libltdl7 libpulse0
 
 .. _qemu:
-
-If OpenSSL support is enabled, install ``libatomic1``:
-
-.. code::
-
-   $ apt-get install libatomic1
 
 Running cross-compiled tests in QEMU
 ====================================

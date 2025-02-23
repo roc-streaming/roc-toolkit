@@ -234,7 +234,7 @@ Raspberry Pi (64-bit)
             --disable-pulseaudio
 
     # install Roc binaries
-    $ scp ./bin/aarch64-linux-gnu/roc-{recv,send,conv} <address>:/usr/bin
+    $ scp ./bin/aarch64-linux-gnu/roc-{recv,send,copy} <address>:/usr/bin
     $ scp ./bin/aarch64-linux-gnu/libroc.so.*.* <address>:/usr/lib
 
     # install Roc dependencies
@@ -262,7 +262,7 @@ Raspberry Pi 2 and later (32-bit)
             --disable-pulseaudio
 
     # install Roc binaries
-    $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,conv} <address>:/usr/bin
+    $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,copy} <address>:/usr/bin
     $ scp ./bin/arm-linux-gnueabihf/libroc.so.*.* <address>:/usr/lib
 
     # install Roc dependencies
@@ -289,7 +289,7 @@ Raspberry Pi 1 and Zero (32-bit)
             --build-3rdparty=all
 
     # install Roc binaries
-    $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-{recv,send,conv} <address>:/usr/bin
+    $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-{recv,send,copy} <address>:/usr/bin
     $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/libroc.so.*.* <address>:/usr/lib
 
     # install Roc dependencies
@@ -319,11 +319,11 @@ OpenWrt (MIPS32 24Kc, Artheos, musl)
             --disable-sox
 
     # install Roc binaries
-    $ scp ./bin/mips-openwrt-linux-musl/roc-{recv,send,conv} <address>:/usr/bin
+    $ scp ./bin/mips-openwrt-linux-musl/roc-{recv,send,copy} <address>:/usr/bin
     $ scp ./bin/mips-openwrt-linux-musl/libroc.so.*.* <address>:/usr/lib
 
     # install Roc dependencies
-    $ ssh <address> opkg install libstdcpp librt alsa-lib
+    $ ssh <address> opkg install libstdcpp librt libatomic alsa-lib
 
 OpenWrt (MIPS32 24Kc, Artheos, uClibc)
 --------------------------------------
@@ -351,11 +351,11 @@ OpenWrt (MIPS32 24Kc, Artheos, uClibc)
             --disable-openssl
 
     # install Roc binaries
-    $ scp ./bin/mips-openwrt-linux-uclibc/roc-{recv,send,conv} <address>:/usr/bin
+    $ scp ./bin/mips-openwrt-linux-uclibc/roc-{recv,send,copy} <address>:/usr/bin
     $ scp ./bin/mips-openwrt-linux-uclibc/libroc.so.*.* <address>:/usr/lib
 
     # install Roc dependencies
-    $ ssh <address> opkg install libstdcpp librt alsa-lib
+    $ ssh <address> opkg install libstdcpp librt libatomic alsa-lib
 
 macOS
 =====

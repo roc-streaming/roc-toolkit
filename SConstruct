@@ -670,10 +670,6 @@ if meta.platform == 'darwin':
     conf.FindTool('LIPO', [''], [('lipo', None)], required=False)
     conf.FindTool('INSTALL_NAME_TOOL', [''], [('install_name_tool', None)], required=False)
 
-if meta.compiler == 'gcc' or meta.compiler == 'clang':
-    if not GetOption('disable_openssl') and conf.CheckLib('atomic'):
-        env.AddManualDependency(libs=['atomic']) # explicitly needed by libcrypto (openssl)
-
 meta.c11_support = False
 if not GetOption('disable_c11'):
     if meta.compiler == 'gcc':

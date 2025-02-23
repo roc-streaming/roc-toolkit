@@ -186,7 +186,7 @@ For more details, see :ref:`qemu`.
 Run Android tests locally
 -------------------------
 
-CI steps for Android use emulator to run tests. You can do roughtly the same locally using ``android_emu.sh`` script:
+CI steps for Android use emulator to run tests. You can do roughly the same locally using ``android_emu.sh`` script:
 
 .. code::
 
