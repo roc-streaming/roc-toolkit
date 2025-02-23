@@ -168,25 +168,17 @@ def guess_issue(org, repo, text):
     return None
 
 def make_prefix_suffix_regexp(org, repo, is_prefix):
-    kv_rx = [
-        "issue",
-        "ticket",
-        "task",
-    ]
-    nm_rx = [
+    kv_rx = "issue|ticket|task"
+    nm_rx = "|".join([
         r"gh-[0-9]+",
         r"#?[0-9]+",
         f"{org}/[^ ]+",
-        f"{repo}#[^ ]+",
-    ]
+    ])
 
-    prod_rx = nm_rx[:]
-    for kv, nm in itertools.product(kv_rx, nm_rx):
-        prod_rx.append(f"{kv}\\s+{nm}")
+    ref_rx = f"({kv_rx}\\s+)?({nm_rx})"
+    sep_rx = r"[][(){}:]"
 
-    sep = r"[\[\]():{}]"
-
-    rx = f"\\s*{sep}?\\s*({'|'.join(prod_rx)})\\s*{sep}?\\s*"
+    rx = f"\\s*{sep_rx}?\\s*({ref_rx})\\s*{sep_rx}?\\s*"
 
     if is_prefix:
         return f"^({rx})?"
