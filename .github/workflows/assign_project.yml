@@ -5,12 +5,14 @@ on:
     types:
       - opened
 
+permissions:
+  pull-requests: write
+  issues: write
+
 jobs:
   main:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/add-to-project@v1.0.2
-        id: addItem
-        with:
-          project-url: "https://github.com/orgs/roc-streaming/projects/5"
-          github-token: "${{ secrets.REPO_MANAGEMENT }}"
+    uses: roc-streaming/ci/.github/workflows/project_assign.yml@main
+    with:
+      project: 5
+    secrets:
+      triage-token: "${{ secrets.REPO_MANAGEMENT }}"

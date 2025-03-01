@@ -4,67 +4,41 @@ on:
   pull_request_target:
     types:
       - opened
+      - reopened
+
+permissions:
+  pull-requests: write
+  checks: read
 
 concurrency:
   group: pr-${{ github.event.pull_request.number || github.ref }}
 
 jobs:
-  check-ready:
+  welcome:
+    uses: roc-streaming/ci/.github/workflows/pr_check_first.yml@main
+    with:
+      base-branch: develop
+
+  wait-build:
     runs-on: ubuntu-latest
     steps:
-      - name: Add label
-        uses: andymckay/labeler@1.0.4
-        if: github.event.pull_request.draft == true
+      - uses: poseidon/wait-for-status-checks@v0.6.0
         with:
-          add-labels: 'work in progress'
+          interval: 30s
+          timeout: 3600s
+          token: ${{ github.token }}
 
-      - name: Add label
-        uses: andymckay/labeler@1.0.4
-        if: tojson(github.event.pull_request.requested_reviewers) != '[]'
-        with:
-          add-labels: 'ready for review'
+  initial-status:
+    needs: [wait-build]
+    uses: roc-streaming/ci/.github/workflows/pr_status_detect.yml@main
 
   check-contrib:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check contrib
-        id: contrib
-        run: |
-          echo flag=$(scripts/rgh.py show_pr ${{ github.event.pull_request.number }} --json \
-            | jq -r .pull_request.contrib) >> "$GITHUB_OUTPUT"
-        env:
-         GH_TOKEN: ${{ secrets.github_token }}
-
-      - name: Add label
-        if: steps.contrib.outputs.flag == 'true'
-        uses: andymckay/labeler@1.0.4
-        with:
-          add-labels: 'contribution'
+    uses: roc-streaming/ci/.github/workflows/pr_check_contrib.yml@main
 
   check-issue:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    uses: roc-streaming/ci/.github/workflows/pr_check_issue.yml@main
 
-      - name: Check issue
-        id: issue
-        run: |
-          echo url=$(scripts/rgh.py show_pr ${{ github.event.pull_request.number }} --json \
-            | jq -r .issue.url) >> "$GITHUB_OUTPUT"
-        env:
-         GH_TOKEN: ${{ secrets.github_token }}
-
-      - name: Post Comment
-        if: |
-          steps.issue.outputs.url == '' ||
-          steps.issue.outputs.url == 'null'
-        uses: thollander/actions-comment-pull-request@v2
-        with:
-          message: ":robot: Upon creation, pull request description does not have a link to an issue.
-            If there is a related issue, please add it to the description
-            using any of the [supported formats](https://docs.github.com/en/get-started/\
-            writing-on-github/working-with-advanced-formatting/autolinked-references-and-urls)."
+  check-branch:
+    uses: roc-streaming/ci/.github/workflows/pr_check_branch.yml@main
+    with:
+      base-branch: develop

@@ -5,20 +5,16 @@ on:
     types:
       - labeled
 
+permissions:
+  pull-requests: write
+  issues: write
+
 jobs:
   main:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/add-to-project@v1.0.2
-        id: addItem
-        with:
-          project-url: "https://github.com/orgs/roc-streaming/projects/5"
-          github-token: "${{ secrets.REPO_MANAGEMENT }}"
-          labeled: "help wanted"
-
-      - uses: kalgurn/update-project-item-status@v0.0.1
-        with:
-          project-url: "https://github.com/orgs/roc-streaming/projects/5"
-          github-token: "${{ secrets.REPO_MANAGEMENT }}"
-          item-id: ${{ steps.addItem.outputs.itemId }}
-          status: "Help wanted"
+    uses: roc-streaming/ci/.github/workflows/project_assign_column.yml@main
+    with:
+      project: 5
+      labeled: "help wanted"
+      column: "Help wanted"
+    secrets:
+      triage-token: "${{ secrets.REPO_MANAGEMENT }}"
