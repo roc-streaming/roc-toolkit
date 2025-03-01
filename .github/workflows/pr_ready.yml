@@ -6,14 +6,12 @@ on:
       - review_requested
       - ready_for_review
 
+permissions:
+  pull-requests: write
+
 concurrency:
   group: pr-${{ github.event.pull_request.number || github.ref }}
 
 jobs:
   main:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: andymckay/labeler@1.0.4
-        with:
-          add-labels: 'ready for review'
-          remove-labels: 'work in progress,needs revision'
+    uses: roc-streaming/ci/.github/workflows/pr_status_ready.yml@main

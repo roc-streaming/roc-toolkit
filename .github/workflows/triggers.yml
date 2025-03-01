@@ -5,12 +5,13 @@ on:
     branches:
       - master
 
+permissions:
+  actions: write
+
 jobs:
   main:
     if: |
       github.repository_owner == 'roc-streaming'
-
-    runs-on: ubuntu-latest
 
     strategy:
       matrix:
@@ -38,11 +39,8 @@ jobs:
 
     name: ${{ matrix.repo }}
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Trigger
-        run: |
-          scripts/ci_checks/trigger.sh roc-streaming/${{ matrix.repo }} \
-            ${{ matrix.branch}} "${{ secrets.REPO_TRIGGERING }}"
+    uses: roc-streaming/ci/.github/workflows/trigger_build.yml@main
+    with:
+      repo: ${{ matrix.repo }}
+      branch: ${{ matrix.branch }}
+      ci-token: ${{ secrets.REPO_TRIGGERING }}

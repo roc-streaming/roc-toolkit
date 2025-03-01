@@ -5,13 +5,12 @@ on:
     types:
       - closed
 
+permissions:
+  pull-requests: write
+
 concurrency:
   group: pr-${{ github.event.pull_request.number || github.ref }}
 
 jobs:
   main:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: andymckay/labeler@1.0.4
-        with:
-          remove-labels: 'work in progress,ready for review,review in progress,needs revision,needs rebase'
+    uses: roc-streaming/ci/.github/workflows/pr_status_clear.yml@main

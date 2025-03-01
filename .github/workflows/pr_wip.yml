@@ -6,14 +6,15 @@ on:
       - review_request_removed
       - converted_to_draft
 
+permissions:
+  pull-requests: write
+
 concurrency:
   group: pr-${{ github.event.pull_request.number || github.ref }}
 
 jobs:
   main:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: andymckay/labeler@1.0.4
-        with:
-          add-labels: 'work in progress'
-          remove-labels: 'ready for review,needs revision'
+    uses: roc-streaming/ci/.github/workflows/pr_status_wip.yml@main
+    if: |
+      github.event.pull_request.draft == true ||
+      tojson(github.event.pull_request.requested_reviewers) == '[]'
