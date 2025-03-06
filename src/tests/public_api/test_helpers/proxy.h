@@ -55,6 +55,11 @@ public:
         roc_protocol repair_proto;
         CHECK(roc_endpoint_get_protocol(receiver_repair_endp, &repair_proto) == 0);
 
+        roc_protocol control_proto;
+        if (receiver_control_endp) {
+            CHECK(roc_endpoint_get_protocol(receiver_control_endp, &control_proto) == 0);
+        }
+
         int source_port = 0;
         CHECK(roc_endpoint_get_port(receiver_source_endp, &source_port) == 0);
 
@@ -74,9 +79,6 @@ public:
         CHECK(recv_repair_config_.bind_address.set_host_port(address::Family_IPv4,
                                                              "127.0.0.1", 0));
         if (receiver_control_endp) {
-            roc_protocol control_proto;
-            CHECK(roc_endpoint_get_protocol(receiver_control_endp, &control_proto) == 0);
-
             int control_port = 0;
             CHECK(roc_endpoint_get_port(receiver_control_endp, &control_port) == 0);
 
@@ -86,14 +88,6 @@ public:
             CHECK(recv_control_config_.bind_address.set_host_port(address::Family_IPv4,
                                                                   "127.0.0.1", 0));
         }
-
-        CHECK(send_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                                      0));
-
-        CHECK(recv_source_config_.bind_address.set_host_port(address::Family_IPv4,
-                                                             "127.0.0.1", 0));
-        CHECK(recv_repair_config_.bind_address.set_host_port(address::Family_IPv4,
-                                                             "127.0.0.1", 0));
 
         netio::NetworkLoop::PortHandle send_port = NULL;
 
@@ -150,9 +144,6 @@ public:
                                     recv_repair_config_.bind_address.port())
               == 0);
         if (receiver_control_endp) {
-            roc_protocol control_proto;
-            CHECK(roc_endpoint_get_protocol(receiver_control_endp, &control_proto) == 0);
-
             CHECK(roc_endpoint_allocate(&input_control_endp_) == 0);
             CHECK(roc_endpoint_set_protocol(input_control_endp_, control_proto) == 0);
             CHECK(roc_endpoint_set_host(input_control_endp_, "127.0.0.1") == 0);
