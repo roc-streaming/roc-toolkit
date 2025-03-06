@@ -34,6 +34,7 @@ class Proxy : public core::Thread, private packet::IWriter {
 public:
     Proxy(const roc_endpoint* receiver_source_endp,
           const roc_endpoint* receiver_repair_endp,
+          const roc_endpoint* receiver_control_endp,
           size_t n_source_packets,
           size_t n_repair_packets,
           unsigned flags)
@@ -43,7 +44,6 @@ public:
         , net_loop_(packet_pool_, buffer_pool_, arena_)
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
-        , n_control_packets_(0)
         , flags_(flags)
         , pos_(0) {
         input_control_endp_ = NULL;
@@ -73,97 +73,19 @@ public:
                                                              "127.0.0.1", 0));
         CHECK(recv_repair_config_.bind_address.set_host_port(address::Family_IPv4,
                                                              "127.0.0.1", 0));
+        if (receiver_control_endp) {
+            roc_protocol control_proto;
+            CHECK(roc_endpoint_get_protocol(receiver_control_endp, &control_proto) == 0);
 
-        netio::NetworkLoop::PortHandle send_port = NULL;
+            int control_port = 0;
+            CHECK(roc_endpoint_get_port(receiver_control_endp, &control_port) == 0);
 
-        {
-            netio::NetworkLoop::Tasks::AddUdpPort add_task(send_config_);
-            CHECK(net_loop_.schedule_and_wait(add_task));
+            CHECK(receiver_control_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
+                                                       control_port));
 
-            send_port = add_task.get_handle();
-            CHECK(send_port);
-
-            netio::NetworkLoop::Tasks::StartUdpSend send_task(add_task.get_handle());
-            CHECK(net_loop_.schedule_and_wait(send_task));
-            writer_ = &send_task.get_outbound_writer();
+            CHECK(recv_control_config_.bind_address.set_host_port(address::Family_IPv4,
+                                                                  "127.0.0.1", 0));
         }
-
-        {
-            netio::NetworkLoop::Tasks::AddUdpPort add_task(recv_source_config_);
-            CHECK(net_loop_.schedule_and_wait(add_task));
-
-            netio::NetworkLoop::Tasks::StartUdpRecv recv_task(add_task.get_handle(),
-                                                              *this);
-            CHECK(net_loop_.schedule_and_wait(recv_task));
-        }
-
-        {
-            netio::NetworkLoop::Tasks::AddUdpPort add_task(recv_repair_config_);
-            CHECK(net_loop_.schedule_and_wait(add_task));
-
-            netio::NetworkLoop::Tasks::StartUdpRecv recv_task(add_task.get_handle(),
-                                                              *this);
-            CHECK(net_loop_.schedule_and_wait(recv_task));
-        }
-
-        CHECK(roc_endpoint_allocate(&input_source_endp_) == 0);
-        CHECK(roc_endpoint_set_protocol(input_source_endp_, source_proto) == 0);
-        CHECK(roc_endpoint_set_host(input_source_endp_, "127.0.0.1") == 0);
-        CHECK(roc_endpoint_set_port(input_source_endp_,
-                                    recv_source_config_.bind_address.port())
-              == 0);
-
-        CHECK(roc_endpoint_allocate(&input_repair_endp_) == 0);
-        CHECK(roc_endpoint_set_protocol(input_repair_endp_, repair_proto) == 0);
-        CHECK(roc_endpoint_set_host(input_repair_endp_, "127.0.0.1") == 0);
-        CHECK(roc_endpoint_set_port(input_repair_endp_,
-                                    recv_repair_config_.bind_address.port())
-              == 0);
-    }
-
-    Proxy(const roc_endpoint* receiver_source_endp,
-          const roc_endpoint* receiver_repair_endp,
-          const roc_endpoint* receiver_control_endp,
-          size_t n_source_packets,
-          size_t n_repair_packets,
-          size_t n_control_packets,
-          unsigned flags)
-        : packet_pool_("proxy_packet_pool", arena_)
-        , buffer_pool_("proxy_buffer_pool", arena_, 2000)
-        , queue_(packet::ConcurrentQueue::Blocking)
-        , net_loop_(packet_pool_, buffer_pool_, arena_)
-        , n_source_packets_(n_source_packets)
-        , n_repair_packets_(n_repair_packets)
-        , n_control_packets_(n_control_packets)
-        , flags_(flags)
-        , pos_(0) {
-        LONGS_EQUAL(status::StatusOK, net_loop_.init_status());
-
-        roc_protocol source_proto;
-        CHECK(roc_endpoint_get_protocol(receiver_source_endp, &source_proto) == 0);
-
-        roc_protocol repair_proto;
-        CHECK(roc_endpoint_get_protocol(receiver_repair_endp, &repair_proto) == 0);
-
-        roc_protocol control_proto;
-        CHECK(roc_endpoint_get_protocol(receiver_control_endp, &control_proto) == 0);
-
-        int source_port = 0;
-        CHECK(roc_endpoint_get_port(receiver_source_endp, &source_port) == 0);
-
-        int repair_port = 0;
-        CHECK(roc_endpoint_get_port(receiver_repair_endp, &repair_port) == 0);
-
-        int control_port = 0;
-        CHECK(roc_endpoint_get_port(receiver_control_endp, &control_port) == 0);
-
-        CHECK(receiver_source_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                                  source_port));
-        CHECK(receiver_repair_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                                  repair_port));
-
-        CHECK(receiver_control_endp_.set_host_port(address::Family_IPv4, "127.0.0.1",
-                                                   control_port));
 
         CHECK(send_config_.bind_address.set_host_port(address::Family_IPv4, "127.0.0.1",
                                                       0));
@@ -172,8 +94,6 @@ public:
                                                              "127.0.0.1", 0));
         CHECK(recv_repair_config_.bind_address.set_host_port(address::Family_IPv4,
                                                              "127.0.0.1", 0));
-        CHECK(recv_control_config_.bind_address.set_host_port(address::Family_IPv4,
-                                                              "127.0.0.1", 0));
 
         netio::NetworkLoop::PortHandle send_port = NULL;
 
@@ -207,7 +127,7 @@ public:
             CHECK(net_loop_.schedule_and_wait(recv_task));
         }
 
-        {
+        if (receiver_control_endp) {
             netio::NetworkLoop::Tasks::AddUdpPort add_task(recv_control_config_);
             CHECK(net_loop_.schedule_and_wait(add_task));
 
@@ -229,13 +149,17 @@ public:
         CHECK(roc_endpoint_set_port(input_repair_endp_,
                                     recv_repair_config_.bind_address.port())
               == 0);
+        if (receiver_control_endp) {
+            roc_protocol control_proto;
+            CHECK(roc_endpoint_get_protocol(receiver_control_endp, &control_proto) == 0);
 
-        CHECK(roc_endpoint_allocate(&input_control_endp_) == 0);
-        CHECK(roc_endpoint_set_protocol(input_control_endp_, control_proto) == 0);
-        CHECK(roc_endpoint_set_host(input_control_endp_, "127.0.0.1") == 0);
-        CHECK(roc_endpoint_set_port(input_control_endp_,
-                                    recv_control_config_.bind_address.port())
-              == 0);
+            CHECK(roc_endpoint_allocate(&input_control_endp_) == 0);
+            CHECK(roc_endpoint_set_protocol(input_control_endp_, control_proto) == 0);
+            CHECK(roc_endpoint_set_host(input_control_endp_, "127.0.0.1") == 0);
+            CHECK(roc_endpoint_set_port(input_control_endp_,
+                                        recv_control_config_.bind_address.port())
+                  == 0);
+        }
     }
 
     ~Proxy() {
@@ -255,6 +179,7 @@ public:
     }
 
     const roc_endpoint* control_endpoint() const {
+        CHECK(input_control_endp_);
         return input_control_endp_;
     }
 
@@ -306,17 +231,21 @@ private:
         if (pp->udp()->dst_addr == recv_source_config_.bind_address) {
             pp->udp()->dst_addr = receiver_source_endp_;
             LONGS_EQUAL(status::StatusOK, source_queue_.write(pp));
-        } else if (pp->udp()->dst_addr == recv_control_config_.bind_address) {
-            pp->udp()->dst_addr = receiver_control_endp_;
-            LONGS_EQUAL(status::StatusOK, control_queue_.write(pp));
-        } else {
+        } else if (pp->udp()->dst_addr == recv_repair_config_.bind_address) {
             pp->udp()->dst_addr = receiver_repair_endp_;
             LONGS_EQUAL(status::StatusOK, repair_queue_.write(pp));
+        } else if (input_control_endp_
+                   && pp->udp()->dst_addr == recv_control_config_.bind_address) {
+            pp->udp()->dst_addr = receiver_control_endp_;
+            LONGS_EQUAL(status::StatusOK, control_queue_.write(pp));
+        } else if (input_control_endp_ && pp->udp()->dst_addr == receiver_control_endp_) {
+            pp->udp()->src_addr = recv_control_config_.bind_address;
+            pp->udp()->dst_addr = send_config_.bind_address;
+            LONGS_EQUAL(status::StatusOK, control_queue_.write(pp));
         }
 
         for (;;) {
-            const size_t block_pos =
-                pos_ % (n_source_packets_ + n_repair_packets_ + n_control_packets_);
+            const size_t block_pos = pos_ % (n_source_packets_ + n_repair_packets_);
 
             if (block_pos < n_source_packets_) {
                 const bool drop_packet = (flags_ & FlagLoseSomePkts) && (block_pos == 1);
@@ -324,16 +253,16 @@ private:
                 if (!send_packet_(source_queue_, drop_packet)) {
                     break;
                 }
-            } else if (block_pos < (n_source_packets_ + n_repair_packets_)) {
+            } else {
                 const bool drop_packet = (flags_ & FlagLoseAllRepairPkts);
                 if (!send_packet_(repair_queue_, drop_packet)) {
                     break;
                 }
-            } else {
-                if (!send_packet_(control_queue_, false)) {
-                    break;
-                }
             }
+        }
+
+        if (input_control_endp_) {
+            send_packet_(control_queue_, false);
         }
 
         return status::StatusOK;
@@ -398,7 +327,6 @@ private:
 
     const size_t n_source_packets_;
     const size_t n_repair_packets_;
-    const size_t n_control_packets_;
     core::Atomic<size_t> n_dropped_packets_;
 
     const unsigned flags_;
