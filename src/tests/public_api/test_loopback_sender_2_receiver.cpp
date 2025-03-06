@@ -214,7 +214,7 @@ TEST(loopback_sender_2_receiver, rs8m_with_losses) {
 
     receiver.bind();
 
-    test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
+    test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(), NULL,
                       test::SourcePackets, test::RepairPackets, Flags);
 
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
@@ -280,7 +280,7 @@ TEST(loopback_sender_2_receiver, ldpc_with_losses) {
 
     receiver.bind();
 
-    test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
+    test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(), NULL,
                       test::SourcePackets, test::RepairPackets, Flags);
 
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
@@ -656,7 +656,7 @@ TEST(loopback_sender_2_receiver, metrics_measurements) {
 
     receiver.bind();
 
-    test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
+    test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(), NULL,
                       test::SourcePackets, test::RepairPackets, Flags);
 
     test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
