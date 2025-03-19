@@ -148,9 +148,11 @@ NetworkLoop::NetworkLoop(core::IPool& packet_pool,
         return;
     }
 
-    while (init_status_ == status::NoStatus) {
+    {
         core::Mutex::Lock lock(thr_init_mutex_);
-        thr_init_cond_.wait();
+        while (init_status_ == status::NoStatus) {
+            thr_init_cond_.wait();
+        }
     }
 }
 
