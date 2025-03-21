@@ -1,20 +1,24 @@
 name: "assign_project_columns"
 
 on:
-  issues:
+  repository_dispatch:
     types:
-      - labeled
+      - issue_labeled
 
 permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: issue-${{ github.event.client_payload.number }}
+
 jobs:
   main:
-    uses: roc-streaming/ci/.github/workflows/project_assign_column.yml@main
+    uses: roc-streaming/ci/.github/workflows/project_assign_status.yml@main
     with:
+      number: ${{ github.event.client_payload.number }}
       project: 5
-      labeled: "help wanted"
-      column: "Help wanted"
+      if-labeled: "help wanted"
+      set-status: "Help wanted"
     secrets:
-      triage-token: "${{ secrets.REPO_MANAGEMENT }}"
+      triage-token: ${{ secrets.REPO_TRIAGE }}
