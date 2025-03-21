@@ -1,16 +1,20 @@
 name: "pr_closed"
 
 on:
-  pull_request_target:
+  repository_dispatch:
     types:
-      - closed
+      - pull_request_closed
 
 permissions:
   pull-requests: write
 
 concurrency:
-  group: pr-${{ github.event.pull_request.number || github.ref }}
+  group: pullreq-${{ github.event.client_payload.number }}
 
 jobs:
   main:
-    uses: roc-streaming/ci/.github/workflows/pr_status_clear.yml@main
+    uses: roc-streaming/ci/.github/workflows/pr_status_closed.yml@main
+    with:
+      pr-number: ${{ github.event.client_payload.number }}
+    secrets:
+      triage-token: ${{ secrets.REPO_TRIAGE }}

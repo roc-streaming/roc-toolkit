@@ -1,18 +1,23 @@
 name: "assign_project"
 
 on:
-  issues:
+  repository_dispatch:
     types:
-      - opened
+      - issue_opened
+      - issue_reopened
 
 permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: issue-${{ github.event.client_payload.number }}
+
 jobs:
   main:
     uses: roc-streaming/ci/.github/workflows/project_assign.yml@main
     with:
+      number: ${{ github.event.client_payload.number }}
       project: 5
     secrets:
-      triage-token: "${{ secrets.REPO_MANAGEMENT }}"
+      triage-token: ${{ secrets.REPO_TRIAGE }}

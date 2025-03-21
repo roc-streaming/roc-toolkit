@@ -1,44 +1,54 @@
 name: "pr_opened"
 
 on:
-  pull_request_target:
+  repository_dispatch:
     types:
-      - opened
-      - reopened
+      - pull_request_opened
+      - pull_request_reopened
 
 permissions:
   pull-requests: write
   checks: read
 
 concurrency:
-  group: pr-${{ github.event.pull_request.number || github.ref }}
+  group: pullreq-${{ github.event.client_payload.number }}
 
 jobs:
-  welcome:
-    uses: roc-streaming/ci/.github/workflows/pr_check_first.yml@main
+  lint-contribution:
+    uses: roc-streaming/ci/.github/workflows/pr_lint_contrib.yml@main
     with:
-      base-branch: develop
+      pr-number: ${{ github.event.client_payload.number }}
+    secrets:
+      triage-token: ${{ secrets.REPO_TRIAGE }}
 
-  wait-build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: poseidon/wait-for-status-checks@v0.6.0
-        with:
-          interval: 30s
-          timeout: 3600s
-          token: ${{ github.token }}
-
-  initial-status:
-    needs: [wait-build]
-    uses: roc-streaming/ci/.github/workflows/pr_status_detect.yml@main
-
-  check-contrib:
-    uses: roc-streaming/ci/.github/workflows/pr_check_contrib.yml@main
-
-  check-issue:
-    uses: roc-streaming/ci/.github/workflows/pr_check_issue.yml@main
-
-  check-branch:
-    uses: roc-streaming/ci/.github/workflows/pr_check_branch.yml@main
+  lint-first-time:
+    uses: roc-streaming/ci/.github/workflows/pr_lint_first_time.yml@main
     with:
-      base-branch: develop
+      pr-number: ${{ github.event.client_payload.number }}
+      development-branch: "develop"
+      guidelines-link: >-
+        https://roc-streaming.org/toolkit/docs/development/contribution_guidelines.html
+    secrets:
+      triage-token: ${{ secrets.REPO_TRIAGE }}
+
+  lint-target-branch:
+    uses: roc-streaming/ci/.github/workflows/pr_lint_target_branch.yml@main
+    with:
+      pr-number: ${{ github.event.client_payload.number }}
+      development-branch: "develop"
+    secrets:
+      triage-token: ${{ secrets.REPO_TRIAGE }}
+
+  lint-linked-issue:
+    uses: roc-streaming/ci/.github/workflows/pr_lint_linked_issue.yml@main
+    with:
+      pr-number: ${{ github.event.client_payload.number }}
+    secrets:
+      triage-token: ${{ secrets.REPO_TRIAGE }}
+
+  set-status:
+    uses: roc-streaming/ci/.github/workflows/pr_status_opened.yml@main
+    with:
+      pr-number: ${{ github.event.client_payload.number }}
+    secrets:
+      triage-token: ${{ secrets.REPO_TRIAGE }}

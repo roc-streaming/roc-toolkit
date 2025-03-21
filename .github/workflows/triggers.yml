@@ -10,9 +10,6 @@ permissions:
 
 jobs:
   main:
-    if: |
-      github.repository_owner == 'roc-streaming'
-
     strategy:
       matrix:
         include:
@@ -43,4 +40,4 @@ jobs:
     with:
       repo: ${{ matrix.repo }}
       branch: ${{ matrix.branch }}
-      ci-token: ${{ secrets.REPO_TRIGGERING }}
+      ci-token: ${{ secrets.REPO_TRIAGE }}

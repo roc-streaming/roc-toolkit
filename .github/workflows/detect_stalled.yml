@@ -5,12 +5,13 @@ on:
     - cron: '0 0 * * 0'
 
 permissions:
-  issues: write
   pull-requests: write
 
 jobs:
   main:
-    uses: roc-streaming/ci/.github/workflows/pr_check_stalled.yml@main
+    uses: roc-streaming/ci/.github/workflows/detect_stalled.yml@main
     with:
-      stale-days: 180
-      close-days: -1
+      pr-stale-days: 180 # mark stale after 6 months
+      pr-close-days: -1  # never close automatically
+    secrets:
+      triage-token: ${{ secrets.REPO_TRIAGE }}
