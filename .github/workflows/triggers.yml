@@ -32,9 +32,6 @@ jobs:
           - repo: rocd
             branch: main
 
-          - repo: rt-tests
-            branch: main
-
           - repo: roc-streaming.github.io
             branch: source
 
