@@ -16,7 +16,8 @@
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
-#include "roc_stat/mov_aggregate.h"
+#include "roc_stat/mov_avg_std.h"
+#include "roc_stat/mov_min_max.h"
 #include "roc_stat/mov_quantile.h"
 
 namespace roc {
@@ -152,10 +153,10 @@ private:
 
     JitterMetrics metrics_;
 
-    stat::MovAggregate<core::nanoseconds_t> jitter_window_;
-    stat::MovAggregate<core::nanoseconds_t> smooth_jitter_window_;
+    stat::MovAvgStd<core::nanoseconds_t> jitter_window_;
+    stat::MovMinMax<core::nanoseconds_t> smooth_jitter_window_;
     stat::MovQuantile<core::nanoseconds_t> envelope_window_;
-    stat::MovAggregate<core::nanoseconds_t> peak_window_;
+    stat::MovMinMax<core::nanoseconds_t> peak_window_;
 
     core::nanoseconds_t capacitor_charge_;
     double capacitor_discharge_resistance_;
