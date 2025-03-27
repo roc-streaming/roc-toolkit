@@ -131,6 +131,7 @@ target_libuv          Enabled if libuv is available
 target_openfec        Enabled if OpenFEC is available
 target_speexdsp       Enabled if SpeexDSP is available
 target_sox            Enabled if SoX is available
+target_sndfile        Enabled if libsndfile is available
 target_pulseaudio     Enabled if PulseAudio is available
 target_nobacktrace    Enabled if no backtrace API is available
 target_nodemangle     Enabled if no demangling API is available

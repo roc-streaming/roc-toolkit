@@ -8,7 +8,7 @@ Threads and queues
 Threads
 =======
 
-Roc nodes (senders and receivers) typically employ several threads.
+Roc senders and receivers typically employ several threads.
 
 * **Network I/O thread**
 
@@ -34,7 +34,7 @@ Roc nodes (senders and receivers) typically employ several threads.
 
   Implemented by `ControlLoop <https://roc-streaming.org/toolkit/doxygen/classroc_1_1ctl_1_1ControlLoop.html>`_ class from ``roc_ctl`` module.
 
-Depending on sound system in use, sound I/O thread and pipeline thread may be the same thread. For example, on ALSA a single thread perform audio I/O and processing, and on PulseAudio, there are separate threads for I/O and processing.
+Depending on sound system in use, sound I/O thread and pipeline thread may be the same thread. For example, on ALSA a single thread performs audio I/O and processing, and on PulseAudio, there are separate threads for I/O and processing.
 
 When the user uses ``roc_sender`` or ``roc_receiver`` from the :doc:`C library </api/reference>`, Roc does not manage sound I/O. It also does not create dedicated pipeline thread - instead, the user invokes pipeline processing on their own thread.
 
@@ -43,7 +43,7 @@ Network and control threads belong to context. Sound I/O and pipeline threads, i
 Queues
 ======
 
-Threads in Roc typically don't have a lot of shared state. They are very isolated and communicate only via packet and task queues. With this approach, most components do not have to bother with synchronization.
+Threads in Roc typically don't have a lot of shared state. They are very isolated and communicate only via packet, frame, or task queues. With this approach, most components do not have to bother with synchronization.
 
 The queues between threads are usually lock-free and on some platforms also wait-free, which helps to avoid priority inversion problems (when real-time or high-priority thread is blocked or delayed by low-priority threads).
 

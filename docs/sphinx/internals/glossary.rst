@@ -10,7 +10,7 @@ Participants
 
 .. glossary::
 
-*roc node*
+*roc peer*
     A sender or receiver (see below).
 
 *roc sender*
@@ -23,10 +23,10 @@ Participants
     An entity that corresponds to one sender connected to one receiver.
 
 *roc sender session*
-    Represenation of roc session on sender side.
+    Representation of roc session on sender side.
 
 *roc receiver session*
-    Represenation of roc session on receiver side.
+    Representation of roc session on receiver side.
 
 Audio
 =====
