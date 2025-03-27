@@ -43,4 +43,4 @@ jobs:
       repo: ${{ matrix.repo }}
       branch: ${{ matrix.branch }}
     secrets:
-      ci-token: ${{ secrets.REPO_TRIAGE }}
+      ci-token: ${{ secrets.REPO_ACTIONS }}
