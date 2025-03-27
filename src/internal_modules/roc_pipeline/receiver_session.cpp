@@ -77,7 +77,8 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     pkt_reader = filter_.get();
 
     delayed_reader_.reset(new (delayed_reader_) packet::DelayedReader(
-        *pkt_reader, session_config.latency.target_latency, pkt_encoding->sample_spec));
+        *pkt_reader, pkt_encoding->sample_spec));
+
     if (!delayed_reader_ || !delayed_reader_->is_valid()) {
         return;
     }
@@ -216,7 +217,7 @@ ReceiverSession::ReceiverSession(const ReceiverSessionConfig& session_config,
     latency_monitor_.reset(new (latency_monitor_) audio::LatencyMonitor(
         *frm_reader, *source_queue_, *depacketizer_, *source_meter_,
         resampler_reader_.get(), session_config.latency, pkt_encoding->sample_spec,
-        common_config.output_sample_spec));
+        common_config.output_sample_spec, *delayed_reader_.get()));
     if (!latency_monitor_ || !latency_monitor_->is_valid()) {
         return;
     }
