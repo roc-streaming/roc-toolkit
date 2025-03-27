@@ -14,6 +14,12 @@
 #include <errno.h>
 #include <time.h>
 
+#ifdef sem_clockwait
+#define HAS_SEM_CLOCKWAIT 1
+#else
+#define HAS_SEM_CLOCKWAIT 0
+#endif
+
 namespace roc {
 namespace core {
 
@@ -34,18 +40,34 @@ Semaphore::~Semaphore() {
 }
 
 bool Semaphore::timed_wait(nanoseconds_t deadline) {
+
     if (deadline < 0) {
         roc_panic("semaphore: unexpected negative deadline");
     }
 
-    for (;;) {
-        timespec ts;
-        ts.tv_sec = long(deadline / Second);
-        ts.tv_nsec = long(deadline % Second);
+    nanoseconds_t converted_deadline = deadline;
 
-        if (sem_timedwait(&sem_, &ts) == 0) {
-            return true;
+    for (;;) {
+        
+        // WHAT IF CHANGE SYSTEM TIME WHEN -1?
+        if (!HAS_SEM_CLOCKWAIT) {
+            converted_deadline = deadline + core::timestamp(core::ClockUnix) - core::timestamp(core::ClockMonotonic);
         }
+
+        timespec ts;
+        ts.tv_sec = long(converted_deadline / Second);
+        ts.tv_nsec = long(converted_deadline % Second);
+
+        if (HAS_SEM_CLOCKWAIT) {
+            if (sem_clockwait(&sem_, core::ClockMonotonic ,&ts) == 0) {
+                return true;
+            }
+        } else {
+            if (sem_timedwait(&sem_, &ts) == 0) {
+                return true;
+            }
+        }
+
 
         if (errno == ETIMEDOUT) {
             return false;
@@ -61,7 +83,7 @@ void Semaphore::wait() {
     for (;;) {
         if (sem_wait(&sem_) == 0) {
             return;
-        }
+        } 
         if (errno != EINTR) {
             roc_panic("semaphore: sem_wait(): %s", errno_to_str().c_str());
         }
