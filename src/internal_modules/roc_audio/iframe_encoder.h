@@ -41,7 +41,8 @@ public:
     //! @remarks
     //!  After this call, write_samples() will store samples to the given @p frame_data
     //!  until @p frame_size bytes are written or end_frame() is called.
-    virtual void begin_frame(void* frame_data, size_t frame_size) = 0;
+    ROC_NODISCARD virtual status::StatusCode begin_frame(void* frame_data,
+                                                         size_t frame_size) = 0;
 
     //! Write samples into current frame.
     //!
@@ -65,7 +66,7 @@ public:
     //! @remarks
     //!  After this call, the frame is fully encoded and no more samples is written
     //!  to the frame. A new frame should be started by calling begin_frame().
-    virtual void end_frame() = 0;
+    ROC_NODISCARD virtual status::StatusCode end_frame() = 0;
 };
 
 } // namespace audio

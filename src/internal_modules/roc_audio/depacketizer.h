@@ -143,13 +143,15 @@ private:
         }
     };
 
-    sample_t* read_samples_(sample_t* buff_ptr,
-                            sample_t* buff_end,
-                            FrameReadMode mode,
-                            FrameStats& stats);
+    ROC_NODISCARD status::StatusCode read_samples_(sample_t** buff_ptr,
+                                                   sample_t* buff_end,
+                                                   FrameReadMode mode,
+                                                   FrameStats& stats);
 
-    sample_t* read_decoded_samples_(sample_t* buff_ptr, sample_t* buff_end);
-    sample_t* read_missing_samples_(sample_t* buff_ptr, sample_t* buff_end);
+    ROC_NODISCARD status::StatusCode read_decoded_samples_(sample_t** buff_ptr,
+                                                           sample_t* buff_end);
+    ROC_NODISCARD status::StatusCode read_missing_samples_(sample_t** buff_ptr,
+                                                           sample_t* buff_end);
 
     status::StatusCode
     update_packet_(size_t requested_samples, FrameReadMode mode, FrameStats& stats);

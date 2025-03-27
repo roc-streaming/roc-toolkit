@@ -180,7 +180,7 @@ TEST(encoder_decoder, one_frame) {
         core::Slice<uint8_t> bp =
             new_buffer(encoder->encoded_byte_count(SamplesPerFrame));
 
-        encoder->begin_frame(bp.data(), bp.size());
+        LONGS_EQUAL(status::StatusOK, encoder->begin_frame(bp.data(), bp.size()));
 
         sample_t encoder_samples[SamplesPerFrame * MaxChans] = {};
         fill_samples(encoder_samples, 0, SamplesPerFrame, Codec_channels[n_codec]);
@@ -188,9 +188,10 @@ TEST(encoder_decoder, one_frame) {
         UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
                              encoder->write_samples(encoder_samples, SamplesPerFrame));
 
-        encoder->end_frame();
+        LONGS_EQUAL(status::StatusOK, encoder->end_frame());
 
-        decoder->begin_frame(Timestamp, bp.data(), bp.size());
+        LONGS_EQUAL(status::StatusOK,
+                    decoder->begin_frame(Timestamp, bp.data(), bp.size()));
 
         UNSIGNED_LONGS_EQUAL(Timestamp, decoder->position());
         UNSIGNED_LONGS_EQUAL(SamplesPerFrame, decoder->available());
@@ -205,7 +206,7 @@ TEST(encoder_decoder, one_frame) {
         UNSIGNED_LONGS_EQUAL(Timestamp + SamplesPerFrame, decoder->position());
         UNSIGNED_LONGS_EQUAL(0, decoder->available());
 
-        decoder->end_frame();
+        LONGS_EQUAL(status::StatusOK, decoder->end_frame());
 
         UNSIGNED_LONGS_EQUAL(Timestamp + SamplesPerFrame, decoder->position());
         UNSIGNED_LONGS_EQUAL(0, decoder->available());
@@ -231,7 +232,7 @@ TEST(encoder_decoder, multiple_frames) {
             core::Slice<uint8_t> bp =
                 new_buffer(encoder->encoded_byte_count(SamplesPerFrame));
 
-            encoder->begin_frame(bp.data(), bp.size());
+            LONGS_EQUAL(status::StatusOK, encoder->begin_frame(bp.data(), bp.size()));
 
             sample_t encoder_samples[SamplesPerFrame * MaxChans] = {};
             encoder_pos = fill_samples(encoder_samples, encoder_pos, SamplesPerFrame,
@@ -241,9 +242,9 @@ TEST(encoder_decoder, multiple_frames) {
                 SamplesPerFrame,
                 encoder->write_samples(encoder_samples, SamplesPerFrame));
 
-            encoder->end_frame();
+            LONGS_EQUAL(status::StatusOK, encoder->end_frame());
 
-            decoder->begin_frame(ts, bp.data(), bp.size());
+            LONGS_EQUAL(status::StatusOK, decoder->begin_frame(ts, bp.data(), bp.size()));
 
             UNSIGNED_LONGS_EQUAL(ts, decoder->position());
             UNSIGNED_LONGS_EQUAL(SamplesPerFrame, decoder->available());
@@ -256,7 +257,7 @@ TEST(encoder_decoder, multiple_frames) {
             UNSIGNED_LONGS_EQUAL(ts + SamplesPerFrame, decoder->position());
             UNSIGNED_LONGS_EQUAL(0, decoder->available());
 
-            decoder->end_frame();
+            LONGS_EQUAL(status::StatusOK, decoder->end_frame());
 
             decoder_pos = check_samples(decoder_samples, decoder_pos, SamplesPerFrame,
                                         Codec_channels[n_codec]);
@@ -287,7 +288,7 @@ TEST(encoder_decoder, incomplete_frames) {
             core::Slice<uint8_t> bp =
                 new_buffer(encoder->encoded_byte_count(ExpectedSamplesPerFrame));
 
-            encoder->begin_frame(bp.data(), bp.size());
+            LONGS_EQUAL(status::StatusOK, encoder->begin_frame(bp.data(), bp.size()));
 
             sample_t encoder_samples[ActualSamplesPerFrame * MaxChans] = {};
             encoder_pos = fill_samples(encoder_samples, encoder_pos,
@@ -297,11 +298,11 @@ TEST(encoder_decoder, incomplete_frames) {
                 ActualSamplesPerFrame,
                 encoder->write_samples(encoder_samples, ActualSamplesPerFrame));
 
-            encoder->end_frame();
+            LONGS_EQUAL(status::StatusOK, encoder->end_frame());
 
             bp.reslice(0, encoder->encoded_byte_count(ActualSamplesPerFrame));
 
-            decoder->begin_frame(ts, bp.data(), bp.size());
+            LONGS_EQUAL(status::StatusOK, decoder->begin_frame(ts, bp.data(), bp.size()));
 
             UNSIGNED_LONGS_EQUAL(ts, decoder->position());
             UNSIGNED_LONGS_EQUAL(ActualSamplesPerFrame, decoder->available());
@@ -315,7 +316,7 @@ TEST(encoder_decoder, incomplete_frames) {
             UNSIGNED_LONGS_EQUAL(ts + ActualSamplesPerFrame, decoder->position());
             UNSIGNED_LONGS_EQUAL(0, decoder->available());
 
-            decoder->end_frame();
+            LONGS_EQUAL(status::StatusOK, decoder->end_frame());
 
             decoder_pos = check_samples(decoder_samples, decoder_pos,
                                         ActualSamplesPerFrame, Codec_channels[n_codec]);
@@ -346,7 +347,7 @@ TEST(encoder_decoder, shifted_frames) {
             core::Slice<uint8_t> bp =
                 new_buffer(encoder->encoded_byte_count(SamplesPerFrame));
 
-            encoder->begin_frame(bp.data(), bp.size());
+            LONGS_EQUAL(status::StatusOK, encoder->begin_frame(bp.data(), bp.size()));
 
             sample_t encoder_samples[SamplesPerFrame * MaxChans] = {};
             encoder_pos = fill_samples(encoder_samples, encoder_pos, SamplesPerFrame,
@@ -356,9 +357,9 @@ TEST(encoder_decoder, shifted_frames) {
                 SamplesPerFrame,
                 encoder->write_samples(encoder_samples, SamplesPerFrame));
 
-            encoder->end_frame();
+            LONGS_EQUAL(status::StatusOK, encoder->end_frame());
 
-            decoder->begin_frame(ts, bp.data(), bp.size());
+            LONGS_EQUAL(status::StatusOK, decoder->begin_frame(ts, bp.data(), bp.size()));
 
             UNSIGNED_LONGS_EQUAL(ts, decoder->position());
             UNSIGNED_LONGS_EQUAL(SamplesPerFrame, decoder->available());
@@ -378,7 +379,7 @@ TEST(encoder_decoder, shifted_frames) {
             UNSIGNED_LONGS_EQUAL(ts + SamplesPerFrame, decoder->position());
             UNSIGNED_LONGS_EQUAL(0, decoder->available());
 
-            decoder->end_frame();
+            LONGS_EQUAL(status::StatusOK, decoder->end_frame());
 
             decoder_pos = check_samples(decoder_samples, decoder_pos,
                                         SamplesPerFrame - Shift, Codec_channels[n_codec]);
@@ -409,7 +410,7 @@ TEST(encoder_decoder, skipped_frames) {
             core::Slice<uint8_t> bp =
                 new_buffer(encoder->encoded_byte_count(SamplesPerFrame));
 
-            encoder->begin_frame(bp.data(), bp.size());
+            LONGS_EQUAL(status::StatusOK, encoder->begin_frame(bp.data(), bp.size()));
 
             sample_t encoder_samples[SamplesPerFrame * MaxChans] = {};
             encoder_pos = fill_samples(encoder_samples, encoder_pos, SamplesPerFrame,
@@ -419,7 +420,7 @@ TEST(encoder_decoder, skipped_frames) {
                 SamplesPerFrame,
                 encoder->write_samples(encoder_samples, SamplesPerFrame));
 
-            encoder->end_frame();
+            LONGS_EQUAL(status::StatusOK, encoder->end_frame());
 
             if (n % SkipEvery == 0) {
                 ts += SamplesPerFrame;
@@ -427,7 +428,7 @@ TEST(encoder_decoder, skipped_frames) {
                 continue;
             }
 
-            decoder->begin_frame(ts, bp.data(), bp.size());
+            LONGS_EQUAL(status::StatusOK, decoder->begin_frame(ts, bp.data(), bp.size()));
 
             UNSIGNED_LONGS_EQUAL(ts, decoder->position());
             UNSIGNED_LONGS_EQUAL(SamplesPerFrame, decoder->available());
@@ -440,7 +441,7 @@ TEST(encoder_decoder, skipped_frames) {
             UNSIGNED_LONGS_EQUAL(ts + SamplesPerFrame, decoder->position());
             UNSIGNED_LONGS_EQUAL(0, decoder->available());
 
-            decoder->end_frame();
+            LONGS_EQUAL(status::StatusOK, decoder->end_frame());
 
             decoder_pos = check_samples(decoder_samples, decoder_pos, SamplesPerFrame,
                                         Codec_channels[n_codec]);
@@ -470,7 +471,7 @@ TEST(encoder_decoder, write_incrementally) {
         core::Slice<uint8_t> bp =
             new_buffer(encoder->encoded_byte_count(SamplesPerFrame));
 
-        encoder->begin_frame(bp.data(), bp.size());
+        LONGS_EQUAL(status::StatusOK, encoder->begin_frame(bp.data(), bp.size()));
 
         sample_t encoder_samples[SamplesPerFrame * MaxChans] = {};
         fill_samples(encoder_samples, 0, SamplesPerFrame, Codec_channels[n_codec]);
@@ -484,9 +485,10 @@ TEST(encoder_decoder, write_incrementally) {
                 encoder_samples + FirstPart * num_channels(Codec_channels[n_codec]),
                 SecondPart));
 
-        encoder->end_frame();
+        LONGS_EQUAL(status::StatusOK, encoder->end_frame());
 
-        decoder->begin_frame(Timestamp, bp.data(), bp.size());
+        LONGS_EQUAL(status::StatusOK,
+                    decoder->begin_frame(Timestamp, bp.data(), bp.size()));
 
         UNSIGNED_LONGS_EQUAL(Timestamp, decoder->position());
         UNSIGNED_LONGS_EQUAL(SamplesPerFrame, decoder->available());
@@ -496,7 +498,7 @@ TEST(encoder_decoder, write_incrementally) {
         UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
                              decoder->read_samples(decoder_samples, SamplesPerFrame));
 
-        decoder->end_frame();
+        LONGS_EQUAL(status::StatusOK, decoder->end_frame());
 
         check_samples(decoder_samples, 0, SamplesPerFrame, Codec_channels[n_codec]);
     }
@@ -515,7 +517,7 @@ TEST(encoder_decoder, write_too_much) {
         core::Slice<uint8_t> bp =
             new_buffer(encoder->encoded_byte_count(SamplesPerFrame));
 
-        encoder->begin_frame(bp.data(), bp.size());
+        LONGS_EQUAL(status::StatusOK, encoder->begin_frame(bp.data(), bp.size()));
 
         sample_t encoder_samples[(SamplesPerFrame + 20) * MaxChans] = {};
         fill_samples(encoder_samples, 0, SamplesPerFrame + 20, Codec_channels[n_codec]);
@@ -524,9 +526,10 @@ TEST(encoder_decoder, write_too_much) {
             SamplesPerFrame,
             encoder->write_samples(encoder_samples, SamplesPerFrame + 20));
 
-        encoder->end_frame();
+        LONGS_EQUAL(status::StatusOK, encoder->end_frame());
 
-        decoder->begin_frame(Timestamp, bp.data(), bp.size());
+        LONGS_EQUAL(status::StatusOK,
+                    decoder->begin_frame(Timestamp, bp.data(), bp.size()));
 
         UNSIGNED_LONGS_EQUAL(Timestamp, decoder->position());
         UNSIGNED_LONGS_EQUAL(SamplesPerFrame, decoder->available());
@@ -536,7 +539,7 @@ TEST(encoder_decoder, write_too_much) {
         UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
                              decoder->read_samples(decoder_samples, SamplesPerFrame));
 
-        decoder->end_frame();
+        LONGS_EQUAL(status::StatusOK, decoder->end_frame());
 
         check_samples(decoder_samples, 0, SamplesPerFrame, Codec_channels[n_codec]);
     }
@@ -560,7 +563,7 @@ TEST(encoder_decoder, read_incrementally) {
         core::Slice<uint8_t> bp =
             new_buffer(encoder->encoded_byte_count(SamplesPerFrame));
 
-        encoder->begin_frame(bp.data(), bp.size());
+        LONGS_EQUAL(status::StatusOK, encoder->begin_frame(bp.data(), bp.size()));
 
         sample_t encoder_samples[SamplesPerFrame * MaxChans] = {};
         size_t encoder_pos =
@@ -569,9 +572,10 @@ TEST(encoder_decoder, read_incrementally) {
         UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
                              encoder->write_samples(encoder_samples, SamplesPerFrame));
 
-        encoder->end_frame();
+        LONGS_EQUAL(status::StatusOK, encoder->end_frame());
 
-        decoder->begin_frame(Timestamp, bp.data(), bp.size());
+        LONGS_EQUAL(status::StatusOK,
+                    decoder->begin_frame(Timestamp, bp.data(), bp.size()));
 
         UNSIGNED_LONGS_EQUAL(Timestamp, decoder->position());
         UNSIGNED_LONGS_EQUAL(SamplesPerFrame, decoder->available());
@@ -604,7 +608,7 @@ TEST(encoder_decoder, read_incrementally) {
         UNSIGNED_LONGS_EQUAL(Timestamp + SamplesPerFrame, decoder->position());
         UNSIGNED_LONGS_EQUAL(0, decoder->available());
 
-        decoder->end_frame();
+        LONGS_EQUAL(status::StatusOK, decoder->end_frame());
 
         UNSIGNED_LONGS_EQUAL(encoder_pos, decoder_pos);
     }
@@ -623,7 +627,7 @@ TEST(encoder_decoder, read_too_much) {
         core::Slice<uint8_t> bp =
             new_buffer(encoder->encoded_byte_count(SamplesPerFrame));
 
-        encoder->begin_frame(bp.data(), bp.size());
+        LONGS_EQUAL(status::StatusOK, encoder->begin_frame(bp.data(), bp.size()));
 
         sample_t encoder_samples[SamplesPerFrame * MaxChans] = {};
         fill_samples(encoder_samples, 0, SamplesPerFrame, Codec_channels[n_codec]);
@@ -631,9 +635,10 @@ TEST(encoder_decoder, read_too_much) {
         UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
                              encoder->write_samples(encoder_samples, SamplesPerFrame));
 
-        encoder->end_frame();
+        LONGS_EQUAL(status::StatusOK, encoder->end_frame());
 
-        decoder->begin_frame(Timestamp, bp.data(), bp.size());
+        LONGS_EQUAL(status::StatusOK,
+                    decoder->begin_frame(Timestamp, bp.data(), bp.size()));
 
         UNSIGNED_LONGS_EQUAL(Timestamp, decoder->position());
         UNSIGNED_LONGS_EQUAL(SamplesPerFrame, decoder->available());
@@ -647,7 +652,7 @@ TEST(encoder_decoder, read_too_much) {
         UNSIGNED_LONGS_EQUAL(Timestamp + SamplesPerFrame, decoder->position());
         UNSIGNED_LONGS_EQUAL(0, decoder->available());
 
-        decoder->end_frame();
+        LONGS_EQUAL(status::StatusOK, decoder->end_frame());
 
         check_samples(decoder_samples, 0, SamplesPerFrame, Codec_channels[n_codec]);
     }
@@ -672,7 +677,7 @@ TEST(encoder_decoder, shift_incrementally) {
         core::Slice<uint8_t> bp =
             new_buffer(encoder->encoded_byte_count(SamplesPerFrame));
 
-        encoder->begin_frame(bp.data(), bp.size());
+        LONGS_EQUAL(status::StatusOK, encoder->begin_frame(bp.data(), bp.size()));
 
         sample_t encoder_samples[SamplesPerFrame * MaxChans] = {};
         fill_samples(encoder_samples, 0, SamplesPerFrame, Codec_channels[n_codec]);
@@ -680,9 +685,10 @@ TEST(encoder_decoder, shift_incrementally) {
         UNSIGNED_LONGS_EQUAL(SamplesPerFrame,
                              encoder->write_samples(encoder_samples, SamplesPerFrame));
 
-        encoder->end_frame();
+        LONGS_EQUAL(status::StatusOK, encoder->end_frame());
 
-        decoder->begin_frame(Timestamp, bp.data(), bp.size());
+        LONGS_EQUAL(status::StatusOK,
+                    decoder->begin_frame(Timestamp, bp.data(), bp.size()));
 
         UNSIGNED_LONGS_EQUAL(Timestamp, decoder->position());
         UNSIGNED_LONGS_EQUAL(SamplesPerFrame, decoder->available());
@@ -722,7 +728,7 @@ TEST(encoder_decoder, shift_incrementally) {
         UNSIGNED_LONGS_EQUAL(Timestamp + SamplesPerFrame, decoder->position());
         UNSIGNED_LONGS_EQUAL(0, decoder->available());
 
-        decoder->end_frame();
+        LONGS_EQUAL(status::StatusOK, decoder->end_frame());
     }
 }
 

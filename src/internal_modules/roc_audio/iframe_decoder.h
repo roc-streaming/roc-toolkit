@@ -75,9 +75,10 @@ public:
     //!  Decoder updates the decoded stream position according to @p frame_position,
     //!  but not necessary to the same value. Encoded and decoded stream positions
     //!  may be slightly different, depending on the codec implementation.
-    virtual void begin_frame(packet::stream_timestamp_t frame_position,
-                             const void* frame_data,
-                             size_t frame_size) = 0;
+    ROC_NODISCARD virtual status::StatusCode
+    begin_frame(packet::stream_timestamp_t frame_position,
+                const void* frame_data,
+                size_t frame_size) = 0;
 
     //! Read samples from current frame.
     //!
@@ -118,7 +119,7 @@ public:
     //! @remarks
     //!  After this call, the frame can't be read or shifted anymore. A new frame
     //!  should be started by calling begin_frame().
-    virtual void end_frame() = 0;
+    ROC_NODISCARD virtual status::StatusCode end_frame() = 0;
 };
 
 } // namespace audio

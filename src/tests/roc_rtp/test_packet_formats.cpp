@@ -112,12 +112,14 @@ void decode_samples(audio::IFrameDecoder& decoder,
                     const test::PacketInfo& pi) {
     audio::sample_t samples[test::PacketInfo::MaxSamples * test::PacketInfo::MaxCh] = {};
 
-    decoder.begin_frame(packet.rtp()->stream_timestamp, packet.rtp()->payload.data(),
-                        packet.rtp()->payload.size());
+    LONGS_EQUAL(status::StatusOK,
+                decoder.begin_frame(packet.rtp()->stream_timestamp,
+                                    packet.rtp()->payload.data(),
+                                    packet.rtp()->payload.size()));
 
     UNSIGNED_LONGS_EQUAL(pi.num_samples, decoder.read_samples(samples, pi.num_samples));
 
-    decoder.end_frame();
+    LONGS_EQUAL(status::StatusOK, decoder.end_frame());
 
     size_t i = 0;
 
@@ -147,11 +149,13 @@ void encode_samples(audio::IFrameEncoder& encoder,
 
     UNSIGNED_LONGS_EQUAL(pi.payload_size, encoder.encoded_byte_count(pi.num_samples));
 
-    encoder.begin_frame(packet.rtp()->payload.data(), packet.rtp()->payload.size());
+    LONGS_EQUAL(
+        status::StatusOK,
+        encoder.begin_frame(packet.rtp()->payload.data(), packet.rtp()->payload.size()));
 
     UNSIGNED_LONGS_EQUAL(pi.num_samples, encoder.write_samples(samples, pi.num_samples));
 
-    encoder.end_frame();
+    LONGS_EQUAL(status::StatusOK, encoder.end_frame());
 }
 
 void check_parse_decode(const test::PacketInfo& pi) {
