@@ -17,6 +17,7 @@
 #include "roc_core/rate_limiter.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/icomposer.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet.h"
@@ -61,7 +62,8 @@ public:
                  packet::IWriter& packet_writer,
                  packet::IComposer& packet_composer,
                  packet::PacketFactory& packet_factory,
-                 core::IArena& arena);
+                 core::IArena& arena,
+                 dbgio::CsvDumper* dumper);
 
     //! Check if the object was successfully constructed.
     status::StatusCode init_status() const;
@@ -74,8 +76,7 @@ public:
 
     //! Parse and process incoming packet.
     //! Invokes IParticipant methods during processing.
-    ROC_NODISCARD status::StatusCode process_packet(const packet::PacketPtr& packet,
-                                                    core::nanoseconds_t current_time);
+    ROC_NODISCARD status::StatusCode process_packet(const packet::PacketPtr& packet);
 
     //! When we should generate packets next time.
     //! Returns absolute time.

@@ -98,7 +98,8 @@ TEST(tcp_io, one_server_one_client_one_direction) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -137,7 +138,8 @@ TEST(tcp_io, one_server_one_client_both_directions) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -185,10 +187,12 @@ TEST(tcp_io, one_server_one_client_separate_loops) {
     test::MockConnAcceptor acceptor;
     acceptor.push_handler(server_conn_handler);
 
-    NetworkLoop client_net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop client_net_loop(packet_pool, buffer_pool,
+                                netio::NetworkLoop::DEFAULT_PRIORITY, arena);
     LONGS_EQUAL(status::StatusOK, client_net_loop.init_status());
 
-    NetworkLoop server_net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop server_net_loop(packet_pool, buffer_pool,
+                                netio::NetworkLoop::DEFAULT_PRIORITY, arena);
     LONGS_EQUAL(status::StatusOK, server_net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
@@ -231,7 +235,8 @@ TEST(tcp_io, one_server_many_clients) {
     acceptor.push_handler(server_conn_handler1);
     acceptor.push_handler(server_conn_handler2);
 
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);

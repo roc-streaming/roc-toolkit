@@ -150,7 +150,8 @@ private:
 TEST_GROUP(tasks) {};
 
 TEST(tasks, synchronous_add) {
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);
@@ -167,7 +168,8 @@ TEST(tasks, synchronous_add) {
 }
 
 TEST(tasks, synchronous_add_recv_remove) {
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);
@@ -195,7 +197,8 @@ TEST(tasks, synchronous_add_recv_remove) {
 }
 
 TEST(tasks, asynchronous_add) {
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);
@@ -216,7 +219,8 @@ TEST(tasks, asynchronous_add) {
 }
 
 TEST(tasks, asynchronous_add_recv_remove) {
-    NetworkLoop net_loop(packet_pool, buffer_pool, arena);
+    NetworkLoop net_loop(packet_pool, buffer_pool, netio::NetworkLoop::DEFAULT_PRIORITY,
+                         arena);
     LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);

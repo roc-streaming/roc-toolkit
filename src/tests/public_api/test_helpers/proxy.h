@@ -40,7 +40,8 @@ public:
         : packet_pool_("proxy_packet_pool", arena_)
         , buffer_pool_("proxy_buffer_pool", arena_, 2000)
         , queue_(packet::ConcurrentQueue::Blocking)
-        , net_loop_(packet_pool_, buffer_pool_, arena_)
+        , net_loop_(
+              packet_pool_, buffer_pool_, netio::NetworkLoop::DEFAULT_PRIORITY, arena_)
         , n_source_packets_(n_source_packets)
         , n_repair_packets_(n_repair_packets)
         , flags_(flags)

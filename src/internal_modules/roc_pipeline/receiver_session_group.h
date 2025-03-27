@@ -90,8 +90,7 @@ public:
     void reclock_sessions(core::nanoseconds_t playback_time);
 
     //! Route packet to session.
-    ROC_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
-                                                  core::nanoseconds_t current_time);
+    ROC_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet);
 
     //! Get number of sessions in group.
     size_t num_sessions() const;
@@ -129,8 +128,7 @@ private:
     virtual void halt_recv_stream(packet::stream_source_t send_source_id);
 
     status::StatusCode route_transport_packet_(const packet::PacketPtr& packet);
-    status::StatusCode route_control_packet_(const packet::PacketPtr& packet,
-                                             core::nanoseconds_t current_time);
+    status::StatusCode route_control_packet_(const packet::PacketPtr& packet);
 
     bool can_create_session_(const packet::PacketPtr& packet);
 
