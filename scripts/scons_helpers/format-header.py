@@ -19,9 +19,11 @@ copyright_str = textwrap.dedent('''
 ''').format(datetime.datetime.now().year)
 
 def is_header(path):
+    '''True if `path` is a C/C++ header file; False otherwise.'''
     return re.search(r'\.h$', path)
 
 def is_test(path):
+    '''True if `path` is a C/C++ test file; False otherwise.'''
     _, basename = os.path.split(path)
     for s in [basename, os.path.basename(os.path.dirname(path))]:
         if s.startswith('test_'):
@@ -29,6 +31,9 @@ def is_test(path):
     return False
 
 def is_public_api(path):
+    '''True if `path` is a public API C/C++ header file that resides in a
+    public_api/include/roc/ directory.
+    '''
     rootname = os.path.basename(
         os.path.dirname(
             os.path.dirname(
@@ -36,6 +41,9 @@ def is_public_api(path):
     return rootname == 'public_api'
 
 def make_guard(path):
+    '''Generate include guard macro name basing on `path` to header file.
+    The resulting macro looks like this: `PATH_TO_FILE_`.
+    '''
     dirpath, basename = os.path.split(path)
     dirname = os.path.basename(dirpath)
     if is_public_api(path):
@@ -53,16 +61,23 @@ def make_guard(path):
     return '_'.join(arr).replace('.', '_').upper() + '_'
 
 def make_doxygen_path(path):
-    path = '/'.join(path.split(os.sep))
-    path = re.sub(r'^\.?/', '', path)
+    '''Generate doxygen `@file` command using `path` to the file.'''
+    path = '/'.join(path.split(os.sep)) # switch to '/' separator
+    path = re.sub(r'^\.?/', '', path) # remove leading "./"
     return '@file ' + path
 
 def make_doxygen_brief(text):
+    '''Generate doxygen `@brief` command with a given `text` as a payload.'''
     if not text.endswith('.'):
         text += '.'
     return '@brief ' + text
 
 def format_file(output, path):
+    '''Read file `path` and write its contents to the `output` stream applying
+    formatting modifications if needed: add copyright, include gards, Doxygen
+    documentation lines, and so on.
+    '''
+
     def fprint(s):
         output.write(s + '\n')
 
