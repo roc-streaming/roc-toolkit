@@ -2,7 +2,9 @@
 #
 # Details: https://roc-streaming.org/toolkit/docs/building/dependencies.html
 
-{ pkgs ? import <nixpkgs> {} }:
+{
+  pkgs ? import <nixpkgs> { },
+}:
 
 pkgs.clangStdenv.mkDerivation {
   name = "clang-shell";
@@ -25,6 +27,11 @@ pkgs.clangStdenv.mkDerivation {
     pkgs.pkg-config
     pkgs.ragel
     pkgs.scons
+
+    # documentation
+    pkgs.doxygen
+    #~pkgs.graphviz-nox
+    #~(pkgs.python3.withPackages(ps: with ps; [ breathe sphinx ]))
   ];
 
   buildInputs = [
