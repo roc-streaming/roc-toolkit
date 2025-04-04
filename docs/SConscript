@@ -39,7 +39,7 @@ if GetOption('enable_doxygen'):
         doc_env.Alias('doxygen', doxygen_targets))
 
 if GetOption('enable_sphinx'):
-    if not GetOption('enable_sphinx'):
+    if not GetOption('enable_doxygen'):
         doc_env.Die("--enable-sphinx also requires --enable-doxygen")
 
     have_sphinx = (doc_env.HasArgument('SPHINX_BUILD') or
