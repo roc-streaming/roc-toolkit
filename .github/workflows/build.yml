@@ -64,9 +64,6 @@ jobs:
           - script: linux-x86_64/opensuse
             image: rocstreaming/env-opensuse
 
-          - script: linux-x86_64/archlinux
-            image: rocstreaming/env-archlinux
-
           - script: linux-x86_64/alpine
             image: rocstreaming/env-alpine
 
