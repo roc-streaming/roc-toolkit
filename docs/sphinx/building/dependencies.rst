@@ -126,7 +126,7 @@ Development dependencies
    * - `doxygen <https://www.doxygen.nl/>`_ >= 1.6, `graphviz <https://graphviz.gitlab.io/>`_
      - needed to build doxygen and sphinx documentation
 
-   * - `sphinx <https://www.sphinx-doc.org/>`_ >= 5, `breathe <https://github.com/michaeljones/breathe>`_
+   * - `sphinx <https://www.sphinx-doc.org/>`_ >= 5, `breathe <https://github.com/michaeljones/breathe>`_, `sphinx_rtd_theme <https://sphinx-rtd-theme.readthedocs.io/>`_
      - needed to build sphinx documentation
 
 .. note::

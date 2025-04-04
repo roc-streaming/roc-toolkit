@@ -23,6 +23,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinxemoji.sphinxemoji',
     'breathe',
+    'sphinx_rtd_theme'
 ]
 
 templates_path = []
@@ -58,13 +59,22 @@ breathe_domain_by_extension = {'h': 'c'}
 
 html_title = '{} {}'.format(project, release)
 
-html_theme = 'nature'
+html_theme = 'sphinx_rtd_theme'
 
 html_logo = '../images/logo80.png'
 
 html_sidebars = {
    '**': ['globaltoc.html', 'searchbox.html'],
 }
+html_theme_options = {
+    # Toc options
+    'collapse_navigation': False,
+    'sticky_navigation': False,
+    'navigation_depth': -1,
+    'includehidden': True,
+    'titles_only': False
+}
+
 
 html_static_path = ['_static']
 
