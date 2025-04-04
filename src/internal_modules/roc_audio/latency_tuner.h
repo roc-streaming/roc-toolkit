@@ -199,6 +199,8 @@ public:
     //!  Returned value is close to 1.0.
     float fetch_scaling();
 
+    bool can_start() const;
+
 private:
     bool check_bounds_(packet::stream_timestamp_diff_t latency);
     void compute_scaling_(packet::stream_timestamp_diff_t latency);
