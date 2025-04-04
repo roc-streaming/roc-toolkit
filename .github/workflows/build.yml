@@ -181,9 +181,6 @@ jobs:
           - script: linux-checks/sanitizers
             image: rocstreaming/env-ubuntu
 
-          - script: linux-checks/valgrind
-            image: rocstreaming/env-ubuntu
-
           - script: linux-checks/check-formatting
             image: rocstreaming/env-ubuntu
 

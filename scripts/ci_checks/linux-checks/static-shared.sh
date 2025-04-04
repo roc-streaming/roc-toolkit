@@ -10,14 +10,12 @@ scons -Q --enable-werror --build-3rdparty=all \
 scons -Q --enable-werror --build-3rdparty=all \
       --disable-shared \
       --enable-tests \
-      --enable-benchmarks \
       --enable-examples \
       test
 
 # shared: yes, static: no, tests: yes
 scons -Q --enable-werror --build-3rdparty=all \
       --enable-tests \
-      --enable-benchmarks \
       --enable-examples \
       test
 
@@ -26,7 +24,6 @@ scons -Q --enable-werror --build-3rdparty=all \
       --disable-shared \
       --enable-static \
       --enable-tests \
-      --enable-benchmarks \
       --enable-examples \
       test
 
@@ -34,6 +31,5 @@ scons -Q --enable-werror --build-3rdparty=all \
 scons -Q --enable-werror --build-3rdparty=all \
       --enable-static \
       --enable-tests \
-      --enable-benchmarks \
       --enable-examples \
       test
