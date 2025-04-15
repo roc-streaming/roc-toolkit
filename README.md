@@ -26,11 +26,11 @@ Key features:
 * portability;
 * relying on open, standard protocols.
 
-Besides library and tools, toolkit provides:
+Roc Streaming ecosystem also includes numerous projects built on top of Roc Toolkit:
 
-* [bindings](https://roc-streaming.org/toolkit/docs/api/bindings.html) for other programming languages
-* [modules](https://roc-streaming.org/toolkit/docs/tools/sound_server_modules.html) for sound servers like PulseAudio and PipeWire
-* [applications](https://roc-streaming.org/toolkit/docs/tools/applications.html)
+* [language bindings](https://roc-streaming.org/toolkit/docs/api/bindings.html) (Go, Java)
+* [sound server modules](https://roc-streaming.org/toolkit/docs/tools/sound_server_modules.html) (PipeWire, PulseAudio, macOS CoreAudio)
+* [end-user applications](https://roc-streaming.org/toolkit/docs/tools/applications.html)
 
 Documentation
 -------------
@@ -83,7 +83,7 @@ If you would like to support the project financially, please refer to [this page
 
 Thank you!
 
-<a href="https://liberapay.com/roc-streaming"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a>
+<a href="https://github.com/sponsors/roc-streaming"><img alt="Donate on GitHub Sponsors" src="https://roc-streaming.org/images/logos/github_sponsors.svg"></a>
 
 Community
 ---------
