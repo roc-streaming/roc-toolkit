@@ -55,7 +55,7 @@ namespace core {
 
 //! Print error message and terminate program gracefully.
 ROC_NORETURN ROC_PRINTF(4, 5) void panic(
-    const char* module, const char* file, int line, const char* format, ...);
+    const char* module_name, const char* file, int line, const char* format, ...);
 
 } // namespace core
 } // namespace roc

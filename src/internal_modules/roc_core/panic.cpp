@@ -14,14 +14,14 @@
 namespace roc {
 namespace core {
 
-void panic(const char* module, const char* file, int line, const char* format, ...) {
+void panic(const char* module_name, const char* file, int line, const char* format, ...) {
     console_println("%s", "");
     console_println("%s:%d: error: roc_panic()", file, line);
 
     char message[256] = {};
     size_t message_sz = sizeof(message) - 1;
 
-    int off = snprintf(message, message_sz, "%s: ", module);
+    int off = snprintf(message, message_sz, "%s: ", module_name);
     if (off > 0) {
         message_sz -= (size_t)off;
     } else {

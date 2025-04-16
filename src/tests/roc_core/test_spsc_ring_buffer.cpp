@@ -41,6 +41,12 @@ struct Object {
         valid = false;
         n_objects--;
     }
+
+    Object& operator=(const Object& other) {
+        value = other.value;
+        valid = other.valid;
+        return *this;
+    }
 };
 
 long Object::n_objects = 0;

@@ -36,8 +36,13 @@
 //! Compiler will emit warnings on mis-use.
 #define ROC_PRINTF(fmt_pos, args_pos) HEDLEY_PRINTF_FORMAT(fmt_pos, args_pos)
 
+#if defined(HEDLEY_GNUC_VERSION)
+//! Hint for compiler that function never returns.
+#define ROC_NORETURN __attribute__((__noreturn__))
+#else
 //! Hint for compiler that function never returns.
 #define ROC_NORETURN HEDLEY_NO_RETURN
+#endif
 
 #ifdef HEDLEY_GCC_VERSION
 //! Emit warning if function result is not checked.
