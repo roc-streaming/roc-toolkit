@@ -865,6 +865,26 @@ else:
             'target_nobacktrace',
         ])
 
+# some options should be defined early before running '3rdparty/SConscript', because
+# they're needed when testing presence of dependencies in Configure()
+# (e.g. google benchmark needs -std=xxx, and libuv needs _POSIX_C_SOURCE=xxx)
+if meta.compiler in ['gcc', 'clang']:
+    env.Append(CXXFLAGS=[
+        '-std=c++11',
+    ])
+    env.Append(CFLAGS=[
+        '-std=c11',
+    ])
+
+if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin']:
+    # macOS is special, otherwise rely on _POSIX_C_SOURCE
+    env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', env['ROC_POSIX_PLATFORM'])])
+
+env.Append(CPPDEFINES=[
+    # for UINT32_MAX and others (https://bugzilla.mozilla.org/show_bug.cgi?id=673556):
+    ('__STDC_LIMIT_MACROS', '1'),
+])
+
 # env will hold settings common to all code
 # subenvs will hold settings specific to particular parts of code
 subenv_names = 'internal_modules public_libs examples tools tests generated_code'.split()
@@ -877,15 +897,6 @@ subenvs = type('subenvs', (), subenv_attrs)
 # find or build third-party dependencies
 env, subenvs = env.SConscript('3rdparty/SConscript',
                        duplicate=0, exports='env subenvs meta')
-
-env.Append(CPPDEFINES=[
-    # for UINT32_MAX and others (https://bugzilla.mozilla.org/show_bug.cgi?id=673556):
-    ('__STDC_LIMIT_MACROS', '1'),
-])
-
-if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin']:
-    # macOS is special, otherwise rely on _POSIX_C_SOURCE
-    env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', env['ROC_POSIX_PLATFORM'])])
 
 if meta.platform in ['darwin']:
     if env['ROC_MACOS_PLATFORM']:
@@ -906,11 +917,6 @@ if meta.platform in ['android']:
     env.AddManualDependency(libs=['log', 'android'])
 
 if meta.compiler in ['gcc', 'clang']:
-    if not meta.platform in ['android']:
-        env.Append(CXXFLAGS=[
-            '-std=c++98',
-        ])
-
     env.Append(CXXFLAGS=[
         '-fno-exceptions',
     ])

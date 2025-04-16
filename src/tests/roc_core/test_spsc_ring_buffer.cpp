@@ -36,6 +36,11 @@ struct Object {
     ~Object() {
         n_objects--;
     }
+
+    Object& operator=(const Object& other) {
+        value = other.value;
+        return *this;
+    }
 };
 
 long Object::n_objects = 0;
