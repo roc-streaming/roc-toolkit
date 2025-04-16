@@ -40,7 +40,7 @@ Context = type(
             'root_dir work_dir dist_dir log_file commit_file'
             ' pkg_dir pkg_src_dir pkg_bin_dir pkg_lib_dir pkg_inc_dir pkg_rpath_dir'
             ' pkg pkg_name pkg_ver pkg_ver_major pkg_ver_minor pkg_ver_patch pkg_deps'
-            ' build host toolchain variant android_platform macos_platform macos_arch'
+            ' jobs build host toolchain variant android_platform macos_platform macos_arch'
             ' prefer_cmake'
             ' env unparsed_env').split()
     })
@@ -168,7 +168,7 @@ def execute(ctx, cmd, ignore_error=False, clear_env=False):
 
 def execute_make(ctx, cpu_count=None):
     if cpu_count is None:
-        cpu_count = detect_cpu_count()
+        cpu_count = ctx.jobs or detect_cpu_count()
 
     cmd = ['make']
     if cpu_count:
@@ -290,7 +290,7 @@ def execute_cmake_build(ctx):
 
     # assume we're using -G"Unix Makefiles"
     cmd += ['--', 'VERBOSE=1']
-    cpu_count = detect_cpu_count()
+    cpu_count = ctx.jobs or detect_cpu_count()
     if cpu_count:
         cmd += ['-j' + str(cpu_count)]
 
@@ -1004,6 +1004,9 @@ if __name__ == '__main__':
     parser.add_argument('--dist-dir', dest='dist_dir', type=str, required=True,
                         help='path to vendored distfiles directory')
 
+    parser.add_argument('--jobs', dest='jobs', type=int, required=False,
+                        help='number of parallel jobs')
+
     parser.add_argument('--build', dest='build', type=str, required=True,
                         help='system when package is built (e.g. x86_64-pc-linux-gnu)')
 
@@ -1047,6 +1050,7 @@ if __name__ == '__main__':
     ctx.pkg_ver_major, ctx.pkg_ver_minor, ctx.pkg_ver_patch = parse_ver(ctx.pkg_ver, count=3)
     ctx.pkg_deps = args.deps or []
 
+    ctx.jobs = args.jobs
     ctx.build = args.build
     ctx.host = args.host
     ctx.toolchain = args.toolchain or ''

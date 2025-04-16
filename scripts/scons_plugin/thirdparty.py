@@ -1,3 +1,4 @@
+import SCons.Script
 import os
 import os.path
 import fnmatch
@@ -48,6 +49,7 @@ def _build_thirdparty(env, versions, name, deps, is_native):
             '--root-dir', quote(os.path.abspath(project_root)),
             '--work-dir', quote(os.path.relpath(build_root, project_root)),
             '--dist-dir', quote(os.path.relpath(distfiles_dir, project_root)),
+            '--jobs', quote(str(SCons.Script.GetOption('num_jobs'))),
             ]
 
         if not is_native:
