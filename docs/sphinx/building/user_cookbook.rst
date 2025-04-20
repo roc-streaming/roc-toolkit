@@ -273,7 +273,7 @@ Raspberry Pi 1 and Zero (32-bit)
 
 .. note::
 
-   `toolchain image <https://hub.docker.com/r/rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi>`__
+   `toolchain image <https://hub.docker.com/r/rocstreaming/toolchain-arm-bcm2708-linux-gnueabihf>`__
 
 .. code::
 
@@ -283,14 +283,14 @@ Raspberry Pi 1 and Zero (32-bit)
 
     # build libraries and tools
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 \
+        rocstreaming/toolchain-arm-bcm2708-linux-gnueabihf:gcc-4.9 \
           scons -Q \
-            --host=arm-bcm2708hardfp-linux-gnueabi \
+            --host=arm-linux-gnueabihf \
             --build-3rdparty=all
 
     # install Roc binaries
-    $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-{recv,send,copy} <address>:/usr/bin
-    $ scp ./bin/arm-bcm2708hardfp-linux-gnueabi/libroc.so.*.* <address>:/usr/lib
+    $ scp ./bin/arm-linux-gnueabihf/roc-{recv,send,copy} <address>:/usr/bin
+    $ scp ./bin/arm-linux-gnueabihf/libroc.so.*.* <address>:/usr/lib
 
     # install Roc dependencies
     $ ssh <address> apt-get install libasound2 libpulse0 libltdl7 libatomic1

@@ -46,7 +46,7 @@ Raspberry Pi Zero W
 
 * Website: https://www.raspberrypi.org/products/raspberry-pi-zero-w/
 * OS: Raspbian Stretch 32-bit
-* Toolchain: :ref:`arm-bcm2708hardfp-linux-gnueabi <arm-bcm2708hardfp-linux-gnueabi>`
+* Toolchain: :ref:`arm-bcm2708-linux-gnueabihf <arm-bcm2708-linux-gnueabihf>`
 * CPU: 32-bit ARMv6 BCM2835 Single-core 1GHz
 * RAM: 512MB
 * Wi-Fi: 802.11 b/g/n

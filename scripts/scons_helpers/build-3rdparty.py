@@ -1321,7 +1321,11 @@ if __name__ == '__main__':
         execute(ctx, './configure --host={host} {vars} {flags} {opts}'.format(
             host=ctx.toolchain,
             vars=format_vars(ctx),
-            flags=format_flags(ctx, cflags='-w -Wno-incompatible-function-pointer-types'),
+            flags=format_flags(ctx, cflags=' '.join([
+                '-w',
+                '-Wno-implicit-function-declaration',
+                '-Wno-incompatible-function-pointer-types'
+            ])),
             opts=' '.join([
                 '--disable-openmp',
                 '--disable-shared',

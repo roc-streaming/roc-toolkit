@@ -9,7 +9,7 @@ Build dependencies
    * - **dependency**
      - **comment**
 
-   * - gcc >= 4.1 or clang >= 3.4
+   * - c++11 & c11 compiler: gcc >= 4.8 or clang >= 3.4
      - required
 
    * - python >= 2.6

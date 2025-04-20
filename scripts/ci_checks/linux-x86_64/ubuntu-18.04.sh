@@ -2,7 +2,7 @@
 
 set -euxo pipefail
 
-for comp in gcc-6 clang-6.0
+for comp in gcc-7 clang-6.0
 do
     scons -Q \
           --enable-werror \
