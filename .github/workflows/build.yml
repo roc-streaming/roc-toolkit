@@ -96,23 +96,26 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - script: linux-arm/aarch64-linux-gnu-gcc-14.2
+            image: rocstreaming/toolchain-aarch64-linux-gnu:gcc-14.2
+
           - script: linux-arm/aarch64-linux-gnu-gcc-10.3
             image: rocstreaming/toolchain-aarch64-linux-gnu:gcc-10.3
 
           - script: linux-arm/aarch64-linux-gnu-gcc-7.4
             image: rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4
 
+          - script: linux-arm/arm-linux-gnueabihf-gcc-14.2
+            image: rocstreaming/toolchain-arm-linux-gnueabihf:gcc-14.2
+
           - script: linux-arm/arm-linux-gnueabihf-gcc-10.3
             image: rocstreaming/toolchain-arm-linux-gnueabihf:gcc-10.3
-
-          - script: linux-arm/arm-linux-gnueabihf-gcc-7.4
-            image: rocstreaming/toolchain-arm-linux-gnueabihf:gcc-7.4
 
           - script: linux-arm/arm-linux-gnueabihf-gcc-4.9
             image: rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9
 
-          - script: linux-arm/arm-bcm2708hardfp-linux-gnueabi-gcc-4.7
-            image: rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7
+          - script: linux-arm/arm-bcm2708-linux-gnueabihf-gcc-4.9
+            image: rocstreaming/toolchain-arm-bcm2708-linux-gnueabihf:gcc-4.9
 
     name: ${{ matrix.script }}
     steps:
@@ -140,11 +143,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - script: linux-mips/openwrt-linux-musl
-            image: rocstreaming/toolchain-mips-openwrt-linux-atheros:17.01
+          - script: linux-mips/openwrt-linux-musl-24.10
+            image: rocstreaming/toolchain-mips-openwrt-linux-atheros:24.10
 
-          - script: linux-mips/openwrt-linux-uclibc
-            image: rocstreaming/toolchain-mips-openwrt-linux-atheros:12.09
+          - script: linux-mips/openwrt-linux-musl-17.01
+            image: rocstreaming/toolchain-mips-openwrt-linux-atheros:17.01
 
     name: ${{ matrix.script }}
     steps:
@@ -421,16 +424,20 @@ jobs:
       matrix:
         include:
           - macos-arch: arm64
-            macos-version: 14
+            macos-version: 15
             script: standard-build
 
           - macos-arch: arm64
-            macos-version: 14
+            macos-version: 15
             script: build-3rdparty
 
           - macos-arch: arm64
-            macos-version: 14
+            macos-version: 15
             script: universal-binaries
+
+          - macos-arch: arm64
+            macos-version: 14
+            script: standard-build
 
           - macos-arch: x86_64
             macos-version: 13

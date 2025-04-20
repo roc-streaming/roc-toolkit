@@ -19,7 +19,7 @@ Operating systems:
 
 Compilers:
 
-* GCC (>= 4.4)
+* GCC (>= 4.8)
 * Clang (>= 3.4)
 
 Libc:
@@ -45,7 +45,7 @@ Linux distributions:
 * Arch Linux (latest)
 * Alpine Linux (latest)
 * Raspberry Pi OS (latest)
-* OpenWrt (17.01, 12.09)
+* OpenWrt (24.10, 17.01)
 
 Android versions:
 
@@ -55,6 +55,7 @@ Android versions:
 
 macOS versions:
 
+* macOS 15 (Sequoia)
 * macOS 14 (Sonoma)
 * macOS 13 (Ventura)
 

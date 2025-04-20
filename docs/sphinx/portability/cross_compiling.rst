@@ -31,14 +31,39 @@ If necessary, you can override build tool names and options by setting variables
 
 See :doc:`/building/scons_options` page for the full list of options and variables.
 
+.. _arm_com_linaro_org:
+
+Arm.com and Linaro.org
+======================
+
+Arm Developer Hub, and earlier Linaro project, provide several pre-built toolchains for different ARM architectures and GCC versions:
+
+* Current arm.com toolchains:
+
+  * `arm.com - Arm GNU Toolchain <https://developer.arm.com/Tools%20and%20Software/GNU%20Toolchain>`_
+  * `arm.com - Arm GNU Toolchain Downloads <https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads>`_
+
+  This is the newest GCC toolchain by ARM, suitable for all profiles (A-Profile, R-Profile, M-Profile).
+
+* Legacy arm.com toolchains:
+
+  * `arm.com - GNU-A Downloads <https://developer.arm.com/downloads/-/gnu-a>`_
+  * `arm.com - GNU Arm Embedded Toolchain Downloads <https://developer.arm.com/downloads/-/gnu-rm>`_
+
+  This is the discontinued GCC toolchains by ARM. There are two separate toolchains, one for A-Profile ("high-performance") and another for R-Profile/M-Profile ("embedded").
+
+* Legacy linaro.org toolchains:
+
+  * `linaro.org - Builds & Downloads <https://www.linaro.org/downloads/>`_
+
+  This is the legacy toolchains by Linaro project, which were commonly used before arm.com toolchains appeared.
+
 .. _aarch64-linux-gnu:
 
 Arm.com / Linaro ARMv8-A 64-bit toolchain
 =========================================
 
-Arm Developer Hub and Linaro project provide several `toolchains <https://www.linaro.org/downloads/>`_ for different architectures and GCC versions.
-
-The ``aarch64-linux-gnu`` is a 64-bit ARMv8-A little-endian toolchain. It can be used with 64-bit ARMv8 boards, including 64-bit Raspberry Pi and Orange Pi models. It *can't* be used with ARMv6, ARMv7, and 32-bit ARMv8 boards, or 64-bit ARMv8 boards running 32-bit kernel.
+Arm Developer Hub and Linaro project :ref:`provide <arm_com_linaro_org>` ``aarch64-linux-gnu`` / ``aarch64-none-linux-gnu`` toolchains. It is a 64-bit ARMv8-A little-endian toolchain that can be used with 64-bit ARMv8/ARMv9 boards, including 64-bit Raspberry Pi and Orange Pi models. It *can't* be used with ARMv6, ARMv7, and 32-bit ARMv8 boards, or 64-bit ARMv8/ARMv9 boards running 32-bit kernel.
 
 Here is how you can build Roc with this toolchain using `rocstreaming/toolchain-aarch64-linux-gnu <https://hub.docker.com/r/rocstreaming/toolchain-aarch64-linux-gnu/>`_ Docker image:
 
@@ -51,7 +76,13 @@ Here is how you can build Roc with this toolchain using `rocstreaming/toolchain-
             --host=aarch64-linux-gnu \
             --build-3rdparty=all
 
-Alternatively, you can install the toolchain manually:
+Available toolchain versions, distributed as separate docker tags:
+
+* ``gcc-14.2`` -- from arm.com (newest "Arm GNU Toolchain" for all profiles)
+* ``gcc-10.3`` -- from arm.com (legacy "Arm GNU-A Toolchain" for A-Profile)
+* ``gcc-7.4`` -- from linaro.org
+
+Alternatively, you can install the toolchain manually. For example, for Linaro toolchain:
 
 .. code::
 
@@ -79,9 +110,7 @@ Alternatively, you can install the toolchain manually:
 Arm.com / Linaro ARMv7-A 32-bit toolchain
 =========================================
 
-Arm Developer Hub and Linaro project provide several `toolchains <https://www.linaro.org/downloads/>`_ for different architectures and GCC versions.
-
-The ``arm-linux-gnueabihf`` is a 32-bit ARMv7-A hard-float little-endian toolchain. It can be used with ARMv7 boards, including 32-bit Raspberry Pi and Orange Pi models. It also can be used with 32-bit and 64-bit ARMv8 boards running 32-bit kernels. It *can't* be used with ARMv6 boards, e.g. Raspberry Pi 1 or Raspberry Pi Zero.
+Arm Developer Hub and Linaro project :ref:`provide <arm_com_linaro_org>`  ``arm-linux-gnueabihf`` / ``arm-none-linux-gnueabihf`` toolchains. It is a 32-bit ARMv7-A hard-float little-endian toolchain that can be used with ARMv7 boards, including 32-bit Raspberry Pi and Orange Pi models. It also can be used with 32-bit and 64-bit ARMv8 boards running 32-bit kernels. It *can't* be used with ARMv6 boards, e.g. Raspberry Pi 1 or Raspberry Pi Zero.
 
 Here is how you can build Roc with this toolchain using `rocstreaming/toolchain-arm-linux-gnueabihf <https://hub.docker.com/r/rocstreaming/toolchain-arm-linux-gnueabihf/>`_ Docker image:
 
@@ -94,7 +123,14 @@ Here is how you can build Roc with this toolchain using `rocstreaming/toolchain-
             --host=arm-linux-gnueabihf \
             --build-3rdparty=all
 
-Alternatively, you can install the toolchain manually:
+Available toolchain versions, distributed as separate docker tags:
+
+* ``gcc-14.2`` -- from arm.com (newest "Arm GNU Toolchain" for all profiles)
+* ``gcc-10.3`` -- from arm.com (legacy "Arm GNU-A Toolchain" for A-Profile)
+* ``gcc-7.4`` -- from linaro.org
+* ``gcc-4.9`` -- from linaro.org
+
+Alternatively, you can install the toolchain manually. For example, for Linaro toolchain:
 
 .. code::
 
@@ -117,25 +153,30 @@ Alternatively, you can install the toolchain manually:
     $ cd "${ROC_DIR}"
     $ scons --host=arm-linux-gnueabihf --build-3rdparty=all
 
-.. _arm-bcm2708hardfp-linux-gnueabi:
+.. _arm-bcm2708-linux-gnueabihf:
 
 Raspberry Pi ARMv6 BCM-2708 toolchain
 =====================================
 
-The official Raspberry Pi `tools <https://github.com/raspberrypi/tools>`_ repository contains several arm-bcm2708 prebuilt toolchains. BCM-2708 is a chip family which includes BCM-2835, BCM-2836, and BCM-2837 chips used in various Raspberry Pi models (see `RPi Hardware <https://elinux.org/RPi_Hardware>`_).
+The official Raspberry Pi `tools <https://github.com/raspberrypi/tools>`_ repository contains several arm-bcm2708 prebuilt toolchains. BCM-2708 is a chip family which includes BCM-2835, BCM-2836, and BCM-2837 chips used in various cheaper Raspberry Pi models (see `RPi Hardware <https://elinux.org/RPi_Hardware>`_).
 
-The ``arm-bcm2708hardfp-linux-gnueabi`` is a 32-bit ARMv6 hard-float toolchain. It can be used with ARMv6 BCM-2708 boards, including Raspberry Pi 1 and Raspberry Pi Zero. It also can be used with ARMv7 and 32-bit ARMv8 boards, including more recent Raspberry Pi models, since they are backwards-compatible, but but can't employ instructions specific for these architectures.
+The ``arm-bcm2708-linux-gnueabihf`` is a 32-bit ARMv6 hard-float toolchain. It can be used with ARMv6 BCM-2708 boards, including Raspberry Pi 1 and Raspberry Pi Zero. It also can be used with ARMv7 and 32-bit ARMv8 boards, including more recent Raspberry Pi models, since they are backwards-compatible, but but can't employ instructions specific for these architectures.
 
-Here is how you can build Roc with this toolchain using `rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi <https://hub.docker.com/r/rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi/>`_ Docker image:
+Here is how you can build Roc with this toolchain using `rocstreaming/toolchain-arm-bcm2708-linux-gnueabihf <https://hub.docker.com/r/rocstreaming/toolchain-arm-bcm2708-linux-gnueabihf/>`_ Docker image:
 
 .. code::
 
     $ cd /path/to/roc
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 \
+        rocstreaming/toolchain-arm-bcm2708-linux-gnueabi:gcc-4.9 \
           scons \
-            --host=arm-bcm2708hardfp-linux-gnueabi \
+            --host=arm-linux-gnueabihf \
             --build-3rdparty=all
+
+Available toolchain versions, distributed as separate docker tags:
+
+* ``gcc-4.9`` -- uses ``arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf``
+* ``gcc-4.7`` -- uses ``arm-bcm2708/arm-bcm2708hardfp-linux-gnueabi``
 
 Alternatively, you can install the toolchain manually:
 
@@ -158,11 +199,11 @@ Alternatively, you can install the toolchain manually:
 
     # install toolchain
     $ git clone https://github.com/raspberrypi/tools.git "${RPI_TOOLS_DIR}"
-    $ export PATH="${RPI_TOOLS_DIR}/arm-bcm2708/arm-bcm2708hardfp-linux-gnueabi/bin:${PATH}"
+    $ export PATH="${RPI_TOOLS_DIR}/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin:${PATH}"
 
     # build Roc
     $ cd "${ROC_DIR}"
-    $ scons --host=arm-bcm2708hardfp-linux-gnueabi --build-3rdparty=all
+    $ scons --host=arm-linux-gnueabihf --build-3rdparty=all
 
 .. _mips-openwrt-linux-atheros:
 
@@ -183,8 +224,9 @@ Here is how you can build Roc with prebuilt Artheos OpenWrt toolchains using `ro
             --disable-pulseaudio \
             --disable-sox
 
-Currently two toolchains are packaged:
+Available toolchain versions, distributed as separate docker tags:
 
+* ``24.10`` -- OpenWrt 24.10 / ath79 / musl (`openwrt archive <https://archive.openwrt.org/releases/24.10.0/targets/ath79/generic/>`__)
 * ``17.01`` -- OpenWrt 17.01 / ar71xx / musl (`openwrt archive <https://archive.openwrt.org/releases/17.01.7/targets/ar71xx/generic/>`__)
 * ``12.09`` -- OpenWrt 12.09 / ar71xx / uClibc (`openwrt archive <https://archive.openwrt.org/attitude_adjustment/12.09/ar71xx/generic/>`__)
 
@@ -314,7 +356,7 @@ This command will additionally start Android emulator, and run Roc tests on it.
 
    This command will automatically employ KVM-based hardware acceleration. If you're using VirtualBox, you should temporary stop it and unload its kernel drivers, because they can't work with KVM side-by-side. You can do it using ``systemctl`` command.
 
-Subsequent runs will be much faster than the first one, because Docker container will remaing running in background, and downloaded Android components will be cached in Docker volume. You can remove Docker container and volume using ``purge`` command:
+Subsequent runs will be much faster than the first one, because Docker container will remain running in background, and downloaded Android components will be cached in Docker volume. You can remove Docker container and volume using ``purge`` command:
 
 .. code::
 
@@ -393,13 +435,13 @@ Running a test on 32-bit ARMv7 CPU using `rocstreaming/toolchain-arm-linux-gnuea
             qemu-arm -L /opt/sysroot -cpu cortex-a15 \
               ./bin/arm-linux-gnueabihf/roc-test-core
 
-Running a test on 32-bit ARMv6 CPU using `rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi <https://hub.docker.com/r/rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi/>`_ Docker image:
+Running a test on 32-bit ARMv6 CPU using `rocstreaming/toolchain-arm-bcm2708-linux-gnueabihf <https://hub.docker.com/r/rocstreaming/toolchain-arm-bcm2708-linux-gnueabihf/>`_ Docker image:
 
 .. code::
 
     $ cd /path/to/roc
     $ docker run -t --rm -u "${UID}" -v "${PWD}:${PWD}" -w "${PWD}" \
-        rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 \
-          env LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/arm-bcm2708hardfp-linux-gnueabi/rpath" \
+        rocstreaming/toolchain-arm-bcm2708-linux-gnueabihf:gcc-4.9 \
+          env LD_LIBRARY_PATH="/opt/sysroot/lib:${PWD}/3rdparty/arm-linux-gnueabihf/rpath" \
             qemu-arm -L /opt/sysroot -cpu arm1176 \
-              ./bin/arm-bcm2708hardfp-linux-gnueabi/roc-test-core
+              ./bin/arm-linux-gnueabihf/roc-test-core

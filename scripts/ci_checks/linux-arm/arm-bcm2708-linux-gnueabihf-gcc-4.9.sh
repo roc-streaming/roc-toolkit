@@ -2,8 +2,8 @@
 
 set -eux -o pipefail
 
-toolchain="arm-bcm2708hardfp-linux-gnueabi"
-compiler="gcc-4.7.1-release"
+toolchain="arm-linux-gnueabihf"
+compiler="gcc-4.9.3-release"
 cpu="arm1176" # armv6
 
 scons -Q \

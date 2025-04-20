@@ -31,12 +31,12 @@ Linux native
 =================================== ===================== ============= ==================================
 Image                               Base image            Architecture  Compilers
 =================================== ===================== ============= ==================================
-rocstreaming/env-ubuntu:24.04       ubuntu:24.04          x86_64        gcc-13, clang-15, clang-17
-rocstreaming/env-ubuntu:22.04       ubuntu:22.04          x86_64        gcc-11, gcc-12, clang-11, clang-14
-rocstreaming/env-ubuntu:20.04       ubuntu:20.04          x86_64        gcc-8, gcc-10, clang-8, clang-10
-rocstreaming/env-ubuntu:18.04       ubuntu:18.04          x86_64        gcc-6, clang-6
-rocstreaming/env-ubuntu:16.04       ubuntu:16.04          x86_64        gcc-4.8, clang-3.7
-rocstreaming/env-ubuntu:14.04       ubuntu:14.04          x86_64        gcc-4.4, clang-3.4
+rocstreaming/env-ubuntu:24.04       ubuntu:24.04          x86_64        gcc-14, gcc-13, clang-19, clang-16
+rocstreaming/env-ubuntu:22.04       ubuntu:22.04          x86_64        gcc-11, clang-14
+rocstreaming/env-ubuntu:20.04       ubuntu:20.04          x86_64        gcc-9, clang-10
+rocstreaming/env-ubuntu:18.04       ubuntu:18.04          x86_64        gcc-7, clang-6
+rocstreaming/env-ubuntu:16.04       ubuntu:16.04          x86_64        gcc-5, clang-3.8
+rocstreaming/env-ubuntu:14.04       ubuntu:14.04          x86_64        gcc-4.8, clang-3.4
 rocstreaming/env-ubuntu:nolibs      ubuntu:latest         x86_64        distro default
 rocstreaming/env-debian             debian:stable         x86_64        distro default
 rocstreaming/env-fedora             fedora:latest         x86_64        distro default
@@ -48,15 +48,14 @@ rocstreaming/env-alpine             alpine:latest         x86_64        distro d
 Linux toolchains
 ----------------
 
-============================================================== ============= ====== ==========================
-Image                                                          Architecture  Libc   Compilers
-============================================================== ============= ====== ==========================
-rocstreaming/toolchain-aarch64-linux-gnu:gcc-7.4               armv8-a       glibc  gcc-7.4, gcc-10.3
-rocstreaming/toolchain-arm-linux-gnueabihf:gcc-4.9             armv7-a       glibc  gcc-4.9, gcc-7.4, gcc-10.3
-rocstreaming/toolchain-arm-bcm2708hardfp-linux-gnueabi:gcc-4.7 armv6         glibc  gcc-4.7
-rocstreaming/toolchain-mips-openwrt-linux-atheros:17.01        mips32 24Kc   musl   gcc-5.4
-rocstreaming/toolchain-mips-openwrt-linux-atheros:12.09        mips32 24Kc   uClibc gcc-4.6
-============================================================== ============= ====== ==========================
+=================================================== ============= ====== ===========================
+Image                                               Architecture  Libc   Compilers
+=================================================== ============= ====== ===========================
+rocstreaming/toolchain-aarch64-linux-gnu            armv8-a       glibc  gcc-14.2, gcc-10.3, gcc-7.4
+rocstreaming/toolchain-arm-linux-gnueabihf          armv7-a       glibc  gcc-14.2, gcc-10.3, gcc-4.9
+rocstreaming/toolchain-arm-bcm2708-linux-gnueabihf  armv6         glibc  gcc-4.9
+rocstreaming/toolchain-mips-openwrt-linux-atheros   mips32 24Kc   musl   gcc-13.3, gcc-5.4
+=================================================== ============= ====== ===========================
 
 Android toolchains
 ------------------
@@ -71,13 +70,13 @@ rocstreaming/toolchain-linux-android:ndk21 21-29       armeabi-v7a, arm64-v8a, x
 Full Android environment
 ------------------------
 
-========================================== ===============================
-Image                                      JDK
-========================================== ===============================
-rocstreaming/env-android:jdk15             openjdk:15.0.2-jdk-slim-buster
-rocstreaming/env-android:jdk11             openjdk:11.0.7-jdk-slim-buster
-rocstreaming/env-android:jdk8              openjdk:8u252-jdk-slim-buster
-========================================== ===============================
+=============================== ===============================
+Image                           JDK
+=============================== ===============================
+rocstreaming/env-android:jdk15  openjdk:15.0.2-jdk-slim-buster
+rocstreaming/env-android:jdk11  openjdk:11.0.7-jdk-slim-buster
+rocstreaming/env-android:jdk8   openjdk:8u252-jdk-slim-buster
+=============================== ===============================
 
 How Docker images are built
 ===========================
@@ -109,31 +108,31 @@ You can build an image(s) locally using:
 
 .. code::
 
-   ./make.sh [OPTIONS...] [IMAGE[:TAG]...]
+   ./make.py [OPTIONS...] [IMAGE[:TAG]...]
 
 For example, to build all tags of ``env-ubuntu`` image:
 
 .. code::
 
-   ./make.sh env-ubuntu
+   ./make.py env-ubuntu
 
 To build all tags of ``env-fedora`` image and two specific tags of ``env-ubuntu`` image:
 
 .. code::
 
-   ./make.sh env-fedora env-ubuntu:20.04 env-ubuntu:22.04
+   ./make.py env-fedora env-ubuntu:20.04 env-ubuntu:22.04
 
 To build all images:
 
 .. code::
 
-   ./make.sh
+   ./make.py
 
 For the full list of available options, run:
 
 .. code::
 
-   ./make.sh --help
+   ./make.py --help
 
 Running CI steps locally
 ========================
