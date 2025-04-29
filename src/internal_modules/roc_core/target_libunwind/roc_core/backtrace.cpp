@@ -8,12 +8,6 @@
 
 // Select optimized API without remote unwinding.
 #define UNW_LOCAL_ONLY
-
-// Workaround to support building with -std=c++98.
-#ifdef ROC_ALIGNED
-#define alignas(x) ROC_ALIGNED(x)
-#endif
-
 #include <libunwind.h>
 
 #include <stdio.h>
