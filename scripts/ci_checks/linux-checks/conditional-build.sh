@@ -19,6 +19,7 @@ scons -Q --enable-werror --build-3rdparty=all \
 scons -Q --enable-werror --build-3rdparty=all \
       --enable-static \
       --enable-tests \
+      --enable-benchmarks \
       --enable-examples \
       --disable-libunwind \
       --disable-openfec \
@@ -33,5 +34,6 @@ scons -Q --enable-werror --build-3rdparty=all \
 scons -Q --enable-werror --build-3rdparty=all \
       --enable-static \
       --enable-tests \
+      --enable-benchmarks \
       --enable-examples \
       test
