@@ -125,7 +125,7 @@ TEST(state_tracker, multiple_timeout) {
     roc_log(LogDebug, "finished joining");
 
     for (int i = 0; i < 10; ++i) {
-      delete threads_ptr[i];
+        delete threads_ptr[i];
     }
     delete[] threads_ptr;
 }
@@ -170,7 +170,7 @@ TEST(state_tracker, multiple_switch) {
     roc_log(LogDebug, "finished joining");
 
     for (int i = 0; i < 10; ++i) {
-      delete threads_ptr[i];
+        delete threads_ptr[i];
     }
     delete[] threads_ptr;
 }
