@@ -495,6 +495,8 @@ void BM_PipelinePeakLoad_PreciseSchedOff(benchmark::State& state) {
     task_thr.stop();
     task_thr.join();
 
+    pipeline.stop_and_wait();
+
     stats.export_counters(state);
     pipeline.export_counters(state);
 }
@@ -524,6 +526,8 @@ void BM_PipelinePeakLoad_PreciseSchedOn(benchmark::State& state) {
 
     task_thr.stop();
     task_thr.join();
+
+    pipeline.stop_and_wait();
 
     stats.export_counters(state);
     pipeline.export_counters(state);
