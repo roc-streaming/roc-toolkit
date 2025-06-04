@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Roc Streaming authors
+ * Copyright (c) 2025 Roc Streaming authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,15 +23,10 @@ namespace core {
 //! Free list node internal data.
 struct FreeListData {
     //! Next free list element.
-    FreeListData* next;
+    FreeListData* next = nullptr;
 
     //! Reference counter for free list.
-    uint32_t refs;
-
-    FreeListData()
-        : next(NULL)
-        , refs(0) {
-    }
+    uint32_t refs = 0;
 };
 
 //! Base class for Free List element.
@@ -43,6 +38,7 @@ template <class Tag = void> class FreeListNode : public NonCopyable<FreeListNode
 public:
     ~FreeListNode() {
     }
+
     //! Get pointer to parent node from pointer to internal data.
     static FreeListNode* list_node(FreeListData* data) {
         return ROC_CONTAINER_OF(data, FreeListNode, free_list_data_);

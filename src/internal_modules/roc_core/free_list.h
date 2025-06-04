@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Roc Streaming authors
+ * Copyright (c) 2025 Roc Streaming authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -48,16 +48,13 @@ public:
     //! Release ownership of containing objects.
     ~FreeList() {
         while (!is_empty()) {
-            unsafe_pop_front();
+            unsafe_pop_front_();
         }
     }
 
-    //! Get first list element.
-    //! @returns
-    //!  first element or NULL if list is empty.
-    Pointer front() const {
-        FreeListData* data = impl_.front();
-        return from_free_node_data_(data);
+    //! Checks if list is empty
+    bool is_empty() {
+        return impl_.is_empty();
     }
 
     //! Prepend element to list.
@@ -79,20 +76,18 @@ public:
     //!
     //! @remarks
     //!  - removes first element of list
-    //!  - releases ownership of removed element
+    //!  - transfers ownership of removed element
     //!
-    //! @pre
-    //!  the list should not be empty.
-    void try_pop_front() {
-        FreeListData* data = impl_.try_pop_front();
-        T* elem = from_free_node_data_(data);
+    //! @returns
+    //!  element or null if list is empty.
+    Pointer pop_front() {
+        FreeListData* data = impl_.pop_front();
+        Pointer elem = from_free_node_data_(data);
 
-        OwnershipPolicy<T>::release(*elem);
-    }
-
-    //! Checks if list is empty
-    bool is_empty() {
-        return impl_.is_empty();
+        if (elem) {
+            OwnershipPolicy<T>::release(*elem);
+        }
+        return elem;
     }
 
 private:
@@ -104,7 +99,7 @@ private:
         return static_cast<T*>(static_cast<Node*>(Node::list_node(data)));
     }
 
-    void unsafe_pop_front() {
+    void unsafe_pop_front_() {
         FreeListData* data = impl_.unsafe_pop_front();
         T* elem = from_free_node_data_(data);
 

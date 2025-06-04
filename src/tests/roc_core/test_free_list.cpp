@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Roc Streaming authors
+ * Copyright (c) 2025 Roc Streaming authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,7 +29,6 @@ TEST_GROUP(free_list) {};
 
 TEST(free_list, empty_list) {
     FreeList<Object, NoOwnership> list;
-    CHECK(list.front() == NULL);
     CHECK(list.is_empty());
 }
 
@@ -40,7 +39,6 @@ TEST(free_list, push_front) {
         FreeList<Object, NoOwnership> list;
 
         list.push_front(objects[0]);
-        POINTERS_EQUAL(&objects[0], list.front());
         CHECK(!list.is_empty());
     }
     { // push many elements
@@ -51,12 +49,11 @@ TEST(free_list, push_front) {
             list.push_front(objects[i]);
         }
 
-        POINTERS_EQUAL(&objects[NumObjects - 1], list.front());
         CHECK(!list.is_empty());
     }
 }
 
-TEST(free_list, try_pop_front) {
+TEST(free_list, pop_front) {
     // with push_front
     Object objects[NumObjects];
     FreeList<Object, NoOwnership> list;
@@ -68,14 +65,12 @@ TEST(free_list, try_pop_front) {
 
     for (size_t i = 0; i < NumObjects; ++i) {
         LONGS_EQUAL(NumObjects - i, size);
-        list.try_pop_front();
-        if (i != NumObjects - 1) {
-            POINTERS_EQUAL(&objects[NumObjects - i - 2], list.front());
-        }
+        Object* obj = list.pop_front();
+        POINTERS_EQUAL(&objects[NumObjects - i - 1], obj);
         size--;
     }
 
-    CHECK(list.front() == NULL);
+    CHECK(list.is_empty());
 }
 
 TEST(free_list, iteration) {
@@ -107,11 +102,18 @@ TEST(free_list, ownership_operations) {
         LONGS_EQUAL(1, obj1.getref());
         LONGS_EQUAL(1, obj2.getref());
 
-        list.try_pop_front();
+        {
+            SharedPtr<RefObject> obj2_a = list.pop_front();
+            LONGS_EQUAL(1, obj2.getref());
+            POINTERS_EQUAL(&obj2, obj2_a.get());
+        }
         LONGS_EQUAL(0, obj2.getref());
-        POINTERS_EQUAL(&obj1, list.front().get());
 
-        list.try_pop_front();
+        {
+            SharedPtr<RefObject> obj1_a = list.pop_front();
+            LONGS_EQUAL(1, obj1.getref());
+            POINTERS_EQUAL(&obj1, obj1_a.get());
+        }
         LONGS_EQUAL(0, obj1.getref());
     }
 }
@@ -129,16 +131,6 @@ TEST(free_list, ownership_destructor) {
     LONGS_EQUAL(0, obj.getref());
 }
 
-TEST(free_list, shared_pointers) {
-    RefObject obj;
-    FreeList<RefObject, RefCountedOwnership> list;
-
-    list.push_front(obj);
-
-    POINTERS_EQUAL(&obj, list.front().get());
-
-    LONGS_EQUAL(2, list.front()->getref());
-}
 } // namespace core
 
 } // namespace roc

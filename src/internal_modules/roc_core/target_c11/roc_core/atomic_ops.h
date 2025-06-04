@@ -119,25 +119,46 @@ public:
                                            __ATOMIC_RELAXED);
     }
 
-    //! Atomic compare-and-swap (acquire barrier).
+    //! Atomic compare-and-swap (acquire barriers).
     template <class T1, class T2>
     static inline bool compare_exchange_acquire(T1& var, T1& exp, T2 des) {
         return __atomic_compare_exchange_n(&var, &exp, des, 0, __ATOMIC_ACQUIRE,
                                            __ATOMIC_ACQUIRE);
     }
 
-    //! Atomic compare-and-swap (release barrier).
+    //! Atomic compare-and-swap (acquire & relaxed barriers).
+    template <class T1, class T2>
+    static inline bool compare_exchange_acquire_relaxed(T1& var, T1& exp, T2 des) {
+        return __atomic_compare_exchange_n(&var, &exp, des, 0, __ATOMIC_ACQUIRE,
+                                           __ATOMIC_RELAXED);
+    }
+
+    //! Atomic compare-and-swap (release barriers).
     template <class T1, class T2>
     static inline bool compare_exchange_release(T1& var, T1& exp, T2 des) {
+        return __atomic_compare_exchange_n(&var, &exp, des, 0, __ATOMIC_RELEASE,
+                                           __ATOMIC_RELEASE);
+    }
+
+    //! Atomic compare-and-swap (release & relaxed barriers).
+    template <class T1, class T2>
+    static inline bool compare_exchange_release_relaxed(T1& var, T1& exp, T2 des) {
         return __atomic_compare_exchange_n(&var, &exp, des, 0, __ATOMIC_RELEASE,
                                            __ATOMIC_RELAXED);
     }
 
-    //! Atomic compare-and-swap (acquire-release barrier).
+    //! Atomic compare-and-swap (acquire-release barriers).
     template <class T1, class T2>
     static inline bool compare_exchange_acq_rel(T1& var, T1& exp, T2 des) {
         return __atomic_compare_exchange_n(&var, &exp, des, 0, __ATOMIC_ACQ_REL,
                                            __ATOMIC_ACQUIRE);
+    }
+
+    //! Atomic compare-and-swap (acquire-release & relaxed barriers).
+    template <class T1, class T2>
+    static inline bool compare_exchange_acq_rel_relaxed(T1& var, T1& exp, T2 des) {
+        return __atomic_compare_exchange_n(&var, &exp, des, 0, __ATOMIC_ACQ_REL,
+                                           __ATOMIC_RELAXED);
     }
 
     //! Atomic compare-and-swap (full barrier).
@@ -145,6 +166,13 @@ public:
     static inline bool compare_exchange_seq_cst(T1& var, T1& exp, T2 des) {
         return __atomic_compare_exchange_n(&var, &exp, des, 0, __ATOMIC_SEQ_CST,
                                            __ATOMIC_SEQ_CST);
+    }
+
+    //! Atomic compare-and-swap (full & relaxed barriers).
+    template <class T1, class T2>
+    static inline bool compare_exchange_seq_cst_relaxed(T1& var, T1& exp, T2 des) {
+        return __atomic_compare_exchange_n(&var, &exp, des, 0, __ATOMIC_SEQ_CST,
+                                           __ATOMIC_RELAXED);
     }
 
     //! @}
@@ -165,6 +193,11 @@ public:
     //! Atomic add-and-fetch (release barrier).
     template <class T1, class T2> static inline T1 fetch_add_release(T1& var, T2 val) {
         return __atomic_fetch_add(&var, val, __ATOMIC_RELEASE);
+    }
+
+    //! Atomic add-and-fetch (acquire-release barrier).
+    template <class T1, class T2> static inline T1 fetch_add_acq_rel(T1& var, T2 val) {
+        return __atomic_fetch_add(&var, val, __ATOMIC_ACQ_REL);
     }
 
     //! Atomic add-and-fetch (full barrier).
@@ -192,6 +225,11 @@ public:
         return __atomic_fetch_sub(&var, val, __ATOMIC_RELEASE);
     }
 
+    //! Atomic sub-and-fetch (acquire-release barrier).
+    template <class T1, class T2> static inline T1 fetch_sub_acq_rel(T1& var, T2 val) {
+        return __atomic_fetch_sub(&var, val, __ATOMIC_ACQ_REL);
+    }
+
     //! Atomic sub-and-fetch (full barrier).
     template <class T1, class T2> static inline T1 fetch_sub_seq_cst(T1& var, T2 val) {
         return __atomic_fetch_sub(&var, val, __ATOMIC_SEQ_CST);
@@ -215,6 +253,11 @@ public:
     //! Atomic fetch-and (release barrier).
     template <class T1, class T2> static inline T1 fetch_and_release(T1& var, T2 val) {
         return __atomic_fetch_and(&var, val, __ATOMIC_RELEASE);
+    }
+
+    //! Atomic fetch-and (acquire-release barrier).
+    template <class T1, class T2> static inline T1 fetch_and_acq_rel(T1& var, T2 val) {
+        return __atomic_fetch_and(&var, val, __ATOMIC_ACQ_REL);
     }
 
     //! Atomic fetch-and (full barrier).
@@ -242,6 +285,11 @@ public:
         return __atomic_fetch_or(&var, val, __ATOMIC_RELEASE);
     }
 
+    //! Atomic fetch-or (acquire-release barrier).
+    template <class T1, class T2> static inline T1 fetch_or_acq_rel(T1& var, T2 val) {
+        return __atomic_fetch_or(&var, val, __ATOMIC_ACQ_REL);
+    }
+
     //! Atomic fetch-or (full barrier).
     template <class T1, class T2> static inline T1 fetch_or_seq_cst(T1& var, T2 val) {
         return __atomic_fetch_or(&var, val, __ATOMIC_SEQ_CST);
@@ -265,6 +313,11 @@ public:
     //! Atomic fetch-xor (release barrier).
     template <class T1, class T2> static inline T1 fetch_xor_release(T1& var, T2 val) {
         return __atomic_fetch_xor(&var, val, __ATOMIC_RELEASE);
+    }
+
+    //! Atomic fetch-xor (acquire-release barrier).
+    template <class T1, class T2> static inline T1 fetch_xor_acq_rel(T1& var, T2 val) {
+        return __atomic_fetch_xor(&var, val, __ATOMIC_ACQ_REL);
     }
 
     //! Atomic fetch-xor (full barrier).
