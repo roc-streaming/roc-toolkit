@@ -460,7 +460,8 @@ TEST(packetizer, metrics) {
     }
 }
 
-TEST(packetizer, forward_error) {
+// Forward error from packet writer.
+TEST(packetizer, forward_writer_error) {
     PcmEncoder encoder(packet_spec, arena);
     PcmDecoder decoder(packet_spec, arena);
 
@@ -478,6 +479,7 @@ TEST(packetizer, forward_error) {
     LONGS_EQUAL(status::StatusAbort, packetizer.write(*frame));
 }
 
+// Forward error from frame encoder.
 TEST(packetizer, forward_encoder_error) {
     PcmEncoder encoder(packet_spec, arena);
     MockEncoder mock_encoder(encoder, arena);
@@ -493,9 +495,9 @@ TEST(packetizer, forward_encoder_error) {
     FramePtr frame = new_frame(SamplesPerPacket);
     CHECK(frame);
 
-    mock_encoder.set_status(status::StatusBadArg);
+    mock_encoder.set_status(status::StatusAbort);
 
-    LONGS_EQUAL(status::StatusBadArg, packetizer.write(*frame));
+    LONGS_EQUAL(status::StatusAbort, packetizer.write(*frame));
 }
 
 } // namespace audio

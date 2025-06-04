@@ -1290,7 +1290,7 @@ TEST(depacketizer, partial_on_big_read) {
 }
 
 // Forward error from packet reader.
-TEST(depacketizer, forward_error) {
+TEST(depacketizer, forward_reader_error) {
     PcmEncoder encoder(packet_spec, arena);
     PcmDecoder decoder(packet_spec, arena);
 
@@ -1316,6 +1316,23 @@ TEST(depacketizer, forward_error) {
 
     // try to read more
     // get error because depacketizer tries to read packet
+    expect_error(status::StatusAbort, dp, SamplesPerPacket);
+}
+
+// Forward error from frame decoder.
+TEST(depacketizer, forward_decoder_error) {
+    PcmEncoder encoder(packet_spec, arena);
+    PcmDecoder decoder(packet_spec, arena);
+    MockDecoder mock_decoder(decoder, arena);
+
+    packet::FifoQueue queue;
+    Depacketizer dp(queue, mock_decoder, frame_factory, frame_spec, NULL);
+    LONGS_EQUAL(status::StatusOK, dp.init_status());
+
+    mock_decoder.set_status(status::StatusAbort);
+
+    write_packet(queue, new_packet(encoder, 0, 0.11f, 0));
+
     expect_error(status::StatusAbort, dp, SamplesPerPacket);
 }
 
@@ -1362,22 +1379,6 @@ TEST(depacketizer, preallocated_buffer) {
         LONGS_EQUAL(FrameSz, frame->num_raw_samples());
         LONGS_EQUAL(FrameSz * sizeof(sample_t), frame->num_bytes());
     }
-}
-
-TEST(depacketizer, handle_decoder_error) {
-    PcmEncoder encoder(packet_spec, arena);
-    PcmDecoder decoder(packet_spec, arena);
-    MockDecoder mock_decoder(decoder, arena);
-
-    packet::FifoQueue queue;
-    Depacketizer dp(queue, mock_decoder, frame_factory, frame_spec, NULL);
-    LONGS_EQUAL(status::StatusOK, dp.init_status());
-
-    mock_decoder.set_status(status::StatusBadArg);
-
-    write_packet(queue, new_packet(encoder, 0, 0.11f, 0));
-
-    expect_error(status::StatusBadArg, dp, SamplesPerPacket);
 }
 
 } // namespace audio

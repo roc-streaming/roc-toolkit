@@ -134,7 +134,7 @@ status::StatusCode Packetizer::flush() {
 }
 
 status::StatusCode Packetizer::begin_packet_() {
-    const status::StatusCode code = create_packet_();
+    status::StatusCode code = create_packet_();
     if (code != status::StatusOK) {
         return code;
     }
@@ -145,8 +145,13 @@ status::StatusCode Packetizer::begin_packet_() {
     packet_cts_ = capture_ts_;
 
     // Begin encoding samples into packet.
-    return payload_encoder_.begin_frame(packet_->payload().data(),
+    code = payload_encoder_.begin_frame(packet_->payload().data(),
                                         packet_->payload().size());
+    if (code != status::StatusOK) {
+        roc_log(LogError, "packetizer: failed to encode packet: status=%s",
+                status::code_to_str(code));
+    }
+    return code;
 }
 
 status::StatusCode Packetizer::end_packet_() {
@@ -160,6 +165,8 @@ status::StatusCode Packetizer::end_packet_() {
     code = payload_encoder_.end_frame();
 
     if (code != status::StatusOK) {
+        roc_log(LogError, "packetizer: failed to encode packet: status=%s",
+                status::code_to_str(code));
         return code;
     }
 
@@ -169,10 +176,9 @@ status::StatusCode Packetizer::end_packet_() {
     // Apply padding if needed.
     if (packet_pos_ < samples_per_packet_) {
         code = pad_packet_(written_payload_size);
-    }
-
-    if (code != status::StatusOK) {
-        return code;
+        if (code != status::StatusOK) {
+            return code;
+        }
     }
 
     code = writer_.write(packet_);

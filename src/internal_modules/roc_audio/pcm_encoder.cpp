@@ -35,9 +35,7 @@ size_t PcmEncoder::encoded_byte_count(size_t num_samples) const {
 
 ROC_NODISCARD status::StatusCode PcmEncoder::begin_frame(void* frame_data,
                                                          size_t frame_size) {
-    if (!frame_data) {
-        return status::StatusBadArg;
-    }
+    roc_panic_if_not(frame_data);
 
     if (frame_data_) {
         roc_panic("pcm encoder: unpaired begin/end");

@@ -67,8 +67,7 @@ public:
     //!
     //! @remarks
     //!  After this call, read_samples() will retrieve samples from given @p frame_data,
-    //!  until
-    //!  @p frame_size bytes are read or end_frame() is called.
+    //!  until @p frame_size bytes are read or end_frame() is called.
     //!
     //! @note
     //!  @p frame_position defines the position of the frame in the encoded stream.
