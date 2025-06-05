@@ -6,9 +6,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <benchmark/benchmark.h>
-
 #include "roc_core/fast_random.h"
+
+#include <benchmark/benchmark.h>
 
 namespace roc {
 namespace core {

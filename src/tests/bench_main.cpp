@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <benchmark/benchmark.h>
-
 #include "roc_core/crash_handler.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
+
+#include <benchmark/benchmark.h>
 
 using namespace roc;
 
