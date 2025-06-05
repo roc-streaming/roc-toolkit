@@ -33,7 +33,7 @@ bool ControlTask::succeeded() const {
     return task_flags & FlagSucceeded;
 }
 
-bool ControlTask::cancelled() const {
+bool ControlTask::canceled() const {
     const unsigned task_flags = flags_;
 
     validate_flags(task_flags);

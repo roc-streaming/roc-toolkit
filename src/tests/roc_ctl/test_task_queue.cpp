@@ -184,10 +184,10 @@ public:
             roc_panic("completer: unexpected task success status: expected=%d actual=%d",
                       (int)expect_success_, (int)task.succeeded());
         }
-        if (task.cancelled() != expect_cancelled_) {
+        if (task.canceled() != expect_cancelled_) {
             roc_panic(
                 "completer: unexpected task cancellation status: expected=%d actual=%d",
-                (int)expect_cancelled_, (int)task.cancelled());
+                (int)expect_cancelled_, (int)task.canceled());
         }
         if (core::timestamp(core::ClockMonotonic) < expect_after_) {
             roc_panic("completer: task was executed too early");
@@ -247,7 +247,7 @@ TEST(task_queue, schedule_one) {
         CHECK(executor.nth_task(0) == &task);
 
         CHECK(task.succeeded());
-        CHECK(!task.cancelled());
+        CHECK(!task.canceled());
     }
     { // failure
         TestExecutor executor;
@@ -272,7 +272,7 @@ TEST(task_queue, schedule_one) {
         CHECK(executor.nth_task(0) == &task);
 
         CHECK(!task.succeeded());
-        CHECK(!task.cancelled());
+        CHECK(!task.canceled());
     }
 }
 
@@ -287,7 +287,7 @@ TEST(task_queue, schedule_one_no_completer) {
     TestExecutor::Task task;
 
     CHECK(!task.succeeded());
-    CHECK(!task.cancelled());
+    CHECK(!task.canceled());
 
     executor.set_nth_result(0, true);
     queue.schedule(task, executor, NULL);
@@ -300,7 +300,7 @@ TEST(task_queue, schedule_one_no_completer) {
     CHECK(executor.nth_task(0) == &task);
 
     CHECK(task.succeeded());
-    CHECK(!task.cancelled());
+    CHECK(!task.canceled());
 }
 
 TEST(task_queue, schedule_many_sequantial) {
@@ -331,7 +331,7 @@ TEST(task_queue, schedule_many_sequantial) {
         CHECK(executor.nth_task(n) == &task);
 
         CHECK(task.succeeded() == success);
-        CHECK(!task.cancelled());
+        CHECK(!task.canceled());
     }
 }
 
@@ -379,7 +379,7 @@ TEST(task_queue, schedule_many_batched) {
         CHECK(executor.nth_task(n) == &tasks[n]);
 
         CHECK(tasks[n].succeeded() == success);
-        CHECK(!tasks[n].cancelled());
+        CHECK(!tasks[n].canceled());
     }
 
     executor.check_all_unblocked();
@@ -403,7 +403,7 @@ TEST(task_queue, schedule_and_wait_one) {
         CHECK(executor.nth_task(0) == &task);
 
         CHECK(task.succeeded());
-        CHECK(!task.cancelled());
+        CHECK(!task.canceled());
     }
     { // failure
         TestExecutor executor;
@@ -422,7 +422,7 @@ TEST(task_queue, schedule_and_wait_one) {
         CHECK(executor.nth_task(0) == &task);
 
         CHECK(!task.succeeded());
-        CHECK(!task.cancelled());
+        CHECK(!task.canceled());
     }
 }
 
@@ -448,7 +448,7 @@ TEST(task_queue, schedule_and_wait_many) {
         CHECK(executor.nth_task(n) == &task);
 
         CHECK(task.succeeded() == success);
-        CHECK(!task.cancelled());
+        CHECK(!task.canceled());
     }
 }
 
@@ -477,7 +477,7 @@ TEST(task_queue, schedule_at_one) {
         CHECK(executor.nth_task(0) == &task);
 
         CHECK(task.succeeded());
-        CHECK(!task.cancelled());
+        CHECK(!task.canceled());
     }
     { // failure
         TestExecutor executor;
@@ -503,7 +503,7 @@ TEST(task_queue, schedule_at_one) {
         CHECK(executor.nth_task(0) == &task);
 
         CHECK(!task.succeeded());
-        CHECK(!task.cancelled());
+        CHECK(!task.canceled());
     }
 }
 
@@ -518,7 +518,7 @@ TEST(task_queue, schedule_at_one_no_completer) {
     TestExecutor::Task task;
 
     CHECK(!task.succeeded());
-    CHECK(!task.cancelled());
+    CHECK(!task.canceled());
 
     executor.set_nth_result(0, true);
     queue.schedule_at(task, now_plus_delay(core::Millisecond), executor, NULL);
@@ -531,7 +531,7 @@ TEST(task_queue, schedule_at_one_no_completer) {
     CHECK(executor.nth_task(0) == &task);
 
     CHECK(task.succeeded());
-    CHECK(!task.cancelled());
+    CHECK(!task.canceled());
 }
 
 TEST(task_queue, schedule_at_many) {
@@ -584,7 +584,7 @@ TEST(task_queue, schedule_at_many) {
         CHECK(executor.nth_task(n) == &tasks[n]);
 
         CHECK(tasks[n].succeeded() == success);
-        CHECK(!tasks[n].cancelled());
+        CHECK(!tasks[n].canceled());
     }
 
     executor.check_all_unblocked();
@@ -646,7 +646,7 @@ TEST(task_queue, schedule_at_reversed) {
         CHECK(executor.nth_task(n) == &tasks[idx]);
 
         CHECK(tasks[idx].succeeded() == success);
-        CHECK(!tasks[idx].cancelled());
+        CHECK(!tasks[idx].canceled());
     }
 
     executor.check_all_unblocked();
@@ -857,24 +857,24 @@ TEST(task_queue, schedule_and_async_cancel) {
     CHECK(completers[0].wait_called() == &tasks[0]);
     UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
     CHECK(tasks[0].succeeded());
-    CHECK(!tasks[0].cancelled());
+    CHECK(!tasks[0].canceled());
 
     executor.unblock_one();
     CHECK(completers[1].wait_called() == &tasks[1]);
     UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
     CHECK(tasks[1].succeeded());
-    CHECK(!tasks[1].cancelled());
+    CHECK(!tasks[1].canceled());
 
     CHECK(completers[2].wait_called() == &tasks[2]);
     UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
     CHECK(!tasks[2].succeeded());
-    CHECK(tasks[2].cancelled());
+    CHECK(tasks[2].canceled());
 
     executor.unblock_one();
     CHECK(completers[3].wait_called() == &tasks[3]);
     UNSIGNED_LONGS_EQUAL(3, executor.num_tasks());
     CHECK(tasks[3].succeeded());
-    CHECK(!tasks[3].cancelled());
+    CHECK(!tasks[3].canceled());
 
     executor.check_all_unblocked();
 }
@@ -930,24 +930,24 @@ TEST(task_queue, schedule_at_and_async_cancel) {
     CHECK(completers[0].wait_called() == &tasks[0]);
     UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
     CHECK(tasks[0].succeeded());
-    CHECK(!tasks[0].cancelled());
+    CHECK(!tasks[0].canceled());
 
     CHECK(completers[2].wait_called() == &tasks[2]);
     UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
     CHECK(!tasks[2].succeeded());
-    CHECK(tasks[2].cancelled());
+    CHECK(tasks[2].canceled());
 
     executor.unblock_one();
     CHECK(completers[1].wait_called() == &tasks[1]);
     UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
     CHECK(tasks[1].succeeded());
-    CHECK(!tasks[1].cancelled());
+    CHECK(!tasks[1].canceled());
 
     executor.unblock_one();
     CHECK(completers[3].wait_called() == &tasks[3]);
     UNSIGNED_LONGS_EQUAL(3, executor.num_tasks());
     CHECK(tasks[3].succeeded());
-    CHECK(!tasks[3].cancelled());
+    CHECK(!tasks[3].canceled());
 
     executor.check_all_unblocked();
 }
@@ -973,7 +973,7 @@ TEST(task_queue, cancel_and_wait) {
     queue.wait(task);
 
     CHECK(!task.succeeded());
-    CHECK(task.cancelled());
+    CHECK(task.canceled());
 
     CHECK(completer.wait_called() == &task);
 
@@ -1004,7 +1004,7 @@ TEST(task_queue, cancel_already_finished) {
     CHECK(executor.nth_task(0) == &task);
 
     CHECK(task.succeeded());
-    CHECK(!task.cancelled());
+    CHECK(!task.canceled());
 }
 
 TEST(task_queue, schedule_already_finished) {
@@ -1034,7 +1034,7 @@ TEST(task_queue, schedule_already_finished) {
     CHECK(executor.nth_task(1) == &task);
 
     CHECK(task.succeeded());
-    CHECK(!task.cancelled());
+    CHECK(!task.canceled());
 }
 
 TEST(task_queue, schedule_at_cancel) {
@@ -1073,7 +1073,7 @@ TEST(task_queue, schedule_at_cancel) {
     UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
 
     CHECK(!task2.succeeded());
-    CHECK(task2.cancelled());
+    CHECK(task2.canceled());
 
     completer2.expect_success(true);
     completer2.expect_cancelled(false);
@@ -1087,7 +1087,7 @@ TEST(task_queue, schedule_at_cancel) {
     UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
 
     CHECK(task2.succeeded());
-    CHECK(!task2.cancelled());
+    CHECK(!task2.canceled());
 
     executor.check_all_unblocked();
 }
@@ -1193,7 +1193,7 @@ TEST(task_queue, reschedule_processing) {
     CHECK(completer.wait_called() == &task);
 
     CHECK(task.succeeded());
-    CHECK(!task.cancelled());
+    CHECK(!task.canceled());
 
     UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
 
@@ -1222,7 +1222,7 @@ TEST(task_queue, reschedule_succeeded) {
     CHECK(completer.wait_called() == &task);
 
     CHECK(task.succeeded());
-    CHECK(!task.cancelled());
+    CHECK(!task.canceled());
 
     completer.expect_success(true);
     completer.expect_cancelled(false);
@@ -1235,7 +1235,7 @@ TEST(task_queue, reschedule_succeeded) {
     CHECK(completer.wait_called() == &task);
 
     CHECK(task.succeeded());
-    CHECK(!task.cancelled());
+    CHECK(!task.canceled());
 
     UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
 }
@@ -1262,7 +1262,7 @@ TEST(task_queue, reschedule_failed) {
     CHECK(completer.wait_called() == &task);
 
     CHECK(!task.succeeded());
-    CHECK(!task.cancelled());
+    CHECK(!task.canceled());
 
     completer.expect_success(true);
     completer.expect_cancelled(false);
@@ -1275,7 +1275,7 @@ TEST(task_queue, reschedule_failed) {
     CHECK(completer.wait_called() == &task);
 
     CHECK(task.succeeded());
-    CHECK(!task.cancelled());
+    CHECK(!task.canceled());
 
     UNSIGNED_LONGS_EQUAL(2, executor.num_tasks());
 }
@@ -1305,7 +1305,7 @@ TEST(task_queue, reschedule_cancelled) {
     CHECK(completer.wait_called() == &task);
 
     CHECK(!task.succeeded());
-    CHECK(task.cancelled());
+    CHECK(task.canceled());
 
     completer.expect_success(true);
     completer.expect_cancelled(false);
@@ -1319,7 +1319,7 @@ TEST(task_queue, reschedule_cancelled) {
 
     roc_panic_if(!task.succeeded());
     CHECK(task.succeeded());
-    CHECK(!task.cancelled());
+    CHECK(!task.canceled());
 
     UNSIGNED_LONGS_EQUAL(1, executor.num_tasks());
 }

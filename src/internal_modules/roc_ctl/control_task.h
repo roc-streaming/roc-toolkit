@@ -55,14 +55,14 @@ class ControlTask : public core::MpscQueueNode<>, public core::ListNode<> {
 public:
     ~ControlTask();
 
-    //! True if the task succeeded, failed, or cancelled.
+    //! True if the task succeeded, failed, or canceled.
     bool completed() const;
 
     //! True if the task succeeded.
     bool succeeded() const;
 
-    //! True if the task cancelled.
-    bool cancelled() const;
+    //! True if the task canceled.
+    bool canceled() const;
 
 protected:
     //! Initialize task.
@@ -90,7 +90,7 @@ private:
 
     enum State {
         // task is in ready queue or being fetched from it; after it's
-        // fetched, it will be processed, cancelled, or rescheduled
+        // fetched, it will be processed, canceled, or rescheduled
         StateReady,
 
         // task is in sleeping queue, waiting for its deadline
@@ -119,7 +119,7 @@ private:
         // task resuming was requested
         FlagResumed = (1 << 3),
 
-        // task was cancelled
+        // task was canceled
         FlagCancelled = (1 << 4),
 
         // task destructor was called

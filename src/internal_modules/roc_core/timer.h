@@ -29,10 +29,10 @@ public:
     //! Set timer deadline.
     //! Can be called concurrently, but only one concurrent call will succeed.
     //! Returns false if the call failed because of another concurrent call.
-    //! Is lock-free if Semaphore::post() is so (which is true of modern plarforms).
+    //! Is lock-free if Semaphore::post() is so (which is true of modern platforms).
     //! Current or future wait_deadline() call will unblock when deadline expires.
     //! Zero deadline means wake up immediately.
-    //! Nagative deadline means never wake up, until deadline is changed again.
+    //! Negative deadline means never wake up, until deadline is changed again.
     bool try_set_deadline(nanoseconds_t deadline);
 
     //! Wait until deadline expires.

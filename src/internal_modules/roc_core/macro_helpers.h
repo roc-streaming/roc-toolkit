@@ -14,10 +14,10 @@
 
 #include "roc_core/stddefs.h"
 
-//! Select minum value.
+//! Select minimum value.
 #define ROC_MIN(a, b) ((a) < (b) ? (a) : (b))
 
-//! Select minum value.
+//! Select minimum value.
 #define ROC_MAX(a, b) ((a) > (b) ? (a) : (b))
 
 //! Get number of elements in a static array.

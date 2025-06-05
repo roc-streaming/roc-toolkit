@@ -140,7 +140,7 @@ public:
             //! Set task parameters.
             //! @remarks
             //!  - Updates @p config with the actual bind address.
-            //!  - Notofies @p conn_handler when connection state changes.
+            //!  - Notifies @p conn_handler when connection state changes.
             AddTcpClientPort(TcpClientConfig& config, IConnHandler& conn_handler);
 
             //! Get created port handle.

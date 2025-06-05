@@ -80,7 +80,7 @@ namespace ctl {
 //!
 //!  - Otherwise, we push the task to ready_queue_ (which has lock-free push), set
 //!    the timer wakeup time to zero (to ensure that the event loop thread wont go to
-//!    sleep), and return, leaving the completion of the operarion to the event loop
+//!    sleep), and return, leaving the completion of the operation to the event loop
 //!    thread. The event loop thread will fetch the task from ready_queue_ soon and
 //!    complete the operation by manipulating the sleeping_queue_.
 //!

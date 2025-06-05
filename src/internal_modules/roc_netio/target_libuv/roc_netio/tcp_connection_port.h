@@ -108,7 +108,7 @@ enum TcpConnectionType {
 //!  - after connection is established and before it's terminated you can
 //!    perform I/O
 //!  - even if connection can't be established, async_terminate() still should be
-//!    called before closing and destryoing connection
+//!    called before closing and destroying connection
 //!
 //! Connection FSM
 //! --------------
@@ -138,7 +138,7 @@ public:
     //!  Should be called from network loop thread.
     virtual AsyncOperationStatus async_close(ICloseHandler& handler, void* handler_arg);
 
-    //! Establish conection by accepting it from listening socket.
+    //! Establish connection by accepting it from listening socket.
     //! @remarks
     //!  Should be called from network loop thread.
     bool accept(const TcpConnectionConfig& config,
