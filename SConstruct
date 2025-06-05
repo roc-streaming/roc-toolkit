@@ -955,6 +955,20 @@ if meta.compiler in ['gcc', 'clang']:
     if meta.platform in ['linux', 'darwin']:
         env.AddManualDependency(libs=['pthread'])
 
+#Check for existence of function sem_clockwait 
+    temp_conf = Configure(env)
+    header = """
+#ifdef __cplusplus
+extern "C"
+#endif
+char sem_timedwait(void);
+"""
+
+    if temp_conf.CheckFunc('sem_clockwait', header):
+        env.Append(CPPDEFINES=['ROC_HAVE_SEM_CLOCKWAIT'])
+
+
+
     if meta.platform in ['linux', 'android'] or meta.gnu_toolchain:
         if not GetOption('disable_soversion'):
             subenvs.public_libs['SHLIBSUFFIX'] = '{}.{}'.format(
