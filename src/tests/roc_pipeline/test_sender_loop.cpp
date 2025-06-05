@@ -9,6 +9,7 @@
 #include "test_harness.h"
 #include "test_helpers/mock_scheduler.h"
 
+#include "roc_core/atomic_bool.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/slab_pool.h"
 #include "roc_packet/fifo_queue.h"
@@ -106,7 +107,7 @@ private:
     SenderLoop::Tasks::AddEndpoint* task_add_endpoint_;
     SenderLoop::Tasks::DeleteSlot* task_delete_slot_;
 
-    core::Atomic<int> done_;
+    core::AtomicBool done_;
 };
 
 } // namespace

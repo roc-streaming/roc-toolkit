@@ -15,7 +15,6 @@
 #include "roc_audio/processor_map.h"
 #include "roc_audio/sample.h"
 #include "roc_core/allocation_policy.h"
-#include "roc_core/atomic.h"
 #include "roc_core/iarena.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/slab_pool.h"

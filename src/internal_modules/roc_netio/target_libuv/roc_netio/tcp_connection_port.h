@@ -15,7 +15,7 @@
 #include <uv.h>
 
 #include "roc_address/socket_addr.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/mutex.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/seqlock.h"
@@ -335,13 +335,13 @@ private:
 
     SocketHandle socket_;
 
-    core::Atomic<int32_t> conn_state_;
+    core::AtomicInt<int32_t> conn_state_;
 
-    core::Atomic<int32_t> conn_was_established_;
-    core::Atomic<int32_t> conn_was_failed_;
+    core::AtomicInt<int32_t> conn_was_established_;
+    core::AtomicInt<int32_t> conn_was_failed_;
 
-    core::Atomic<int32_t> writable_status_;
-    core::Atomic<int32_t> readable_status_;
+    core::AtomicInt<int32_t> writable_status_;
+    core::AtomicInt<int32_t> readable_status_;
 
     bool got_stream_end_;
 

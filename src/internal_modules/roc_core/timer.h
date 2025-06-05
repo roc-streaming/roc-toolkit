@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_TIMER_H_
 #define ROC_CORE_TIMER_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_bool.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/semaphore.h"
 #include "roc_core/seqlock.h"
@@ -43,7 +43,7 @@ public:
 
 private:
     Semaphore sem_;
-    Atomic<int> sem_post_flag_;
+    AtomicBool sem_post_flag_;
     Seqlock<nanoseconds_t> deadline_;
     Seqlock<nanoseconds_t> next_wakeup_;
 };

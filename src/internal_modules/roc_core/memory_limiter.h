@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_MEMORY_LIMITER_H_
 #define ROC_CORE_MEMORY_LIMITER_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_size.h"
 #include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
@@ -50,7 +50,7 @@ public:
 private:
     const char* name_;
     const size_t max_bytes_;
-    Atomic<size_t> bytes_acquired_;
+    AtomicSize bytes_acquired_;
 };
 
 } // namespace core

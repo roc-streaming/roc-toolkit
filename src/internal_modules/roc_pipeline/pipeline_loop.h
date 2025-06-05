@@ -16,7 +16,7 @@
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/sample_spec.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
@@ -395,13 +395,13 @@ private:
     core::MpscQueue<PipelineTask, core::NoOwnership> task_queue_;
 
     // counter of pending tasks
-    core::Atomic<int> pending_tasks_;
+    core::AtomicInt<int32_t> pending_tasks_;
 
     // counter of pending process_frame_and_tasks() calls blocked on pipeline_mutex_
-    core::Atomic<int> pending_frames_;
+    core::AtomicInt<int32_t> pending_frames_;
 
     // asynchronous processing state
-    core::Atomic<int> processing_state_;
+    core::AtomicInt<int32_t> processing_state_;
 
     // tid of last thread that performed frame processing
     core::Seqlock<uint64_t> frame_processing_tid_;

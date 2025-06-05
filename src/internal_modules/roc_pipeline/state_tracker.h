@@ -12,7 +12,7 @@
 #ifndef ROC_PIPELINE_STATE_TRACKER_H_
 #define ROC_PIPELINE_STATE_TRACKER_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
 #include "roc_sndio/device_defs.h"
@@ -63,9 +63,9 @@ public:
     void unregister_packet();
 
 private:
-    core::Atomic<int> halt_state_;
-    core::Atomic<int> active_sessions_;
-    core::Atomic<int> pending_packets_;
+    core::AtomicInt<int32_t> halt_state_;
+    core::AtomicInt<int32_t> active_sessions_;
+    core::AtomicInt<int32_t> pending_packets_;
 };
 
 } // namespace pipeline

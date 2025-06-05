@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_MUTEX_H_
 #define ROC_CORE_MUTEX_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/attributes.h"
 #include "roc_core/errno_to_str.h"
 #include "roc_core/noncopyable.h"
@@ -72,7 +72,7 @@ private:
     friend class Cond;
 
     mutable pthread_mutex_t mutex_;
-    mutable Atomic<int> guard_;
+    mutable AtomicInt<int32_t> guard_;
 };
 
 } // namespace core

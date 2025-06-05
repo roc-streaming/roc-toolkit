@@ -8,7 +8,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_bool.h"
 #include "roc_core/fast_random.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/stddefs.h"
@@ -413,7 +413,7 @@ private:
     }
 
     TestPipeline& pipeline_;
-    core::Atomic<int> stop_;
+    core::AtomicBool stop_;
 };
 
 class FrameWriter {

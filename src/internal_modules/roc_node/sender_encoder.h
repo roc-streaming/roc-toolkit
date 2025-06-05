@@ -15,7 +15,7 @@
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
 #include "roc_address/socket_addr.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_ptr.h"
 #include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/optional.h"
@@ -96,8 +96,8 @@ private:
     address::SocketAddr dest_address_;
 
     core::Optional<packet::ConcurrentQueue> endpoint_queues_[address::Iface_Max];
-    core::Atomic<packet::IReader*> endpoint_readers_[address::Iface_Max];
-    core::Atomic<packet::IWriter*> endpoint_writers_[address::Iface_Max];
+    core::AtomicPtr<packet::IReader> endpoint_readers_[address::Iface_Max];
+    core::AtomicPtr<packet::IWriter> endpoint_writers_[address::Iface_Max];
 
     pipeline::SenderLoop pipeline_;
     pipeline::SenderLoop::SlotHandle slot_;

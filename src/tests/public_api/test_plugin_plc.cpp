@@ -12,7 +12,7 @@
 #include "test_helpers/receiver.h"
 #include "test_helpers/sender.h"
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/panic.h"
 #include "roc_fec/codec_map.h"
 
@@ -41,11 +41,11 @@ struct TestPlugin {
     // Magic constant to ensure that all pointer casts work fine.
     int magic;
 
-    core::Atomic<size_t> n_created;
-    core::Atomic<size_t> n_deleted;
+    core::AtomicInt<uint32_t> n_created;
+    core::AtomicInt<uint32_t> n_deleted;
 
-    core::Atomic<size_t> n_hist_samples;
-    core::Atomic<size_t> n_lost_samples;
+    core::AtomicInt<uint32_t> n_hist_samples;
+    core::AtomicInt<uint32_t> n_lost_samples;
 
     TestPlugin();
 };

@@ -6,7 +6,6 @@ set -euxo pipefail
 scons -Q --enable-werror --build-3rdparty=all \
       --disable-shared \
       --disable-tools \
-      --disable-c11 \
       --disable-libunwind \
       --disable-libuuid \
       --disable-openfec \

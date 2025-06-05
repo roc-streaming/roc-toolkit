@@ -70,7 +70,6 @@ Options
   --enable-examples           enable examples building
   --enable-doxygen            enable Doxygen documentation generation
   --enable-sphinx             enable Sphinx documentation generation
-  --disable-c11               disable C11 support
   --disable-soversion         don't write version into the shared library and don't create version symlinks
   --disable-openfec           disable OpenFEC support required for FEC codes
   --disable-speexdsp          disable SpeexDSP support for resampling

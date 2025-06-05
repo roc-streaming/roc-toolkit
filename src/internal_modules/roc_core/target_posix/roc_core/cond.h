@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_COND_H_
 #define ROC_CORE_COND_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
@@ -48,7 +48,7 @@ public:
 
 private:
     mutable pthread_cond_t cond_;
-    mutable Atomic<int> guard_;
+    mutable AtomicInt<int32_t> guard_;
 
     pthread_mutex_t& mutex_;
 };

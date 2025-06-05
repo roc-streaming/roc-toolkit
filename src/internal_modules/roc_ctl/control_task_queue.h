@@ -12,7 +12,7 @@
 #ifndef ROC_CTL_CONTROL_TASK_QUEUE_H_
 #define ROC_CTL_CONTROL_TASK_QUEUE_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/list.h"
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/mutex.h"
@@ -271,10 +271,10 @@ private:
     core::nanoseconds_t update_wakeup_timer_();
 
     bool started_;
-    core::Atomic<int> stop_;
+    core::AtomicBool stop_;
     bool fetch_ready_;
 
-    core::Atomic<int> ready_queue_size_;
+    core::AtomicInt<int32_t> ready_queue_size_;
     core::MpscQueue<ControlTask, core::NoOwnership> ready_queue_;
     core::List<ControlTask, core::NoOwnership> sleeping_queue_;
     core::List<ControlTask, core::NoOwnership> paused_queue_;

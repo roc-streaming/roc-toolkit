@@ -183,11 +183,6 @@ AddOption('--enable-sphinx',
           action='store_true',
           help='enable Sphinx documentation generation')
 
-AddOption('--disable-c11',
-          dest='disable_c11',
-          action='store_true',
-          help='disable C11 support')
-
 AddOption('--disable-soversion',
           dest='disable_soversion',
           action='store_true',
@@ -459,7 +454,7 @@ if set(COMMAND_LINE_TARGETS) \
 meta = type('meta', (), {
     field: '' for field in ('build host toolchain platform variant thirdparty_variant '
                             'compiler compiler_ver '
-                            'c11_support gnu_toolchain').split()})
+                            'gnu_toolchain').split()})
 
 # toolchain triple of the local system (where we're building), e.g. x86_64-pc-linux-gnu
 meta.build = GetOption('build')
@@ -670,15 +665,6 @@ if meta.platform == 'darwin':
     conf.FindTool('LIPO', [''], [('lipo', None)], required=False)
     conf.FindTool('INSTALL_NAME_TOOL', [''], [('install_name_tool', None)], required=False)
 
-meta.c11_support = False
-if not GetOption('disable_c11'):
-    if meta.compiler == 'gcc':
-        meta.c11_support = meta.compiler_ver[:2] >= (4, 9)
-    elif meta.compiler == 'clang' and meta.platform == 'darwin':
-        meta.c11_support = meta.compiler_ver[:2] >= (7, 0)
-    elif meta.compiler == 'clang' and meta.platform != 'darwin':
-        meta.c11_support = meta.compiler_ver[:2] >= (3, 6)
-
 # true if we have full-featured GNU toolchain with all needed compiler and linker options
 # note that macOS is excluded
 meta.gnu_toolchain = False
@@ -815,15 +801,6 @@ else:
             'target_android',
         ])
 
-    if meta.c11_support:
-        env.Append(ROC_TARGETS=[
-            'target_c11',
-        ])
-    else:
-        env.Append(ROC_TARGETS=[
-            'target_libatomic_ops',
-        ])
-
     if meta.platform in ['linux', 'darwin', 'unix'] and not GetOption('disable_libunwind'):
         env.Append(ROC_TARGETS=[
             'target_libunwind',
@@ -882,6 +859,7 @@ else:
     if 'target_gnu' not in env['ROC_TARGETS']:
         env.Append(ROC_TARGETS=[
             'target_nodemangle',
+            'target_libatomic_ops',
         ])
 
     if 'target_libunwind' not in env['ROC_TARGETS'] and \

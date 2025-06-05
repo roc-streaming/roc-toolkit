@@ -8,7 +8,7 @@
 
 #include <CppUTest/TestHarness.h>
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_bool.h"
 #include "roc_core/thread.h"
 #include "roc_core/time.h"
 #include "roc_core/timer.h"
@@ -43,7 +43,7 @@ private:
     }
 
     Timer& t_;
-    Atomic<int> r_;
+    AtomicBool r_;
 };
 
 inline void set_deadline(Timer& t, nanoseconds_t delay) {

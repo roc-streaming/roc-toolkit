@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_THREAD_H_
 #define ROC_CORE_THREAD_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_bool.h"
 #include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
@@ -64,7 +64,7 @@ private:
     pthread_t thread_;
 
     int started_;
-    Atomic<int> joinable_;
+    AtomicBool joinable_;
 
     Mutex mutex_;
 };

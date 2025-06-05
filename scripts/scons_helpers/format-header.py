@@ -108,6 +108,10 @@ def format_file(output, path):
                 brief = m.group(1)
                 break
 
+    if lines and re.match(r'^//.*AUTO-GENERATED.*', lines[0]):
+        is_autogen = True
+        section = 'body'
+
     while lines:
         line = lines.pop(0)
 

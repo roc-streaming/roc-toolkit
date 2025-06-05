@@ -15,7 +15,7 @@
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/sample.h"
 #include "roc_audio/sample_spec.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_bool.h"
 #include "roc_core/attributes.h"
 #include "roc_core/ipool.h"
 #include "roc_core/noncopyable.h"
@@ -88,7 +88,7 @@ private:
 
     const Mode mode_;
     bool was_active_;
-    core::Atomic<int> stop_;
+    core::AtomicBool stop_;
 
     uint64_t transferred_bytes_;
 

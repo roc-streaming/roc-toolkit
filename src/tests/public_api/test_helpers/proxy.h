@@ -14,7 +14,8 @@
 #include "test_helpers/utils.h"
 
 #include "roc_address/socket_addr.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_bool.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/fast_random.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/thread.h"
@@ -261,12 +262,12 @@ private:
 
     const size_t n_source_packets_;
     const size_t n_repair_packets_;
-    core::Atomic<size_t> n_dropped_packets_;
+    core::AtomicInt<uint32_t> n_dropped_packets_;
 
     const unsigned flags_;
     size_t pos_;
 
-    core::Atomic<int> stopped_;
+    core::AtomicBool stopped_;
 };
 
 } // namespace test

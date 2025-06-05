@@ -156,10 +156,10 @@ private:
 
     core::RateLimiter rate_limiter_;
 
-    core::Atomic<int> pending_packets_;
-    core::Atomic<int> sent_packets_;
-    core::Atomic<int> sent_packets_blk_;
-    core::Atomic<int> received_packets_;
+    core::AtomicInt<int32_t> pending_packets_;
+    core::AtomicInt<int32_t> sent_packets_;
+    core::AtomicInt<int32_t> sent_packets_blk_;
+    core::AtomicInt<int32_t> received_packets_;
 };
 
 } // namespace netio

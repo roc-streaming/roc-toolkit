@@ -2,7 +2,7 @@ src/internal_modules/roc_audio/channel_tables.cpp
 src/internal_modules/roc_audio/pcm_subformat.cpp
 src/internal_modules/roc_core/macro_helpers.h
 src/internal_modules/roc_core/target_libatomic_ops/roc_core/atomic_ops.h
+src/internal_modules/roc_sndio/wav_header.cpp
 src/public_api/include/roc/version.h
 src/tests/roc_audio/test_samples/*.h
 src/tests/roc_rtp/test_packets/*.h
-src/internal_modules/roc_sndio/wav_header.cpp

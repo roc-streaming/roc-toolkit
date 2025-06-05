@@ -15,7 +15,7 @@
 #include <uv.h>
 
 #include "roc_address/socket_addr.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/attributes.h"
 #include "roc_core/iarena.h"
 #include "roc_core/ipool.h"
@@ -268,7 +268,7 @@ private:
     core::List<BasicPort> open_ports_;
     core::List<BasicPort> closing_ports_;
 
-    core::Atomic<int> num_open_ports_;
+    core::AtomicInt<int32_t> num_open_ports_;
 
     status::StatusCode init_status_;
 };

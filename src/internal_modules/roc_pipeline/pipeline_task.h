@@ -12,7 +12,8 @@
 #ifndef ROC_PIPELINE_PIPELINE_TASK_H_
 #define ROC_PIPELINE_PIPELINE_TASK_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_bool.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/mpsc_queue_node.h"
 #include "roc_core/optional.h"
 #include "roc_core/semaphore.h"
@@ -41,12 +42,12 @@ private:
 
     // Task state, defines whether task is finished already.
     // The task becomes immutable after setting state_ to StateFinished;
-    core::Atomic<int> state_;
+    core::AtomicInt<int32_t> state_;
 
-    // Task result, defines wether finished task succeeded or failed.
+    // Task result, defines whether finished task succeeded or failed.
     // Makes sense only after setting state_ to StateFinished.
     // This atomic should be assigned before setting state_ to StateFinished.
-    core::Atomic<int> success_;
+    core::AtomicBool success_;
 
     // Completion handler;
     IPipelineTaskCompleter* completer_;

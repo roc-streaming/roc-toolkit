@@ -12,7 +12,7 @@
 #ifndef ROC_DBGIO_CSV_DUMPER_H_
 #define ROC_DBGIO_CSV_DUMPER_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_bool.h"
 #include "roc_core/mutex.h"
 #include "roc_core/optional.h"
 #include "roc_core/rate_limiter.h"
@@ -109,8 +109,8 @@ private:
     const CsvConfig config_;
 
     core::Mutex open_mutex_;
-    core::Atomic<int> open_flag_;
-    core::Atomic<int> stop_flag_;
+    core::AtomicBool open_flag_;
+    core::AtomicBool stop_flag_;
     FILE* file_;
 
     core::Mutex write_mutex_;

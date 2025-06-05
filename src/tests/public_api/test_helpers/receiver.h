@@ -17,7 +17,7 @@
 #include "test_helpers/utils.h"
 
 #include "roc_core/array.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_bool.h"
 #include "roc_core/noop_arena.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
@@ -324,7 +324,7 @@ private:
     const size_t frame_samples_;
     const unsigned flags_;
 
-    core::Atomic<int> stopped_;
+    core::AtomicBool stopped_;
 };
 
 } // namespace test
