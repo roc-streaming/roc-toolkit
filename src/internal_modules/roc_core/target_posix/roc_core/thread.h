@@ -33,7 +33,7 @@ public:
     static uint64_t get_tid();
 
     //! Raise current thread priority to realtime.
-    ROC_NODISCARD static bool enable_realtime();
+    ROC_NODISCARD static bool enable_realtime(const int sched_prio);
 
     //! Check if thread was started and can be joined.
     //! @returns

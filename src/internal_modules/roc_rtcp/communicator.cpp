@@ -10,6 +10,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/time.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/ntp.h"
 #include "roc_packet/units.h"
 #include "roc_rtcp/headers.h"
@@ -30,12 +31,13 @@ Communicator::Communicator(const Config& config,
                            packet::IWriter& packet_writer,
                            packet::IComposer& packet_composer,
                            packet::PacketFactory& packet_factory,
-                           core::IArena& arena)
+                           core::IArena& arena,
+                           dbgio::CsvDumper* dumper)
     : packet_factory_(packet_factory)
     , packet_writer_(packet_writer)
     , packet_composer_(packet_composer)
     , config_(config)
-    , reporter_(config, participant, arena)
+    , reporter_(config, participant, arena, dumper)
     , next_deadline_(0)
     , dest_addr_count_(0)
     , dest_addr_index_(0)
@@ -69,14 +71,12 @@ size_t Communicator::total_streams() const {
     return reporter_.total_streams();
 }
 
-status::StatusCode Communicator::process_packet(const packet::PacketPtr& packet,
-                                                core::nanoseconds_t current_time) {
+status::StatusCode Communicator::process_packet(const packet::PacketPtr& packet) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if_msg(!packet, "rtcp communicator: null packet");
     roc_panic_if_msg(!packet->udp(), "rtcp communicator: non-udp packet");
     roc_panic_if_msg(!packet->rtcp(), "rtcp communicator: non-rtcp packet");
-    roc_panic_if_msg(current_time <= 0, "rtcp communicator: invalid timestamp");
 
     roc_log(LogTrace, "rtcp communicator: processing incoming packet");
 
@@ -89,8 +89,8 @@ status::StatusCode Communicator::process_packet(const packet::PacketPtr& packet,
         return status::StatusOK;
     }
 
-    status::StatusCode status =
-        reporter_.begin_processing(packet->udp()->src_addr, current_time);
+    status::StatusCode status = reporter_.begin_processing(
+        packet->udp()->src_addr, packet->udp()->receive_timestamp);
     roc_log(LogTrace, "rtcp communicator: begin_processing(): status=%s",
             status::code_to_str(status));
 

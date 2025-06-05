@@ -17,6 +17,7 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/atomic.h"
 #include "roc_core/attributes.h"
+#include "roc_core/cond.h"
 #include "roc_core/iarena.h"
 #include "roc_core/ipool.h"
 #include "roc_core/list.h"
@@ -53,6 +54,8 @@ class NetworkLoop : private ITerminateHandler,
 public:
     //! Opaque port handle.
     typedef struct PortHandle* PortHandle;
+
+    enum { DEFAULT_PRIORITY = 0 };
 
     //! Subclasses for specific tasks.
     class Tasks {
@@ -189,7 +192,10 @@ public:
     //! Initialize.
     //! @remarks
     //!  Start background thread if the object was successfully constructed.
-    NetworkLoop(core::IPool& packet_pool, core::IPool& buffer_pool, core::IArena& arena);
+    NetworkLoop(core::IPool& packet_pool,
+                core::IPool& buffer_pool,
+                const int realtime_prio,
+                core::IArena& arena);
 
     //! Destroy. Stop all receivers and senders.
     //! @remarks
@@ -248,9 +254,13 @@ private:
     void task_resolve_endpoint_address_(NetworkTask&);
 
     packet::PacketFactory packet_factory_;
+    const uint8_t realtime_prio_;
     core::IArena& arena_;
 
     bool started_;
+
+    core::Mutex thr_init_mutex_;
+    core::Cond thr_init_cond_;
 
     uv_loop_t loop_;
     bool loop_initialized_;

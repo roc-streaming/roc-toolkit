@@ -235,7 +235,7 @@ SenderSession::create_control_pipeline(SenderEndpoint* control_endpoint) {
 
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
         sink_config_.rtcp, *this, control_endpoint->outbound_writer(),
-        control_endpoint->outbound_composer(), packet_factory_, arena_));
+        control_endpoint->outbound_composer(), packet_factory_, arena_, dumper_));
 
     const status::StatusCode code = rtcp_communicator_->init_status();
     if (code != status::StatusOK) {
@@ -281,8 +281,7 @@ status::StatusCode SenderSession::refresh(core::nanoseconds_t current_time,
     return status::StatusOK;
 }
 
-status::StatusCode SenderSession::route_packet(const packet::PacketPtr& packet,
-                                               core::nanoseconds_t current_time) {
+status::StatusCode SenderSession::route_packet(const packet::PacketPtr& packet) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (fail_status_ != status::NoStatus) {
@@ -294,7 +293,7 @@ status::StatusCode SenderSession::route_packet(const packet::PacketPtr& packet,
         roc_panic("sender session: unexpected non-control packet");
     }
 
-    return route_control_packet_(packet, current_time);
+    return route_control_packet_(packet);
 }
 
 status::StatusCode SenderSession::write(audio::Frame& frame) {
@@ -439,15 +438,13 @@ void SenderSession::start_feedback_monitor_() {
     feedback_monitor_->start();
 }
 
-status::StatusCode
-SenderSession::route_control_packet_(const packet::PacketPtr& packet,
-                                     core::nanoseconds_t current_time) {
+status::StatusCode SenderSession::route_control_packet_(const packet::PacketPtr& packet) {
     if (!rtcp_communicator_) {
         roc_panic("sender session: rtcp communicator is null");
     }
 
     // This will invoke IParticipant methods implemented by us.
-    return rtcp_communicator_->process_packet(packet, current_time);
+    return rtcp_communicator_->process_packet(packet);
 }
 
 } // namespace pipeline

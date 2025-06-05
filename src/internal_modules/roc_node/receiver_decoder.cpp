@@ -169,6 +169,8 @@ status::StatusCode ReceiverDecoder::write_packet(address::Interface iface,
     roc_panic_if(!bytes);
     roc_panic_if(n_bytes == 0);
 
+    const core::nanoseconds_t capture_ts = core::timestamp(core::ClockUnix);
+
     if (n_bytes > packet_factory_.packet_buffer_size()) {
         roc_log(LogError,
                 "receiver decoder node:"
@@ -195,6 +197,7 @@ status::StatusCode ReceiverDecoder::write_packet(address::Interface iface,
     }
 
     packet->add_flags(packet::Packet::FlagUDP);
+    packet->udp()->receive_timestamp = capture_ts;
     packet->set_buffer(buffer);
 
     packet::IWriter* writer = endpoint_writers_[iface];

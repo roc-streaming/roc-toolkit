@@ -9,6 +9,7 @@
 #include "roc_sndio/io_pump.h"
 #include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
+#include "roc_core/thread.h"
 #include "roc_status/code_to_str.h"
 
 namespace roc {
@@ -67,10 +68,17 @@ status::StatusCode IoPump::init_status() const {
     return init_status_;
 }
 
-status::StatusCode IoPump::run() {
+status::StatusCode IoPump::run(const int realtime_priority) {
     roc_log(LogDebug, "io pump: starting main loop");
-
     status::StatusCode code = status::NoStatus;
+
+    if (realtime_priority > 0 && !core::Thread::enable_realtime(realtime_priority)) {
+        roc_log(LogError, "io pump: can't set realtime priority. May need to be root");
+        code = status::StatusFailedRealtime;
+        return code;
+    } else {
+        roc_log(LogDebug, "io pump: elevated realtime priority");
+    }
 
     for (;;) {
         // Transfer one frame from source to sink.

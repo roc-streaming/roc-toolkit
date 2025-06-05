@@ -104,10 +104,13 @@ NetworkLoop::Tasks::ResolveEndpointAddress::get_address() const {
 
 NetworkLoop::NetworkLoop(core::IPool& packet_pool,
                          core::IPool& buffer_pool,
+                         const int realtime_prio,
                          core::IArena& arena)
     : packet_factory_(packet_pool, buffer_pool)
+    , realtime_prio_(realtime_prio)
     , arena_(arena)
     , started_(false)
+    , thr_init_cond_(thr_init_mutex_)
     , loop_initialized_(false)
     , stop_sem_initialized_(false)
     , task_sem_initialized_(false)
@@ -145,7 +148,12 @@ NetworkLoop::NetworkLoop(core::IPool& packet_pool,
         return;
     }
 
-    init_status_ = status::StatusOK;
+    {
+        core::Mutex::Lock lock(thr_init_mutex_);
+        while (init_status_ == status::NoStatus) {
+            thr_init_cond_.wait();
+        }
+    }
 }
 
 NetworkLoop::~NetworkLoop() {
@@ -280,6 +288,21 @@ void NetworkLoop::handle_resolved(ResolverRequest& req) {
 
 void NetworkLoop::run() {
     roc_log(LogDebug, "network loop: starting event loop");
+    if (realtime_prio_ > 0 && !enable_realtime(realtime_prio_)) {
+        core::Mutex::Lock lock(thr_init_mutex_);
+
+        roc_log(LogError,
+                "network loop: can't set realtime priority of network thread. May need "
+                "to be root");
+        init_status_ = status::StatusFailedRealtime;
+        thr_init_cond_.signal();
+    } else {
+        core::Mutex::Lock lock(thr_init_mutex_);
+
+        roc_log(LogDebug, "network loop: elevated realtime priority");
+        init_status_ = status::StatusOK;
+        thr_init_cond_.signal();
+    }
 
     int err = uv_run(&loop_, UV_RUN_DEFAULT);
     if (err != 0) {
