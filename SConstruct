@@ -1010,7 +1010,7 @@ if meta.compiler in ['cc']:
             ]})
 
     for var in ['CXXFLAGS', 'CFLAGS']:
-        conf.env.Append(**{var: [
+        env.Append(**{var: [
             '-fPIC',
         ]})
 
