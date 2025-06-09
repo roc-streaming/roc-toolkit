@@ -896,6 +896,18 @@ env.Append(CPPDEFINES=[
     ('__STDC_LIMIT_MACROS', '1'),
 ])
 
+if meta.platform in ['windows']:
+    env.Append(CPPDEFINES=[
+        # enable M_PI and similar
+        '_USE_MATH_DEFINES',
+        # disable min() and max() macros
+        'NOMINMAX',
+        # disable winsock1 and redundant macros like far/near
+        'WIN32_LEAN_AND_MEAN',
+        # minimal supported windows version (windows 7)
+        ('_WIN32_WINNT', '0x0601'),
+    ])
+
 # env will hold settings common to all code
 # subenvs will hold settings specific to particular parts of code
 subenv_names = 'internal_modules public_libs examples tools tests generated_code'.split()
@@ -923,6 +935,9 @@ if meta.platform in ['darwin']:
 
 if meta.platform in ['linux', 'unix']:
     env.AddManualDependency(libs=['rt', 'dl', 'm'])
+
+if meta.platform in ['windows']:
+    env.AddManualDependency(libs=['ws2_32'])
 
 if meta.platform in ['android']:
     env.AddManualDependency(libs=['log', 'android'])
