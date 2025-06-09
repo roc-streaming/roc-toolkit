@@ -54,7 +54,7 @@ if meta.platform in ['linux'] and 'pulseaudio' in external_dependencies:
     external_dependencies.add('alsa')
 
 # on macOS, libunwind is provided by the OS
-if meta.platform in ['darwin']:
+if meta.platform in ['macos']:
     external_dependencies.discard('libunwind')
 
 # tools dependencies
@@ -225,7 +225,7 @@ if 'openssl' in autobuild_dependencies:
 elif 'openssl' in system_dependencies:
     ossl_prefix = None
     # macOS: fallback to use a brew-installed openssl
-    if meta.platform == 'darwin' and not is_crosscompiling:
+    if meta.platform == 'macos' and not is_crosscompiling:
         ossl_prefix = env.FindBrewPackage('openssl')
 
     conf = Configure(env, custom_tests=env.CustomTests)
@@ -351,7 +351,7 @@ if 'sox' in autobuild_dependencies:
                 ]:
             conf.CheckLib(lib)
 
-    if meta.platform in ['darwin']:
+    if meta.platform in ['macos']:
         env.Append(LINKFLAGS=[
             '-Wl,-framework,CoreAudio'
         ])

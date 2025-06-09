@@ -78,10 +78,10 @@ def _build_thirdparty(env, versions, name, deps, is_native):
         if env['ROC_PLATFORM'] == 'android' and env['ROC_ANDROID_PLATFORM']:
             cmd += ['--android-platform', env['ROC_ANDROID_PLATFORM']]
 
-        if env['ROC_PLATFORM'] == 'darwin' and env['ROC_MACOS_PLATFORM']:
+        if env['ROC_PLATFORM'] == 'macos' and env['ROC_MACOS_PLATFORM']:
             cmd += ['--macos-platform', env['ROC_MACOS_PLATFORM']]
 
-        if env['ROC_PLATFORM'] == 'darwin' and env['ROC_MACOS_ARCH']:
+        if env['ROC_PLATFORM'] == 'macos' and env['ROC_MACOS_ARCH']:
             cmd += ['--macos-arch', ' '.join(env['ROC_MACOS_ARCH'])]
 
         if env.Execute(

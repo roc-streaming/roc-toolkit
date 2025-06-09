@@ -52,7 +52,7 @@ Options
   --host=HOST                 system name where Roc will run, e.g. 'arm-linux-gnueabihf', auto-detected by
                                 default
   --platform=PLATFORM         platform name where Roc will run, supported values: empty (detect from host),
-                                'linux', 'unix', 'darwin', 'android'
+                                'linux', 'unix', 'macos', 'android'
   --compiler=COMPILER         compiler name and optional version, e.g. 'gcc-4.9', supported names:
                                 empty (detect what available), 'clang', 'gcc', 'cc'
   --compiler-launcher=COMPILER_LAUNCHER

@@ -9,7 +9,7 @@ import sys
 supported_platforms = [
     'linux',
     'unix',
-    'darwin',
+    'macos',
     'windows',
     'android',
 ]
@@ -580,7 +580,7 @@ if not meta.platform:
     elif 'linux' in meta.host:
         meta.platform = 'linux'
     elif 'darwin' in meta.host:
-        meta.platform = 'darwin'
+        meta.platform = 'macos'
     elif 'gnu' in meta.host:
         meta.platform = 'unix'
     elif 'mingw' in meta.host:
@@ -664,7 +664,7 @@ conf.env['SHLINK'] = env['CXXLD']
 if GetOption('compiler_launcher'):
     conf.FindProgram('COMPILER_LAUNCHER', GetOption('compiler_launcher'))
 
-if meta.platform == 'darwin':
+if meta.platform == 'macos':
     conf.FindTool('LIPO', [''], [('lipo', None)], required=False)
     conf.FindTool('INSTALL_NAME_TOOL', [''], [('install_name_tool', None)], required=False)
 
@@ -767,17 +767,17 @@ if GetOption('override_targets'):
     for t in GetOption('override_targets').split(','):
         env['ROC_TARGETS'] += ['target_' + t]
 else:
-    if meta.platform in ['linux', 'unix', 'darwin', 'windows']:
+    if meta.platform in ['linux', 'unix', 'macos', 'windows']:
         env.Append(ROC_TARGETS=[
             'target_pc',
         ])
 
-    if meta.platform in ['linux', 'unix', 'darwin', 'android']:
+    if meta.platform in ['linux', 'unix', 'macos', 'android']:
         env.Append(ROC_TARGETS=[
             'target_posix',
         ])
 
-    if meta.platform in ['linux', 'unix', 'darwin']:
+    if meta.platform in ['linux', 'unix', 'macos']:
         env.Append(ROC_TARGETS=[
             'target_posix_pc',
         ])
@@ -787,20 +787,20 @@ else:
             'target_posix_ext',
         ])
 
-    if meta.platform in ['linux', 'unix', 'darwin', 'windows', 'android']:
+    if meta.platform in ['linux', 'unix', 'macos', 'windows', 'android']:
         env.Append(ROC_TARGETS=[
             # berkley sockets, or something close
             'target_berkley',
         ])
 
-    if meta.platform in ['linux', 'darwin', 'android'] or meta.gnu_toolchain:
+    if meta.platform in ['linux', 'macos', 'android'] or meta.gnu_toolchain:
         env.Append(ROC_TARGETS=[
             # GNU C++ Standard Library (libstdc++), or compatible like
             # LLVM C++ Standard Library (libc++)
             'target_gnu',
         ])
 
-    if meta.platform in ['darwin']:
+    if meta.platform in ['macos']:
         env.Append(ROC_TARGETS=[
             'target_darwin',
         ])
@@ -815,7 +815,7 @@ else:
             'target_android',
         ])
 
-    if meta.platform in ['linux', 'unix', 'darwin'] and not GetOption('disable_libunwind'):
+    if meta.platform in ['linux', 'unix', 'macos'] and not GetOption('disable_libunwind'):
         env.Append(ROC_TARGETS=[
             'target_libunwind',
         ])
@@ -893,7 +893,7 @@ if meta.compiler in ['gcc', 'clang']:
         '-std=c11',
     ])
 
-if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin']:
+if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['macos']:
     # macOS is special, otherwise rely on _POSIX_C_SOURCE
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', env['ROC_POSIX_PLATFORM'])])
 
@@ -927,7 +927,7 @@ subenvs = type('subenvs', (), subenv_attrs)
 env, subenvs = env.SConscript('3rdparty/SConscript',
                        duplicate=0, exports='env subenvs meta')
 
-if meta.platform in ['darwin']:
+if meta.platform in ['macos']:
     if env['ROC_MACOS_PLATFORM']:
         for var in ['CXXFLAGS', 'CFLAGS', 'LINKFLAGS']:
             env.Append(**{var: [
@@ -959,7 +959,7 @@ if meta.compiler in ['gcc', 'clang']:
             '-fPIC',
         ]})
 
-    if meta.platform in ['linux', 'darwin']:
+    if meta.platform in ['linux', 'macos']:
         env.AddManualDependency(libs=['pthread'])
 
     if meta.platform in ['linux', 'android'] or meta.gnu_toolchain:
@@ -976,7 +976,7 @@ if meta.compiler in ['gcc', 'clang']:
                 '-Wl,--version-script={}'.format(env.File('#src/public_api/roc.version').path)
             ])
 
-    if meta.platform in ['darwin']:
+    if meta.platform in ['macos']:
         if not GetOption('disable_soversion'):
             subenvs.public_libs['SHLIBSUFFIX'] = '.{}{}'.format(
                 env['ROC_SOVER'], subenvs.public_libs['SHLIBSUFFIX'])
@@ -1145,7 +1145,7 @@ if meta.compiler == 'clang':
         '-Wno-invalid-offsetof',
     ])
 
-    if meta.platform not in ['darwin', 'android'] and meta.compiler_ver[:2] >= (11, 0):
+    if meta.platform not in ['macos', 'android'] and meta.compiler_ver[:2] >= (11, 0):
         # enable
         pass
     else:
@@ -1225,7 +1225,7 @@ if meta.compiler in ['gcc', 'clang']:
             # workaround to force our 3rdparty directories to be placed
             # before /usr/local/include on macos: explicitly place it
             # after previous -isystem options
-            if meta.compiler == 'clang' and meta.platform == 'darwin':
+            if meta.compiler == 'clang' and meta.platform == 'macos':
                 dirs += [('-isystem', '/usr/local/include')]
 
             senv.Prepend(**{var: dirs})
