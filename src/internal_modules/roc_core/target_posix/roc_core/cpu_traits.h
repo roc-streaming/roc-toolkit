@@ -29,7 +29,7 @@
 //! Value of ROC_CPU_ENDIAN indicating little-endian CPU.
 #define ROC_CPU_LE 2
 
-// Detect CPU endianess.
+// Detect CPU endianness.
 
 #ifndef ROC_CPU_ENDIAN
 #if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__)                             \
