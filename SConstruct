@@ -10,6 +10,7 @@ supported_platforms = [
     'linux',
     'unix',
     'darwin',
+    'windows',
     'android',
 ]
 
@@ -582,6 +583,8 @@ if not meta.platform:
         meta.platform = 'darwin'
     elif 'gnu' in meta.host:
         meta.platform = 'unix'
+    elif 'mingw' in meta.host:
+        meta.platform = 'windows'
 
 if not meta.platform and meta.host == meta.build:
     if os.name == 'posix':
@@ -764,29 +767,29 @@ if GetOption('override_targets'):
     for t in GetOption('override_targets').split(','):
         env['ROC_TARGETS'] += ['target_' + t]
 else:
-    if meta.platform in ['linux', 'darwin', 'unix']:
+    if meta.platform in ['linux', 'unix', 'darwin', 'windows']:
         env.Append(ROC_TARGETS=[
             'target_pc',
         ])
 
-    if meta.platform in ['linux', 'android', 'darwin', 'unix']:
+    if meta.platform in ['linux', 'unix', 'darwin', 'android']:
         env.Append(ROC_TARGETS=[
             'target_posix',
         ])
 
-    if meta.platform in ['linux', 'darwin', 'unix']:
+    if meta.platform in ['linux', 'unix', 'darwin']:
         env.Append(ROC_TARGETS=[
             'target_posix_pc',
         ])
 
-    if meta.platform in ['linux', 'android', 'unix']:
+    if meta.platform in ['linux', 'unix', 'android']:
         env.Append(ROC_TARGETS=[
             'target_posix_ext',
         ])
 
-    if meta.platform in ['linux', 'android', 'darwin'] or meta.gnu_toolchain:
+    if meta.platform in ['linux', 'darwin', 'android'] or meta.gnu_toolchain:
         env.Append(ROC_TARGETS=[
-            # GNU C++ Standard Library (libstdc++), or compatible, like
+            # GNU C++ Standard Library (libstdc++), or compatible like
             # LLVM C++ Standard Library (libc++)
             'target_gnu',
         ])
@@ -796,12 +799,17 @@ else:
             'target_darwin',
         ])
 
+    if meta.platform in ['windows']:
+        env.Append(ROC_TARGETS=[
+            'target_windows',
+        ])
+
     if meta.platform in ['android']:
         env.Append(ROC_TARGETS=[
             'target_android',
         ])
 
-    if meta.platform in ['linux', 'darwin', 'unix'] and not GetOption('disable_libunwind'):
+    if meta.platform in ['linux', 'unix', 'darwin'] and not GetOption('disable_libunwind'):
         env.Append(ROC_TARGETS=[
             'target_libunwind',
         ])

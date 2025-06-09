@@ -55,6 +55,7 @@ def ParseCompilerVersion(env, compiler):
             version_formats = [
                 r'(\b[0-9]+\.[0-9]+\.[0-9]+\b)',
                 r'(\b[0-9]+\.[0-9]+\b)',
+                r'(\b[0-9]+)-win32\b',
             ]
 
             full_text = env.GetCommandOutput(compiler + ' --version')
