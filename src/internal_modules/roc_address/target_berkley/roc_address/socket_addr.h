@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_address/target_posix/roc_address/socket_addr.h
+//! @file roc_address/target_berkley/roc_address/socket_addr.h
 //! @brief Socket address.
 
 #ifndef ROC_ADDRESS_SOCKET_ADDR_H_

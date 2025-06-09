@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_netio/target_posix/roc_netio/socket_ops.h
+//! @file roc_netio/target_berkley/roc_netio/socket_ops.h
 //! @brief Socket operations.
 
 #ifndef ROC_NETIO_SOCKET_OPS_H_

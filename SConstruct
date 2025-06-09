@@ -787,6 +787,12 @@ else:
             'target_posix_ext',
         ])
 
+    if meta.platform in ['linux', 'unix', 'darwin', 'windows', 'android']:
+        env.Append(ROC_TARGETS=[
+            # berkley sockets, or something close
+            'target_berkley',
+        ])
+
     if meta.platform in ['linux', 'darwin', 'android'] or meta.gnu_toolchain:
         env.Append(ROC_TARGETS=[
             # GNU C++ Standard Library (libstdc++), or compatible like
