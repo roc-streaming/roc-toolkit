@@ -32,7 +32,8 @@ __pycache__/
 # emacs
 .#*
 .dir-locals.el
-TODO.org
+.dir-conf.el
+.projectile
 
 # vim
 *.sw[nop]
@@ -54,8 +55,11 @@ TODO.org
 /debian/libroc-dev
 /debian/roc
 
+# llm
+.aider.*
+
 # personal
+TODO.org
 /Makefile
 .justfile
-.projectile
 .unisonignore
