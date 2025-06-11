@@ -281,6 +281,11 @@ def execute_cmake(ctx, src_dir, args=None):
             '-DCMAKE_C_FLAGS_RELEASE:STRING=' + quote(' '.join(cc_flags)),
         ]
 
+    # compatibility with older cmake files
+    args += [
+        '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
+    ]
+
     execute(ctx, 'cmake ' + src_dir + ' ' + ' '.join(args))
 
 def execute_cmake_build(ctx):
