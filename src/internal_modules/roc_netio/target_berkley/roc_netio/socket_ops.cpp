@@ -8,10 +8,20 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
+
+#ifndef __WIN32__
+	#include <netinet/in.h>
+	#include <netinet/tcp.h>
+	#include <sys/socket.h>
+#else
+	#include <cstdint>
+	typedef uint16_t sa_family_t;
+	typedef uint16_t in_port_t;
+	#include <winsock2.h>
+	#include <ws2tcpip.h>
+#endif
+
 #include <signal.h>
-#include <sys/socket.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
@@ -98,7 +108,7 @@ bool get_int_option(
     SocketHandle sock, int level, int opt, const char* opt_name, int& opt_val) {
     socklen_t opt_len = sizeof(opt_val);
 
-    if (getsockopt(sock, level, opt, &opt_val, &opt_len) == -1) {
+    if (getsockopt(sock, level, opt, (void*) &opt_val, &opt_len) == -1) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: getsockopt(%s): %s", opt_name,
@@ -118,7 +128,7 @@ bool get_int_option(
 
 bool set_int_option(
     SocketHandle sock, int level, int opt, const char* opt_name, int opt_val) {
-    if (setsockopt(sock, level, opt, &opt_val, sizeof(opt_val)) == -1) {
+    if (setsockopt(sock, level, opt, (void*) &opt_val, sizeof(opt_val)) == -1) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: setsockopt(%s): %s", opt_name,
@@ -140,7 +150,10 @@ bool set_int_option(
 //    creation and fcntl() call, during which fork() can be called from another thread
 //
 //  - for performance reasons: without SOCK_CLOEXEC there are two more system calls
+
+
 bool set_cloexec(SocketHandle sock) {
+#ifndef __WIN32__ // Probably no equivalent on Windows
     int flags;
 
     while ((flags = fcntl(sock, F_GETFD)) == -1) {
@@ -167,8 +180,10 @@ bool set_cloexec(SocketHandle sock) {
         }
     }
 
+#endif // ! __WIN32__
     return true;
 }
+
 
 #endif // !defined(SOCK_CLOEXEC)
 
@@ -178,6 +193,9 @@ bool set_cloexec(SocketHandle sock) {
 //
 // Using SOCK_NONBLOCK is preferred because of performance reasons.
 // Without SOCK_NONBLOCK there are two more system calls.
+
+#ifndef __WIN32__
+
 bool set_nonblock(SocketHandle sock) {
     int flags;
 
@@ -207,6 +225,21 @@ bool set_nonblock(SocketHandle sock) {
 
     return true;
 }
+
+#else // __WIN32__
+
+bool set_nonblock(SocketHandle sock) {
+	int res;
+	unsigned long mode = 1;	// 0 for blocking, nonzero for non blocking
+
+	res = ioctlsocket(sock, FIONBIO, &mode);
+	//if (iResult != NO_ERROR)
+	  //printf("ioctlsocket failed with error: %ld\n", iResult);
+
+    return (res == NO_ERROR);
+}
+
+#endif // __WIN32__
 
 #endif // !defined(SOCK_NONBLOCK)
 
@@ -434,6 +467,10 @@ bool socket_end_connect(SocketHandle sock) {
     return true;
 }
 
+#ifdef __WIN32__
+#define MSG_DONTWAIT (0) // Eeek! but ok...
+#endif
+
 ssize_t socket_try_recv(SocketHandle sock, void* buf, size_t bufsz) {
     roc_panic_if(sock < 0);
     roc_panic_if(!buf);
@@ -540,6 +577,7 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
         return 0;
     }
 
+#ifndef __WIN32__
     // Block SIGPIPE for this thread.
     // This works since kernel sends SIGPIPE to the thread that called send(),
     // not to the whole process.
@@ -563,6 +601,7 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
     if ((sigpipe_pending = sigismember(&sig_pending, SIGPIPE)) == -1) {
         roc_panic("socket: sigismember(): %s", core::errno_to_str().c_str());
     }
+#endif // !__WIN32__
 
     ssize_t ret;
     while ((ret = send(sock, buf, bufsz, MSG_DONTWAIT)) == -1) {
@@ -574,6 +613,8 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
     }
 
     const int saved_errno = errno;
+
+#ifndef __WIN32__
 
     // If send() failed with EPIPE, and SIGPIPE was not already pending before calling
     // send(), then fetch SIGPIPE from pending signal mask.
@@ -594,6 +635,7 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
     if (int err = pthread_sigmask(SIG_SETMASK, &sig_restore, NULL)) {
         roc_panic("socket: pthread_sigmask(): %s", core::errno_to_str(err).c_str());
     }
+#endif // !__WIN32__
 
     if (ret < 0 && is_ewouldblock(saved_errno)) {
         return SockErr_WouldBlock;
@@ -653,6 +695,10 @@ ssize_t socket_try_send_to(SocketHandle sock,
     return ret;
 }
 
+#ifdef __WIN32__
+#define SHUT_RDWR (SD_BOTH)
+#endif
+
 bool socket_shutdown(SocketHandle sock) {
     roc_panic_if(sock < 0);
 
@@ -705,7 +751,7 @@ bool socket_close_with_reset(SocketHandle sock) {
     ling.l_linger = 0;
 
     bool setsockopt_failed = false;
-    if (setsockopt(sock, SOL_SOCKET, SO_LINGER, &ling, sizeof(ling)) == -1) {
+    if (setsockopt(sock, SOL_SOCKET, SO_LINGER, (void*) &ling, sizeof(ling)) == -1) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: setsockopt(SO_LINGER): %s",

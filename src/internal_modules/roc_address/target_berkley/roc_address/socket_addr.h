@@ -12,8 +12,16 @@
 #ifndef ROC_ADDRESS_SOCKET_ADDR_H_
 #define ROC_ADDRESS_SOCKET_ADDR_H_
 
-#include <netinet/in.h>
-#include <sys/socket.h>
+#ifndef __WIN32__
+	#include <netinet/in.h>
+	#include <sys/socket.h>
+#else
+	#include <cstdint>
+	typedef uint16_t sa_family_t;
+	typedef uint16_t in_port_t;
+	#include <winsock2.h>
+	#include <ws2tcpip.h>
+#endif
 
 #include "roc_address/addr_family.h"
 #include "roc_core/attributes.h"
