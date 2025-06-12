@@ -10,15 +10,15 @@
 #include <fcntl.h>
 
 #ifndef __WIN32__
-	#include <netinet/in.h>
-	#include <netinet/tcp.h>
-	#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <sys/socket.h>
 #else
-	#include <cstdint>
-	typedef uint16_t sa_family_t;
-	typedef uint16_t in_port_t;
-	#include <winsock2.h>
-	#include <ws2tcpip.h>
+#include <cstdint>
+typedef uint16_t sa_family_t;
+typedef uint16_t in_port_t;
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #endif
 
 #include <signal.h>
@@ -108,7 +108,7 @@ bool get_int_option(
     SocketHandle sock, int level, int opt, const char* opt_name, int& opt_val) {
     socklen_t opt_len = sizeof(opt_val);
 
-    if (getsockopt(sock, level, opt, (void*) &opt_val, &opt_len) == -1) {
+    if (getsockopt(sock, level, opt, (void*)&opt_val, &opt_len) == -1) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: getsockopt(%s): %s", opt_name,
@@ -128,7 +128,7 @@ bool get_int_option(
 
 bool set_int_option(
     SocketHandle sock, int level, int opt, const char* opt_name, int opt_val) {
-    if (setsockopt(sock, level, opt, (void*) &opt_val, sizeof(opt_val)) == -1) {
+    if (setsockopt(sock, level, opt, (void*)&opt_val, sizeof(opt_val)) == -1) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: setsockopt(%s): %s", opt_name,
@@ -150,7 +150,6 @@ bool set_int_option(
 //    creation and fcntl() call, during which fork() can be called from another thread
 //
 //  - for performance reasons: without SOCK_CLOEXEC there are two more system calls
-
 
 bool set_cloexec(SocketHandle sock) {
 #ifndef __WIN32__ // Probably no equivalent on Windows
@@ -183,7 +182,6 @@ bool set_cloexec(SocketHandle sock) {
 #endif // ! __WIN32__
     return true;
 }
-
 
 #endif // !defined(SOCK_CLOEXEC)
 
@@ -229,14 +227,14 @@ bool set_nonblock(SocketHandle sock) {
 #else // __WIN32__
 
 bool set_nonblock(SocketHandle sock) {
-	int res;
-	unsigned long mode = 1;	// 0 for blocking, nonzero for non blocking
+    int res;
+    unsigned long mode = 1; // 0 for blocking, nonzero for non blocking
 
-	res = ioctlsocket(sock, FIONBIO, &mode);
-	//if (iResult != NO_ERROR)
-	  //printf("ioctlsocket failed with error: %ld\n", iResult);
+    ....res = ioctlsocket(sock, FIONBIO, &mode);
+    ....     // if (iResult != NO_ERROR)
+        .... //    printf("ioctlsocket failed with error: %ld\n", iResult);
 
-    return (res == NO_ERROR);
+        return (res == NO_ERROR);
 }
 
 #endif // __WIN32__
@@ -751,7 +749,7 @@ bool socket_close_with_reset(SocketHandle sock) {
     ling.l_linger = 0;
 
     bool setsockopt_failed = false;
-    if (setsockopt(sock, SOL_SOCKET, SO_LINGER, (void*) &ling, sizeof(ling)) == -1) {
+    if (setsockopt(sock, SOL_SOCKET, SO_LINGER, (void*)&ling, sizeof(ling)) == -1) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: setsockopt(SO_LINGER): %s",
