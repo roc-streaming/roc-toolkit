@@ -230,11 +230,11 @@ bool set_nonblock(SocketHandle sock) {
     int res;
     unsigned long mode = 1; // 0 for blocking, nonzero for non blocking
 
-    ....res = ioctlsocket(sock, FIONBIO, &mode);
-    ....     // if (iResult != NO_ERROR)
-        .... //    printf("ioctlsocket failed with error: %ld\n", iResult);
+    res = ioctlsocket(sock, FIONBIO, &mode);
+    // if (iResult != NO_ERROR)
+    //    printf("ioctlsocket failed with error: %ld\n", iResult);
 
-        return (res == NO_ERROR);
+    return (res == NO_ERROR);
 }
 
 #endif // __WIN32__
