@@ -11,7 +11,6 @@
 
 #ifndef ROC_ADDRESS_SOCKET_ADDR_H_
 #define ROC_ADDRESS_SOCKET_ADDR_H_
-#ifndef ROC_ADDRESS_SOCKET_ADDR_H_
 
 #ifndef __WIN32__
 #include <netinet/in.h>
