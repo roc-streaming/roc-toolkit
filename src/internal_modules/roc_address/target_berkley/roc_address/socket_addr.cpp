@@ -6,7 +6,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#ifndef __WIN32__
 #include <arpa/inet.h>
+#endif
 
 #include "roc_address/socket_addr.h"
 #include "roc_core/endian.h"
