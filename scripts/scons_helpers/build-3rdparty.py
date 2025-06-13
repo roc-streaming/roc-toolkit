@@ -148,7 +148,7 @@ def unpack(ctx, filename, dirname):
     shutil.move(dirname_tmp, dirname_res)
     rm_emptydir('tmp')
 
-def execute(ctx, cmd, ignore_error=False, clear_env=False):
+def execute(ctx, cmd, ignore_error=False, extra_env=None, clear_env=False):
     msg('[execute] {}', cmd)
 
     with open(ctx.log_file, 'a+') as fp:
@@ -157,6 +157,11 @@ def execute(ctx, cmd, ignore_error=False, clear_env=False):
     env = None
     if clear_env:
         env = {'HOME': os.environ['HOME'], 'PATH': os.environ['PATH']}
+
+    if extra_env:
+        if not env:
+            env = os.environ.copy()
+        env.update(extra_env)
 
     code = subprocess.call('{} >>{} 2>&1'.format(cmd, ctx.log_file), shell=True, env=env)
     if code != 0:
@@ -176,7 +181,7 @@ def execute_make(ctx, cpu_count=None):
 
     execute(ctx, ' '.join(cmd))
 
-def execute_cmake(ctx, src_dir, args=None):
+def execute_cmake(ctx, src_dir, args=None, flags=None):
     def _getvar(var, default):
         if var in ctx.env:
             return ctx.env[var]
@@ -188,8 +193,10 @@ def execute_cmake(ctx, src_dir, args=None):
     if not args:
         args = []
 
-    compiler = _getvar('CC', 'gcc')
-    sysroot = find_sysroot(ctx.toolchain, compiler)
+    c_compiler = _getvar('CC', 'gcc')
+    cxx_compiler = _getvar('CXX', 'g++')
+    is_gnu = detect_compiler_family(ctx.env, ctx.toolchain, 'gcc')
+    sysroot = find_sysroot(ctx.toolchain, c_compiler)
 
     need_sysroot = bool(sysroot)
     need_tools = True
@@ -216,10 +223,10 @@ def execute_cmake(ctx, src_dir, args=None):
             '-DANDROID_PLATFORM=android-' + ctx.android_platform,
         ]
 
-        api = detect_android_api(compiler)
+        api = detect_android_api(c_compiler)
         abi = detect_android_abi(ctx.toolchain)
 
-        toolchain_file = find_android_toolchain_file(compiler)
+        toolchain_file = find_android_toolchain_file(c_compiler)
 
         if toolchain_file:
             need_sysroot = False
@@ -230,7 +237,7 @@ def execute_cmake(ctx, src_dir, args=None):
             if abi:
                 args += ['-DANDROID_ABI=' + abi]
         else:
-            sysroot = find_android_sysroot(compiler)
+            sysroot = find_android_sysroot(c_compiler)
             need_sysroot = bool(sysroot)
             need_tools = True
             if api:
@@ -247,7 +254,8 @@ def execute_cmake(ctx, src_dir, args=None):
     if need_tools:
         if not ctx.android_platform:
             args += [
-                '-DCMAKE_C_COMPILER=' + quote(find_tool(compiler)),
+                '-DCMAKE_CXX_COMPILER=' + quote(find_tool(cxx_compiler)),
+                '-DCMAKE_C_COMPILER=' + quote(find_tool(c_compiler)),
             ]
         args += [
             '-DCMAKE_LINKER=' + quote(find_tool(_getvar('CCLD', 'gcc'))),
@@ -262,33 +270,33 @@ def execute_cmake(ctx, src_dir, args=None):
         ]
 
     args += [
+        # compatibility with CMakeLists for older cmake versions
+        '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
+        # enable -fPIC
         '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
     ]
 
-    cc_flags = [
-        '-fPIC', # -fPIC should be set explicitly in older cmake versions
-    ]
+    # -fPIC should be set explicitly in older cmake versions
+    cflags = ['-fPIC']
 
     if ctx.variant == 'debug':
-        cc_flags += [
-            '-ggdb', # -ggdb is required for sanitizer backtrace
-        ]
-        args += [
-            '-DCMAKE_BUILD_TYPE=Debug',
-            '-DCMAKE_C_FLAGS_DEBUG:STRING=' + quote(' '.join(cc_flags)),
-        ]
+        # -ggdb is required for sanitizer backtrace
+        if is_gnu:
+            cflags += ['-ggdb']
+        args += ['-DCMAKE_BUILD_TYPE=Debug']
     else:
-        args += [
-            '-DCMAKE_BUILD_TYPE=Release',
-            '-DCMAKE_C_FLAGS_RELEASE:STRING=' + quote(' '.join(cc_flags)),
-        ]
+        args += ['-DCMAKE_BUILD_TYPE=Release']
 
-    # compatibility with older cmake files
-    args += [
-        '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
-    ]
+    if flags:
+        cflags += [flags]
 
-    execute(ctx, 'cmake ' + src_dir + ' ' + ' '.join(args))
+    cmake_cmd = \
+        'cmake -E env' + \
+        ' ' + quote('CFLAGS=' + ' '.join(cflags)) + \
+        ' ' + quote('CXXFLAGS=' + ' '.join(cflags)) + \
+        ' cmake ' + src_dir + ' ' + ' '.join(args)
+
+    execute(ctx, cmake_cmd)
 
 def execute_cmake_build(ctx):
     cmd = ['cmake', '--build', '.']
@@ -1622,10 +1630,14 @@ if __name__ == '__main__':
                 from_='#!/usr/bin/env python', to='#!/usr/bin/env python3')
         mkpath('build')
         changedir(ctx, 'build')
-        execute_cmake(ctx, '..', args=[
-            '-DBENCHMARK_ENABLE_GTEST_TESTS=OFF',
-            '-DCMAKE_CXX_FLAGS=-w',
-            ])
+        execute_cmake(
+            ctx, '..',
+            flags='-w',
+            args=[
+                '-DBENCHMARK_ENABLE_GTEST_TESTS=OFF',
+                '-DHAVE_STD_REGEX=ON',
+                '-DRUN_HAVE_STD_REGEX=1',
+            ],)
         execute_cmake_build(ctx)
         changedir(ctx, '..')
         install_tree(ctx, 'include', ctx.pkg_inc_dir, include=['*.h'])
