@@ -16,7 +16,7 @@
 #ifndef __WIN32__
 #include <netinet/in.h>
 #include <sys/socket.h>
-#else // __WIN32__
+#else // ! __WIN32__
 #include <cstdint>
 typedef uint16_t sa_family_t;
 typedef uint16_t in_port_t;

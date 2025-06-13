@@ -13,13 +13,13 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
-#else
+#else // __WIN32__
 #include <cstdint>
 typedef uint16_t sa_family_t;
 typedef uint16_t in_port_t;
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#endif
+#endif // ! __WIN32__
 
 #include <signal.h>
 #include <sys/types.h>
@@ -237,7 +237,7 @@ bool set_nonblock(SocketHandle sock) {
     return (res == NO_ERROR);
 }
 
-#endif // __WIN32__
+#endif // ! __WIN32__
 
 #endif // !defined(SOCK_NONBLOCK)
 
