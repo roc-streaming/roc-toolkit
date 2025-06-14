@@ -34,7 +34,7 @@ bool Cond::timed_wait(nanoseconds_t timeout) const {
         if (err == ERROR_TIMEOUT || err == WAIT_TIMEOUT) {
             return false;
         }
-        roc_panic("cond: SleepConditionVariableCS(): error %lu", error);
+        roc_panic("cond: SleepConditionVariableCS(): error %lu", err);
     }
 
     return true;
