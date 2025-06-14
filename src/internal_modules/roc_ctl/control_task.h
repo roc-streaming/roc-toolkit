@@ -18,6 +18,7 @@
 #include "roc_core/mpsc_queue_node.h"
 #include "roc_core/mutex.h"
 #include "roc_core/optional.h"
+#include "roc_core/pairing_heap_node.h"
 #include "roc_core/semaphore.h"
 #include "roc_core/seqlock.h"
 #include "roc_core/time.h"
@@ -51,7 +52,9 @@ enum ControlTaskResult {
 typedef ControlTaskResult (IControlTaskExecutor::*ControlTaskFunc)(ControlTask&);
 
 //! Base class for control tasks.
-class ControlTask : public core::MpscQueueNode<>, public core::ListNode<> {
+class ControlTask : public core::MpscQueueNode<>,
+                    public core::ListNode<>,
+                    public core::PairingHeapNode {
 public:
     ~ControlTask();
 
