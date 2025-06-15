@@ -17,7 +17,11 @@ namespace ctl {
 namespace {
 
 enum {
+#ifdef __aarch64__
+    NumScheduleIterations = 200000,
+#else
     NumScheduleIterations = 2000000,
+#endif
     NumScheduleAfterIterations = 20000,
     NumThreads = 8,
     BatchSize = 1000
