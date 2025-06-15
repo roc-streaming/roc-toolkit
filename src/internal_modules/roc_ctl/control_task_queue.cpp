@@ -802,7 +802,7 @@ ControlTask* ControlTaskQueue::fetch_ready_task_() {
 }
 
 ControlTask* ControlTaskQueue::fetch_sleeping_task_() {
-    ControlTask* task = sleeping_queue_.front();
+    ControlTask* task = sleeping_queue_.top();
     if (!task) {
         return NULL;
     }
@@ -827,23 +827,55 @@ ControlTask* ControlTaskQueue::fetch_sleeping_task_() {
 void ControlTaskQueue::insert_sleeping_task_(ControlTask& task) {
     roc_panic_if_not(task.effective_deadline_ > 0);
 
-    ControlTask* pos = sleeping_queue_.front();
-
-    for (; pos; pos = sleeping_queue_.nextof(*pos)) {
-        if (pos->effective_deadline_ > task.effective_deadline_) {
-            break;
-        }
-    }
+    ControlTask* pos = sleeping_queue_.top();
 
     if (pos) {
-        sleeping_queue_.insert_before(task, *pos);
+        if (pos->effective_deadline_ > task.effective_deadline_) {
+            sleeping_queue_.push_as_parent(task, *pos);
+        } else {
+            sleeping_queue_.push_as_child(task, *pos);
+        }
     } else {
-        sleeping_queue_.push_back(task);
+        sleeping_queue_.push(task);
     }
 }
 
 void ControlTaskQueue::remove_sleeping_task_(ControlTask& task) {
     roc_panic_if_not(task.effective_deadline_ > 0);
+
+    ControlTask* pos = sleeping_queue_.child_of(task);
+
+    for (; pos; pos = sleeping_queue_.next_sibling_of(*pos)) {
+        ControlTask* next_task = sleeping_queue_.next_sibling_of(*pos);
+
+        if (next_task == NULL) {
+            break;
+        }
+
+        if (pos->effective_deadline_ > next_task->effective_deadline_) {
+            pos = sleeping_queue_.merge(*next_task, *pos);
+        } else {
+            pos = sleeping_queue_.merge(*pos, *next_task);
+        }
+
+        if (sleeping_queue_.next_sibling_of(*pos) == NULL) {
+            break;
+        }
+    }
+
+    while (pos) {
+        ControlTask* prev_task = sleeping_queue_.prev_sibling_of(*pos);
+
+        if (&task == prev_task) {
+            break;
+        }
+
+        if (pos->effective_deadline_ > prev_task->effective_deadline_) {
+            pos = sleeping_queue_.merge(*prev_task, *pos);
+        } else {
+            pos = sleeping_queue_.merge(*pos, *prev_task);
+        }
+    }
 
     sleeping_queue_.remove(task);
 }
@@ -853,7 +885,7 @@ core::nanoseconds_t ControlTaskQueue::update_wakeup_timer_() {
 
     // Sleep only if there are no tasks in ready queue.
     if (ready_queue_size_ == 0) {
-        if (ControlTask* task = sleeping_queue_.front()) {
+        if (ControlTask* task = sleeping_queue_.top()) {
             deadline = task->effective_deadline_;
         } else {
             deadline = -1;
