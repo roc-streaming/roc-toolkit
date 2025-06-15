@@ -26,7 +26,7 @@ public:
         return reverse_octets_(v);
     }
 
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+#if ROC_CPU_ENDIAN == ROC_CPU_ENDIAN_BE
     //! Swap between native endian and big endian.
     template <class T> static inline T swap_native_be(T v) {
         return v;
@@ -38,7 +38,7 @@ public:
     }
 #endif
 
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+#if ROC_CPU_ENDIAN == ROC_CPU_ENDIAN_BE
     //! Swap between native endian and little endian.
     template <class T> static inline T swap_native_le(T v) {
         return reverse_octets_(v);
