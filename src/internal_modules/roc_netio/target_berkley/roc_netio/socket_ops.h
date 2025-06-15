@@ -48,10 +48,18 @@ enum SocketError {
 };
 
 //! Platform-specific socket handle.
+#ifndef __WIN32__
 typedef int SocketHandle;
+#else
+typedef SOCKET SocketHandle;
+#endif
 
 //! Invalid socket handle.
+#ifndef __WIN32__
 const SocketHandle SocketInvalid = -1;
+#else
+const SocketHandle SocketInvalid = INVALID_SOCKET;
+#endif
 
 //! Create non-blocking socket.
 ROC_NODISCARD bool

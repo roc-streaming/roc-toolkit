@@ -1148,7 +1148,7 @@ if __name__ == '__main__':
     elif ctx.pkg_name == 'libatomic_ops':
         download(
             ctx,
-            'https://github.com/ivmai/libatomic_ops/releases/download/'
+            'https://github.com/bdwgc/libatomic_ops/releases/download/'
                 'v{ctx.pkg_ver}/libatomic_ops-{ctx.pkg_ver}.tar.gz',
             'libatomic_ops-{ctx.pkg_ver}.tar.gz')
         unpack(ctx,
