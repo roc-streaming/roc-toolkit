@@ -290,8 +290,13 @@ def execute_cmake(ctx, src_dir, args=None, flags=None):
     if flags:
         cflags += [flags]
 
+    if os.name == 'posix' and which('env'):
+        env_cmd = 'env'
+    else:
+        env_cmd = 'cmake -E env'
+
     cmake_cmd = \
-        'cmake -E env' + \
+        env_cmd + \
         ' ' + quote('CFLAGS=' + ' '.join(cflags)) + \
         ' ' + quote('CXXFLAGS=' + ' '.join(cflags)) + \
         ' cmake ' + src_dir + ' ' + ' '.join(args)
