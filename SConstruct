@@ -570,7 +570,7 @@ if not meta.host:
 if not meta.toolchain and meta.build != meta.host:
     meta.toolchain = meta.host
 
-if not meta.toolchain and meta.build == meta.host:
+if not meta.toolchain and meta.build == meta.host and 'darwin' in meta.host:
     meta.build = meta.host = env.ParseMacosHost(
         meta.host, GetOption('macos_platform'), GetOption('macos_arch'))
 
