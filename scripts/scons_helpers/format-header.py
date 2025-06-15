@@ -1,227 +1,123 @@
-import datetime
-import filecmp
-import fnmatch
-import os
+from datetime import datetime
+from pathlib import Path
 import re
-import shutil
 import sys
-import tempfile
-import textwrap
 
-copyright_str = textwrap.dedent('''
-    /*
-     * Copyright (c) {} Roc Streaming authors
-     *
-     * This Source Code Form is subject to the terms of the Mozilla Public
-     * License, v. 2.0. If a copy of the MPL was not distributed with this
-     * file, You can obtain one at http://mozilla.org/MPL/2.0/.
-     */
-''').format(datetime.datetime.now().year)
+COPYRIGHT_HEADER = """
+/*
+ * Copyright (c) {year} Roc Streaming authors
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+""".lstrip()
 
-def is_header(path):
-    '''True if `path` is a C/C++ header file; False otherwise.'''
-    return re.search(r'\.h$', path)
+DOXYGEN_HEADER = """
+//! @file {path}
+//! @brief TODO: short file description.
+""".lstrip()
 
-def is_test(path):
-    '''True if `path` is a C/C++ test file; False otherwise.'''
-    _, basename = os.path.split(path)
-    for s in [basename, os.path.basename(os.path.dirname(path))]:
-        if s.startswith('test_'):
-            return True
-    return False
+PRAGMA_HEADER = """
+#pragma once
+""".lstrip()
 
-def is_public_api(path):
-    '''True if `path` is a public API C/C++ header file that resides in a
-    public_api/include/roc/ directory.
-    '''
-    rootname = os.path.basename(
-        os.path.dirname(
-            os.path.dirname(
-                os.path.abspath(path))))
-    return rootname == 'public_api'
+H_REGEXP = re.compile(r'''
+    ^
+    (?P<copyright> /\*.*?Copyright.*?\*/\n )?
+    \n*
+    (?P<span1> .*?\n )??
+    \n*
+    (?P<doxygen> //!\s*@file.*?\n //!\s*@brief.*?\n )?
+    \n*
+    (?P<span2> .*?\n )??
+    \n*
+    (?P<pragma> \#pragma\s+once\n | \#ifndef\s+ROC_.*?_H_\n \#define\s+ROC_.*?_H_\n )?
+    \n*
+    (?P<body> .* )
+    $
+''', re.DOTALL | re.VERBOSE)
 
-def make_guard(path):
-    '''Generate include guard macro name basing on `path` to header file.
-    The resulting macro looks like this: `PATH_TO_FILE_`.
-    '''
-    dirpath, basename = os.path.split(path)
-    dirname = os.path.basename(dirpath)
-    if is_public_api(path):
-        if is_test(path):
-            arr = ['roc', 'public_api', dirname, basename]
-        else:
-            arr = ['roc', 'public_api', basename]
-    elif dirname == '.':
-        arr = ['roc', basename]
+CPP_REGEXP = re.compile(r'''
+    ^
+    (?P<copyright> /\*.*?Copyright.*?\*/\n )?
+    \n*
+    (?P<body> .* )?
+    $
+''', re.DOTALL | re.VERBOSE)
+
+def process_h(content, file_path, doxygen_path):
+    m = H_REGEXP.match(content)
+
+    if m.group('copyright') and (m.group('doxygen') or not doxygen_path) \
+       and m.group('pragma'):
+        return None
+
+    result = ''
+
+    if m.group('copyright'):
+        result += m.group('copyright') + '\n'
     else:
-        arr = [dirname, basename]
-    while not arr[0].startswith('roc_') and arr[0] != 'roc':
-        dirpath = os.path.dirname(dirpath)
-        arr = [os.path.basename(dirpath)] + arr
-    return '_'.join(arr).replace('.', '_').upper() + '_'
+        result += COPYRIGHT_HEADER.format(year=datetime.now().year) + '\n'
 
-def make_doxygen_path(path):
-    '''Generate doxygen `@file` command using `path` to the file.'''
-    path = '/'.join(path.split(os.sep)) # switch to '/' separator
-    path = re.sub(r'^\.?/', '', path) # remove leading "./"
-    return '@file ' + path
+    if m.group('span1'):
+        result += m.group('span1')
 
-def make_doxygen_brief(text):
-    '''Generate doxygen `@brief` command with a given `text` as a payload.'''
-    if not text.endswith('.'):
-        text += '.'
-    return '@brief ' + text
+    if m.group('doxygen'):
+        result += m.group('doxygen') + '\n'
+    elif doxygen_path:
+        result += DOXYGEN_HEADER.format(path=doxygen_path) + '\n'
 
-def format_file(output, path):
-    '''Read file `path` and write its contents to the `output` stream applying
-    formatting modifications if needed: add copyright, include gards, Doxygen
-    documentation lines, and so on.
-    '''
+    if m.group('span2'):
+        result += m.group('span2')
 
-    def fprint(s):
-        output.write(s + '\n')
+    if m.group('pragma'):
+        result += m.group('pragma') + '\n'
+    else:
+        result += PRAGMA_HEADER + '\n'
 
-    with open(path) as fp:
-        lines = fp.read().splitlines()
+    if m.group('body'):
+        result += m.group('body')
 
-    has_copyright, has_doxygen, has_guard, is_autogen = False, False, False, False
+    return result
 
-    section = 'copyright'
-    brief = 'TODO'
+def process_cpp(content):
+    m = CPP_REGEXP.match(content)
 
-    original_lines = []
-    body_start = True
+    if m.group('copyright'):
+        return None
 
-    if is_header(path):
-        while re.match(r'^\s*$', lines[-1]):
-            lines.pop()
+    result = ''
 
-        if re.match(r'^\s*#\s*endif.*$', lines[-1]):
-            lines.pop()
+    if m.group('copyright'):
+        result += m.group('copyright') + '\n'
+    else:
+        result += COPYRIGHT_HEADER.format(year=datetime.now().year) + '\n'
 
-        while re.match(r'^\s*$', lines[-1]):
-            lines.pop()
+    if m.group('body'):
+        result += m.group('body')
 
-        for line in lines:
-            m = re.search(r'@brief\s+(.*)', line)
-            if m:
-                brief = m.group(1)
-                break
+    return result
 
-    if lines and re.match(r'^//.*AUTO-GENERATED.*', lines[0]):
-        is_autogen = True
-        section = 'body'
+def process_file(file_path):
+    file_path = Path(file_path).absolute().relative_to(Path.cwd()).as_posix()
 
-    while lines:
-        line = lines.pop(0)
+    if file_path.startswith('src/internal_modules/'):
+        doxygen_path = file_path.replace('src/internal_modules/', '')
+    else:
+        doxygen_path = None
 
-        if section in ['copyright', 'doxygen', 'guard']:
-            if re.match(r'^\s*$', line):
-                continue
+    with open(file_path, 'r') as fp:
+        content = fp.read()
 
-        if section == 'copyright':
-            original_lines += [line]
+    if file_path.endswith('.h'):
+        new_content = process_h(content, file_path, doxygen_path)
+    else:
+        new_content = process_cpp(content)
 
-            if re.match(r'^\s*/?\*', line):
-                if re.match(r'^\s*/?\*.*AUTO-GENERATED.*', line):
-                    is_autogen = True
+    if new_content and new_content != content:
+        with open(file_path, 'w') as fp:
+            fp.write(new_content)
 
-                if re.match(r'^\s*/?\*\s*(Copyright|Mozilla)', line):
-                    has_copyright = True
-
-                if re.match(r'^\s*\*/', line):
-                    if is_autogen or has_copyright:
-                        for p in original_lines:
-                            fprint(p)
-                        fprint('')
-                    else:
-                        fprint(copyright_str.strip())
-                        fprint('')
-
-                        if not has_copyright:
-                            for p in original_lines:
-                                fprint(p)
-                        fprint('')
-
-                    section = 'doxygen' if is_header(path) else 'body'
-                    continue
-            else:
-                fprint(copyright_str.strip())
-                fprint('')
-
-                lines = original_lines + lines
-                section = 'doxygen' if is_header(path) else 'body'
-
-                continue
-
-        if section == 'doxygen':
-            if re.match(r'^\s*/?\*', line) or re.match(r'^\s*//', line):
-                continue
-
-            if re.match(r'^\s*//!', line):
-                if not is_header(path) or is_test(path) or is_autogen:
-                    continue
-
-                if re.match(r'^\s*//!\s*@file', line):
-                    fprint('//! {}'.format(make_doxygen_path(path)))
-                else:
-                    fprint(line)
-
-                has_doxygen = True
-                continue
-            else:
-                if is_public_api(path) or is_test(path) or is_autogen:
-                    section = 'guard' if is_header(path) else 'body'
-                else:
-                    if not has_doxygen:
-                        if is_header(path):
-                            fprint('//! {}'.format(make_doxygen_path(path)))
-                            fprint('//! {}'.format(make_doxygen_brief(brief)))
-                            section = 'guard'
-                        else:
-                            section = 'body'
-
-                    if is_header(path):
-                        fprint('')
-
-        if section == 'guard':
-            m = re.match(r'#\s*(ifndef|define)', line)
-            if m:
-                has_guard = True
-                fprint('#{} {}'.format(m.group(1), make_guard(path)))
-                continue
-            else:
-                if not has_guard:
-                    fprint('#ifndef {}'.format(make_guard(path)))
-                    fprint('#define {}'.format(make_guard(path)))
-                fprint('')
-                section = 'body'
-
-        if section == 'body':
-            if body_start and re.match(r'^\s*$', line):
-                continue
-            body_start = False
-            fprint(line)
-
-    if is_header(path):
-        fprint('')
-        fprint('#endif // {}'.format(make_guard(path)))
-
-def walk_dir(directory, patterns):
-    for root, dirs, files in os.walk(directory):
-        for basename in files:
-            for pattern in patterns:
-                if fnmatch.fnmatch(basename, pattern):
-                    filename = os.path.join(root, basename)
-                    yield filename
-                    break
-
-if len(sys.argv) > 1:
-    os.chdir(sys.argv[1])
-
-for path in walk_dir('.', ['*.h', '*.cpp']):
-    with tempfile.NamedTemporaryFile('w+') as fp:
-        format_file(fp, path)
-        fp.flush()
-        if not filecmp.cmp(path, fp.name):
-            shutil.copy(fp.name, path)
+for file_path in sys.argv[1:]:
+    process_file(file_path)
