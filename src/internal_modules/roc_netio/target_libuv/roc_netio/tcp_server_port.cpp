@@ -325,7 +325,7 @@ void TcpServerPort::format_descriptor(core::StringBuilder& b) {
     b.append_str("<tcpserv");
 
     b.append_str(" 0x");
-    b.append_uint((unsigned long)this, 16);
+    b.append_uint((size_t)this, 16);
 
     b.append_str(" bind=");
     b.append_str(address::socket_addr_to_str(config_.bind_address).c_str());

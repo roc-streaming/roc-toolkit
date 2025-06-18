@@ -246,8 +246,8 @@ ReceiverDecoder::read_packet(address::Interface iface, void* bytes, size_t* n_by
         roc_log(LogError,
                 "receiver decoder node:"
                 " not enough space in provided packet:"
-                " provided=%lu needed=%lu",
-                (unsigned long)n_bytes, (unsigned long)packet->buffer().size());
+                " provided=%llu needed=%llu",
+                (unsigned long long)n_bytes, (unsigned long long)packet->buffer().size());
         return status::StatusBadBuffer;
     }
 
