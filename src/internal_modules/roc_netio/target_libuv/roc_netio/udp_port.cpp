@@ -116,11 +116,16 @@ bool UdpPort::open() {
         return false;
     }
 
+#ifndef __WIN32__
     const int fd_err = uv_fileno((uv_handle_t*)&handle_, &fd_);
+
     if (fd_err != 0) {
         roc_panic("udp port: %s: uv_fileno(): [%s] %s", descriptor(), uv_err_name(fd_err),
                   uv_strerror(fd_err));
     }
+#else  // __WIN32__
+    fd_ = handle_.socket;
+#endif // __WIN32__
 
     update_descriptor();
 
@@ -580,7 +585,7 @@ void UdpPort::format_descriptor(core::StringBuilder& b) {
     b.append_str("<udp");
 
     b.append_str(" 0x");
-    b.append_uint((unsigned long)this, 16);
+    b.append_uint((size_t)this, 16);
 
     b.append_str(" bind=");
     b.append_str(address::socket_addr_to_str(config_.bind_address).c_str());

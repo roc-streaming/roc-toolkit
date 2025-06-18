@@ -147,7 +147,7 @@ private:
     bool want_close_;
     bool closed_;
 
-    uv_os_fd_t fd_;
+    uv_os_sock_t fd_;
 
     packet::PacketFactory& packet_factory_;
 
