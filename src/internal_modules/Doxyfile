@@ -11,7 +11,8 @@ STRIP_FROM_INC_PATH     = .
 FILE_PATTERNS           = *.h *.dox
 
 EXCLUDE = \
-    roc_core/target_posix/roc_core/cpu_traits.h
+    roc_core/target_posix/roc_core/cpu_traits.h \
+    roc_core/target_windows/roc_core/cpu_traits.h
 
 EXCLUDE_SYMBOLS = \
     AllocationPolicy
@@ -42,6 +43,7 @@ MACRO_EXPANSION         = YES
 EXPAND_ONLY_PREDEF      = YES
 
 PREDEFINED              =   \
+    ROC_DOXYGEN=            \
     ROC_EXPORT=             \
     ROC_ALIGNED=            \
     ROC_PACKED_BEGIN=       \

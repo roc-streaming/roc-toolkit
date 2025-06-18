@@ -27,10 +27,19 @@ def ClangFormat(env, src_dir):
         env.PrettyCommand('FMT', env.Dir(src_dir).path, 'yellow'))
 
 def HeaderFormat(env, src_dir):
+    exclude_files = [
+        os.path.relpath(env.File('#'+s).srcnode().abspath)
+            for s in open(env.File('#.fmtignore').abspath).read().split()
+        ]
+
+    files = env.GlobRecursive(
+        src_dir, ['*.h', '*.cpp'],
+        exclude=exclude_files)
+
     return env.Action(
-        '{python} scripts/scons_helpers/format-header.py {src_dir}'.format(
+        '{python} scripts/scons_helpers/format-header.py {files}'.format(
             python=quote(env.GetPythonExecutable()),
-            src_dir=quote(env.Dir(src_dir).path)),
+            files=' '.join(map(str, files))),
         env.PrettyCommand('FMT', env.Dir(src_dir).path, 'yellow'))
 
 def DocTest(env, path):

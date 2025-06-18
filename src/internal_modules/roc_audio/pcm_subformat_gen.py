@@ -613,7 +613,7 @@ enum PcmEndian {
     PcmEndian_{{ endian }},
 {% endif %}
 {% endfor %}
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+#if ROC_CPU_ENDIAN == ROC_CPU_ENDIAN_BE
     PcmEndian_Default = PcmEndian_Big,
 #else
     PcmEndian_Default = PcmEndian_Little,
@@ -719,7 +719,7 @@ template <> struct pcm_sample<{{ type }}> {
     union {
         {{ type }} value;
         ROC_PACKED_BEGIN struct {
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+#if ROC_CPU_ENDIAN == ROC_CPU_ENDIAN_BE
 {% for n in reversed(range(size)) %}
             uint8_t octet{{ n }};
 {% endfor %}
@@ -826,7 +826,7 @@ PcmMapFn pcm_map_to_raw(PcmSubformat raw_format) {
     switch (raw_format) {
 {% for ocode in CODES %}
 {% if ocode.is_raw: %}
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+#if ROC_CPU_ENDIAN == ROC_CPU_ENDIAN_BE
     case {{ make_enum_name(ocode, 'Default') }}:
     case {{ make_enum_name(ocode, 'Big') }}:
 #else
@@ -848,7 +848,7 @@ PcmMapFn pcm_map_from_raw(PcmSubformat raw_format) {
     switch (raw_format) {
 {% for icode in CODES %}
 {% if icode.is_raw: %}
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+#if ROC_CPU_ENDIAN == ROC_CPU_ENDIAN_BE
     case {{ make_enum_name(icode, 'Default') }}:
     case {{ make_enum_name(icode, 'Big') }}:
 #else
@@ -872,7 +872,7 @@ PcmMapFn pcm_subformat_mapfn(PcmSubformat in_format, PcmSubformat out_format) {
     switch (in_format) {
 {% for icode in CODES %}
 {% if icode.is_raw %}
-#if ROC_CPU_ENDIAN != ROC_CPU_BE
+#if ROC_CPU_ENDIAN != ROC_CPU_ENDIAN_BE
     case {{ make_enum_name(icode, 'Big') }}:
         return pcm_map_to_raw<PcmCode_{{ icode.code }}, PcmEndian_Big>(out_format);
 #else
@@ -894,7 +894,7 @@ PcmMapFn pcm_subformat_mapfn(PcmSubformat in_format, PcmSubformat out_format) {
     switch (out_format) {
 {% for ocode in CODES %}
 {% if ocode.is_raw %}
-#if ROC_CPU_ENDIAN != ROC_CPU_BE
+#if ROC_CPU_ENDIAN != ROC_CPU_ENDIAN_BE
     case {{ make_enum_name(ocode, 'Big') }}:
         return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Big>(in_format);
 #else
@@ -918,7 +918,7 @@ PcmMapFn pcm_subformat_mapfn(PcmSubformat in_format, PcmSubformat out_format) {
 {% if ocode.is_raw %}
     case {{ make_enum_name(ocode, 'Default') }}:
         return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Default>(in_format);
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+#if ROC_CPU_ENDIAN == ROC_CPU_ENDIAN_BE
     case {{ make_enum_name(ocode, 'Big') }}:
         return pcm_map_from_raw<PcmCode_{{ ocode.code }}, PcmEndian_Default>(in_format);
 #else
@@ -948,7 +948,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
         traits.bit_depth = {{ code.depth }};
         traits.flags = {{ make_format_flags(code) }};
 {% if endian == 'Default' %}
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+#if ROC_CPU_ENDIAN == ROC_CPU_ENDIAN_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.portable_alias = {{ make_enum_name(code, 'Big') }};
 #else
@@ -957,7 +957,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
 #endif
         traits.native_alias = {{ make_enum_name(code, 'Default') }};
 {% elif endian == 'Big' %}
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+#if ROC_CPU_ENDIAN == ROC_CPU_ENDIAN_BE
         traits.flags |= Pcm_IsNative | Pcm_IsBig;
         traits.native_alias = {{ make_enum_name(code, 'Default') }};
 #else
@@ -966,7 +966,7 @@ PcmTraits pcm_subformat_traits(PcmSubformat format) {
 #endif
         traits.portable_alias = {{ make_enum_name(code, endian) }};
 {% elif endian == 'Little' %}
-#if ROC_CPU_ENDIAN == ROC_CPU_LE
+#if ROC_CPU_ENDIAN == ROC_CPU_ENDIAN_LE
         traits.flags |= Pcm_IsNative | Pcm_IsLittle;
         traits.native_alias = {{ make_enum_name(code, 'Default') }};
 #else
