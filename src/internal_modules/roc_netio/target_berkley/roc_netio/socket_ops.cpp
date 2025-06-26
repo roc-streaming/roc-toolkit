@@ -15,8 +15,10 @@
 #include <sys/socket.h>
 #else // ! ROC_TARGET_POSIX
 #include <cstdint>
-typedef uint16_t sa_family_t;
-typedef uint16_t in_port_t;
+namespace {
+	typedef uint16_t sa_family_t;
+	typedef uint16_t in_port_t;
+}
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif // ROC_TARGET_POSIX
@@ -31,19 +33,19 @@ typedef uint16_t in_port_t;
 #include "roc_core/panic.h"
 #include "roc_netio/socket_ops.h"
 
-// To compile without -fpermissive
-#ifndef ROC_TARGET_WINDOWS
-typedef void os_buf_t;
-typedef int os_val_t;
-#else  // ROC_TARGET_WINDOWS
-typedef char os_buf_t;
-typedef char os_val_t;
-#endif // ! ROC_TARGET_WINDOWS
-
 namespace roc {
 namespace netio {
 
 namespace {
+
+// To compile without -fpermissive
+#ifndef ROC_TARGET_WINDOWS
+typedef void sockbuf_t;
+typedef int sockopt_t;
+#else  // ROC_TARGET_WINDOWS
+typedef char sockbuf_t;
+typedef char sockopt_t;
+#endif // ! ROC_TARGET_WINDOWS
 
 int to_domain(address::AddrFamily family) {
     switch (family) {
@@ -117,7 +119,7 @@ bool get_int_option(
     SocketHandle sock, int level, int opt, const char* opt_name, int& opt_val) {
     socklen_t opt_len = sizeof(opt_val);
 
-    if (getsockopt(sock, level, opt, (os_val_t*)&opt_val, &opt_len) == -1) {
+    if (getsockopt(sock, level, opt, (sockopt_t*)&opt_val, &opt_len) == -1) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: getsockopt(%s): %s", opt_name,
@@ -137,7 +139,7 @@ bool get_int_option(
 
 bool set_int_option(
     SocketHandle sock, int level, int opt, const char* opt_name, int opt_val) {
-    if (setsockopt(sock, level, opt, (const os_val_t*)&opt_val, sizeof(opt_val)) == -1) {
+    if (setsockopt(sock, level, opt, (const sockopt_t*)&opt_val, sizeof(opt_val)) == -1) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: setsockopt(%s): %s", opt_name,
@@ -487,7 +489,7 @@ ssize_t socket_try_recv(SocketHandle sock, void* buf, size_t bufsz) {
     }
 
     ssize_t ret;
-    while ((ret = recv(sock, (os_buf_t*)buf, bufsz, MSG_DONTWAIT)) == -1) {
+    while ((ret = recv(sock, (sockbuf_t*)buf, bufsz, MSG_DONTWAIT)) == -1) {
         roc_panic_if(is_malformed(errno));
 
         if (errno != EINTR) {
@@ -536,7 +538,7 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
 #endif
 
     ssize_t ret;
-    while ((ret = send(sock, (const os_buf_t*)buf, bufsz, flags)) == -1) {
+    while ((ret = send(sock, (const sockbuf_t*)buf, bufsz, flags)) == -1) {
         roc_panic_if(is_malformed(errno));
 
         if (errno != EINTR) {
@@ -611,7 +613,7 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
 #endif // ! ROC_TARGET_WINDOWS
 
     ssize_t ret;
-    while ((ret = send(sock, (os_buf_t*)buf, bufsz, MSG_DONTWAIT)) == -1) {
+    while ((ret = send(sock, (sockbuf_t*)buf, bufsz, MSG_DONTWAIT)) == -1) {
         roc_panic_if(is_malformed(errno));
 
         if (errno != EINTR) {
@@ -672,7 +674,7 @@ ssize_t socket_try_send_to(SocketHandle sock,
     roc_panic_if(!remote_address.has_host_port());
 
     ssize_t ret;
-    while ((ret = sendto(sock, (const os_buf_t*)buf, bufsz, MSG_DONTWAIT,
+    while ((ret = sendto(sock, (const sockbuf_t*)buf, bufsz, MSG_DONTWAIT,
                          remote_address.saddr(), remote_address.slen()))
            == -1) {
         roc_panic_if(is_malformed(errno));
@@ -758,7 +760,7 @@ bool socket_close_with_reset(SocketHandle sock) {
     ling.l_linger = 0;
 
     bool setsockopt_failed = false;
-    if (setsockopt(sock, SOL_SOCKET, SO_LINGER, (const os_val_t*)&ling, sizeof(ling))
+    if (setsockopt(sock, SOL_SOCKET, SO_LINGER, (const sockopt_t*)&ling, sizeof(ling))
         == -1) {
         roc_panic_if(is_malformed(errno));
 
