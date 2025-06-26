@@ -13,6 +13,35 @@
 #include "roc_address/socket_addr.h"
 #include "roc_core/endian.h"
 
+namespace {
+
+#ifdef ROC_TARGET_WINDOWS
+typedef ADDRESS_FAMILY sa_family_t;
+typedef USHORT in_port_t;
+#endif
+
+socklen_t saddr_size(sa_family_t family) {
+    switch (family) {
+    case AF_INET:
+        return sizeof(sockaddr_in);
+    case AF_INET6:
+        return sizeof(sockaddr_in6);
+    default:
+        return 0;
+    }
+}
+
+/* friend declaration would still require the return type into the header...
+sa_family_t saddr_family(const roc::address::SocketAddr& sa) {
+    return sa.saddr_.addr4.sin_family;
+}*/
+
+sa_family_t saddr_family(const roc::address::saddr_t& sa) {
+    return sa.addr4.sin_family;
+}
+
+} // namespace
+
 namespace roc {
 namespace address {
 
@@ -25,11 +54,11 @@ void SocketAddr::clear() {
 }
 
 bool SocketAddr::has_host_port() const {
-    return saddr_family_() == AF_INET || saddr_family_() == AF_INET6;
+    return saddr_family(saddr_) == AF_INET || saddr_family(saddr_) == AF_INET6;
 }
 
 bool SocketAddr::set_host_port_saddr(const sockaddr* sa) {
-    const socklen_t sa_size = saddr_size_(sa->sa_family);
+    const socklen_t sa_size = saddr_size(sa->sa_family);
     if (sa_size == 0) {
         return false;
     }
@@ -90,15 +119,15 @@ const sockaddr* SocketAddr::saddr() const {
 }
 
 socklen_t SocketAddr::slen() const {
-    return saddr_size_(saddr_family_());
+    return saddr_size(saddr_family(saddr_));
 }
 
 socklen_t SocketAddr::max_slen() const {
-    return saddr_size_(AF_INET6);
+    return saddr_size(AF_INET6);
 }
 
 AddrFamily SocketAddr::family() const {
-    switch (saddr_family_()) {
+    switch (saddr_family(saddr_)) {
     case AF_INET:
         return Family_IPv4;
     case AF_INET6:
@@ -109,7 +138,7 @@ AddrFamily SocketAddr::family() const {
 }
 
 int SocketAddr::port() const {
-    switch (saddr_family_()) {
+    switch (saddr_family(saddr_)) {
     case AF_INET:
         return core::ntoh16u((uint16_t)saddr_.addr4.sin_port);
     case AF_INET6:
@@ -120,7 +149,7 @@ int SocketAddr::port() const {
 }
 
 bool SocketAddr::is_multicast() const {
-    switch (saddr_family_()) {
+    switch (saddr_family(saddr_)) {
     case AF_INET:
         return IN_MULTICAST(core::ntoh32u(saddr_.addr4.sin_addr.s_addr));
     case AF_INET6:
@@ -131,7 +160,7 @@ bool SocketAddr::is_multicast() const {
 }
 
 bool SocketAddr::get_host(char* buf, size_t bufsz) const {
-    switch (saddr_family_()) {
+    switch (saddr_family(saddr_)) {
     case AF_INET:
         if (!inet_ntop(AF_INET, &saddr_.addr4.sin_addr, buf, (socklen_t)bufsz)) {
             return false;
@@ -156,11 +185,12 @@ SocketAddr::operator const struct unspecified_bool *() const {
 }
 
 bool SocketAddr::operator==(const SocketAddr& other) const {
-    if (saddr_family_() != other.saddr_family_()) {
+    //    if (saddr_family(saddr_) != other.saddr_family(saddr_)) {
+    if (saddr_family(saddr_) != saddr_family(other.saddr_)) {
         return false;
     }
 
-    switch (saddr_family_()) {
+    switch (saddr_family(saddr_)) {
     case AF_INET:
         if (saddr_.addr4.sin_addr.s_addr != other.saddr_.addr4.sin_addr.s_addr) {
             return false;
@@ -192,20 +222,11 @@ bool SocketAddr::operator!=(const SocketAddr& other) const {
     return !(*this == other);
 }
 
-socklen_t SocketAddr::saddr_size_(sa_family_t family) {
-    switch (family) {
-    case AF_INET:
-        return sizeof(sockaddr_in);
-    case AF_INET6:
-        return sizeof(sockaddr_in6);
-    default:
-        return 0;
-    }
-}
-
-sa_family_t SocketAddr::saddr_family_() const {
+/*
+sa_family_t SocketAddr::saddr_family_(saddr_) const {
     return saddr_.addr4.sin_family;
 }
+*/
 
 } // namespace address
 } // namespace roc

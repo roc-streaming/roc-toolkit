@@ -16,9 +16,6 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #else // ! ROC_TARGET_POSIX
-#include <cstdint>
-typedef uint16_t sa_family_t;
-typedef uint16_t in_port_t;
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif // ROC_TARGET_POSIX
@@ -29,6 +26,11 @@ typedef uint16_t in_port_t;
 
 namespace roc {
 namespace address {
+
+typedef union {
+    sockaddr_in addr4;
+    sockaddr_in6 addr6;
+} saddr_t;
 
 //! Socket address.
 class SocketAddr {
@@ -90,17 +92,10 @@ public:
     };
 
 private:
-    static socklen_t saddr_size_(sa_family_t family);
-
-    sa_family_t saddr_family_() const;
-
     bool set_host_port_ipv4_(const char* ip, int port);
     bool set_host_port_ipv6_(const char* ip, int port);
 
-    union {
-        sockaddr_in addr4;
-        sockaddr_in6 addr6;
-    } saddr_;
+    saddr_t saddr_;
 };
 
 } // namespace address
