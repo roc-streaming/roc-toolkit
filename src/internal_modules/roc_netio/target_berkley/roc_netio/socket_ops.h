@@ -48,14 +48,14 @@ enum SocketError {
 };
 
 //! Platform-specific socket handle.
-#ifndef __WIN32__
+#ifndef ROC_TARGET_WINDOWS
 typedef int SocketHandle;
 #else
 typedef SOCKET SocketHandle;
 #endif
 
 //! Invalid socket handle.
-#ifndef __WIN32__
+#ifndef ROC_TARGET_WINDOWS
 const SocketHandle SocketInvalid = -1;
 #else
 const SocketHandle SocketInvalid = INVALID_SOCKET;

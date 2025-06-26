@@ -6,22 +6,20 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-// dummy comment
-
 #include <errno.h>
 #include <fcntl.h>
 
-#ifndef __WIN32__
+#ifdef ROC_TARGET_POSIX
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
-#else // __WIN32__
+#else // ! ROC_TARGET_POSIX
 #include <cstdint>
 typedef uint16_t sa_family_t;
 typedef uint16_t in_port_t;
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#endif // ! __WIN32__
+#endif // ROC_TARGET_POSIX
 
 #include <signal.h>
 #include <sys/types.h>
@@ -34,13 +32,13 @@ typedef uint16_t in_port_t;
 #include "roc_netio/socket_ops.h"
 
 // To compile without -fpermissive
-#ifndef __WIN32__
+#ifndef ROC_TARGET_WINDOWS
 typedef void os_buf_t;
 typedef int os_val_t;
-#else  // __WIN32__
+#else  // ROC_TARGET_WINDOWS
 typedef char os_buf_t;
 typedef char os_val_t;
-#endif // ! __WIN32__
+#endif // ! ROC_TARGET_WINDOWS
 
 namespace roc {
 namespace netio {
@@ -163,7 +161,7 @@ bool set_int_option(
 //  - for performance reasons: without SOCK_CLOEXEC there are two more system calls
 
 bool set_cloexec(SocketHandle sock) {
-#ifndef __WIN32__ // Probably no equivalent on Windows
+#ifndef ROC_TARGET_WINDOWS // Probably no equivalent on Windows
     int flags;
 
     while ((flags = fcntl(sock, F_GETFD)) == -1) {
@@ -190,7 +188,7 @@ bool set_cloexec(SocketHandle sock) {
         }
     }
 
-#endif // ! __WIN32__
+#endif // ! ROC_TARGET_WINDOWS
     return true;
 }
 
@@ -203,7 +201,7 @@ bool set_cloexec(SocketHandle sock) {
 // Using SOCK_NONBLOCK is preferred because of performance reasons.
 // Without SOCK_NONBLOCK there are two more system calls.
 
-#ifndef __WIN32__
+#ifndef ROC_TARGET_WINDOWS
 
 bool set_nonblock(SocketHandle sock) {
     int flags;
@@ -235,7 +233,7 @@ bool set_nonblock(SocketHandle sock) {
     return true;
 }
 
-#else // __WIN32__
+#else // ROC_TARGET_WINDOWS
 
 bool set_nonblock(SocketHandle sock) {
     int res;
@@ -248,7 +246,7 @@ bool set_nonblock(SocketHandle sock) {
     return (res == NO_ERROR);
 }
 
-#endif // ! __WIN32__
+#endif // ! ROC_TARGET_WINDOWS
 
 #endif // !defined(SOCK_NONBLOCK)
 
@@ -476,7 +474,7 @@ bool socket_end_connect(SocketHandle sock) {
     return true;
 }
 
-#ifdef __WIN32__
+#ifdef ROC_TARGET_WINDOWS
 #define MSG_DONTWAIT (0) // Eeek! but ok...
 #endif
 
@@ -586,7 +584,7 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
         return 0;
     }
 
-#ifndef __WIN32__
+#ifndef ROC_TARGET_WINDOWS
     // Block SIGPIPE for this thread.
     // This works since kernel sends SIGPIPE to the thread that called send(),
     // not to the whole process.
@@ -610,7 +608,7 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
     if ((sigpipe_pending = sigismember(&sig_pending, SIGPIPE)) == -1) {
         roc_panic("socket: sigismember(): %s", core::errno_to_str().c_str());
     }
-#endif // !__WIN32__
+#endif // ! ROC_TARGET_WINDOWS
 
     ssize_t ret;
     while ((ret = send(sock, (os_buf_t*)buf, bufsz, MSG_DONTWAIT)) == -1) {
@@ -623,7 +621,7 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
 
     const int saved_errno = errno;
 
-#ifndef __WIN32__
+#ifndef ROC_TARGET_WINDOWS
 
     // If send() failed with EPIPE, and SIGPIPE was not already pending before calling
     // send(), then fetch SIGPIPE from pending signal mask.
@@ -644,7 +642,7 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
     if (int err = pthread_sigmask(SIG_SETMASK, &sig_restore, NULL)) {
         roc_panic("socket: pthread_sigmask(): %s", core::errno_to_str(err).c_str());
     }
-#endif // !__WIN32__
+#endif // ! ROC_TARGET_WINDOWS
 
     if (ret < 0 && is_ewouldblock(saved_errno)) {
         return SockErr_WouldBlock;
@@ -704,7 +702,7 @@ ssize_t socket_try_send_to(SocketHandle sock,
     return ret;
 }
 
-#ifdef __WIN32__
+#ifdef ROC_TARGET_WINDOWS
 #define SHUT_RDWR (SD_BOTH)
 #endif
 

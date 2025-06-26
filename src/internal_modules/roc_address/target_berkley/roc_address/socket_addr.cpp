@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#ifndef __WIN32__
+#ifdef ROC_TARGET_POSIX
 #include <arpa/inet.h>
 #endif
 
