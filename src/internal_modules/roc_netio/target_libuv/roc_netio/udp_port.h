@@ -22,6 +22,7 @@
 #include "roc_core/rate_limiter.h"
 #include "roc_netio/basic_port.h"
 #include "roc_netio/iclose_handler.h"
+#include "roc_netio/socket_ops.h"
 #include "roc_packet/iwriter.h"
 #include "roc_packet/packet_factory.h"
 
@@ -147,7 +148,7 @@ private:
     bool want_close_;
     bool closed_;
 
-    uv_os_sock_t fd_;
+    SocketHandle sock_;
 
     packet::PacketFactory& packet_factory_;
 

@@ -40,7 +40,7 @@ UdpPort::UdpPort(const UdpConfig& config,
     , recv_started_(false)
     , want_close_(false)
     , closed_(false)
-    , fd_()
+    , sock_()
     , packet_factory_(packet_factory)
     , inbound_writer_(NULL)
     , rate_limiter_(PacketLogInterval, 1) {
@@ -116,16 +116,15 @@ bool UdpPort::open() {
         return false;
     }
 
-#ifndef __WIN32__
-    const int fd_err = uv_fileno((uv_handle_t*)&handle_, &fd_);
+    uv_os_fd_t tmpfd;
+
+    const int fd_err = uv_fileno((uv_handle_t*)&handle_, &tmpfd);
 
     if (fd_err != 0) {
         roc_panic("udp port: %s: uv_fileno(): [%s] %s", descriptor(), uv_err_name(fd_err),
                   uv_strerror(fd_err));
     }
-#else  // __WIN32__
-    fd_ = handle_.socket;
-#endif // __WIN32__
+    sock_ = (long long unsigned int)tmpfd;
 
     update_descriptor();
 
@@ -469,7 +468,7 @@ bool UdpPort::try_nonblocking_write_(const packet::PacketPtr& pp) {
 
     const packet::UDP& udp = *pp->udp();
     const bool success =
-        socket_try_send_to(fd_, pp->buffer().data(), pp->buffer().size(), udp.dst_addr);
+        socket_try_send_to(sock_, pp->buffer().data(), pp->buffer().size(), udp.dst_addr);
 
     if (success) {
         const int packet_num = ++sent_packets_;
