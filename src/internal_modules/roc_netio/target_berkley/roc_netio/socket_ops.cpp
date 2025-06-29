@@ -14,11 +14,6 @@
 #include <netinet/tcp.h>
 #include <sys/socket.h>
 #else // ! ROC_TARGET_POSIX
-#include <cstdint>
-namespace {
-typedef uint16_t sa_family_t;
-typedef uint16_t in_port_t;
-} // namespace
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif // ROC_TARGET_POSIX
@@ -44,6 +39,8 @@ typedef int sockopt_t;
 #else  // ROC_TARGET_WINDOWS
 typedef char sockbuf_t;
 typedef char sockopt_t;
+typedef ADDRESS_FAMILY sa_family_t;
+typedef USHORT in_port_t;
 #endif // ! ROC_TARGET_WINDOWS
 
 int to_domain(address::AddrFamily family) {
