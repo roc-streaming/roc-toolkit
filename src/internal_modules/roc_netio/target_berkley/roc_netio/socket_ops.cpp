@@ -92,6 +92,20 @@ bool is_malformed(int err) {
     return err == EBADF || err == EFAULT || err == ENOTSOCK;
 }
 
+#ifndef ROC_TARGET_WINDOWS
+
+bool valid_socket(SocketHandle sock) {
+    return sock >= 0;
+}
+
+#else
+
+bool valid_socket(SocketHandle sock) {
+    return sock != SocketInvalid;
+}
+
+#endif
+
 bool get_local_address(SocketHandle sock, address::SocketAddr& address) {
     socklen_t addrlen = address.max_slen();
 
@@ -307,7 +321,7 @@ bool socket_create(address::AddrFamily family, SocketType type, SocketHandle& ne
 bool socket_accept(SocketHandle sock,
                    SocketHandle& new_sock,
                    address::SocketAddr& remote_address) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     socklen_t addrlen = remote_address.max_slen();
 
@@ -338,7 +352,7 @@ bool socket_accept(SocketHandle sock,
 bool socket_accept(SocketHandle sock,
                    SocketHandle& new_sock,
                    address::SocketAddr& remote_address) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     socklen_t addrlen = remote_address.max_slen();
 
@@ -374,7 +388,7 @@ bool socket_accept(SocketHandle sock,
 #endif // defined(ROC_TARGET_POSIX) && defined(SOCK_CLOEXEC) && defined(SOCK_NONBLOCK)
 
 bool socket_setup(SocketHandle sock, const SocketOpts& options) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     // If SO_NOSIGPIPE is available, enable it here for socket_try_send().
 #if defined(SO_NOSIGPIPE)
@@ -392,7 +406,7 @@ bool socket_setup(SocketHandle sock, const SocketOpts& options) {
 }
 
 bool socket_bind(SocketHandle sock, address::SocketAddr& local_address) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
     roc_panic_if(!local_address.has_host_port());
 
     // If IPV6_V6ONLY is available, use it for IPv6 addresses.
@@ -420,7 +434,7 @@ bool socket_bind(SocketHandle sock, address::SocketAddr& local_address) {
 }
 
 bool socket_listen(SocketHandle sock, size_t backlog) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     if (listen(sock, (int)backlog) == -1) {
         roc_panic_if(is_malformed(errno));
@@ -435,7 +449,7 @@ bool socket_listen(SocketHandle sock, size_t backlog) {
 bool socket_begin_connect(SocketHandle sock,
                           const address::SocketAddr& remote_address,
                           bool& completed_immediately) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
     roc_panic_if(!remote_address.has_host_port());
 
     int saved_errno = errno;
@@ -463,7 +477,7 @@ bool socket_begin_connect(SocketHandle sock,
 }
 
 bool socket_end_connect(SocketHandle sock) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     int err = 0;
 
@@ -483,7 +497,7 @@ bool socket_end_connect(SocketHandle sock) {
 }
 
 ssize_t socket_try_recv(SocketHandle sock, void* buf, size_t bufsz) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
     roc_panic_if(!buf);
 
     if (bufsz == 0) {
@@ -533,7 +547,7 @@ ssize_t socket_try_recv(SocketHandle sock, void* buf, size_t bufsz) {
 //
 // If MSG_NOSIGNAL is available (e.g. on Linux), we pass it to send().
 ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
     roc_panic_if(!buf);
 
     if (bufsz == 0) {
@@ -593,7 +607,7 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
 //
 // This implementation requires POSIX 2001.
 ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
     roc_panic_if(!buf);
 
     if (bufsz == 0) {
@@ -679,7 +693,7 @@ ssize_t socket_try_send_to(SocketHandle sock,
                            const void* buf,
                            size_t bufsz,
                            const address::SocketAddr& remote_address) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
     roc_panic_if(!buf);
     roc_panic_if(!remote_address.has_host_port());
 
@@ -725,7 +739,7 @@ ssize_t socket_try_send_to(SocketHandle sock,
 #endif
 
 bool socket_shutdown(SocketHandle sock) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     int flags = 0;
 
@@ -755,7 +769,7 @@ bool socket_shutdown(SocketHandle sock) {
 #ifndef ROC_TARGET_WINDOWS
 
 bool socket_close(SocketHandle sock) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     if (close(sock) == -1) {
         roc_panic_if(is_malformed(errno));
@@ -794,7 +808,7 @@ bool socket_close(SocketHandle sock) {
 #endif // ROC_TARGET_WINDOWS
 
 bool socket_close_with_reset(SocketHandle sock) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     // SO_LINGER with zero timeout instructs close() to send RST instead of FIN.
     struct linger ling;
