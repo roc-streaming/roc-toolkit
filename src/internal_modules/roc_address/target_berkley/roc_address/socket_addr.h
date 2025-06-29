@@ -27,11 +27,6 @@
 namespace roc {
 namespace address {
 
-typedef union {
-    sockaddr_in addr4;
-    sockaddr_in6 addr6;
-} saddr_t;
-
 //! Socket address.
 class SocketAddr {
 public:
@@ -95,7 +90,10 @@ private:
     bool set_host_port_ipv4_(const char* ip, int port);
     bool set_host_port_ipv6_(const char* ip, int port);
 
-    saddr_t saddr_;
+    union {
+        sockaddr_in addr4;
+        sockaddr_in6 addr6;
+    } saddr_;
 };
 
 } // namespace address
