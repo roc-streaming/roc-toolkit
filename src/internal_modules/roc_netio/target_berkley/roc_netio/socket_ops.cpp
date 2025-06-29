@@ -783,20 +783,9 @@ bool socket_close(SocketHandle sock) {
     roc_panic_if(sock == SocketInvalid);
 
     if (closesocket(sock) == SOCKET_ERROR) {
-        int sock_err = WSAGetLastError();
-        if (sock_err == WSAEINTR) {
-            // Winsock2: WSAEINTR in closesocket() can only happen using
-            // WSACancelBlockingCall
-            //  (not anymore supported in Winsock 2.2 we're using so it'd be safe removing
-            //  this test, and have it LogError instead?)
-            roc_log(
-                LogDebug,
-                "socket: closesocket(): assuming WSAEINTR does not indicate a failure");
-        } else {
-            roc_log(LogError, "socket: closesocket(): %s",
-                    core::errno_to_str(sock_err).c_str());
-            return false;
-        }
+        roc_log(LogError, "socket: closesocket(): %s",
+                core::errno_to_str(WSAGetLastError()).c_str());
+        return false;
     }
 
     return true;
