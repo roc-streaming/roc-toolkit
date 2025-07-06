@@ -61,6 +61,12 @@ const SocketHandle SocketInvalid = -1;
 const SocketHandle SocketInvalid = INVALID_SOCKET;
 #endif
 
+//! Initialize environment for socket functions.
+ROC_NODISCARD bool socket_init();
+
+//! Cleans socket functions environment.
+ROC_NODISCARD bool socket_deinit();
+
 //! Create non-blocking socket.
 ROC_NODISCARD bool
 socket_create(address::AddrFamily family, SocketType type, SocketHandle& new_sock);

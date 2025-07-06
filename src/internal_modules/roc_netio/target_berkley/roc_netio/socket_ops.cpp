@@ -274,6 +274,44 @@ bool set_nonblock(SocketHandle sock) {
 
 } // namespace
 
+#ifdef ROC_TARGET_WINDOWS
+
+bool socket_init() {
+    WSADATA wsaData;
+    int err = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (err) {
+        roc_log(LogError, "WSAStartup: %s", core::errno_to_str(err).c_str());
+        return false;
+    }
+    return true;
+}
+
+bool socket_deinit() {
+    int res = WSACleanup();
+    if (res) {
+        if (res == SOCKET_ERROR) {
+            roc_log(LogError, "WSACleanup: %s",
+                    core::errno_to_str(WSAGetLastError()).c_str());
+        } else {
+            roc_log(LogError, "WSACleanup: returned unexpected value %d", res);
+        }
+        return false;
+    }
+    return true;
+}
+
+#else // !ROC_TARTGET_WINDOWS
+
+bool socket_init() {
+    return true;
+}
+
+bool socket_deinit() {
+    return true;
+}
+
+#endif // ROC_TARGET_WINDOWS
+
 #if defined(ROC_TARGET_POSIX) && defined(SOCK_CLOEXEC) && defined(SOCK_NONBLOCK)
 
 bool socket_create(address::AddrFamily family, SocketType type, SocketHandle& new_sock) {

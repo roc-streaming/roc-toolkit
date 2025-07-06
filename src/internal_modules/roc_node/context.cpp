@@ -28,6 +28,11 @@ Context::Context(const ContextConfig& config, core::IArena& arena)
     , init_status_(status::NoStatus) {
     roc_log(LogDebug, "context: initializing");
 
+    if (!roc::netio::socket_init()) {
+        roc_log(LogError, "context: couldn't initialize sockets");
+        return;
+    }
+
     if ((init_status_ = network_loop_.init_status()) != status::StatusOK) {
         roc_log(LogError, "context: can't create network loop: status=%s",
                 status::code_to_str(init_status_));
@@ -45,6 +50,10 @@ Context::Context(const ContextConfig& config, core::IArena& arena)
 
 Context::~Context() {
     roc_log(LogDebug, "context: deinitializing");
+
+    if (!roc::netio::socket_deinit()) {
+        roc_log(LogError, "context: couldn't cleanup sockets");
+    }
 }
 
 status::StatusCode Context::init_status() const {
