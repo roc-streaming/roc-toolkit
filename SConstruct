@@ -287,6 +287,12 @@ AddOption('--override-targets',
                 " pass a comma-separated list of target names,"
                 " e.g. 'pc,posix,posix_ext,gnu,libuv,openfec,...'"))
 
+AddOption('--bench-profile',
+          dest='bench_profile',
+          action='store',
+          type='string',
+          help=('set benchmark profile: small, medium, or large'))
+
 # configure even in dry run mode
 SCons.SConf.dryrun = 0
 
@@ -913,6 +919,23 @@ if meta.platform in ['windows']:
         # minimal supported windows version (windows 7)
         ('_WIN32_WINNT', '0x0601'),
     ])
+
+# set roc_bench_profile
+# controls the size of the benchmark data set
+# it can be set to 'small', 'medium', or 'large'
+# if not set, default is chosen based on architecture
+bench_profile = GetOption('bench_profile')
+if bench_profile:
+    profile = bench_profile.lower()
+    if profile == 'small':
+        env.AppendUnique(CPPDEFINES=['ROC_BENCHMARK_PROFILE_SMALL'])
+    elif profile == 'medium':
+        env.AppendUnique(CPPDEFINES=['ROC_BENCHMARK_PROFILE_MEDIUM'])
+    elif profile == 'large':
+        env.AppendUnique(CPPDEFINES=['ROC_BENCHMARK_PROFILE_LARGE'])
+    else:
+        env.Die("unknown --bench-profile '{}', expected one of: small, medium, large",
+                bench_profile)
 
 # env will hold settings common to all code
 # subenvs will hold settings specific to particular parts of code

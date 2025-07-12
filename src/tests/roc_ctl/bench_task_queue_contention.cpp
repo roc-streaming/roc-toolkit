@@ -17,13 +17,15 @@ namespace ctl {
 namespace {
 
 enum {
-#ifdef __aarch64__
-    NumScheduleIterations = 200000,
-#else
+#ifdef ROC_BENCHMARK_PROFILE_LARGE
     NumScheduleIterations = 2000000,
-#endif
     NumScheduleAfterIterations = 20000,
     NumThreads = 8,
+#else
+    NumScheduleIterations = 200000,
+    NumScheduleAfterIterations = 5000,
+    NumThreads = 4,
+#endif
     BatchSize = 1000
 };
 

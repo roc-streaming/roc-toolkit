@@ -31,7 +31,11 @@ namespace {
 enum {
     SampleRate = 1000000, // 1 sample = 1 us (for convenience)
     Chans = 0x1,
+#ifdef ROC_BENCHMARK_PROFILE_LARGE
     NumThreads = 16,
+#else
+    NumThreads = 4,
+#endif
     NumIterations = 1000000,
     BatchSize = 10000,
     FrameBufSize = 100

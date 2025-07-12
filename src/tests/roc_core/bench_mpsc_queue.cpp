@@ -16,7 +16,16 @@ namespace roc {
 namespace core {
 namespace {
 
-enum { BatchSize = 10000, NumIterations = 5000000, NumThreads = 16 };
+enum {
+    BatchSize = 10000,
+#ifdef ROC_BENCHMARK_PROFILE_LARGE
+    NumIterations = 5000000,
+    NumThreads = 16
+#else
+    NumIterations = 500000,
+    NumThreads = 4
+#endif
+};
 
 #if defined(ROC_BENCHMARK_USE_ACCESSORS)
 inline int get_thread_index(const benchmark::State& state) {
@@ -150,8 +159,10 @@ BENCHMARK_REGISTER_F(BM_MpscQueue, TryPopFront)
     ->Arg(1)
     ->Arg(2)
     ->Arg(4)
+#ifdef ROC_BENCHMARK_PROFILE_LARGE
     ->Arg(8)
     ->Arg(16)
+#endif
     ->Iterations(NumIterations)
     ->Unit(benchmark::kMicrosecond);
 
@@ -184,8 +195,10 @@ BENCHMARK_REGISTER_F(BM_MpscQueue, PopFront)
     ->Arg(1)
     ->Arg(2)
     ->Arg(4)
+#ifdef ROC_BENCHMARK_PROFILE_LARGE
     ->Arg(8)
     ->Arg(16)
+#endif
     ->Iterations(NumIterations)
     ->Unit(benchmark::kMicrosecond);
 
