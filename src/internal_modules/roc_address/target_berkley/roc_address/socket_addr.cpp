@@ -18,6 +18,9 @@ namespace {
 #ifdef ROC_TARGET_WINDOWS
 typedef ADDRESS_FAMILY sa_family_t;
 typedef USHORT in_port_t;
+typedef size_t ntop_bufsz;
+#else
+typedef socklen_t ntop_bufsz;
 #endif
 
 socklen_t saddr_size(sa_family_t family) {
@@ -32,7 +35,7 @@ socklen_t saddr_size(sa_family_t family) {
 }
 
 sa_family_t saddr_family(const sockaddr_in& sa4) {
-    return sa4.sin_family;
+    return (sa_family_t)sa4.sin_family;
 }
 
 } // namespace
@@ -158,13 +161,13 @@ bool SocketAddr::is_multicast() const {
 bool SocketAddr::get_host(char* buf, size_t bufsz) const {
     switch (saddr_family(saddr_.addr4)) {
     case AF_INET:
-        if (!inet_ntop(AF_INET, &saddr_.addr4.sin_addr, buf, (socklen_t)bufsz)) {
+        if (!inet_ntop(AF_INET, &saddr_.addr4.sin_addr, buf, (ntop_bufsz)bufsz)) {
             return false;
         }
         break;
 
     case AF_INET6:
-        if (!inet_ntop(AF_INET6, &saddr_.addr6.sin6_addr, buf, (socklen_t)bufsz)) {
+        if (!inet_ntop(AF_INET6, &saddr_.addr6.sin6_addr, buf, (ntop_bufsz)bufsz)) {
             return false;
         }
         break;
