@@ -332,7 +332,7 @@ bool socket_create(address::AddrFamily family, SocketType type, SocketHandle& ne
 bool socket_create(address::AddrFamily family, SocketType type, SocketHandle& new_sock) {
     new_sock = socket(to_domain(family), to_type(type), 0);
 
-    if (new_sock == -1) {
+    if (new_sock == SocketInvalid) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: socket(): %s", core::errno_to_str().c_str());
@@ -396,7 +396,7 @@ bool socket_accept(SocketHandle sock,
 
     new_sock = accept(sock, remote_address.saddr(), &addrlen);
 
-    if (new_sock == -1) {
+    if (new_sock == SocketInvalid) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: accept(): %s", core::errno_to_str().c_str());
