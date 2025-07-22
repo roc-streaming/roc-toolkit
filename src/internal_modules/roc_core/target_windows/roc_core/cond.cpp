@@ -36,7 +36,7 @@ bool Cond::timed_wait(nanoseconds_t timeout) const {
             return false;
         }
         roc_panic("cond: SleepConditionVariableCS(): %s",
-                  core::errno_to_str(err).c_str());
+                  core::errno_to_str((int)err).c_str());
     }
 
     return true;
