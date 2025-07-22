@@ -258,7 +258,7 @@ bool set_nonblock(SocketHandle sock) {
 bool set_nonblock(SocketHandle sock) {
     unsigned long mode = 1; // 0 for blocking, nonzero for non blocking
 
-    int res = ioctlsocket(sock, FIONBIO, &mode);
+    int res = ioctlsocket(sock, (long)FIONBIO, &mode);
     if (res == SOCKET_ERROR) {
         roc_log(LogError, "socket: ioctlsocket(FIONBIO): %s",
                 core::errno_to_str(WSAGetLastError()).c_str());
@@ -336,7 +336,7 @@ bool socket_create(address::AddrFamily family, SocketType type, SocketHandle& ne
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: socket(): %s", core::errno_to_str().c_str());
-        return SockErr_Failure;
+        return false;
     }
 
     if (!set_cloexec(new_sock)) {
