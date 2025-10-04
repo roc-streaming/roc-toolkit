@@ -147,10 +147,17 @@ int SocketAddr::port() const {
     }
 }
 
+#ifndef ROC_TARGET_WINDOWS
+#define IN_MULTICAST_U(i) IN_MULTICAST(i) 
+#else
+// Defined as (((long)(i) & 0xf0000000) == 0xe0000000) in Windows, causes Wsign-conversion
+#define IN_MULTICAST_U(i) (((unsigned long)(i) & 0xf0000000u) == 0xe0000000u)
+#endif
+
 bool SocketAddr::is_multicast() const {
     switch (saddr_family(saddr_.addr4)) {
     case AF_INET:
-        return IN_MULTICAST(core::ntoh32u(saddr_.addr4.sin_addr.s_addr));
+        return IN_MULTICAST_U(core::ntoh32u(saddr_.addr4.sin_addr.s_addr));
     case AF_INET6:
         return IN6_IS_ADDR_MULTICAST(&saddr_.addr6.sin6_addr);
     default:
