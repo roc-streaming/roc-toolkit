@@ -148,10 +148,10 @@ int SocketAddr::port() const {
 }
 
 #ifndef ROC_TARGET_WINDOWS
-#define IN_MULTICAST_U(i) IN_MULTICAST(i) 
+#define IN_MULTICAST_U(i) IN_MULTICAST(i)
 #else
 // Defined as (((long)(i) & 0xf0000000) == 0xe0000000) in Windows, causes Wsign-conversion
-#define IN_MULTICAST_U(i) (((unsigned long)(i) & 0xf0000000u) == 0xe0000000u)
+#define IN_MULTICAST_U(i) (((unsigned long)(i)&0xf0000000u) == 0xe0000000u)
 #endif
 
 bool SocketAddr::is_multicast() const {
