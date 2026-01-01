@@ -7,6 +7,7 @@
  */
 
 #include <benchmark/benchmark.h>
+#include "bench_helper.h"
 
 #include "roc_core/atomic_bool.h"
 #include "roc_core/fast_random.h"
@@ -102,8 +103,7 @@ enum {
     Chans = 0x1,
     FrameSampleCount = 5000, // duration of the frame (5000 = 5ms)
     FrameByteCount = FrameSampleCount * sizeof(audio::sample_t),
-    NumIterations = 3000,
-    WarmupIterations = 10
+    NumIterations = 3000
 };
 
 // computation time of a frame
@@ -129,90 +129,12 @@ core::SlabPool<core::Buffer>
 
 audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
-double round_digits(double x, unsigned int digits) {
-    double fac = pow(10, digits);
-    return round(x * fac) / fac;
-}
-
-void busy_wait(core::nanoseconds_t delay) {
-    const core::nanoseconds_t deadline = core::timestamp(core::ClockMonotonic) + delay;
-    for (;;) {
-        if (core::timestamp(core::ClockMonotonic) >= deadline) {
-            return;
-        }
-    }
-}
-
-class Counter {
-private:
-    enum { NumBuckets = 500 };
-
-public:
-    Counter()
-        : last_(0)
-        , total_(0)
-        , count_(0)
-        , warmed_up_(false) {
-        memset(buckets_, 0, sizeof(buckets_));
-    }
-
-    void begin() {
-        last_ = core::timestamp(core::ClockMonotonic);
-    }
-
-    void end() {
-        add_time(core::timestamp(core::ClockMonotonic) - last_);
-    }
-
-    void add_time(core::nanoseconds_t t) {
-        if (count_ == WarmupIterations && !warmed_up_) {
-            *this = Counter();
-            warmed_up_ = true;
-        }
-
-        total_ += t;
-        count_++;
-
-        for (int n = NumBuckets; n > 0; n--) {
-            if (t <= core::Microsecond * 10 * (n + 1)) {
-                buckets_[n]++;
-            } else {
-                break;
-            }
-        }
-    }
-
-    double avg() const {
-        return round_digits(double(total_) / count_ / 1000, 3);
-    }
-
-    double p95() const {
-        for (int n = 0; n < NumBuckets; n++) {
-            const double ratio = double(buckets_[n]) / count_;
-            if (ratio >= 0.95) {
-                return 10 * (n + 1);
-            }
-        }
-        return 1. / 0.;
-    }
-
-private:
-    core::nanoseconds_t last_;
-
-    core::nanoseconds_t total_;
-    size_t count_;
-
-    core::nanoseconds_t buckets_[NumBuckets];
-
-    bool warmed_up_;
-};
-
 class DelayStats {
 public:
     void reset() {
-        task_processing_delay_ = Counter();
-        frame_delay_before_processing_ = Counter();
-        frame_delay_after_processing_ = Counter();
+        task_processing_delay_ = roc::helper::Counter();
+        frame_delay_before_processing_ = roc::helper::Counter();
+        frame_delay_after_processing_ = roc::helper::Counter();
     }
 
     void task_processing_started(core::nanoseconds_t t) {
@@ -247,9 +169,9 @@ public:
     }
 
 private:
-    Counter task_processing_delay_;
-    Counter frame_delay_before_processing_;
-    Counter frame_delay_after_processing_;
+    roc::helper::Counter task_processing_delay_;
+    roc::helper::Counter frame_delay_before_processing_;
+    roc::helper::Counter frame_delay_after_processing_;
 };
 
 class TestPipeline : public PipelineLoop,
@@ -310,10 +232,10 @@ public:
         PipelineLoop::Stats st = stats_ref();
 
         state.counters["tp_plc"] =
-            round_digits(double(st.task_processed_in_place) / st.task_processed_total, 3);
+            roc::helper::round_digits(double(st.task_processed_in_place) / st.task_processed_total, 3);
 
         state.counters["tp_frm"] =
-            round_digits(double(st.task_processed_in_frame) / st.task_processed_total, 3);
+            roc::helper::round_digits(double(st.task_processed_in_frame) / st.task_processed_total, 3);
 
         state.counters["pr"] = st.preemptions;
 
@@ -350,7 +272,7 @@ private:
                                                     packet::stream_timestamp_t duration,
                                                     audio::FrameReadMode mode) {
         stats_.frame_processing_started();
-        busy_wait(FrameProcessingDuration);
+        roc::helper::busy_wait(FrameProcessingDuration);
         stats_.frame_processing_finished();
         return status::StatusOK;
     }
@@ -358,7 +280,7 @@ private:
     virtual bool process_task_imp(PipelineTask& basic_task) {
         Task& task = (Task&)basic_task;
         stats_.task_processing_started(task.elapsed_time());
-        busy_wait((core::nanoseconds_t)core::fast_random_range(
+        roc::helper::busy_wait((core::nanoseconds_t)core::fast_random_range(
             MinTaskProcessingDuration, MaxTaskProcessingDuration));
         return true;
     }
