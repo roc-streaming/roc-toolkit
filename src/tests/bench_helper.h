@@ -6,15 +6,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#pragma once
+
 #include "roc_core/time.h"
 
 namespace roc {
 namespace helper {
 namespace {
 
-enum {
-    WarmupIterations = 10
-};
+enum { WarmupIterations = 10 };
 
 double round_digits(double x, unsigned int digits) {
     double fac = pow(10, digits);

@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <benchmark/benchmark.h>
 #include "bench_helper.h"
+#include <benchmark/benchmark.h>
 
 #include "roc_core/heap_arena.h"
 #include "roc_core/stddefs.h"
@@ -135,9 +135,8 @@ void BM_ControlTaskQueue_Schedule_Throughput(benchmark::State& state) {
     state.counters["t_p95"] = stats.p95();
     state.counters["tasks_total"] = static_cast<double>(executor.tasks_processed());
 
-    state.counters["tasks/sec"] =
-        benchmark::Counter(static_cast<double>(executor.tasks_processed()),
-                           benchmark::Counter::kIsRate);
+    state.counters["tasks/sec"] = benchmark::Counter(
+        static_cast<double>(executor.tasks_processed()), benchmark::Counter::kIsRate);
 }
 
 BENCHMARK(BM_ControlTaskQueue_Schedule_Throughput)
@@ -188,9 +187,8 @@ void BM_ControlTaskQueue_ScheduleAt_Throughput(benchmark::State& state) {
     state.counters["t_p95"] = stats.p95();
     state.counters["tasks_total"] = static_cast<double>(executor.tasks_processed());
 
-    state.counters["tasks/sec"] =
-        benchmark::Counter(static_cast<double>(executor.tasks_processed()),
-                           benchmark::Counter::kIsRate);
+    state.counters["tasks/sec"] = benchmark::Counter(
+        static_cast<double>(executor.tasks_processed()), benchmark::Counter::kIsRate);
 }
 
 BENCHMARK(BM_ControlTaskQueue_ScheduleAt_Throughput)
@@ -262,7 +260,7 @@ void BM_ControlTaskQueue_ScheduleAt_Latency(benchmark::State& state) {
     }
 
     for (auto _ : state) {
-    core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
+        core::nanoseconds_t now = core::timestamp(core::ClockMonotonic);
 
         // Schedule tasks with spread deadlines to avoid queue congestion
         for (size_t i = 0; i < num_tasks; i++) {

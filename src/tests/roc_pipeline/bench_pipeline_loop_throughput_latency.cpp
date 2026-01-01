@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <benchmark/benchmark.h>
 #include "bench_helper.h"
+#include <benchmark/benchmark.h>
 
 #include "roc_core/atomic_bool.h"
 #include "roc_core/fast_random.h"
@@ -147,12 +147,10 @@ public:
         PipelineLoop::Stats st = stats_ref();
 
         if (st.task_processed_total > 0) {
-            state.counters["tp_plc"] =
-                roc::helper::round_digits(double(st.task_processed_in_place) / double(st.task_processed_total),
-                             3);
-            state.counters["tp_frm"] =
-                roc::helper::round_digits(double(st.task_processed_in_frame) / double(st.task_processed_total),
-                             3);
+            state.counters["tp_plc"] = roc::helper::round_digits(
+                double(st.task_processed_in_place) / double(st.task_processed_total), 3);
+            state.counters["tp_frm"] = roc::helper::round_digits(
+                double(st.task_processed_in_frame) / double(st.task_processed_total), 3);
         }
 
         state.counters["pr"] = static_cast<double>(st.preemptions);
@@ -328,16 +326,16 @@ struct BenchParams {
 
 static const BenchParams bench_params[] = {
     // Small frames (1ms)
-    {FrameDuration_1ms, ProcessingRatio_Light, "1ms_5pct"},
-    {FrameDuration_1ms, ProcessingRatio_Heavy, "1ms_80pct"},
+    { FrameDuration_1ms, ProcessingRatio_Light, "1ms_5pct" },
+    { FrameDuration_1ms, ProcessingRatio_Heavy, "1ms_80pct" },
 
     // Medium frames (5ms)
-    {FrameDuration_5ms, ProcessingRatio_Light, "5ms_5pct"},
-    {FrameDuration_5ms, ProcessingRatio_Heavy, "5ms_80pct"},
+    { FrameDuration_5ms, ProcessingRatio_Light, "5ms_5pct" },
+    { FrameDuration_5ms, ProcessingRatio_Heavy, "5ms_80pct" },
 
     // Large frames (20ms)
-    {FrameDuration_20ms, ProcessingRatio_Light, "20ms_5pct"},
-    {FrameDuration_20ms, ProcessingRatio_Heavy, "20ms_80pct"},
+    { FrameDuration_20ms, ProcessingRatio_Light, "20ms_5pct" },
+    { FrameDuration_20ms, ProcessingRatio_Heavy, "20ms_80pct" },
 };
 
 // ============================================================
@@ -382,12 +380,12 @@ void BM_PipelineLoop_TaskThroughput(benchmark::State& state) {
 }
 
 BENCHMARK(BM_PipelineLoop_TaskThroughput)
-    ->Args({0, 1000}) // 1ms, 5%
-    ->Args({1, 1000}) // 1ms, 80%
-    ->Args({2, 1000}) // 5ms, 5%
-    ->Args({3, 1000}) // 5ms, 80%
-    ->Args({4, 1000}) // 20ms, 5%
-    ->Args({5, 1000}) // 20ms, 80%
+    ->Args({ 0, 1000 }) // 1ms, 5%
+    ->Args({ 1, 1000 }) // 1ms, 80%
+    ->Args({ 2, 1000 }) // 5ms, 5%
+    ->Args({ 3, 1000 }) // 5ms, 80%
+    ->Args({ 4, 1000 }) // 20ms, 5%
+    ->Args({ 5, 1000 }) // 20ms, 80%
     ->Iterations(NumIterations)
     ->UseRealTime()
     ->Unit(benchmark::kMicrosecond);
@@ -433,12 +431,12 @@ void BM_PipelineLoop_TaskLatency(benchmark::State& state) {
 }
 
 BENCHMARK(BM_PipelineLoop_TaskLatency)
-    ->Args({0, 10000}) // 1ms, 5%
-    ->Args({1, 10000}) // 1ms, 80%
-    ->Args({2, 10000}) // 5ms, 5%
-    ->Args({3, 10000}) // 5ms, 80%
-    ->Args({4, 10000}) // 20ms, 5%
-    ->Args({5, 10000}) // 20ms, 80%
+    ->Args({ 0, 10000 }) // 1ms, 5%
+    ->Args({ 1, 10000 }) // 1ms, 80%
+    ->Args({ 2, 10000 }) // 5ms, 5%
+    ->Args({ 3, 10000 }) // 5ms, 80%
+    ->Args({ 4, 10000 }) // 20ms, 5%
+    ->Args({ 5, 10000 }) // 20ms, 80%
     ->Iterations(NumIterations)
     ->UseRealTime()
     ->Unit(benchmark::kMicrosecond);

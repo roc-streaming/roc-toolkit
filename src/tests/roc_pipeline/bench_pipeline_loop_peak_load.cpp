@@ -6,8 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <benchmark/benchmark.h>
 #include "bench_helper.h"
+#include <benchmark/benchmark.h>
 
 #include "roc_core/atomic_bool.h"
 #include "roc_core/fast_random.h"
@@ -231,11 +231,11 @@ public:
     void export_counters(benchmark::State& state) {
         PipelineLoop::Stats st = stats_ref();
 
-        state.counters["tp_plc"] =
-            roc::helper::round_digits(double(st.task_processed_in_place) / st.task_processed_total, 3);
+        state.counters["tp_plc"] = roc::helper::round_digits(
+            double(st.task_processed_in_place) / st.task_processed_total, 3);
 
-        state.counters["tp_frm"] =
-            roc::helper::round_digits(double(st.task_processed_in_frame) / st.task_processed_total, 3);
+        state.counters["tp_frm"] = roc::helper::round_digits(
+            double(st.task_processed_in_frame) / st.task_processed_total, 3);
 
         state.counters["pr"] = st.preemptions;
 
