@@ -1489,7 +1489,7 @@ if __name__ == '__main__':
     elif ctx.pkg_name == 'ltdl':
         download(
             ctx,
-            'https://ftp.gnu.org/gnu/libtool/libtool-{ctx.pkg_ver}.tar.gz',
+            'https://ftpmirror.gnu.org/libtool/libtool-{ctx.pkg_ver}.tar.gz',
             'libtool-{ctx.pkg_ver}.tar.gz')
         unpack(
             ctx,
@@ -1542,7 +1542,7 @@ if __name__ == '__main__':
         native_compilers = detect_native_cc_cxx_compilers();
         download(
             ctx,
-            'https://ftp.gnu.org/gnu/gengetopt/gengetopt-{ctx.pkg_ver}.tar.gz',
+            'https://ftpmirror.gnu.org/gnu/gengetopt/gengetopt-{ctx.pkg_ver}.tar.gz',
             'gengetopt-{ctx.pkg_ver}.tar.gz')
         unpack(
             ctx,
