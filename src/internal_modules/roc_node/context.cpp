@@ -15,15 +15,23 @@ namespace node {
 
 Context::Context(const ContextConfig& config, core::IArena& arena)
     : arena_(arena)
+    , packet_mem_limiter_("packet_mem", config.max_packet_pool_bytes)
+    , frame_mem_limiter_("frame_mem", config.max_frame_pool_bytes)
     , packet_pool_("packet_pool", arena_)
     , packet_buffer_pool_(
           "packet_buffer_pool", arena_, sizeof(core::Buffer) + config.max_packet_size)
     , frame_buffer_pool_(
           "frame_buffer_pool", arena_, sizeof(core::Buffer) + config.max_frame_size)
+    , limited_packet_pool_(packet_pool_, packet_mem_limiter_)
+    , limited_packet_buffer_pool_(packet_buffer_pool_, packet_mem_limiter_)
+    , limited_frame_buffer_pool_(frame_buffer_pool_, frame_mem_limiter_)
     , encoding_map_(arena_)
-    , network_loop_(packet_pool_, packet_buffer_pool_, arena_)
+    , network_loop_(limited_packet_pool_, limited_packet_buffer_pool_, arena_)
     , control_loop_(network_loop_, arena_) {
-    roc_log(LogDebug, "context: initializing");
+    roc_log(LogDebug,
+            "context: initializing: packet_pool_limit=%lu frame_pool_limit=%lu",
+            (unsigned long)config.max_packet_pool_bytes,
+            (unsigned long)config.max_frame_pool_bytes);
 }
 
 Context::~Context() {
@@ -39,15 +47,15 @@ core::IArena& Context::arena() {
 }
 
 core::IPool& Context::packet_pool() {
-    return packet_pool_;
+    return limited_packet_pool_;
 }
 
 core::IPool& Context::packet_buffer_pool() {
-    return packet_buffer_pool_;
+    return limited_packet_buffer_pool_;
 }
 
 core::IPool& Context::frame_buffer_pool() {
-    return frame_buffer_pool_;
+    return limited_frame_buffer_pool_;
 }
 
 rtp::EncodingMap& Context::encoding_map() {

@@ -113,6 +113,8 @@ private:
                          const sockaddr* addr,
                          unsigned flags);
 
+    static void recv_retry_cb_(uv_timer_t* handle);
+
     static void write_sem_cb_(uv_async_t* handle);
     static void send_cb_(uv_udp_send_t* req, int status);
 
@@ -141,6 +143,9 @@ private:
 
     uv_async_t write_sem_;
     bool write_sem_initialized_;
+
+    uv_timer_t recv_retry_timer_;
+    bool recv_retry_timer_initialized_;
 
     bool multicast_group_joined_;
     bool recv_started_;

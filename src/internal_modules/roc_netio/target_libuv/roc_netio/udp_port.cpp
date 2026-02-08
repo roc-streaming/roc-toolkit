@@ -36,6 +36,7 @@ UdpPort::UdpPort(const UdpConfig& config,
     , loop_(event_loop)
     , handle_initialized_(false)
     , write_sem_initialized_(false)
+    , recv_retry_timer_initialized_(false)
     , multicast_group_joined_(false)
     , recv_started_(false)
     , want_close_(false)
@@ -200,11 +201,14 @@ void UdpPort::close_cb_(uv_handle_t* handle) {
 
     if (handle == (uv_handle_t*)&self.handle_) {
         self.handle_initialized_ = false;
+    } else if (handle == (uv_handle_t*)&self.recv_retry_timer_) {
+        self.recv_retry_timer_initialized_ = false;
     } else {
         self.write_sem_initialized_ = false;
     }
 
-    if (self.handle_initialized_ || self.write_sem_initialized_) {
+    if (self.handle_initialized_ || self.write_sem_initialized_
+        || self.recv_retry_timer_initialized_) {
         return;
     }
 
@@ -224,11 +228,8 @@ void UdpPort::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
 
     core::BufferPtr bp = self.packet_factory_.new_packet_buffer();
     if (!bp) {
-        roc_log(LogError, "udp port: %s: can't allocate buffer", self.descriptor());
-
         buf->base = NULL;
         buf->len = 0;
-
         return;
     }
 
@@ -242,6 +243,25 @@ void UdpPort::alloc_cb_(uv_handle_t* handle, size_t size, uv_buf_t* buf) {
     buf->len = size;
 }
 
+void UdpPort::recv_retry_cb_(uv_timer_t* handle) {
+    roc_panic_if_not(handle);
+
+    UdpPort& self = *(UdpPort*)handle->data;
+
+    if (self.want_close_ || self.recv_started_) {
+        return;
+    }
+
+    roc_log(LogDebug, "udp port: %s: retrying recv after alloc pause", self.descriptor());
+
+    if (int err = uv_udp_recv_start(&self.handle_, alloc_cb_, recv_cb_)) {
+        roc_log(LogError, "udp port: %s: uv_udp_recv_start(): [%s] %s", self.descriptor(),
+                uv_err_name(err), uv_strerror(err));
+        return;
+    }
+    self.recv_started_ = true;
+}
+
 void UdpPort::recv_cb_(uv_udp_t* handle,
                        ssize_t nread,
                        const uv_buf_t* buf,
@@ -251,6 +271,26 @@ void UdpPort::recv_cb_(uv_udp_t* handle,
     roc_panic_if_not(buf);
 
     UdpPort& self = *(UdpPort*)handle->data;
+
+    // alloc_cb_() sets buf->base to NULL when buffer allocation fails.
+    // libuv still invokes recv_cb_() in this case; pause receiving to avoid
+    // busy-waiting and schedule a retry timer.
+    if (!buf->base) {
+        roc_log(LogDebug, "udp port: %s: can't allocate buffer, pausing recv",
+                self.descriptor());
+
+        uv_udp_recv_stop(&self.handle_);
+        self.recv_started_ = false;
+
+        if (!self.recv_retry_timer_initialized_) {
+            uv_timer_init(&self.loop_, &self.recv_retry_timer_);
+            self.recv_retry_timer_.data = &self;
+            self.recv_retry_timer_initialized_ = true;
+        }
+        uv_timer_start(&self.recv_retry_timer_, recv_retry_cb_, 200, 0);
+
+        return;
+    }
 
     address::SocketAddr src_addr;
     if (sockaddr) {
@@ -480,7 +520,8 @@ bool UdpPort::try_nonblocking_write_(const packet::PacketPtr& pp) {
 }
 
 bool UdpPort::fully_closed_() const {
-    if (!handle_initialized_ && !write_sem_initialized_) {
+    if (!handle_initialized_ && !write_sem_initialized_
+        && !recv_retry_timer_initialized_) {
         return true;
     }
 
@@ -508,6 +549,11 @@ void UdpPort::start_closing_() {
 
     if (multicast_group_joined_) {
         leave_multicast_group_();
+    }
+
+    if (recv_retry_timer_initialized_ && !uv_is_closing((uv_handle_t*)&recv_retry_timer_)) {
+        uv_timer_stop(&recv_retry_timer_);
+        uv_close((uv_handle_t*)&recv_retry_timer_, close_cb_);
     }
 
     if (handle_initialized_ && !uv_is_closing((uv_handle_t*)&handle_)) {

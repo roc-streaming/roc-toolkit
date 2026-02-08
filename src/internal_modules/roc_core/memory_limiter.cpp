@@ -44,7 +44,7 @@ bool MemoryLimiter::acquire(size_t num_bytes) {
         }
         cpu_relax();
     } while (true);
-    roc_log(LogError,
+    roc_log(LogTrace,
             "memory limiter (%s): could not acquire bytes due to limit: requested=%lu "
             "acquired=%lu limit=%lu",
             name_, (unsigned long)num_bytes, (unsigned long)current,
