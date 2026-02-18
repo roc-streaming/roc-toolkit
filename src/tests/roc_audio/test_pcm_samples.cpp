@@ -9,6 +9,7 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_audio/pcm_mapper.h"
+#include "roc_audio/sample.h"
 #include "roc_core/log.h"
 #include "roc_core/macro_helpers.h"
 
@@ -56,10 +57,10 @@ TEST_GROUP(pcm_samples) {};
 
 TEST(pcm_samples, decode) {
     for (size_t idx = 0; idx < ROC_ARRAY_SIZE(test_samples); idx++) {
-        roc_log(LogDebug, "mapping %s to native", test_samples[idx]->name);
+        roc_log(LogDebug, "mapping %s to raw samples", test_samples[idx]->name);
 
-        PcmFormat in_fmt = test_samples[idx]->format;
-        PcmFormat out_fmt = PcmFormat_Float64;
+        PcmSubformat in_fmt = test_samples[idx]->format;
+        PcmSubformat out_fmt = PcmSubformat_Raw;
 
         PcmMapper mapper(in_fmt, out_fmt);
 
@@ -69,10 +70,10 @@ TEST(pcm_samples, decode) {
         UNSIGNED_LONGS_EQUAL(test_samples[idx]->num_bytes,
                              mapper.input_byte_count(test_samples[idx]->num_samples));
 
-        double decoded_samples[test::SampleInfo::MaxSamples] = {};
+        sample_t decoded_samples[test::SampleInfo::MaxSamples] = {};
 
         const size_t in_bytes = test_samples[idx]->num_bytes;
-        const size_t out_bytes = test_samples[idx]->num_samples * sizeof(double);
+        const size_t out_bytes = test_samples[idx]->num_samples * sizeof(sample_t);
 
         size_t in_off = 0;
         size_t out_off = 0;
@@ -86,7 +87,7 @@ TEST(pcm_samples, decode) {
         UNSIGNED_LONGS_EQUAL(in_bytes * 8, in_off);
         UNSIGNED_LONGS_EQUAL(out_bytes * 8, out_off);
 
-        roc_log(LogDebug, "checking samples");
+        roc_log(LogDebug, "comparing samples");
 
         for (size_t n = 0; n < test_samples[idx]->num_samples; n++) {
             DOUBLES_EQUAL(test_samples[idx]->samples[n], decoded_samples[n], Epsilon);
@@ -94,90 +95,78 @@ TEST(pcm_samples, decode) {
     }
 }
 
-TEST(pcm_samples, recode) {
-    for (size_t idx1 = 0; idx1 < ROC_ARRAY_SIZE(test_samples); idx1++) {
-        for (size_t idx2 = 0; idx2 < ROC_ARRAY_SIZE(test_samples); idx2++) {
-            uint8_t recoded_bytes[test::SampleInfo::MaxBytes] = {};
-            double decoded_samples[test::SampleInfo::MaxSamples] = {};
+TEST(pcm_samples, encode_decode) {
+    for (size_t idx = 0; idx < ROC_ARRAY_SIZE(test_samples); idx++) {
+        uint8_t encoded_samples[test::SampleInfo::MaxBytes] = {};
+        sample_t decoded_samples[test::SampleInfo::MaxSamples] = {};
 
-            {
-                roc_log(LogDebug, "mapping %s to %s", test_samples[idx1]->name,
-                        test_samples[idx2]->name);
+        { // encode
+            roc_log(LogDebug, "mapping raw samples to %s", test_samples[idx]->name);
 
-                PcmFormat in_fmt = test_samples[idx1]->format;
-                PcmFormat out_fmt = test_samples[idx2]->format;
+            PcmSubformat in_fmt = PcmSubformat_Raw;
+            PcmSubformat out_fmt = test_samples[idx]->format;
 
-                PcmMapper mapper(in_fmt, out_fmt);
+            PcmMapper mapper(in_fmt, out_fmt);
 
-                UNSIGNED_LONGS_EQUAL(
-                    test_samples[idx1]->num_samples,
-                    mapper.input_sample_count(test_samples[idx1]->num_bytes));
+            UNSIGNED_LONGS_EQUAL(
+                test_samples[idx]->num_samples,
+                mapper.output_sample_count(test_samples[idx]->num_bytes));
 
-                UNSIGNED_LONGS_EQUAL(
-                    test_samples[idx1]->num_bytes,
-                    mapper.input_byte_count(test_samples[idx1]->num_samples));
+            UNSIGNED_LONGS_EQUAL(
+                test_samples[idx]->num_bytes,
+                mapper.output_byte_count(test_samples[idx]->num_samples));
 
-                UNSIGNED_LONGS_EQUAL(
-                    test_samples[idx2]->num_samples,
-                    mapper.output_sample_count(test_samples[idx2]->num_bytes));
+            const size_t in_bytes = test_samples[idx]->num_samples * sizeof(sample_t);
+            const size_t out_bytes = test_samples[idx]->num_bytes;
 
-                UNSIGNED_LONGS_EQUAL(
-                    test_samples[idx2]->num_bytes,
-                    mapper.output_byte_count(test_samples[idx2]->num_samples));
+            size_t in_off = 0;
+            size_t out_off = 0;
 
-                const size_t in_bytes = test_samples[idx1]->num_bytes;
-                const size_t out_bytes = test_samples[idx2]->num_bytes;
+            const size_t actual_samples =
+                mapper.map(test_samples[idx]->samples, in_bytes, in_off, encoded_samples,
+                           out_bytes, out_off, test_samples[idx]->num_samples);
 
-                size_t in_off = 0;
-                size_t out_off = 0;
+            UNSIGNED_LONGS_EQUAL(test_samples[idx]->num_samples, actual_samples);
 
-                const size_t actual_samples =
-                    mapper.map(test_samples[idx1]->bytes, in_bytes, in_off, recoded_bytes,
-                               out_bytes, out_off, test_samples[idx1]->num_samples);
+            UNSIGNED_LONGS_EQUAL(in_bytes * 8, in_off);
+            UNSIGNED_LONGS_EQUAL(out_bytes * 8, out_off);
+        }
 
-                UNSIGNED_LONGS_EQUAL(test_samples[idx1]->num_samples, actual_samples);
+        { // decode
+            roc_log(LogDebug, "mapping %s to raw samples", test_samples[idx]->name);
 
-                UNSIGNED_LONGS_EQUAL(in_bytes * 8, in_off);
-                UNSIGNED_LONGS_EQUAL(out_bytes * 8, out_off);
-            }
+            PcmSubformat in_fmt = test_samples[idx]->format;
+            PcmSubformat out_fmt = PcmSubformat_Raw;
 
-            {
-                roc_log(LogDebug, "mapping %s to native", test_samples[idx2]->name);
+            PcmMapper mapper(in_fmt, out_fmt);
 
-                PcmFormat in_fmt = test_samples[idx2]->format;
-                PcmFormat out_fmt = PcmFormat_Float64;
+            UNSIGNED_LONGS_EQUAL(test_samples[idx]->num_samples,
+                                 mapper.input_sample_count(test_samples[idx]->num_bytes));
 
-                PcmMapper mapper(in_fmt, out_fmt);
+            UNSIGNED_LONGS_EQUAL(test_samples[idx]->num_bytes,
+                                 mapper.input_byte_count(test_samples[idx]->num_samples));
 
-                UNSIGNED_LONGS_EQUAL(
-                    test_samples[idx2]->num_samples,
-                    mapper.input_sample_count(test_samples[idx2]->num_bytes));
+            const size_t in_bytes = test_samples[idx]->num_bytes;
+            const size_t out_bytes = test_samples[idx]->num_samples * sizeof(sample_t);
 
-                UNSIGNED_LONGS_EQUAL(
-                    test_samples[idx2]->num_bytes,
-                    mapper.input_byte_count(test_samples[idx2]->num_samples));
+            size_t in_off = 0;
+            size_t out_off = 0;
 
-                const size_t in_bytes = test_samples[idx2]->num_bytes;
-                const size_t out_bytes = test_samples[idx2]->num_samples * sizeof(double);
+            const size_t actual_samples =
+                mapper.map(encoded_samples, in_bytes, in_off, decoded_samples, out_bytes,
+                           out_off, test_samples[idx]->num_samples);
 
-                size_t in_off = 0;
-                size_t out_off = 0;
+            UNSIGNED_LONGS_EQUAL(test_samples[idx]->num_samples, actual_samples);
 
-                const size_t actual_samples =
-                    mapper.map(recoded_bytes, in_bytes, in_off, decoded_samples,
-                               out_bytes, out_off, test_samples[idx2]->num_samples);
+            UNSIGNED_LONGS_EQUAL(in_bytes * 8, in_off);
+            UNSIGNED_LONGS_EQUAL(out_bytes * 8, out_off);
+        }
 
-                UNSIGNED_LONGS_EQUAL(test_samples[idx2]->num_samples, actual_samples);
+        { // compare
+            roc_log(LogDebug, "comparing samples");
 
-                UNSIGNED_LONGS_EQUAL(in_bytes * 8, in_off);
-                UNSIGNED_LONGS_EQUAL(out_bytes * 8, out_off);
-            }
-
-            roc_log(LogDebug, "checking samples");
-
-            for (size_t n = 0; n < test_samples[idx1]->num_samples; n++) {
-                DOUBLES_EQUAL(test_samples[idx1]->samples[n], decoded_samples[n],
-                              Epsilon);
+            for (size_t n = 0; n < test_samples[idx]->num_samples; n++) {
+                DOUBLES_EQUAL(test_samples[idx]->samples[n], decoded_samples[n], Epsilon);
             }
         }
     }

@@ -20,8 +20,10 @@ FeedbackMonitor::FeedbackMonitor(IFrameWriter& writer,
                                  ResamplerWriter* resampler,
                                  const FeedbackConfig& feedback_config,
                                  const LatencyConfig& latency_config,
-                                 const SampleSpec& sample_spec)
-    : tuner_(latency_config, sample_spec)
+                                 const FreqEstimatorConfig& fe_config,
+                                 const SampleSpec& sample_spec,
+                                 dbgio::CsvDumper* dumper)
+    : tuner_(latency_config, fe_config, sample_spec, dumper)
     , use_packetizer_(false)
     , has_feedback_(false)
     , last_feedback_ts_(0)
@@ -31,25 +33,26 @@ FeedbackMonitor::FeedbackMonitor(IFrameWriter& writer,
     , resampler_(resampler)
     , enable_scaling_(latency_config.tuner_profile != LatencyTunerProfile_Intact)
     , source_(0)
-    , source_change_limiter_(feedback_config.source_cooldown)
+    , source_change_limiter_(feedback_config.source_cooldown, 1)
     , sample_spec_(sample_spec)
     , started_(false)
-    , valid_(false) {
-    if (!tuner_.is_valid()) {
+    , init_status_(status::NoStatus) {
+    if ((init_status_ = tuner_.init_status()) != status::StatusOK) {
         return;
     }
 
     if (enable_scaling_) {
         if (!init_scaling_()) {
+            init_status_ = status::StatusBadConfig;
             return;
         }
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool FeedbackMonitor::is_valid() const {
-    return valid_;
+status::StatusCode FeedbackMonitor::init_status() const {
+    return init_status_;
 }
 
 bool FeedbackMonitor::is_started() const {
@@ -57,7 +60,7 @@ bool FeedbackMonitor::is_started() const {
 }
 
 void FeedbackMonitor::start() {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (started_) {
         return;
@@ -70,7 +73,7 @@ void FeedbackMonitor::start() {
 void FeedbackMonitor::process_feedback(packet::stream_source_t source_id,
                                        const LatencyMetrics& latency_metrics,
                                        const packet::LinkMetrics& link_metrics) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (!started_) {
         return;
@@ -103,10 +106,10 @@ void FeedbackMonitor::process_feedback(packet::stream_source_t source_id,
     latency_metrics_ = latency_metrics;
     link_metrics_ = link_metrics;
 
-    if (link_metrics_.total_packets == 0 || use_packetizer_) {
+    if (link_metrics_.expected_packets == 0 || use_packetizer_) {
         // If packet counter is not reported from receiver, fallback to
         // counter from sender.
-        link_metrics_.total_packets = packetizer_.metrics().packet_count;
+        link_metrics_.expected_packets = packetizer_.metrics().encoded_packets;
         use_packetizer_ = true;
     }
 
@@ -114,8 +117,10 @@ void FeedbackMonitor::process_feedback(packet::stream_source_t source_id,
     last_feedback_ts_ = core::timestamp(core::ClockMonotonic);
 }
 
-void FeedbackMonitor::write(Frame& frame) {
-    roc_panic_if(!is_valid());
+status::StatusCode FeedbackMonitor::write(Frame& frame) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    sample_spec_.validate_frame(frame);
 
     if (started_) {
         if (!update_tuner_(frame.duration())) {
@@ -124,13 +129,12 @@ void FeedbackMonitor::write(Frame& frame) {
 
         if (enable_scaling_) {
             if (!update_scaling_()) {
-                // TODO(gh-183): return status code
-                roc_panic("feedback monitor: update failed");
+                return status::StatusAbort;
             }
         }
     }
 
-    writer_.write(frame);
+    return writer_.write(frame);
 }
 
 size_t FeedbackMonitor::num_participants() const {

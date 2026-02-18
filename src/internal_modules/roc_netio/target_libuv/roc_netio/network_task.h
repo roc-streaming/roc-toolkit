@@ -12,7 +12,8 @@
 #ifndef ROC_NETIO_NETWORK_TASK_H_
 #define ROC_NETIO_NETWORK_TASK_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_bool.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/mpsc_queue_node.h"
 #include "roc_core/optional.h"
 #include "roc_core/semaphore.h"
@@ -52,12 +53,12 @@ protected:
 
     //! Task state, defines whether task is finished already.
     //! The task becomes immutable after setting state to Finished.
-    core::Atomic<int> state_;
+    core::AtomicInt<int32_t> state_;
 
-    //! Task result, defines wether finished task succeeded or failed.
+    //! Task result, defines whether finished task succeeded or failed.
     //! Makes sense only after setting state_ to Finished.
     //! This atomic should be assigned before setting state_ to Finished.
-    core::Atomic<int> success_;
+    core::AtomicBool success_;
 
     core::SharedPtr<BasicPort> port_; //!< On which port the task operates.
     void* port_handle_;               //!< Port handle.

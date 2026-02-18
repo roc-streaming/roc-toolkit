@@ -11,7 +11,8 @@
 namespace roc {
 namespace audio {
 
-void NullWriter::write(Frame&) {
+status::StatusCode NullWriter::write(Frame& frame) {
+    return status::StatusOK;
 }
 
 } // namespace audio

@@ -124,14 +124,17 @@ public:
     //! Initialize.
     ReceiverLoop(IPipelineTaskScheduler& scheduler,
                  const ReceiverSourceConfig& source_config,
-                 const rtp::EncodingMap& encoding_map,
+                 audio::ProcessorMap& processor_map,
+                 rtp::EncodingMap& encoding_map,
                  core::IPool& packet_pool,
                  core::IPool& packet_buffer_pool,
+                 core::IPool& frame_pool,
                  core::IPool& frame_buffer_pool,
                  core::IArena& arena);
+    ~ReceiverLoop();
 
     //! Check if the pipeline was successfully constructed.
-    bool is_valid() const;
+    status::StatusCode init_status() const;
 
     //! Get receiver sources.
     //! @remarks
@@ -140,24 +143,32 @@ public:
 
 private:
     // Methods of sndio::ISource
+    virtual sndio::DeviceType type() const;
     virtual sndio::ISink* to_sink();
     virtual sndio::ISource* to_source();
-    virtual sndio::DeviceType type() const;
-    virtual sndio::DeviceState state() const;
-    virtual void pause();
-    virtual bool resume();
-    virtual bool restart();
     virtual audio::SampleSpec sample_spec() const;
-    virtual core::nanoseconds_t latency() const;
+    virtual core::nanoseconds_t frame_length() const;
+    virtual bool has_state() const;
+    virtual sndio::DeviceState state() const;
+    virtual status::StatusCode pause();
+    virtual status::StatusCode resume();
     virtual bool has_latency() const;
+    virtual core::nanoseconds_t latency() const;
     virtual bool has_clock() const;
+    virtual status::StatusCode rewind();
     virtual void reclock(core::nanoseconds_t timestamp);
-    virtual bool read(audio::Frame&);
+    virtual status::StatusCode read(audio::Frame& frame,
+                                    packet::stream_timestamp_t duration,
+                                    audio::FrameReadMode mode);
+    virtual status::StatusCode close();
+    virtual void dispose();
 
     // Methods of PipelineLoop
     virtual core::nanoseconds_t timestamp_imp() const;
     virtual uint64_t tid_imp() const;
-    virtual bool process_subframe_imp(audio::Frame& frame);
+    virtual status::StatusCode process_subframe_imp(audio::Frame& frame,
+                                                    packet::stream_timestamp_t duration,
+                                                    audio::FrameReadMode mode);
     virtual bool process_task_imp(PipelineTask& task);
 
     // Methods for tasks
@@ -170,11 +181,11 @@ private:
     core::Mutex source_mutex_;
 
     core::Optional<core::Ticker> ticker_;
-    core::Ticker::ticks_t ticker_ts_;
+    core::ticks_t ticker_ts_;
 
     const bool auto_reclock_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

@@ -6,6 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_core/thread.h"
+#include "roc_core/errno_to_str.h"
+#include "roc_core/log.h"
+#include "roc_core/panic.h"
+
+#include <unistd.h>
+
 #if defined(__linux__)
 #include <sys/syscall.h>
 #elif defined(__FreeBSD__) || defined(__OpenBSD__)
@@ -13,13 +20,6 @@
 #elif defined(__NetBSD__)
 #include <lwp.h>
 #endif
-
-#include <unistd.h>
-
-#include "roc_core/errno_to_str.h"
-#include "roc_core/log.h"
-#include "roc_core/panic.h"
-#include "roc_core/thread.h"
 
 namespace roc {
 namespace core {

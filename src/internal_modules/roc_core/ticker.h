@@ -13,22 +13,20 @@
 #define ROC_CORE_TICKER_H_
 
 #include "roc_core/noncopyable.h"
-#include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
 #include "roc_core/time.h"
 
 namespace roc {
 namespace core {
 
+//! Number of ticks.
+typedef uint64_t ticks_t;
+
 //! Ticker.
 class Ticker : public NonCopyable<> {
 public:
-    //! Number of ticks.
-    typedef uint64_t ticks_t;
-
     //! Initialize.
-    //! @remarks
-    //!  @p freq defines the number of ticks per second.
-    explicit Ticker(ticks_t freq);
+    explicit Ticker(ticks_t ticks_per_second);
 
     //! Start ticker.
     void start();
@@ -42,7 +40,7 @@ public:
     void wait(ticks_t ticks);
 
 private:
-    const double ratio_;
+    const double ticks_per_second_;
     nanoseconds_t start_;
     bool started_;
 };

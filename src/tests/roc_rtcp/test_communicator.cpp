@@ -11,8 +11,8 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/time.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_rtcp/communicator.h"
 #include "roc_rtcp/composer.h"
 #include "roc_rtcp/iparticipant.h"
@@ -69,7 +69,7 @@ packet::PacketFactory packet_factory(arena, MaxPacketSz);
 packet::PacketFactory small_packet_factory(arena, SmallPacketSz);
 packet::PacketFactory tiny_packet_factory(arena, TinyPacketSz);
 
-Composer composer;
+Composer composer(arena);
 
 // Mock implementation of IParticipant
 struct MockParticipant : public IParticipant, public core::NonCopyable<> {
@@ -270,7 +270,7 @@ public:
         , code_(code) {
     }
 
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&) {
+    virtual ROC_NODISCARD status::StatusCode write(const packet::PacketPtr&) {
         ++call_count_;
         return code_;
     }
@@ -438,10 +438,10 @@ void expect_recv_report(const RecvReport& report,
     }
 }
 
-packet::PacketPtr read_packet(packet::Queue& source) {
+packet::PacketPtr read_packet(packet::FifoQueue& source) {
     CHECK(source.size() != 0);
     packet::PacketPtr pp;
-    LONGS_EQUAL(status::StatusOK, source.read(pp));
+    LONGS_EQUAL(status::StatusOK, source.read(pp, packet::ModeFetch));
     CHECK(pp);
     CHECK(pp->rtcp());
     CHECK(pp->rtcp()->payload);
@@ -631,17 +631,17 @@ TEST(communicator, one_sender_one_receiver) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -697,23 +697,23 @@ TEST(communicator, two_senders_one_receiver) {
 
     Config config;
 
-    packet::Queue send1_queue;
+    packet::FifoQueue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             arena);
-    CHECK(send1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send1_comm.init_status());
 
-    packet::Queue send2_queue;
+    packet::FifoQueue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
                             arena);
-    CHECK(send2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send2_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send1_time = 10000000000000000;
     core::nanoseconds_t send2_time = 30000000000000000;
@@ -808,23 +808,23 @@ TEST(communicator, one_sender_two_receivers) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv1_queue;
+    packet::FifoQueue recv1_queue;
     MockParticipant recv1_part(Recv1Cname, Recv1Ssrc, Report_Back);
     Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
                             arena);
-    CHECK(recv1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv1_comm.init_status());
 
-    packet::Queue recv2_queue;
+    packet::FifoQueue recv2_queue;
     MockParticipant recv2_part(Recv2Cname, Recv2Ssrc, Report_Back);
     Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
                             arena);
-    CHECK(recv2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv2_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv1_time = 30000000000000000;
@@ -911,17 +911,17 @@ TEST(communicator, receiver_report_first) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -978,17 +978,17 @@ TEST(communicator, bidirectional_peers) {
 
     Config config;
 
-    packet::Queue peer1_queue;
+    packet::FifoQueue peer1_queue;
     MockParticipant peer1_part(Peer1Cname, Peer1Ssrc, Report_ToAddress);
     Communicator peer1_comm(config, peer1_part, peer1_queue, composer, packet_factory,
                             arena);
-    CHECK(peer1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, peer1_comm.init_status());
 
-    packet::Queue peer2_queue;
+    packet::FifoQueue peer2_queue;
     MockParticipant peer2_part(Peer2Cname, Peer2Ssrc, Report_ToAddress);
     Communicator peer2_comm(config, peer2_part, peer2_queue, composer, packet_factory,
                             arena);
-    CHECK(peer2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, peer2_comm.init_status());
 
     core::nanoseconds_t peer1_time = 10000000000000000;
     core::nanoseconds_t peer2_time = 30000000000000000;
@@ -1091,29 +1091,29 @@ TEST(communicator, long_run) {
 
     Config config;
 
-    packet::Queue send1_queue;
+    packet::FifoQueue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             arena);
-    CHECK(send1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send1_comm.init_status());
 
-    packet::Queue send2_queue;
+    packet::FifoQueue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
                             arena);
-    CHECK(send2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send2_comm.init_status());
 
-    packet::Queue recv1_queue;
+    packet::FifoQueue recv1_queue;
     MockParticipant recv1_part(Recv1Cname, Recv1Ssrc, Report_Back);
     Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
                             arena);
-    CHECK(recv1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv1_comm.init_status());
 
-    packet::Queue recv2_queue;
+    packet::FifoQueue recv2_queue;
     MockParticipant recv2_part(Recv2Cname, Recv2Ssrc, Report_Back);
     Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
                             arena);
-    CHECK(recv2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv2_comm.init_status());
 
     core::nanoseconds_t send1_time = 10000000000000000;
     core::nanoseconds_t send2_time = 30000000000000000;
@@ -1280,17 +1280,17 @@ TEST(communicator, halt_goodbye) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -1344,23 +1344,23 @@ TEST(communicator, halt_timeout) {
 
     Config config;
 
-    packet::Queue send1_queue;
+    packet::FifoQueue send1_queue;
     MockParticipant send1_part(Send1Cname, SendSsrc1, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             arena);
-    CHECK(send1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send1_comm.init_status());
 
-    packet::Queue send2_queue;
+    packet::FifoQueue send2_queue;
     MockParticipant send2_part(Send2Cname, SendSsrc2, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
                             arena);
-    CHECK(send2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send2_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send1_time = 10000000000000000;
     core::nanoseconds_t send2_time = 30000000000000000;
@@ -1464,23 +1464,23 @@ TEST(communicator, halt_cname_change) {
 
     Config config;
 
-    packet::Queue send1_queue;
+    packet::FifoQueue send1_queue;
     MockParticipant send1_part(SendCnameA, SendSsrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             arena);
-    CHECK(send1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send1_comm.init_status());
 
-    packet::Queue send2_queue;
+    packet::FifoQueue send2_queue;
     MockParticipant send2_part(SendCnameB, SendSsrc, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
                             arena);
-    CHECK(send2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send2_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -1540,29 +1540,29 @@ TEST(communicator, cname_comes_earlier) {
     send1_config.enable_sr_rr = false;
     send1_config.enable_xr = false;
     send1_config.enable_sdes = true;
-    packet::Queue send1_queue;
+    packet::FifoQueue send1_queue;
     MockParticipant send1_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send1_comm(send1_config, send1_part, send1_queue, composer,
                             packet_factory, arena);
-    CHECK(send1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send1_comm.init_status());
 
     Config send2_config;
     // Second report will have SR/XR, but not SDES
     send2_config.enable_sr_rr = true;
     send2_config.enable_xr = true;
     send2_config.enable_sdes = false;
-    packet::Queue send2_queue;
+    packet::FifoQueue send2_queue;
     MockParticipant send2_part(NoCname, SendSsrc, Report_ToAddress);
     Communicator send2_comm(send2_config, send2_part, send2_queue, composer,
                             packet_factory, arena);
-    CHECK(send2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send2_comm.init_status());
 
     Config recv_config;
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -1619,29 +1619,29 @@ TEST(communicator, cname_comes_later) {
     send1_config.enable_sr_rr = true;
     send1_config.enable_xr = true;
     send1_config.enable_sdes = false;
-    packet::Queue send1_queue;
+    packet::FifoQueue send1_queue;
     MockParticipant send1_part(NoCname, SendSsrc, Report_ToAddress);
     Communicator send1_comm(send1_config, send1_part, send1_queue, composer,
                             packet_factory, arena);
-    CHECK(send1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send1_comm.init_status());
 
     Config send2_config;
     // Second report will have SDES, but not SR/XR
     send2_config.enable_sr_rr = false;
     send2_config.enable_xr = false;
     send2_config.enable_sdes = true;
-    packet::Queue send2_queue;
+    packet::FifoQueue send2_queue;
     MockParticipant send2_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send2_comm(send2_config, send2_part, send2_queue, composer,
                             packet_factory, arena);
-    CHECK(send2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send2_comm.init_status());
 
     Config recv_config;
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -1701,23 +1701,23 @@ TEST(communicator, collision_send_report) {
 
     Config config;
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrcA, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
-    packet::Queue send1_queue;
+    packet::FifoQueue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             arena);
-    CHECK(send1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send1_comm.init_status());
 
-    packet::Queue send2_queue;
+    packet::FifoQueue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
                             arena);
-    CHECK(send2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send2_comm.init_status());
 
     core::nanoseconds_t recv_time = 10000000000000000;
     core::nanoseconds_t send1_time = 30000000000000000;
@@ -1845,23 +1845,23 @@ TEST(communicator, collision_recv_report) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrcA, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv1_queue;
+    packet::FifoQueue recv1_queue;
     MockParticipant recv1_part(Recv1Cname, Recv1Ssrc, Report_ToAddress);
     Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
                             arena);
-    CHECK(recv1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv1_comm.init_status());
 
-    packet::Queue recv2_queue;
+    packet::FifoQueue recv2_queue;
     MockParticipant recv2_part(Recv2Cname, Recv2Ssrc, Report_ToAddress);
     Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
                             arena);
-    CHECK(recv2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv2_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv1_time = 30000000000000000;
@@ -1986,23 +1986,23 @@ TEST(communicator, collision_unrelated_recv_report) {
 
     Config config;
 
-    packet::Queue send1_queue;
+    packet::FifoQueue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1SsrcA, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             arena);
-    CHECK(send1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send1_comm.init_status());
 
-    packet::Queue recv1_queue;
+    packet::FifoQueue recv1_queue;
     MockParticipant recv1_part(Recv1Cname, Recv1Ssrc, Report_ToAddress);
     Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
                             arena);
-    CHECK(recv1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv1_comm.init_status());
 
-    packet::Queue recv2_queue;
+    packet::FifoQueue recv2_queue;
     MockParticipant recv2_part(Recv2Cname, Recv2Ssrc, Report_ToAddress);
     Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
                             arena);
-    CHECK(recv2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv2_comm.init_status());
 
     core::nanoseconds_t send1_time = 10000000000000000;
     core::nanoseconds_t recv1_time = 30000000000000000;
@@ -2127,28 +2127,28 @@ TEST(communicator, collision_sdes_different_cname) {
 
     Config config;
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrcA, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
-    packet::Queue send1_queue;
+    packet::FifoQueue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             arena);
-    CHECK(send1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send1_comm.init_status());
 
     Config send2_config;
     // Sender 2 reports only SDES, without SR/XR
     send2_config.enable_sr_rr = false;
     send2_config.enable_xr = false;
     send2_config.enable_sdes = true;
-    packet::Queue send2_queue;
+    packet::FifoQueue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(send2_config, send2_part, send2_queue, composer,
                             packet_factory, arena);
-    CHECK(send2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send2_comm.init_status());
 
     core::nanoseconds_t recv_time = 10000000000000000;
     core::nanoseconds_t send1_time = 30000000000000000;
@@ -2274,28 +2274,28 @@ TEST(communicator, collision_sdes_same_cname) {
 
     Config config;
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
-    packet::Queue send1_queue;
+    packet::FifoQueue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             arena);
-    CHECK(send1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send1_comm.init_status());
 
     Config send2_config;
     // Sender 2 reports only SDES, without SR/XR
     send2_config.enable_sr_rr = false;
     send2_config.enable_xr = false;
     send2_config.enable_sdes = true;
-    packet::Queue send2_queue;
+    packet::FifoQueue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(send2_config, send2_part, send2_queue, composer,
                             packet_factory, arena);
-    CHECK(send2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send2_comm.init_status());
 
     core::nanoseconds_t recv_time = 10000000000000000;
     core::nanoseconds_t send1_time = 30000000000000000;
@@ -2383,17 +2383,17 @@ TEST(communicator, network_loop) {
 
     Config config;
 
-    packet::Queue local_queue;
+    packet::FifoQueue local_queue;
     MockParticipant local_part(LocalCname, LocalSsrc, Report_ToAddress);
     Communicator local_comm(config, local_part, local_queue, composer, packet_factory,
                             arena);
-    CHECK(local_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, local_comm.init_status());
 
-    packet::Queue remote_queue;
+    packet::FifoQueue remote_queue;
     MockParticipant remote_part(RemoteCname, RemoteSsrc, Report_ToAddress);
     Communicator remote_comm(config, remote_part, remote_queue, composer, packet_factory,
                              arena);
-    CHECK(remote_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, remote_comm.init_status());
 
     core::nanoseconds_t local_time = 10000000000000000;
     core::nanoseconds_t remote_time = 30000000000000000;
@@ -2489,18 +2489,18 @@ TEST(communicator, missing_sender_sdes) {
     send_config.enable_sr_rr = true;
     send_config.enable_xr = true;
     send_config.enable_sdes = false;
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
     Config recv_config;
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -2531,21 +2531,21 @@ TEST(communicator, missing_receiver_sdes) {
     const char* RecvCname = "recv_cname";
 
     Config send_config;
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
     Config recv_config;
     recv_config.enable_sr_rr = true;
     recv_config.enable_xr = true;
     recv_config.enable_sdes = false;
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -2582,18 +2582,18 @@ TEST(communicator, missing_sender_sr) {
     send_config.enable_sr_rr = false;
     send_config.enable_xr = true;
     send_config.enable_sdes = true;
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
     Config recv_config;
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -2623,21 +2623,21 @@ TEST(communicator, missing_receiver_rr) {
     const char* RecvCname = "recv_cname";
 
     Config send_config;
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
     Config recv_config;
     recv_config.enable_sr_rr = false;
     recv_config.enable_xr = true;
     recv_config.enable_sdes = true;
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -2672,18 +2672,18 @@ TEST(communicator, missing_sender_xr) {
     send_config.enable_sr_rr = true;
     send_config.enable_xr = false;
     send_config.enable_sdes = true;
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
     Config recv_config;
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -2715,21 +2715,21 @@ TEST(communicator, missing_receiver_xr) {
     const char* RecvCname = "recv_cname";
 
     Config send_config;
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(send_config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
     Config recv_config;
     recv_config.enable_sr_rr = true;
     recv_config.enable_xr = false;
     recv_config.enable_sdes = true;
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(recv_config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -2763,11 +2763,11 @@ TEST(communicator, split_sender_report) {
     Config config;
     config.inactivity_timeout = core::Second * 999;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, small_packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -2784,11 +2784,11 @@ TEST(communicator, split_sender_report) {
         char recv_cname[64] = {};
         snprintf(recv_cname, sizeof(recv_cname), "recv_cname%d", (int)recv_ssrc);
 
-        packet::Queue recv_queue;
+        packet::FifoQueue recv_queue;
         MockParticipant recv_part(recv_cname, recv_ssrc, Report_ToAddress);
         Communicator recv_comm(config, recv_part, recv_queue, composer,
                                small_packet_factory, arena);
-        CHECK(recv_comm.is_valid());
+        LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
         // Generate receiver report
         recv_part.set_recv_report(
@@ -2820,11 +2820,11 @@ TEST(communicator, split_sender_report) {
     char recv_cname[64] = {};
     snprintf(recv_cname, sizeof(recv_cname), "recv_cname%d", (int)recv_ssrc);
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(recv_cname, recv_ssrc, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, small_packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     // Deliver sender report packets to one of the receivers
     while (send_queue.size() != 0) {
@@ -2855,17 +2855,17 @@ TEST(communicator, split_receiver_report) {
     Config config;
     config.inactivity_timeout = core::Second * 999;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, small_packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, small_packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -2908,11 +2908,11 @@ TEST(communicator, split_bidirectional_report) {
     Config config;
     config.inactivity_timeout = core::Second * 999;
 
-    packet::Queue local_queue;
+    packet::FifoQueue local_queue;
     MockParticipant local_part(local_cname, LocalSsrc, Report_ToAddress);
     Communicator local_comm(config, local_part, local_queue, composer,
                             small_packet_factory, arena);
-    CHECK(local_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, local_comm.init_status());
 
     core::nanoseconds_t local_time = 10000000000000000;
     core::nanoseconds_t remote_time = 30000000000000000;
@@ -2930,11 +2930,11 @@ TEST(communicator, split_bidirectional_report) {
         char remote_cname[64] = {};
         snprintf(remote_cname, sizeof(remote_cname), "remote_cname%d", (int)remote_ssrc);
 
-        packet::Queue remote_queue;
+        packet::FifoQueue remote_queue;
         MockParticipant remote_part(remote_cname, remote_ssrc, Report_ToAddress);
         Communicator remote_comm(config, remote_part, remote_queue, composer,
                                  small_packet_factory, arena);
-        CHECK(remote_comm.is_valid());
+        LONGS_EQUAL(status::StatusOK, remote_comm.init_status());
 
         // Generate remote peer report
         remote_part.set_recv_report(
@@ -2973,11 +2973,11 @@ TEST(communicator, split_bidirectional_report) {
     char remote_cname[64] = {};
     snprintf(remote_cname, sizeof(remote_cname), "remote_cname%d", (int)remote_ssrc);
 
-    packet::Queue remote_queue;
+    packet::FifoQueue remote_queue;
     MockParticipant remote_part(remote_cname, remote_ssrc, Report_ToAddress);
     Communicator remote_comm(config, remote_part, remote_queue, composer,
                              small_packet_factory, arena);
-    CHECK(remote_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, remote_comm.init_status());
 
     // Deliver local peer report packets to one of the remote peers
     while (local_queue.size() != 0) {
@@ -3015,24 +3015,24 @@ TEST(communicator, report_to_address_sender) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     send_part.set_report_address(send_dest_addr);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv1_queue;
+    packet::FifoQueue recv1_queue;
     MockParticipant recv1_part(Recv1Cname, Recv1Ssrc, Report_ToAddress);
     Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
                             arena);
-    CHECK(recv1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv1_comm.init_status());
 
-    packet::Queue recv2_queue;
+    packet::FifoQueue recv2_queue;
     MockParticipant recv2_part(Recv2Cname, Recv2Ssrc, Report_ToAddress);
     Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
                             arena);
-    CHECK(recv2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv2_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv1_time = 30000000000000000;
@@ -3152,12 +3152,12 @@ TEST(communicator, report_to_address_receiver) {
 
     Config config;
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     recv_part.set_report_address(recv_dest_addr);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t recv_time = 10000000000000000;
 
@@ -3197,23 +3197,23 @@ TEST(communicator, report_back_sender) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_Back);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv1_queue;
+    packet::FifoQueue recv1_queue;
     MockParticipant recv1_part(Recv1Cname, Recv1Ssrc, Report_ToAddress);
     Communicator recv1_comm(config, recv1_part, recv1_queue, composer, packet_factory,
                             arena);
-    CHECK(recv1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv1_comm.init_status());
 
-    packet::Queue recv2_queue;
+    packet::FifoQueue recv2_queue;
     MockParticipant recv2_part(Recv2Cname, Recv2Ssrc, Report_ToAddress);
     Communicator recv2_comm(config, recv2_part, recv2_queue, composer, packet_factory,
                             arena);
-    CHECK(recv2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv2_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv1_time = 30000000000000000;
@@ -3333,23 +3333,23 @@ TEST(communicator, report_back_receiver) {
 
     Config config;
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
-    packet::Queue send1_queue;
+    packet::FifoQueue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             arena);
-    CHECK(send1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send1_comm.init_status());
 
-    packet::Queue send2_queue;
+    packet::FifoQueue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
                             arena);
-    CHECK(send2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send2_comm.init_status());
 
     core::nanoseconds_t recv_time = 10000000000000000;
     core::nanoseconds_t send1_time = 30000000000000000;
@@ -3484,29 +3484,29 @@ TEST(communicator, report_back_combine_reports) {
 
     Config config;
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
-    packet::Queue send1_queue;
+    packet::FifoQueue send1_queue;
     MockParticipant send1_part(Send1Cname, Send1Ssrc, Report_ToAddress);
     Communicator send1_comm(config, send1_part, send1_queue, composer, packet_factory,
                             arena);
-    CHECK(send1_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send1_comm.init_status());
 
-    packet::Queue send2_queue;
+    packet::FifoQueue send2_queue;
     MockParticipant send2_part(Send2Cname, Send2Ssrc, Report_ToAddress);
     Communicator send2_comm(config, send2_part, send2_queue, composer, packet_factory,
                             arena);
-    CHECK(send2_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send2_comm.init_status());
 
-    packet::Queue send3_queue;
+    packet::FifoQueue send3_queue;
     MockParticipant send3_part(Send3Cname, Send3Ssrc, Report_ToAddress);
     Communicator send3_comm(config, send3_part, send3_queue, composer, packet_factory,
                             arena);
-    CHECK(send3_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send3_comm.init_status());
 
     core::nanoseconds_t recv_time = 10000000000000000;
     core::nanoseconds_t send1_time = 30000000000000000;
@@ -3627,11 +3627,11 @@ TEST(communicator, report_back_split_reports) {
     Config config;
     config.inactivity_timeout = core::Second * 999;
 
-    packet::Queue local_queue;
+    packet::FifoQueue local_queue;
     MockParticipant local_part(local_cname, LocalSsrc, Report_Back);
     Communicator local_comm(config, local_part, local_queue, composer,
                             small_packet_factory, arena);
-    CHECK(local_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, local_comm.init_status());
 
     core::nanoseconds_t local_time = 10000000000000000;
     core::nanoseconds_t remote_time = 30000000000000000;
@@ -3647,11 +3647,11 @@ TEST(communicator, report_back_split_reports) {
             snprintf(remote_cname, sizeof(remote_cname), "remote_cname%d",
                      (int)remote_ssrc);
 
-            packet::Queue remote_queue;
+            packet::FifoQueue remote_queue;
             MockParticipant remote_part(remote_cname, remote_ssrc, Report_ToAddress);
             Communicator remote_comm(config, remote_part, remote_queue, composer,
                                      small_packet_factory, arena);
-            CHECK(remote_comm.is_valid());
+            LONGS_EQUAL(status::StatusOK, remote_comm.init_status());
 
             // Generate remote peer report
             remote_part.set_send_report(
@@ -3730,17 +3730,17 @@ TEST(communicator, rtt) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = SendStartTime;
     core::nanoseconds_t recv_time = RecvStartTime;
@@ -3834,17 +3834,17 @@ TEST(communicator, rtt_clock_drift) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = SendStartTime;
     core::nanoseconds_t recv_time = RecvStartTime;
@@ -3925,17 +3925,17 @@ TEST(communicator, rtt_network_jitter) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = SendStartTime;
     core::nanoseconds_t recv_time = RecvStartTime;
@@ -4018,17 +4018,17 @@ TEST(communicator, rtt_network_losses) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = SendStartTime;
     core::nanoseconds_t recv_time = RecvStartTime;
@@ -4118,17 +4118,17 @@ TEST(communicator, rtt_network_delays) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = SendStartTime;
     core::nanoseconds_t recv_time = RecvStartTime;
@@ -4236,17 +4236,17 @@ TEST(communicator, rtt_network_reordering) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = SendStartTime;
     core::nanoseconds_t recv_time = RecvStartTime;
@@ -4372,17 +4372,17 @@ TEST(communicator, rtt_network_duplicates) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = SendStartTime;
     core::nanoseconds_t recv_time = RecvStartTime;
@@ -4502,17 +4502,17 @@ TEST(communicator, rtt_missing_xr) {
     Config config;
     config.enable_xr = false;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_Back);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = SendStartTime;
     core::nanoseconds_t recv_time = RecvStartTime;
@@ -4578,11 +4578,11 @@ TEST(communicator, generation_error) {
 
     { // forward error from arena
         MockArena peer_arena;
-        packet::Queue peer_queue;
+        packet::FifoQueue peer_queue;
         MockParticipant peer_part(Cname, Ssrc, Report_ToAddress);
         Communicator peer_comm(config, peer_part, peer_queue, composer, packet_factory,
                                peer_arena);
-        CHECK(peer_comm.is_valid());
+        LONGS_EQUAL(status::StatusOK, peer_comm.init_status());
 
         core::nanoseconds_t peer_time = 10000000000000000;
 
@@ -4601,31 +4601,31 @@ TEST(communicator, generation_error) {
         CHECK_EQUAL(0, peer_queue.size());
     }
     { // forward error from writer
-        MockWriter peer_writer(status::StatusNoData);
+        MockWriter peer_writer(status::StatusDrain);
         MockParticipant peer_part(Cname, Ssrc, Report_ToAddress);
         Communicator peer_comm(config, peer_part, peer_writer, composer, packet_factory,
                                arena);
-        CHECK(peer_comm.is_valid());
+        LONGS_EQUAL(status::StatusOK, peer_comm.init_status());
 
         core::nanoseconds_t peer_time = 10000000000000000;
 
         peer_part.set_send_report(make_send_report(peer_time, Cname, Ssrc, Seed));
-        LONGS_EQUAL(status::StatusNoData, peer_comm.generate_reports(peer_time));
+        LONGS_EQUAL(status::StatusDrain, peer_comm.generate_reports(peer_time));
         CHECK_EQUAL(0, peer_comm.total_streams());
         CHECK_EQUAL(1, peer_writer.call_count());
     }
     { // buffer factory w/ small buffers
-        packet::Queue peer_queue;
+        packet::FifoQueue peer_queue;
         MockParticipant peer_part(Cname, Ssrc, Report_ToAddress);
         // factory creates unreasonably small buffers
         Communicator peer_comm(config, peer_part, peer_queue, composer,
                                tiny_packet_factory, arena);
-        CHECK(peer_comm.is_valid());
+        LONGS_EQUAL(status::StatusOK, peer_comm.init_status());
 
         core::nanoseconds_t peer_time = 10000000000000000;
 
         peer_part.set_send_report(make_send_report(peer_time, Cname, Ssrc, Seed));
-        LONGS_EQUAL(status::StatusNoSpace, peer_comm.generate_reports(peer_time));
+        LONGS_EQUAL(status::StatusNoMem, peer_comm.generate_reports(peer_time));
         CHECK_EQUAL(0, peer_comm.total_streams());
         CHECK_EQUAL(0, peer_queue.size());
     }
@@ -4640,11 +4640,11 @@ TEST(communicator, processing_error) {
     config.inactivity_timeout = core::Second * 999;
 
     MockArena recv_arena;
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            recv_arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -4664,11 +4664,11 @@ TEST(communicator, processing_error) {
         advance_time(send_time);
         advance_time(recv_time);
 
-        packet::Queue send_queue;
+        packet::FifoQueue send_queue;
         MockParticipant send_part(send_cname, send_ssrc, Report_ToAddress);
         Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                                arena);
-        CHECK(send_comm.is_valid());
+        LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
         // Generate sender report
         send_part.set_send_report(
@@ -4710,17 +4710,17 @@ TEST(communicator, notification_error) {
 
     Config config;
 
-    packet::Queue send_queue;
+    packet::FifoQueue send_queue;
     MockParticipant send_part(SendCname, SendSsrc, Report_ToAddress);
     Communicator send_comm(config, send_part, send_queue, composer, packet_factory,
                            arena);
-    CHECK(send_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, send_comm.init_status());
 
-    packet::Queue recv_queue;
+    packet::FifoQueue recv_queue;
     MockParticipant recv_part(RecvCname, RecvSsrc, Report_ToAddress);
     Communicator recv_comm(config, recv_part, recv_queue, composer, packet_factory,
                            arena);
-    CHECK(recv_comm.is_valid());
+    LONGS_EQUAL(status::StatusOK, recv_comm.init_status());
 
     core::nanoseconds_t send_time = 10000000000000000;
     core::nanoseconds_t recv_time = 30000000000000000;
@@ -4732,10 +4732,10 @@ TEST(communicator, notification_error) {
     CHECK_EQUAL(1, send_queue.size());
 
     // Tell receiver to return error from notification handler
-    recv_part.set_status(status::StatusNoData);
+    recv_part.set_status(status::StatusDrain);
 
     // Deliver sender report to receiver
-    LONGS_EQUAL(status::StatusNoData,
+    LONGS_EQUAL(status::StatusDrain,
                 recv_comm.process_packet(read_packet(send_queue), recv_time));
     CHECK_EQUAL(1, recv_comm.total_streams());
 

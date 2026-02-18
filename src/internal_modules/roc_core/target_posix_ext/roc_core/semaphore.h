@@ -12,12 +12,12 @@
 #ifndef ROC_CORE_SEMAPHORE_H_
 #define ROC_CORE_SEMAPHORE_H_
 
-#include <semaphore.h>
-
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/attributes.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
+
+#include <semaphore.h>
 
 namespace roc {
 namespace core {
@@ -33,7 +33,7 @@ public:
     //! Wait until the counter becomes non-zero, decrement it, and return true.
     //! If deadline expires before the counter becomes non-zero, returns false.
     //! Deadline should be in the same time domain as core::timestamp().
-    ROC_ATTR_NODISCARD bool timed_wait(nanoseconds_t deadline);
+    ROC_NODISCARD bool timed_wait(nanoseconds_t deadline);
 
     //! Wait until the counter becomes non-zero, decrement it, and return.
     void wait();
@@ -45,7 +45,7 @@ public:
 
 private:
     sem_t sem_;
-    Atomic<int> guard_;
+    AtomicInt<int32_t> guard_;
 };
 
 } // namespace core

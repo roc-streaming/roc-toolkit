@@ -12,7 +12,6 @@
 #ifndef ROC_SNDIO_WAV_BACKEND_H_
 #define ROC_SNDIO_WAV_BACKEND_H_
 
-#include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 #include "roc_sndio/ibackend.h"
 
@@ -24,19 +23,33 @@ class WavBackend : public IBackend, core::NonCopyable<> {
 public:
     WavBackend();
 
-    //! Append supported drivers to the list.
-    virtual void discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list);
-
-    //! Create and open a sink or source.
-    virtual IDevice* open_device(DeviceType device_type,
-                                 DriverType driver_type,
-                                 const char* driver,
-                                 const char* path,
-                                 const Config& config,
-                                 core::IArena& arena);
-
     //! Returns name of backend.
     virtual const char* name() const;
+
+    //! Append supported drivers to the list.
+    virtual ROC_NODISCARD bool
+    discover_drivers(core::Array<DriverInfo, MaxDrivers>& result);
+
+    //! Append supported formats to the list.
+    virtual ROC_NODISCARD bool
+    discover_formats(core::Array<FormatInfo, MaxFormats>& result);
+
+    //! Append supported groups of sub-formats to the list.
+    virtual ROC_NODISCARD bool discover_subformat_groups(core::StringList& result);
+
+    //! Append supported sub-formats of a group to the list.
+    virtual ROC_NODISCARD bool discover_subformats(const char* group,
+                                                   core::StringList& result);
+
+    //! Create and open a sink or source.
+    virtual ROC_NODISCARD status::StatusCode
+    open_device(DeviceType device_type,
+                const char* driver,
+                const char* path,
+                const IoConfig& io_config,
+                audio::FrameFactory& frame_factory,
+                core::IArena& arena,
+                IDevice** result);
 };
 
 } // namespace sndio

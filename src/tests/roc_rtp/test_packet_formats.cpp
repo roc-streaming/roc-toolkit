@@ -15,7 +15,6 @@
 
 #include "roc_core/heap_arena.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_core/stddefs.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_rtp/composer.h"
 #include "roc_rtp/encoding_map.h"
@@ -113,12 +112,14 @@ void decode_samples(audio::IFrameDecoder& decoder,
                     const test::PacketInfo& pi) {
     audio::sample_t samples[test::PacketInfo::MaxSamples * test::PacketInfo::MaxCh] = {};
 
-    decoder.begin(packet.rtp()->stream_timestamp, packet.rtp()->payload.data(),
-                  packet.rtp()->payload.size());
+    LONGS_EQUAL(status::StatusOK,
+                decoder.begin_frame(packet.rtp()->stream_timestamp,
+                                    packet.rtp()->payload.data(),
+                                    packet.rtp()->payload.size()));
 
-    UNSIGNED_LONGS_EQUAL(pi.num_samples, decoder.read(samples, pi.num_samples));
+    UNSIGNED_LONGS_EQUAL(pi.num_samples, decoder.read_samples(samples, pi.num_samples));
 
-    decoder.end();
+    LONGS_EQUAL(status::StatusOK, decoder.end_frame());
 
     size_t i = 0;
 
@@ -148,11 +149,13 @@ void encode_samples(audio::IFrameEncoder& encoder,
 
     UNSIGNED_LONGS_EQUAL(pi.payload_size, encoder.encoded_byte_count(pi.num_samples));
 
-    encoder.begin(packet.rtp()->payload.data(), packet.rtp()->payload.size());
+    LONGS_EQUAL(
+        status::StatusOK,
+        encoder.begin_frame(packet.rtp()->payload.data(), packet.rtp()->payload.size()));
 
-    UNSIGNED_LONGS_EQUAL(pi.num_samples, encoder.write(samples, pi.num_samples));
+    UNSIGNED_LONGS_EQUAL(pi.num_samples, encoder.write_samples(samples, pi.num_samples));
 
-    encoder.end();
+    LONGS_EQUAL(status::StatusOK, encoder.end_frame());
 }
 
 void check_parse_decode(const test::PacketInfo& pi) {
@@ -166,14 +169,14 @@ void check_parse_decode(const test::PacketInfo& pi) {
 
     packet->set_buffer(buffer);
 
-    Parser parser(encoding_map, NULL);
-    CHECK(parser.parse(*packet, packet->buffer()));
+    Parser parser(NULL, encoding_map, arena);
+    LONGS_EQUAL(status::StatusOK, parser.parse(*packet, packet->buffer()));
 
     const Encoding* encoding = encoding_map.find_by_pt(packet->rtp()->payload_type);
     CHECK(encoding);
 
     core::ScopedPtr<audio::IFrameDecoder> decoder(
-        encoding->new_decoder(arena, encoding->sample_spec), arena);
+        encoding->new_decoder(encoding->sample_spec, arena));
     CHECK(decoder);
 
     check_format_info(*encoding, pi);
@@ -198,22 +201,23 @@ void check_compose_encode(const test::PacketInfo& pi) {
     CHECK(encoding);
 
     core::ScopedPtr<audio::IFrameEncoder> encoder(
-        encoding->new_encoder(arena, encoding->sample_spec), arena);
+        encoding->new_encoder(encoding->sample_spec, arena));
     CHECK(encoder);
 
-    Composer composer(NULL);
+    Composer composer(NULL, arena);
 
-    CHECK(composer.prepare(*packet, buffer, pi.payload_size + pi.padding_size));
+    LONGS_EQUAL(status::StatusOK,
+                composer.prepare(*packet, buffer, pi.payload_size + pi.padding_size));
     packet->set_buffer(buffer);
 
     encode_samples(*encoder, *packet, pi);
     set_packet_fields(*packet, pi);
 
     if (pi.padding_size != 0) {
-        composer.pad(*packet, pi.padding_size);
+        LONGS_EQUAL(status::StatusOK, composer.pad(*packet, pi.padding_size));
     }
 
-    CHECK(composer.compose(*packet));
+    LONGS_EQUAL(status::StatusOK, composer.compose(*packet));
 
     check_format_info(*encoding, pi);
     check_packet_fields(*packet, pi);

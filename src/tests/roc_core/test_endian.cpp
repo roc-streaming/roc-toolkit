@@ -40,7 +40,7 @@ TEST(endian, floats) {
 }
 
 TEST(endian, big_little) {
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+#if ROC_CPU_ENDIAN == ROC_CPU_ENDIAN_BE
     CHECK(0x1122 == EndianOps::swap_native_be((uint16_t)0x1122));
     CHECK(0x2211 == EndianOps::swap_native_le((uint16_t)0x1122));
 #else
@@ -50,7 +50,7 @@ TEST(endian, big_little) {
 }
 
 TEST(endian, ntoh) {
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+#if ROC_CPU_ENDIAN == ROC_CPU_ENDIAN_BE
     CHECK(0x1122 == ntoh16u((uint16_t)0x1122));
     CHECK(0x1122 == ntoh16s((int16_t)0x1122));
 
@@ -72,7 +72,7 @@ TEST(endian, ntoh) {
 }
 
 TEST(endian, hton) {
-#if ROC_CPU_ENDIAN == ROC_CPU_BE
+#if ROC_CPU_ENDIAN == ROC_CPU_ENDIAN_BE
     CHECK(0x1122 == hton16u((uint16_t)0x1122));
     CHECK(0x1122 == hton16s((int16_t)0x1122));
 

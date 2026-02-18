@@ -10,11 +10,11 @@
 
 #include "roc_core/log.h"
 #include "roc_core/macro_helpers.h"
-#include "roc_core/scoped_lock.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_sndio/sox_backend.h"
 #include "roc_sndio/sox_sink.h"
 #include "roc_sndio/sox_source.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace sndio {
@@ -31,100 +31,80 @@ const char* default_drivers[] = {
 };
 
 const char* driver_renames[][2] = {
+    // device drivers
     { "waveaudio", "wave" },
     { "coreaudio", "core" },
+    // file formats
+    { "anb", "amr" },
 };
 
 const char* hidden_drivers[] = {
-    // this format doesn't specify the encoding explicitly
-    // use its explicit variants like f32, s32, etc
-    "raw",
-    // deprecated aliases
-    "f4",
-    "f8",
-    "s1",
-    "s2",
-    "s3",
-    "s4",
-    "u1",
-    "u2",
-    "u3",
-    "u4",
-    "sb",
-    "sw",
-    "sl",
-    "ub",
-    "uw",
-    // pseudo-formats
-    "sndfile",
-    "null",
-    // unsupported device drivers
     "ao",
     "ossdsp",
     "pulseaudio",
 };
 
-bool is_default_driver(const char* driver) {
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
-        if (strcmp(driver, default_drivers[n]) == 0) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-const char* map_to_sox_driver(const char* driver) {
-    if (!driver) {
+const char* driver_to_sox(const char* name) {
+    if (!name) {
         return NULL;
     }
     for (size_t n = 0; n < ROC_ARRAY_SIZE(driver_renames); n++) {
-        if (strcmp(driver_renames[n][1], driver) == 0) {
+        if (strcmp(driver_renames[n][1], name) == 0) {
             return driver_renames[n][0];
         }
     }
-    return driver;
+    return name;
 }
 
-const char* map_from_sox_driver(const char* driver) {
-    if (!driver) {
+const char* driver_from_sox(const char* name) {
+    if (!name) {
         return NULL;
     }
     for (size_t n = 0; n < ROC_ARRAY_SIZE(driver_renames); n++) {
-        if (strcmp(driver_renames[n][0], driver) == 0) {
+        if (strcmp(driver_renames[n][0], name) == 0) {
             return driver_renames[n][1];
         }
     }
-    return driver;
+    return name;
 }
 
-bool is_driver_hidden(const char* driver) {
-    // replicate the behavior of display_supported_formats() from sox.c
-    if (strchr(driver, '/')) {
-        return true;
-    }
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(hidden_drivers); n++) {
-        if (strcmp(hidden_drivers[n], driver) == 0) {
+bool is_default_driver(const char* name) {
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
+        if (strcmp(name, default_drivers[n]) == 0) {
             return true;
         }
     }
     return false;
 }
 
-bool check_handler_type(const sox_format_handler_t* handler, DriverType driver_type) {
-    if (handler->flags & SOX_FILE_DEVICE) {
-        if (handler->flags & SOX_FILE_PHONY) {
-            return false;
-        }
-        if (driver_type != DriverType_Device) {
-            return false;
-        }
-    } else {
-        if (driver_type != DriverType_File) {
+bool is_supported_driver(const char* name) {
+    const sox_format_handler_t* format_handler = sox_write_handler(NULL, name, NULL);
+    if (format_handler == NULL) {
+        // not enabled in sox
+        return false;
+    }
+    if (!(format_handler->flags & SOX_FILE_DEVICE)) {
+        // not device
+        return false;
+    }
+    if (format_handler->flags & SOX_FILE_PHONY) {
+        // phony device
+        return false;
+    }
+
+    if (strchr(name, '/')) {
+        // replicate the behavior of display_supported_formats() from sox.c
+        return false;
+    }
+
+    for (size_t n = 0; n < ROC_ARRAY_SIZE(hidden_drivers); n++) {
+        // hidden by us
+        if (strcmp(hidden_drivers[n], name) == 0) {
             return false;
         }
     }
 
+    // supported!
     return true;
 }
 
@@ -159,134 +139,133 @@ void log_handler(unsigned sox_level,
 
 } // namespace
 
-SoxBackend::SoxBackend()
-    : first_created_(false) {
+SoxBackend::SoxBackend() {
     sox_init();
 
     sox_get_globals()->verbosity = 100;
     sox_get_globals()->output_message_handler = log_handler;
 }
 
-void SoxBackend::set_frame_size(core::nanoseconds_t frame_length,
-                                const audio::SampleSpec& sample_spec) {
-    size_t size = sample_spec.ns_2_samples_overall(frame_length);
-
-    if (first_created_) {
-        roc_panic(
-            "sox backend:"
-            " set_frame_size() can be called only before creating first source or sink");
-    }
-
-    sox_get_globals()->bufsiz = size * sizeof(sox_sample_t);
+const char* SoxBackend::name() const {
+    return "sox";
 }
 
-void SoxBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& driver_list) {
+bool SoxBackend::discover_drivers(core::Array<DriverInfo, MaxDrivers>& result) {
     for (size_t n = 0; n < ROC_ARRAY_SIZE(default_drivers); n++) {
-        const sox_format_handler_t* handler =
-            sox_write_handler(NULL, default_drivers[n], NULL);
-        if (!handler) {
+        const char* driver = default_drivers[n];
+        if (!is_supported_driver(driver)) {
             continue;
         }
 
-        const char* driver = map_from_sox_driver(default_drivers[n]);
-
-        if (!driver_list.push_back(DriverInfo(driver, DriverType_Device,
-                                              DriverFlag_IsDefault
-                                                  | DriverFlag_SupportsSource
-                                                  | DriverFlag_SupportsSink,
-                                              this))) {
-            roc_panic("sox backend: can't add driver");
+        if (!result.push_back(DriverInfo(driver_from_sox(driver),
+                                         Driver_Device | Driver_DefaultDevice
+                                             | Driver_SupportsSource
+                                             | Driver_SupportsSink,
+                                         this))) {
+            return false;
         }
     }
 
     const sox_format_tab_t* formats = sox_get_format_fns();
-
     for (size_t n = 0; formats[n].fn; n++) {
-        sox_format_handler_t const* handler = formats[n].fn();
-
+        sox_format_handler_t const* format_handler = formats[n].fn();
         char const* const* format_names;
-        for (format_names = handler->names; *format_names; ++format_names) {
-            const char* driver = map_from_sox_driver(*format_names);
 
-            if (is_driver_hidden(driver) || is_default_driver(driver)) {
+        for (format_names = format_handler->names; *format_names; ++format_names) {
+            const char* driver = *format_names;
+            if (!is_supported_driver(driver) || is_default_driver(driver)) {
                 continue;
             }
 
-            if (!driver_list.push_back(DriverInfo(
-                    driver,
-                    (handler->flags & SOX_FILE_DEVICE) ? DriverType_Device
-                                                       : DriverType_File,
-                    DriverFlag_SupportsSource | DriverFlag_SupportsSink, this))) {
-                roc_panic("sox backend: can't add driver");
+            if (!result.push_back(DriverInfo(
+                    driver_from_sox(driver),
+                    Driver_Device | Driver_SupportsSource | Driver_SupportsSink, this))) {
+                return false;
             }
         }
     }
+
+    return true;
 }
 
-IDevice* SoxBackend::open_device(DeviceType device_type,
-                                 DriverType driver_type,
-                                 const char* driver,
-                                 const char* path,
-                                 const Config& config,
-                                 core::IArena& arena) {
-    first_created_ = true;
+bool SoxBackend::discover_formats(core::Array<FormatInfo, MaxFormats>& result) {
+    // no formats except pcm
+    return true;
+}
 
-    driver = map_to_sox_driver(driver);
+bool SoxBackend::discover_subformat_groups(core::StringList& result) {
+    // no sub-formats except pcm
+    return true;
+}
 
-    if (driver && is_driver_hidden(driver)) {
-        roc_log(LogDebug, "sox backend: driver is not supported: driver=%s path=%s",
-                driver, path);
-        return NULL;
-    }
+bool SoxBackend::discover_subformats(const char* group, core::StringList& result) {
+    // no sub-formats except pcm
+    return true;
+}
 
-    const sox_format_handler_t* handler = sox_write_handler(path, driver, NULL);
-    if (!handler) {
-        roc_log(LogDebug, "sox backend: driver is not available: driver=%s path=%s",
-                driver, path);
-        return NULL;
-    }
+status::StatusCode SoxBackend::open_device(DeviceType device_type,
+                                           const char* driver,
+                                           const char* path,
+                                           const IoConfig& io_config,
+                                           audio::FrameFactory& frame_factory,
+                                           core::IArena& arena,
+                                           IDevice** result) {
+    roc_panic_if(!driver);
+    roc_panic_if(!path);
 
-    if (!check_handler_type(handler, driver_type)) {
-        roc_log(LogDebug, "sox backend: mismatching driver type: driver=%s path=%s",
-                driver, path);
-        return NULL;
+    if (driver) {
+        driver = driver_to_sox(driver);
+
+        if (!is_supported_driver(driver)) {
+            roc_log(LogDebug,
+                    "sox backend sink: requested driver not supported by backend:"
+                    " driver=%s path=%s",
+                    driver, path);
+            // Try another backend.
+            return status::StatusNoDriver;
+        }
     }
 
     switch (device_type) {
     case DeviceType_Sink: {
-        core::ScopedPtr<SoxSink> sink(new (arena) SoxSink(arena, config, driver_type),
-                                      arena);
-        if (!sink || !sink->is_valid()) {
-            roc_log(LogDebug, "sox backend: can't construct sink: driver=%s path=%s",
+        core::ScopedPtr<SoxSink> sink(
+            new (arena) SoxSink(frame_factory, arena, io_config, driver, path));
+
+        if (!sink) {
+            roc_log(LogDebug, "sox backend: can't allocate sink: driver=%s path=%s",
                     driver, path);
-            return NULL;
+            return status::StatusNoMem;
         }
 
-        if (!sink->open(driver, path)) {
-            roc_log(LogDebug, "sox backend: open failed: driver=%s path=%s", driver,
-                    path);
-            return NULL;
+        if (sink->init_status() != status::StatusOK) {
+            roc_log(LogDebug, "sox backend: can't open sink: driver=%s path=%s status=%s",
+                    driver, path, status::code_to_str(sink->init_status()));
+            return sink->init_status();
         }
 
-        return sink.release();
+        *result = sink.hijack();
+        return status::StatusOK;
     } break;
 
     case DeviceType_Source: {
         core::ScopedPtr<SoxSource> source(
-            new (arena) SoxSource(arena, config, driver_type), arena);
-        if (!source || !source->is_valid()) {
-            roc_log(LogDebug, "sox backend: can't construct source: driver=%s path=%s",
+            new (arena) SoxSource(frame_factory, arena, io_config, driver, path));
+
+        if (!source) {
+            roc_log(LogDebug, "sox backend: can't allocate source: driver=%s path=%s",
                     driver, path);
-            return NULL;
+            return status::StatusNoMem;
         }
 
-        if (!source->open(driver, path)) {
-            roc_log(LogDebug, "sox backend: open failed: driver=%s path=%s", driver,
-                    path);
-            return NULL;
+        if (source->init_status() != status::StatusOK) {
+            roc_log(LogDebug,
+                    "sox backend: can't open source: driver=%s path=%s status=%s", driver,
+                    path, status::code_to_str(source->init_status()));
+            return source->init_status();
         }
 
-        return source.release();
+        *result = source.hijack();
+        return status::StatusOK;
     } break;
 
     default:
@@ -294,10 +273,6 @@ IDevice* SoxBackend::open_device(DeviceType device_type,
     }
 
     roc_panic("sox backend: invalid device type");
-}
-
-const char* SoxBackend::name() const {
-    return "sox";
 }
 
 } // namespace sndio

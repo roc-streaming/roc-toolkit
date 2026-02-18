@@ -25,14 +25,6 @@ extern "C" {
 #include <of_openfec_api.h>
 }
 
-#ifndef OF_USE_ENCODER
-#error "OF_USE_ENCODER undefined"
-#endif
-
-#ifndef OF_USE_LDPC_STAIRCASE_CODEC
-#error "OF_USE_LDPC_STAIRCASE_CODEC undefined"
-#endif
-
 namespace roc {
 namespace fec {
 
@@ -40,40 +32,33 @@ namespace fec {
 class OpenfecEncoder : public IBlockEncoder, public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit OpenfecEncoder(const CodecConfig& config,
-                            packet::PacketFactory& packet_factory,
-                            core::IArena& arena);
+    OpenfecEncoder(const CodecConfig& config,
+                   packet::PacketFactory& packet_factory,
+                   core::IArena& arena);
 
     virtual ~OpenfecEncoder();
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
-
-    //! Get buffer alignment requirement.
-    virtual size_t alignment() const;
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
 
     //! Get the maximum number of encoding symbols for the scheme being used.
     virtual size_t max_block_length() const;
 
+    //! Get buffer alignment requirement.
+    virtual size_t buffer_alignment() const;
+
     //! Start block.
-    //!
-    //! @remarks
-    //!  Performs an initial setup for a block. Should be called before
-    //!  any operations for the block.
-    virtual bool begin(size_t sblen, size_t rblen, size_t payload_size);
+    virtual ROC_NODISCARD status::StatusCode
+    begin_block(size_t sblen, size_t rblen, size_t payload_size);
 
     //! Store packet data for current block.
-    virtual void set(size_t index, const core::Slice<uint8_t>& buffer);
+    virtual void set_buffer(size_t index, const core::Slice<uint8_t>& buffer);
 
     //! Fill repair packets.
-    virtual void fill();
+    virtual void fill_buffers();
 
     //! Finish block.
-    //!
-    //! @remarks
-    //!  Cleanups the resources allocated for the block. Should be called after
-    //!  all operations for the block.
-    virtual void end();
+    virtual void end_block();
 
 private:
     bool resize_tabs_(size_t size);
@@ -92,8 +77,12 @@ private:
 
     of_codec_id_t codec_id_;
     union {
-        of_ldpc_parameters ldpc_params_;
+#ifdef OF_USE_REED_SOLOMON_2_M_CODEC
         of_rs_2_m_parameters_t rs_params_;
+#endif
+#ifdef OF_USE_LDPC_STAIRCASE_CODEC
+        of_ldpc_parameters ldpc_params_;
+#endif
     } codec_params_;
 
     core::Array<core::Slice<uint8_t> > buff_tab_;
@@ -101,7 +90,7 @@ private:
 
     size_t max_block_length_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace fec

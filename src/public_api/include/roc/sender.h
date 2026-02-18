@@ -8,7 +8,7 @@
 
 /**
  * \file roc/sender.h
- * \brief Roc sender.
+ * \brief Sender peer.
  */
 
 #ifndef ROC_SENDER_H_
@@ -76,9 +76,9 @@ extern "C" {
  *
  * Supported interface configurations:
  *
- *   - Connect \ref ROC_INTERFACE_CONSOLIDATED to a remote endpoint (e.g. be an RTSP
+ *   - Connect \ref ROC_INTERFACE_AGGREGATE to a remote endpoint (e.g. be an RTSP
  *     client).
- *   - Bind \ref ROC_INTERFACE_CONSOLIDATED to a local endpoint (e.g. be an RTSP server).
+ *   - Bind \ref ROC_INTERFACE_AGGREGATE to a local endpoint (e.g. be an RTSP server).
  *   - Connect \ref ROC_INTERFACE_AUDIO_SOURCE, \ref ROC_INTERFACE_AUDIO_REPAIR
  *     (optionally, for FEC), and \ref ROC_INTERFACE_AUDIO_CONTROL (optionally, for
  *     control messages) to remote endpoints (e.g. be an RTP/FECFRAME/RTCP sender).
@@ -92,7 +92,7 @@ extern "C" {
  *
  * **FEC schemes**
  *
- * If \ref ROC_INTERFACE_CONSOLIDATED is used, it automatically creates all necessary
+ * If \ref ROC_INTERFACE_AGGREGATE is used, it automatically creates all necessary
  * transport interfaces and the user should not bother about them.
  *
  * Otherwise, the user should manually configure \ref ROC_INTERFACE_AUDIO_SOURCE and
@@ -171,7 +171,7 @@ typedef struct roc_sender roc_sender;
  * **Parameters**
  *  - \p context should point to an opened context
  *  - \p config should point to an initialized config
- *  - \p result should point to an unitialized roc_sender pointer
+ *  - \p result should point to an uninitialized roc_sender pointer
  *
  * **Returns**
  *  - returns zero if the sender was successfully created
@@ -265,7 +265,7 @@ ROC_API int roc_sender_connect(roc_sender* sender,
  *
  * To retrieve metrics of specific connections of the slot, set \c conn_metrics to point
  * to an array of \ref roc_connection_metrics structs, and \c conn_metrics_count to the
- * number of elements in the array. The function will write metrcis to the array (no more
+ * number of elements in the array. The function will write metrics to the array (no more
  * than array size) and update \c conn_metrics_count with the number of elements written.
  *
  * Actual number of connections (regardless of the array size) is also written to

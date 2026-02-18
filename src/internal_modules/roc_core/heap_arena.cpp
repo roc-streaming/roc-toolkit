@@ -115,7 +115,7 @@ void HeapArena::deallocate(void* ptr) {
         }
     }
 
-    const int n = num_allocations_--;
+    const size_t n = num_allocations_--;
     if (n == 0) {
         roc_panic("heap arena: unpaired deallocate");
     }

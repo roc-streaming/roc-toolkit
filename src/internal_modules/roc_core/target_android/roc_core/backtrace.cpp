@@ -6,14 +6,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_core/backtrace.h"
+#include "roc_core/console.h"
+
 #include <cxxabi.h>
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unwind.h>
-
-#include "roc_core/backtrace.h"
-#include "roc_core/console.h"
 
 namespace roc {
 namespace core {

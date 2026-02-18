@@ -14,14 +14,25 @@
 
 #include "roc_core/slice.h"
 #include "roc_packet/packet.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
 
 //! Packet composer interface.
-class IComposer {
+class IComposer : public core::ArenaAllocation {
 public:
+    //! Initialize.
+    explicit IComposer(core::IArena& arena);
+
+    //! Deinitialize.
     virtual ~IComposer();
+
+    //! Check if the object was successfully constructed.
+    //! @returns
+    //!  status::StatusOK if composer was initialized correctly,
+    //!  or error code otherwise.
+    ROC_NODISCARD virtual status::StatusCode init_status() const = 0;
 
     //! Adjust buffer to align payload.
     //! @remarks
@@ -31,7 +42,7 @@ public:
     //! @returns
     //!  true if the buffer was successfully adjusted or false if the @p buffer
     //!  capacity is not enough.
-    virtual bool
+    ROC_NODISCARD virtual status::StatusCode
     align(core::Slice<uint8_t>& buffer, size_t header_size, size_t payload_alignment) = 0;
 
     //! Prepare buffer for composing a packet.
@@ -44,7 +55,7 @@ public:
     //! @returns
     //!  true if the packet was successfully prepared or false if the @p buffer
     //!  capacity is not enough.
-    virtual bool
+    ROC_NODISCARD virtual status::StatusCode
     prepare(Packet& packet, core::Slice<uint8_t>& buffer, size_t payload_size) = 0;
 
     //! Pad packet.
@@ -55,7 +66,7 @@ public:
     //! @returns
     //!  true if the packet was successfully padded or false if parameters
     //!  are invalid or padding is not supported.
-    virtual bool pad(Packet& packet, size_t padding_size) = 0;
+    ROC_NODISCARD virtual status::StatusCode pad(Packet& packet, size_t padding_size) = 0;
 
     //! Compose packet to buffer.
     //! @remarks
@@ -63,7 +74,7 @@ public:
     //!  a previous prepare() call.
     //! @returns
     //!  true if the packet was successfully composed or false if an error occurred.
-    virtual bool compose(Packet& packet) = 0;
+    ROC_NODISCARD virtual status::StatusCode compose(Packet& packet) = 0;
 };
 
 } // namespace packet

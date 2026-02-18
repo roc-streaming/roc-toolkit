@@ -151,7 +151,7 @@ TEST_GROUP(tasks) {};
 
 TEST(tasks, synchronous_add) {
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);
 
@@ -168,7 +168,7 @@ TEST(tasks, synchronous_add) {
 
 TEST(tasks, synchronous_add_recv_remove) {
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);
     packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);
@@ -196,7 +196,7 @@ TEST(tasks, synchronous_add_recv_remove) {
 
 TEST(tasks, asynchronous_add) {
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);
 
@@ -217,7 +217,7 @@ TEST(tasks, asynchronous_add) {
 
 TEST(tasks, asynchronous_add_recv_remove) {
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UdpConfig config = make_receiver_config("127.0.0.1", 0);
     packet::ConcurrentQueue queue(packet::ConcurrentQueue::Blocking);

@@ -16,6 +16,7 @@
 
 #include "roc/config.h"
 #include "roc/platform.h"
+#include "roc/plugin.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,7 +50,7 @@ typedef struct roc_context roc_context;
  *
  * **Parameters**
  *  - \p config should point to an initialized config
- *  - \p result should point to an unitialized roc_context pointer
+ *  - \p result should point to an uninitialized roc_context pointer
  *
  * **Returns**
  *  - returns zero if the context was successfully created
@@ -57,6 +58,8 @@ typedef struct roc_context roc_context;
  *  - returns a negative value if there are not enough resources
  *
  * **Ownership**
+ *  - doesn't take or share the ownership of \p config; it may be safely deallocated
+ *    after the function returns
  *  - passes the ownership of \p result to the user; the user is responsible to call
  *    roc_context_close() to free it
  */
@@ -64,23 +67,20 @@ ROC_API int roc_context_open(const roc_context_config* config, roc_context** res
 
 /** Register custom encoding.
  *
- * Registers \p encoding with given \p encoding_id. Registered encodings complement
+ * Registers \p encoding with given \p encoding_id. Registered encodings extend
  * built-in encodings defined by \ref roc_packet_encoding enum. Whenever you need to
  * specify packet encoding, you can use both built-in and registered encodings.
  *
  * On sender, you should register custom encoding and set to \c packet_encoding field
- * of \c roc_sender_config, if you need to force specific encoding of packets, but
- * built-in set of encodings is not enough.
+ * of \ref roc_sender_config, if you need to force specific encoding of packets.
  *
  * On receiver, you should register custom encoding with same id and specification,
  * if you did so on sender, and you're not using any signaling protocol (like RTSP)
  * that is capable of automatic exchange of encoding information.
  *
- * In case of RTP, encoding id is mapped directly to payload type field (PT).
- *
  * **Parameters**
  *  - \p context should point to an opened context
- *  - \p encoding_id should be encoding identifier in range [1; 127]
+ *  - \p encoding_id should be in range [\c ROC_ENCODING_ID_MIN; \c ROC_ENCODING_ID_MAX]
  *  - \p encoding should point to valid encoding specification
  *
  * **Returns**
@@ -95,6 +95,29 @@ ROC_API int roc_context_open(const roc_context_config* config, roc_context** res
 ROC_API int roc_context_register_encoding(roc_context* context,
                                           int encoding_id,
                                           const roc_media_encoding* encoding);
+
+/** Register custom PLC backend.
+ *
+ * Registers plugin that implements custom PLC backend. Registered backends extend
+ * built-in PLC backends defined by \ref roc_plc_backend enum. Whenever you need to
+ * specify PLC backend, you can use both built-in and registered backends.
+ *
+ * **Parameters**
+ *  - \p context should point to an opened context
+ *  - \p plugin_id should be in range [\c ROC_PLUGIN_ID_MIN; \c ROC_PLUGIN_ID_MAX]
+ *  - \p plugin should point to plugin callback table
+ *
+ * **Returns**
+ *  - returns zero if plugin was successfully registered
+ *  - returns a negative value if the arguments are invalid
+ *  - returns a negative value if plugin with given identifier already exists
+ *
+ * **Ownership**
+ *  - stores \p plugin pointer internally for later use; \p plugin should remain valid
+ *    until \p context is closed
+ */
+ROC_API int
+roc_context_register_plc(roc_context* context, int plugin_id, roc_plugin_plc* plugin);
 
 /** Close the context.
  *

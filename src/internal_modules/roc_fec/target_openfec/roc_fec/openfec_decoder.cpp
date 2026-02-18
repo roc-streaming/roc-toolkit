@@ -6,15 +6,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <stdlib.h>
+#include "roc_fec/openfec_decoder.h"
+#include "roc_core/log.h"
+#include "roc_core/panic.h"
+#include "roc_core/stddefs.h"
+#include "roc_packet/fec_scheme.h"
 
 extern "C" {
 #include <of_mem.h>
 }
-
-#include "roc_core/log.h"
-#include "roc_core/panic.h"
-#include "roc_fec/openfec_decoder.h"
 
 namespace roc {
 namespace fec {
@@ -22,7 +22,8 @@ namespace fec {
 OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
                                packet::PacketFactory& packet_factory,
                                core::IArena& arena)
-    : sblen_(0)
+    : IBlockDecoder(arena)
+    , sblen_(0)
     , rblen_(0)
     , payload_size_(0)
     , max_index_(0)
@@ -35,8 +36,10 @@ OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
     , status_(arena)
     , has_new_packets_(false)
     , decoding_finished_(false)
-    , valid_(false) {
-    if (config.scheme == packet::FEC_ReedSolomon_M8) {
+    , init_status_(status::NoStatus) {
+    switch (config.scheme) {
+#ifdef OF_USE_REED_SOLOMON_2_M_CODEC
+    case packet::FEC_ReedSolomon_M8: {
         roc_log(LogDebug, "openfec decoder: initializing: codec=rs m=%u",
                 (unsigned)config.rs_m);
 
@@ -45,8 +48,12 @@ OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
 
         of_sess_params_ = (of_parameters_t*)&codec_params_.rs_params_;
 
-        max_block_length_ = OF_REED_SOLOMON_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
-    } else if (config.scheme == packet::FEC_LDPC_Staircase) {
+        max_block_length_ = size_t(1 << config.rs_m) - 1;
+    } break;
+#endif // OF_USE_REED_SOLOMON_2_M_CODEC
+
+#ifdef OF_USE_LDPC_STAIRCASE_CODEC
+    case packet::FEC_LDPC_Staircase: {
         roc_log(LogDebug, "openfec decoder: initializing: codec=ldpc prng_seed=%ld n1=%d",
                 (long)config.ldpc_prng_seed, (int)config.ldpc_N1);
 
@@ -57,13 +64,18 @@ OpenfecDecoder::OpenfecDecoder(const CodecConfig& config,
         of_sess_params_ = (of_parameters_t*)&codec_params_.ldpc_params_;
 
         max_block_length_ = OF_LDPC_STAIRCASE_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
-    } else {
-        roc_panic("openfec decoder: unexpected fec scheme");
+    } break;
+#endif // OF_USE_LDPC_STAIRCASE_CODEC
+
+    default:
+        roc_log(LogError, "openfec decoder: unsupported fec scheme: scheme=%s",
+                packet::fec_scheme_to_str(config.scheme));
+        init_status_ = status::StatusBadConfig;
+        return;
     }
 
     of_verbosity = 0;
-
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 OpenfecDecoder::~OpenfecDecoder() {
@@ -72,21 +84,26 @@ OpenfecDecoder::~OpenfecDecoder() {
     }
 }
 
-bool OpenfecDecoder::is_valid() const {
-    return valid_;
+status::StatusCode OpenfecDecoder::init_status() const {
+    return init_status_;
 }
 
 size_t OpenfecDecoder::max_block_length() const {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return max_block_length_;
 }
 
-bool OpenfecDecoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
-    roc_panic_if_not(is_valid());
+status::StatusCode
+OpenfecDecoder::begin_block(size_t sblen, size_t rblen, size_t payload_size) {
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (!resize_tabs_(sblen + rblen)) {
-        return false;
+        roc_log(
+            LogError,
+            "openfec decoder: failed to resize tabs in begin_block, sblen=%lu, rblen=%lu",
+            (unsigned long)sblen, (unsigned long)rblen);
+        return status::StatusNoMem;
     }
 
     sblen_ = sblen;
@@ -97,11 +114,11 @@ bool OpenfecDecoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
     update_session_params_(sblen, rblen, payload_size);
     reset_session_();
 
-    return true;
+    return status::StatusOK;
 }
 
-void OpenfecDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
-    roc_panic_if_not(is_valid());
+void OpenfecDecoder::set_buffer(size_t index, const core::Slice<uint8_t>& buffer) {
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (index >= sblen_ + rblen_) {
         roc_panic("openfec decoder: index out of bounds: index=%lu size=%lu",
@@ -142,8 +159,8 @@ void OpenfecDecoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
     }
 }
 
-core::Slice<uint8_t> OpenfecDecoder::repair(size_t index) {
-    roc_panic_if_not(is_valid());
+core::Slice<uint8_t> OpenfecDecoder::repair_buffer(size_t index) {
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (!buff_tab_[index]) {
         update_();
@@ -153,7 +170,9 @@ core::Slice<uint8_t> OpenfecDecoder::repair(size_t index) {
     return buff_tab_[index];
 }
 
-void OpenfecDecoder::end() {
+void OpenfecDecoder::end_block() {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     if (of_sess_ != NULL) {
         report_();
         destroy_session_();

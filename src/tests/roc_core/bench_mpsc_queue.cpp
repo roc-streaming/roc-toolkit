@@ -6,11 +6,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <benchmark/benchmark.h>
-
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/mutex.h"
 #include "roc_core/thread.h"
+
+#include <benchmark/benchmark.h>
 
 namespace roc {
 namespace core {

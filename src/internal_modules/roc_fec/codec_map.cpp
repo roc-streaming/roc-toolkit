@@ -11,7 +11,7 @@
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/scoped_ptr.h"
-#include "roc_packet/fec_scheme_to_str.h"
+#include "roc_packet/fec_scheme.h"
 
 #ifdef ROC_TARGET_OPENFEC
 #include "roc_fec/openfec_decoder.h"
@@ -24,38 +24,37 @@ namespace fec {
 namespace {
 
 template <class I, class T>
-ROC_ATTR_UNUSED I* ctor_func(const CodecConfig& config,
-                             packet::PacketFactory& packet_factory,
-                             core::IArena& arena) {
-    core::ScopedPtr<T> codec(new (arena) T(config, packet_factory, arena), arena);
-    if (!codec || !codec->is_valid()) {
-        return NULL;
-    }
-    return codec.release();
+ROC_NOUNUSED I* ctor_func(const CodecConfig& config,
+                          packet::PacketFactory& packet_factory,
+                          core::IArena& arena) {
+    return new (arena) T(config, packet_factory, arena);
 }
 
 } // namespace
 
+// clang-format off
 CodecMap::CodecMap()
     : n_codecs_(0) {
-#ifdef ROC_TARGET_OPENFEC
+#if defined(ROC_TARGET_OPENFEC) && defined(OF_USE_REED_SOLOMON_2_M_CODEC)
     {
         Codec codec;
+        codec.scheme = packet::FEC_ReedSolomon_M8;
         codec.encoder_ctor = ctor_func<IBlockEncoder, OpenfecEncoder>;
         codec.decoder_ctor = ctor_func<IBlockDecoder, OpenfecDecoder>;
-
-        codec.scheme = packet::FEC_ReedSolomon_M8;
-        add_codec_(codec);
-
-        codec.scheme = packet::FEC_LDPC_Staircase;
         add_codec_(codec);
     }
-#endif // ROC_TARGET_OPENFEC
+#endif
+#if defined(ROC_TARGET_OPENFEC) && defined(OF_USE_LDPC_STAIRCASE_CODEC)
+    {
+        Codec codec;
+        codec.scheme = packet::FEC_LDPC_Staircase;
+        codec.encoder_ctor = ctor_func<IBlockEncoder, OpenfecEncoder>;
+        codec.decoder_ctor = ctor_func<IBlockDecoder, OpenfecDecoder>;
+        add_codec_(codec);
+    }
+#endif
 }
-
-bool CodecMap::is_supported(packet::FecScheme scheme) const {
-    return find_codec_(scheme);
-}
+// clang-format on
 
 size_t CodecMap::num_schemes() const {
     return n_codecs_;
@@ -66,9 +65,13 @@ packet::FecScheme CodecMap::nth_scheme(size_t n) const {
     return codecs_[n].scheme;
 }
 
-IBlockEncoder* CodecMap::new_encoder(const CodecConfig& config,
-                                     packet::PacketFactory& packet_factory,
-                                     core::IArena& arena) const {
+bool CodecMap::has_scheme(packet::FecScheme scheme) const {
+    return find_codec_(scheme);
+}
+
+IBlockEncoder* CodecMap::new_block_encoder(const CodecConfig& config,
+                                           packet::PacketFactory& packet_factory,
+                                           core::IArena& arena) const {
     const Codec* codec = find_codec_(config.scheme);
     if (!codec) {
         return NULL;
@@ -76,9 +79,9 @@ IBlockEncoder* CodecMap::new_encoder(const CodecConfig& config,
     return codec->encoder_ctor(config, packet_factory, arena);
 }
 
-IBlockDecoder* CodecMap::new_decoder(const CodecConfig& config,
-                                     packet::PacketFactory& packet_factory,
-                                     core::IArena& arena) const {
+IBlockDecoder* CodecMap::new_block_decoder(const CodecConfig& config,
+                                           packet::PacketFactory& packet_factory,
+                                           core::IArena& arena) const {
     const Codec* codec = find_codec_(config.scheme);
     if (!codec) {
         return NULL;

@@ -43,7 +43,7 @@ Reporter::Reporter(const Config& config, IParticipant& participant, core::IArena
     , report_time_(0)
     , config_(config)
     , max_delay_(packet::ntp_2_nanoseconds(header::MaxDelay))
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     memset(local_cname_, 0, sizeof(local_cname_));
 
     const ParticipantInfo part_info = participant_.participant_info();
@@ -54,6 +54,7 @@ Reporter::Reporter(const Config& config, IParticipant& participant, core::IArena
     if (part_info.cname == NULL || part_info.cname[0] == '\0'
         || strlen(part_info.cname) > sizeof(local_cname_) - 1) {
         roc_log(LogError, "rtcp reporter: cname() should return short non-empty string");
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
@@ -68,7 +69,7 @@ Reporter::Reporter(const Config& config, IParticipant& participant, core::IArena
             address::socket_addr_to_str(participant_report_addr_).c_str(),
             (double)config_.inactivity_timeout / core::Millisecond);
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 Reporter::~Reporter() {
@@ -76,37 +77,37 @@ Reporter::~Reporter() {
                      "rtcp reporter: invalid state in destructor");
 }
 
-bool Reporter::is_valid() const {
-    return valid_;
+status::StatusCode Reporter::init_status() const {
+    return init_status_;
 }
 
 bool Reporter::is_sending() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return participant_.has_send_stream();
 }
 
 bool Reporter::is_receiving() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return participant_.num_recv_streams() != 0;
 }
 
 size_t Reporter::total_destinations() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return address_map_.size();
 }
 
 size_t Reporter::total_streams() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return stream_map_.size();
 }
 
 status::StatusCode Reporter::begin_processing(const address::SocketAddr& report_addr,
                                               core::nanoseconds_t report_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if_msg(report_state_ != State_Idle, "rtcp reporter: invalid call order");
     roc_panic_if_msg(report_time <= 0, "rtcp reporter: invalid timestamp");
@@ -597,7 +598,7 @@ status::StatusCode Reporter::end_processing() {
 }
 
 status::StatusCode Reporter::begin_generation(core::nanoseconds_t report_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if_msg(report_state_ != State_Idle, "rtcp reporter: invalid call order");
     roc_panic_if_msg(report_time <= 0, "rtcp reporter: invalid timestamp");

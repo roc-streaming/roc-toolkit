@@ -18,24 +18,32 @@ ControlTaskQueue::ControlTaskQueue()
     : started_(false)
     , stop_(false)
     , fetch_ready_(true)
-    , ready_queue_size_(0) {
-    start_thread_();
+    , ready_queue_size_(0)
+    , init_status_(status::NoStatus) {
+    roc_log(LogTrace, "control task queue: starting thread");
+
+    if (!start_thread_()) {
+        init_status_ = status::StatusErrThread;
+        return;
+    }
+
+    init_status_ = status::StatusOK;
 }
 
 ControlTaskQueue::~ControlTaskQueue() {
+    roc_log(LogTrace, "control task queue: stopping thread");
+
     stop_thread_();
 }
 
-bool ControlTaskQueue::is_valid() const {
-    return started_;
+status::StatusCode ControlTaskQueue::init_status() const {
+    return init_status_;
 }
 
 void ControlTaskQueue::schedule(ControlTask& task,
                                 IControlTaskExecutor& executor,
                                 IControlTaskCompleter* completer) {
-    if (!is_valid()) {
-        roc_panic("control task queue: attempt to use invalid queue");
-    }
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (stop_) {
         roc_panic("control task queue: attempt to use queue after stop");
@@ -50,9 +58,7 @@ void ControlTaskQueue::schedule_at(ControlTask& task,
                                    core::nanoseconds_t deadline,
                                    IControlTaskExecutor& executor,
                                    IControlTaskCompleter* completer) {
-    if (!is_valid()) {
-        roc_panic("control task queue: attempt to use invalid queue");
-    }
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (stop_) {
         roc_panic("control task queue: attempt to use queue after stop");
@@ -68,25 +74,19 @@ void ControlTaskQueue::schedule_at(ControlTask& task,
 }
 
 void ControlTaskQueue::resume(ControlTask& task) {
-    if (!is_valid()) {
-        roc_panic("control task queue: attempt to use invalid queue");
-    }
+    roc_panic_if(init_status_ != status::StatusOK);
 
     request_resume_(task);
 }
 
 void ControlTaskQueue::async_cancel(ControlTask& task) {
-    if (!is_valid()) {
-        roc_panic("control task queue: attempt to use invalid queue");
-    }
+    roc_panic_if(init_status_ != status::StatusOK);
 
     request_renew_(task, -1);
 }
 
 void ControlTaskQueue::wait(ControlTask& task) {
-    if (!is_valid()) {
-        roc_panic("control task queue: attempt to use invalid queue");
-    }
+    roc_panic_if(init_status_ != status::StatusOK);
 
     wait_task_(task);
 }
@@ -105,8 +105,8 @@ void ControlTaskQueue::run() {
     roc_log(LogDebug, "control task queue: finishing event loop");
 }
 
-void ControlTaskQueue::start_thread_() {
-    started_ = Thread::start();
+bool ControlTaskQueue::start_thread_() {
+    return (started_ = Thread::start());
 }
 
 void ControlTaskQueue::stop_thread_() {

@@ -7,32 +7,40 @@
  */
 
 #include "roc_audio/resampler_config.h"
-#include "roc_audio/resampler_map.h"
+#include "roc_audio/processor_map.h"
 
 namespace roc {
 namespace audio {
 
-void ResamplerConfig::deduce_defaults(LatencyTunerBackend latency_backend,
-                                      LatencyTunerProfile latency_tuner) {
-    if (backend == ResamplerBackend_Default) {
+bool ResamplerConfig::deduce_defaults(ProcessorMap& processor_map,
+                                      LatencyTunerBackend latency_backend,
+                                      LatencyTunerProfile latency_profile) {
+    if (backend == ResamplerBackend_Auto) {
         // If responsive profile is set, use builtin backend instead of speex,
-        // since it has higher scaling precision.
-        const bool need_builtin_backend = latency_tuner == LatencyTunerProfile_Responsive;
+        // since it has higher scaling precision. Same applies to E2E backend.
+        const bool prefer_builtin_resampler = latency_backend == LatencyTunerBackend_E2e
+            || latency_profile == LatencyTunerProfile_Responsive;
 
-        // If speex backend is not available, fallback to builtin backend.
+        // Even if we don't require builtin resampler, if speex backend is not available,
+        // we fallback to builtin just because it's always available.
         const bool force_builtin_backend =
-            !ResamplerMap::instance().is_supported(ResamplerBackend_Speex);
+            !processor_map.has_resampler_backend(ResamplerBackend_Speex);
 
-        if (need_builtin_backend || force_builtin_backend) {
+        if (prefer_builtin_resampler || force_builtin_backend) {
             backend = ResamplerBackend_Builtin;
         } else {
             backend = ResamplerBackend_Speex;
         }
     }
+
+    return true;
 }
 
 const char* resampler_backend_to_str(ResamplerBackend backend) {
     switch (backend) {
+    case ResamplerBackend_Auto:
+        return "auto";
+
     case ResamplerBackend_Builtin:
         return "builtin";
 
@@ -42,8 +50,8 @@ const char* resampler_backend_to_str(ResamplerBackend backend) {
     case ResamplerBackend_SpeexDec:
         return "speexdec";
 
-    case ResamplerBackend_Default:
-        return "default";
+    case ResamplerBackend_Max:
+        break;
     }
 
     return "invalid";

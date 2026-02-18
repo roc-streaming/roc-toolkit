@@ -57,7 +57,7 @@ namespace netio {
 //! @note
 //!  - Methods are called from the network loop thread.
 //!  - Methods should not block.
-class IConnHandler : public core::RefCounted<IConnHandler, core::ManualAllocation> {
+class IConnHandler : public core::RefCounted<IConnHandler, core::NoopAllocation> {
 public:
     virtual ~IConnHandler();
 

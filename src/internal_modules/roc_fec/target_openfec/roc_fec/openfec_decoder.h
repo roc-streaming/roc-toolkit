@@ -25,14 +25,6 @@ extern "C" {
 #include <of_openfec_api.h>
 }
 
-#ifndef OF_USE_DECODER
-#error "OF_USE_DECODER undefined"
-#endif
-
-#ifndef OF_USE_LDPC_STAIRCASE_CODEC
-#error "OF_USE_LDPC_STAIRCASE_CODEC undefined"
-#endif
-
 namespace roc {
 namespace fec {
 
@@ -40,37 +32,30 @@ namespace fec {
 class OpenfecDecoder : public IBlockDecoder, public core::NonCopyable<> {
 public:
     //! Initialize.
-    explicit OpenfecDecoder(const CodecConfig& config,
-                            packet::PacketFactory& packet_factory,
-                            core::IArena& arena);
+    OpenfecDecoder(const CodecConfig& config,
+                   packet::PacketFactory& packet_factory,
+                   core::IArena& arena);
 
     virtual ~OpenfecDecoder();
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
 
     //! Get the maximum number of encoding symbols for the scheme being used.
     virtual size_t max_block_length() const;
 
     //! Start block.
-    //!
-    //! @remarks
-    //!  Performs an initial setup for a block. Should be called before
-    //!  any operations for the block.
-    virtual bool begin(size_t sblen, size_t rblen, size_t payload_size);
+    virtual ROC_NODISCARD status::StatusCode
+    begin_block(size_t sblen, size_t rblen, size_t payload_size);
 
     //! Store source or repair packet buffer for current block.
-    virtual void set(size_t index, const core::Slice<uint8_t>& buffer);
+    virtual void set_buffer(size_t index, const core::Slice<uint8_t>& buffer);
 
     //! Repair source packet buffer.
-    virtual core::Slice<uint8_t> repair(size_t index);
+    virtual core::Slice<uint8_t> repair_buffer(size_t index);
 
     //! Finish block.
-    //!
-    //! @remarks
-    //!  Cleanups the resources allocated for the block. Should be called after
-    //!  all operations for the block.
-    virtual void end();
+    virtual void end_block();
 
 private:
     void update_session_params_(size_t sblen, size_t rblen, size_t payload_size);
@@ -102,8 +87,12 @@ private:
 
     of_codec_id_t codec_id_;
     union {
+#ifdef OF_USE_REED_SOLOMON_2_M_CODEC
         of_rs_2_m_parameters_t rs_params_;
+#endif
+#ifdef OF_USE_LDPC_STAIRCASE_CODEC
         of_ldpc_parameters ldpc_params_;
+#endif
     } codec_params_;
 
     // session is recreated for every new block
@@ -130,7 +119,7 @@ private:
 
     size_t max_block_length_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace fec

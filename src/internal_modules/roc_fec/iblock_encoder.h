@@ -14,46 +14,53 @@
 
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace fec {
 
 //! FEC block encoder interface.
-class IBlockEncoder {
+class IBlockEncoder : public core::ArenaAllocation {
 public:
+    //! Initialize.
+    explicit IBlockEncoder(core::IArena& arena);
+
+    //! Deinitialize.
     virtual ~IBlockEncoder();
 
-    //! Get buffer alignment requirement.
-    virtual size_t alignment() const = 0;
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const = 0;
 
     //! Get the maximum number of encoding symbols for the scheme being used.
     virtual size_t max_block_length() const = 0;
 
+    //! Get buffer alignment requirement.
+    virtual size_t buffer_alignment() const = 0;
+
     //! Start block.
-    //!
     //! @remarks
-    //!  Performs an initial setup for a block. Should be called before
-    //!  any operations for the block.
-    virtual bool begin(size_t sblen, size_t rblen, size_t payload_size) = 0;
+    //! Performs an initial setup for a block. Should be called before any operations for
+    //! the block.
+    //! @returns status::StatusOK on success, or a specific error code on failure (e.g.,
+    //! status::StatusNoMem if memory allocation fails).
+    virtual ROC_NODISCARD status::StatusCode
+    begin_block(size_t sblen, size_t rblen, size_t payload_size) = 0;
 
     //! Store source or repair packet buffer for current block.
-    //!
     //! @pre
-    //!  This method may be called only between begin() and end() calls.
-    virtual void set(size_t index, const core::Slice<uint8_t>& buffer) = 0;
+    //!  This method may be called only between begin_block() and end_block().
+    virtual void set_buffer(size_t index, const core::Slice<uint8_t>& buffer) = 0;
 
     //! Fill all repair packets in current block.
-    //!
     //! @pre
-    //!  This method may be called only between begin() and end() calls.
-    virtual void fill() = 0;
+    //!  This method may be called only between begin_block() and end_block().
+    virtual void fill_buffers() = 0;
 
     //! Finish block.
-    //!
     //! @remarks
     //!  Cleanups the resources allocated for the block. Should be called after
     //!  all operations for the block.
-    virtual void end() = 0;
+    virtual void end_block() = 0;
 };
 
 } // namespace fec

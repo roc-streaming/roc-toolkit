@@ -7,7 +7,6 @@
  */
 
 #include "roc_core/log.h"
-#include "roc_core/global_destructor.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/thread.h"
@@ -23,6 +22,21 @@ void backend_handler(const LogMessage& msg, void** args) {
 
     ((LogBackend*)args[0])->handle(msg);
 }
+
+struct logger_destructor {
+    static int flag;
+
+    static bool destructor_called() {
+        return AtomicOps::load_relaxed(flag);
+    }
+
+    ~logger_destructor() {
+        AtomicOps::store_seq_cst(flag, true);
+    }
+};
+
+int logger_destructor::flag = 0;
+logger_destructor logger_dtor;
 
 } // namespace
 
@@ -65,7 +79,7 @@ void Logger::set_level(LogLevel level) {
         level = LogTrace;
     }
 
-    if ((int)level >= LogDebug) {
+    if ((int)level >= LogTrace) {
         location_mode_ = LocationEnabled;
     } else {
         location_mode_ = LocationDisabled;
@@ -116,11 +130,11 @@ void Logger::writef(LogLevel level,
     // library (if we're in different shared libraries). If this happened, attempt
     // to invoke handler at this point may cause crashes. To reduce probability of
     // this, we stop using user handler as soon as we have detected it.
-    if (handler_ != &backend_handler && GlobalDestructor::is_destroying()) {
+    if (handler_ != &backend_handler && logger_destructor::destructor_called()) {
         return;
     }
 
-    char text[256] = {};
+    char text[512] = {};
     va_list args;
     va_start(args, format);
     if (vsnprintf(text, sizeof(text) - 1, format, args) < 0) {

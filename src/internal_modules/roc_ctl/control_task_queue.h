@@ -12,7 +12,7 @@
 #ifndef ROC_CTL_CONTROL_TASK_QUEUE_H_
 #define ROC_CTL_CONTROL_TASK_QUEUE_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/list.h"
 #include "roc_core/mpsc_queue.h"
 #include "roc_core/mutex.h"
@@ -22,6 +22,7 @@
 #include "roc_ctl/control_task.h"
 #include "roc_ctl/control_task_executor.h"
 #include "roc_ctl/icontrol_task_completer.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace ctl {
@@ -79,7 +80,7 @@ namespace ctl {
 //!
 //!  - Otherwise, we push the task to ready_queue_ (which has lock-free push), set
 //!    the timer wakeup time to zero (to ensure that the event loop thread wont go to
-//!    sleep), and return, leaving the completion of the operarion to the event loop
+//!    sleep), and return, leaving the completion of the operation to the event loop
 //!    thread. The event loop thread will fetch the task from ready_queue_ soon and
 //!    complete the operation by manipulating the sleeping_queue_.
 //!
@@ -135,7 +136,7 @@ public:
     virtual ~ControlTaskQueue();
 
     //! Check if the object was successfully constructed.
-    bool is_valid() const;
+    status::StatusCode init_status() const;
 
     //! Enqueue a task for asynchronous execution as soon as possible.
     //!
@@ -223,7 +224,7 @@ public:
 private:
     virtual void run();
 
-    void start_thread_();
+    bool start_thread_();
     void stop_thread_();
 
     void setup_task_(ControlTask& task,
@@ -270,16 +271,18 @@ private:
     core::nanoseconds_t update_wakeup_timer_();
 
     bool started_;
-    core::Atomic<int> stop_;
+    core::AtomicBool stop_;
     bool fetch_ready_;
 
-    core::Atomic<int> ready_queue_size_;
+    core::AtomicInt<int32_t> ready_queue_size_;
     core::MpscQueue<ControlTask, core::NoOwnership> ready_queue_;
     core::List<ControlTask, core::NoOwnership> sleeping_queue_;
     core::List<ControlTask, core::NoOwnership> paused_queue_;
 
     core::Timer wakeup_timer_;
     core::Mutex task_mutex_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace ctl

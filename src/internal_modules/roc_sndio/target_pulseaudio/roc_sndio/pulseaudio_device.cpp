@@ -8,11 +8,12 @@
 
 #include "roc_sndio/pulseaudio_device.h"
 #include "roc_audio/channel_defs.h"
+#include "roc_audio/format.h"
 #include "roc_audio/sample.h"
-#include "roc_audio/sample_format.h"
 #include "roc_audio/sample_spec_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace sndio {
@@ -26,18 +27,116 @@ const core::nanoseconds_t ReportInterval = 10 * core::Second;
 // 40ms or 20ms, and sometimes even 10ms
 const core::nanoseconds_t DefaultLatency = core::Millisecond * 60;
 
+// 10ms is rather high, but works well even on cheap sound cards and CPUs.
+// Usually you can use much lower values.
+const core::nanoseconds_t DefaultFrameLength = 10 * core::Millisecond;
+
 const core::nanoseconds_t MinTimeout = core::Millisecond * 50;
 const core::nanoseconds_t MaxTimeout = core::Second * 2;
 
+audio::PcmSubformat from_pulse_format(pa_sample_format fmt) {
+    switch (fmt) {
+    case PA_SAMPLE_U8:
+        return audio::PcmSubformat_UInt8;
+
+    case PA_SAMPLE_S16LE:
+        return audio::PcmSubformat_SInt16_Le;
+    case PA_SAMPLE_S16BE:
+        return audio::PcmSubformat_SInt16_Be;
+
+    case PA_SAMPLE_S24LE:
+        return audio::PcmSubformat_SInt24_Le;
+    case PA_SAMPLE_S24BE:
+        return audio::PcmSubformat_SInt24_Be;
+
+    case PA_SAMPLE_S24_32LE:
+        return audio::PcmSubformat_SInt24_4_Le;
+    case PA_SAMPLE_S24_32BE:
+        return audio::PcmSubformat_SInt24_4_Be;
+
+    case PA_SAMPLE_S32LE:
+        return audio::PcmSubformat_SInt32_Le;
+    case PA_SAMPLE_S32BE:
+        return audio::PcmSubformat_SInt32_Be;
+
+    case PA_SAMPLE_FLOAT32LE:
+        return audio::PcmSubformat_Float32_Le;
+    case PA_SAMPLE_FLOAT32BE:
+        return audio::PcmSubformat_Float32_Be;
+
+    default:
+        break;
+    }
+
+    return audio::PcmSubformat_Invalid;
+}
+
+pa_sample_format to_pulse_format(audio::PcmSubformat fmt) {
+    switch (fmt) {
+    case audio::PcmSubformat_UInt8:
+    case audio::PcmSubformat_UInt8_Le:
+    case audio::PcmSubformat_UInt8_Be:
+        return PA_SAMPLE_U8;
+
+    case audio::PcmSubformat_SInt16:
+        return PA_SAMPLE_S16NE;
+    case audio::PcmSubformat_SInt16_Le:
+        return PA_SAMPLE_S16LE;
+    case audio::PcmSubformat_SInt16_Be:
+        return PA_SAMPLE_S16BE;
+
+    case audio::PcmSubformat_SInt24:
+        return PA_SAMPLE_S24NE;
+    case audio::PcmSubformat_SInt24_Le:
+        return PA_SAMPLE_S24LE;
+    case audio::PcmSubformat_SInt24_Be:
+        return PA_SAMPLE_S24BE;
+
+    case audio::PcmSubformat_SInt24_4:
+        return PA_SAMPLE_S24_32NE;
+    case audio::PcmSubformat_SInt24_4_Le:
+        return PA_SAMPLE_S24_32LE;
+    case audio::PcmSubformat_SInt24_4_Be:
+        return PA_SAMPLE_S24_32BE;
+
+    case audio::PcmSubformat_SInt32:
+        return PA_SAMPLE_S32NE;
+    case audio::PcmSubformat_SInt32_Le:
+        return PA_SAMPLE_S32LE;
+    case audio::PcmSubformat_SInt32_Be:
+        return PA_SAMPLE_S32BE;
+
+    case audio::PcmSubformat_Float32:
+        return PA_SAMPLE_FLOAT32NE;
+    case audio::PcmSubformat_Float32_Le:
+        return PA_SAMPLE_FLOAT32LE;
+    case audio::PcmSubformat_Float32_Be:
+        return PA_SAMPLE_FLOAT32BE;
+
+    default:
+        break;
+    }
+
+    return PA_SAMPLE_INVALID;
+}
+
 } // namespace
 
-PulseaudioDevice::PulseaudioDevice(const Config& config, DeviceType device_type)
-    : device_type_(device_type)
+PulseaudioDevice::PulseaudioDevice(audio::FrameFactory& frame_factory,
+                                   core::IArena& arena,
+                                   const IoConfig& io_config,
+                                   DeviceType device_type,
+                                   const char* device)
+    : IDevice(arena)
+    , ISink(arena)
+    , ISource(arena)
+    , device_type_(device_type)
     , device_(NULL)
-    , sample_spec_(config.sample_spec)
-    , frame_len_ns_(config.frame_length)
+    , frame_factory_(frame_factory)
+    , sample_spec_(io_config.sample_spec)
+    , frame_len_ns_(io_config.frame_length)
     , frame_len_samples_(0)
-    , target_latency_ns_(config.latency)
+    , target_latency_ns_(io_config.latency)
     , target_latency_samples_(0)
     , timeout_ns_(0)
     , timeout_samples_(0)
@@ -45,40 +144,51 @@ PulseaudioDevice::PulseaudioDevice(const Config& config, DeviceType device_type)
     , record_frag_size_(0)
     , record_frag_flag_(false)
     , open_done_(false)
-    , opened_(false)
+    , open_status_(status::NoStatus)
     , mainloop_(NULL)
     , context_(NULL)
     , device_info_op_(NULL)
     , stream_(NULL)
     , timer_(NULL)
     , timer_deadline_ns_(0)
-    , rate_limiter_(ReportInterval) {
+    , rate_limiter_(ReportInterval, 1)
+    , init_status_(status::NoStatus) {
+    if (io_config.sample_spec.has_format()
+        && io_config.sample_spec.format() != audio::Format_Pcm) {
+        roc_log(LogError,
+                "pulseaudio %s: invalid io encoding:"
+                " <format> '%s' not supported by backend: spec=%s",
+                device_type_to_str(device_type_), io_config.sample_spec.format_name(),
+                audio::sample_spec_to_str(io_config.sample_spec).c_str());
+        init_status_ = status::StatusBadConfig;
+        return;
+    }
+
+    if (io_config.sample_spec.has_subformat()
+        && to_pulse_format(io_config.sample_spec.pcm_subformat()) == PA_SAMPLE_INVALID) {
+        roc_log(LogError,
+                "pulseaudio %s: invalid io encoding:"
+                " <subformat> '%s' not supported by backend: spec=%s",
+                device_type_to_str(device_type_), io_config.sample_spec.format_name(),
+                audio::sample_spec_to_str(io_config.sample_spec).c_str());
+        init_status_ = status::StatusBadConfig;
+        return;
+    }
+
     if (frame_len_ns_ == 0) {
         frame_len_ns_ = DefaultFrameLength;
     }
+
     if (target_latency_ns_ == 0) {
         target_latency_ns_ = DefaultLatency;
     }
+
     timeout_ns_ = target_latency_ns_ * 2;
     if (timeout_ns_ < MinTimeout) {
         timeout_ns_ = MinTimeout;
     }
     if (timeout_ns_ > MaxTimeout) {
         timeout_ns_ = MaxTimeout;
-    }
-}
-
-PulseaudioDevice::~PulseaudioDevice() {
-    roc_log(LogDebug, "pulseaudio %s: closing device", device_type_to_str(device_type_));
-
-    close_();
-    stop_mainloop_();
-}
-
-bool PulseaudioDevice::open(const char* device) {
-    if (mainloop_) {
-        roc_panic("pulseaudio %s: can't call open() twice",
-                  device_type_to_str(device_type_));
     }
 
     roc_log(LogDebug, "pulseaudio %s: opening device: device=%s",
@@ -88,15 +198,31 @@ bool PulseaudioDevice::open(const char* device) {
         device_ = device;
     }
 
-    if (!start_mainloop_()) {
-        return false;
+    if ((init_status_ = start_mainloop_()) != status::StatusOK) {
+        return;
     }
 
-    if (!open_()) {
-        return false;
+    if ((init_status_ = open_()) != status::StatusOK) {
+        return;
     }
 
-    return true;
+    init_status_ = status::StatusOK;
+}
+
+PulseaudioDevice::~PulseaudioDevice() {
+    const status::StatusCode code = close();
+    if (code != status::StatusOK) {
+        roc_log(LogError, "pulseaudio %s: close failed: status=%s",
+                device_type_to_str(device_type_), status::code_to_str(code));
+    }
+}
+
+status::StatusCode PulseaudioDevice::init_status() const {
+    return init_status_;
+}
+
+DeviceType PulseaudioDevice::type() const {
+    return device_type_;
 }
 
 ISink* PulseaudioDevice::to_sink() {
@@ -105,52 +231,6 @@ ISink* PulseaudioDevice::to_sink() {
 
 ISource* PulseaudioDevice::to_source() {
     return device_type_ == DeviceType_Source ? this : NULL;
-}
-
-DeviceType PulseaudioDevice::type() const {
-    return device_type_;
-}
-
-DeviceState PulseaudioDevice::state() const {
-    want_mainloop_();
-
-    pa_threaded_mainloop_lock(mainloop_);
-
-    const DeviceState state = opened_ ? DeviceState_Active : DeviceState_Paused;
-
-    pa_threaded_mainloop_unlock(mainloop_);
-
-    return state;
-}
-
-void PulseaudioDevice::pause() {
-    want_mainloop_();
-
-    close_();
-}
-
-bool PulseaudioDevice::resume() {
-    want_mainloop_();
-
-    if (!open_()) {
-        roc_log(LogError, "pulseaudio %s: can't restart stream",
-                device_type_to_str(device_type_));
-        return false;
-    }
-
-    return true;
-}
-
-bool PulseaudioDevice::restart() {
-    close_();
-
-    if (!open_()) {
-        roc_log(LogError, "pulseaudio %s: can't restart stream",
-                device_type_to_str(device_type_));
-        return false;
-    }
-
-    return true;
 }
 
 audio::SampleSpec PulseaudioDevice::sample_spec() const {
@@ -163,6 +243,61 @@ audio::SampleSpec PulseaudioDevice::sample_spec() const {
     pa_threaded_mainloop_unlock(mainloop_);
 
     return sample_spec;
+}
+
+core::nanoseconds_t PulseaudioDevice::frame_length() const {
+    want_mainloop_();
+
+    pa_threaded_mainloop_lock(mainloop_);
+
+    const core::nanoseconds_t frame_len = frame_len_ns_;
+
+    pa_threaded_mainloop_unlock(mainloop_);
+
+    return frame_len;
+}
+
+bool PulseaudioDevice::has_state() const {
+    return true;
+}
+
+DeviceState PulseaudioDevice::state() const {
+    want_mainloop_();
+
+    pa_threaded_mainloop_lock(mainloop_);
+
+    const DeviceState state =
+        open_status_ == status::StatusOK ? DeviceState_Active : DeviceState_Paused;
+
+    pa_threaded_mainloop_unlock(mainloop_);
+
+    return state;
+}
+
+status::StatusCode PulseaudioDevice::pause() {
+    want_mainloop_();
+
+    close_();
+
+    return status::StatusOK;
+}
+
+status::StatusCode PulseaudioDevice::resume() {
+    want_mainloop_();
+
+    const status::StatusCode code = open_();
+
+    if (code != status::StatusOK) {
+        roc_log(LogError, "pulseaudio %s: can't resume stream: status=%s",
+                device_type_to_str(device_type_), status::code_to_str(code));
+        return code;
+    }
+
+    return status::StatusOK;
+}
+
+bool PulseaudioDevice::has_latency() const {
+    return true;
 }
 
 core::nanoseconds_t PulseaudioDevice::latency() const {
@@ -183,41 +318,75 @@ core::nanoseconds_t PulseaudioDevice::latency() const {
     return latency;
 }
 
-bool PulseaudioDevice::has_latency() const {
+bool PulseaudioDevice::has_clock() const {
     return true;
 }
 
-bool PulseaudioDevice::has_clock() const {
-    return true;
+status::StatusCode PulseaudioDevice::rewind() {
+    close_();
+
+    const status::StatusCode code = open_();
+
+    if (code != status::StatusOK) {
+        roc_log(LogError, "pulseaudio %s: can't restart stream: status=%s",
+                device_type_to_str(device_type_), status::code_to_str(code));
+        return code;
+    }
+
+    return status::StatusOK;
 }
 
 void PulseaudioDevice::reclock(core::nanoseconds_t timestamp) {
     // no-op
 }
 
-void PulseaudioDevice::write(audio::Frame& frame) {
-    roc_panic_if(device_type_ != DeviceType_Sink);
-
-    request_frame_(frame);
-}
-
-bool PulseaudioDevice::read(audio::Frame& frame) {
+status::StatusCode PulseaudioDevice::read(audio::Frame& frame,
+                                          packet::stream_timestamp_t duration,
+                                          audio::FrameReadMode mode) {
     roc_panic_if(device_type_ != DeviceType_Source);
 
-    return request_frame_(frame);
+    if (!frame_factory_.reallocate_frame(
+            frame, sample_spec_.stream_timestamp_2_bytes(duration))) {
+        return status::StatusNoMem;
+    }
+
+    frame.set_raw(sample_spec_.is_raw());
+    frame.set_duration(duration);
+
+    return handle_request_(frame.bytes(), frame.num_bytes());
 }
 
-bool PulseaudioDevice::request_frame_(audio::Frame& frame) {
-    want_mainloop_();
+status::StatusCode PulseaudioDevice::write(audio::Frame& frame) {
+    roc_panic_if(device_type_ != DeviceType_Sink);
 
-    audio::sample_t* data = frame.raw_samples();
-    size_t size = frame.num_raw_samples();
+    return handle_request_(frame.bytes(), frame.num_bytes());
+}
+
+status::StatusCode PulseaudioDevice::flush() {
+    return status::StatusOK;
+}
+
+status::StatusCode PulseaudioDevice::close() {
+    roc_log(LogDebug, "pulseaudio %s: closing device", device_type_to_str(device_type_));
+
+    close_();
+    stop_mainloop_();
+
+    return status::StatusOK;
+}
+
+void PulseaudioDevice::dispose() {
+    arena().dispose_object(*this);
+}
+
+status::StatusCode PulseaudioDevice::handle_request_(uint8_t* data, size_t size) {
+    want_mainloop_();
 
     while (size > 0) {
         pa_threaded_mainloop_lock(mainloop_);
 
-        if (!opened_) {
-            return false;
+        if (open_status_ != status::StatusOK) {
+            return open_status_;
         }
 
         const ssize_t ret = request_stream_(data, size);
@@ -239,16 +408,18 @@ bool PulseaudioDevice::request_frame_(audio::Frame& frame) {
 
             close_();
 
-            if (!open_()) {
-                roc_log(LogError, "pulseaudio %s: can't restart stream",
-                        device_type_to_str(device_type_));
-            }
+            const status::StatusCode code = open_();
 
-            return false;
+            if (code != status::StatusOK) {
+                roc_log(LogError, "pulseaudio %s: can't restart stream: status=%s",
+                        device_type_to_str(device_type_), code_to_str(code));
+
+                return code;
+            }
         }
     }
 
-    return true;
+    return status::StatusOK;
 }
 
 void PulseaudioDevice::want_mainloop_() const {
@@ -258,21 +429,21 @@ void PulseaudioDevice::want_mainloop_() const {
     }
 }
 
-bool PulseaudioDevice::start_mainloop_() {
+status::StatusCode PulseaudioDevice::start_mainloop_() {
     mainloop_ = pa_threaded_mainloop_new();
     if (!mainloop_) {
         roc_log(LogError, "pulseaudio %s: pa_threaded_mainloop_new() failed",
                 device_type_to_str(device_type_));
-        return false;
+        return status::StatusErrDevice;
     }
 
     if (int err = pa_threaded_mainloop_start(mainloop_)) {
         roc_log(LogError, "pulseaudio %s: pa_threaded_mainloop_start(): %s",
                 device_type_to_str(device_type_), pa_strerror(err));
-        return false;
+        return status::StatusErrDevice;
     }
 
-    return true;
+    return status::StatusOK;
 }
 
 void PulseaudioDevice::stop_mainloop_() {
@@ -286,22 +457,23 @@ void PulseaudioDevice::stop_mainloop_() {
     mainloop_ = NULL;
 }
 
-bool PulseaudioDevice::open_() {
+status::StatusCode PulseaudioDevice::open_() {
     pa_threaded_mainloop_lock(mainloop_);
 
     if (!open_done_) {
-        if (open_context_()) {
-            while (!open_done_) {
-                pa_threaded_mainloop_wait(mainloop_);
-            }
+        if (!open_context_()) {
+            set_open_status_(status::StatusErrDevice);
+        }
+        while (!open_done_) {
+            pa_threaded_mainloop_wait(mainloop_);
         }
     }
 
-    const bool ret = opened_;
+    const status::StatusCode code = open_status_;
 
     pa_threaded_mainloop_unlock(mainloop_);
 
-    return ret;
+    return code;
 }
 
 void PulseaudioDevice::close_() {
@@ -319,22 +491,22 @@ void PulseaudioDevice::close_() {
     }
 
     open_done_ = false;
-    opened_ = false;
+    open_status_ = status::NoStatus;
 
     pa_threaded_mainloop_unlock(mainloop_);
 }
 
-void PulseaudioDevice::set_opened_(bool opened) {
-    if (opened) {
+void PulseaudioDevice::set_open_status_(status::StatusCode code) {
+    if (code == status::StatusOK) {
         roc_log(LogTrace, "pulseaudio %s: successfully opened device",
                 device_type_to_str(device_type_));
     } else {
-        roc_log(LogDebug, "pulseaudio %s: failed to open device",
-                device_type_to_str(device_type_));
+        roc_log(LogDebug, "pulseaudio %s: failed to open device: status=%s",
+                device_type_to_str(device_type_), status::code_to_str(code));
     }
 
     open_done_ = true;
-    opened_ = opened;
+    open_status_ = code;
 
     pa_threaded_mainloop_signal(mainloop_, 0);
 }
@@ -379,7 +551,7 @@ void PulseaudioDevice::context_state_cb_(pa_context* context, void* userdata) {
     roc_log(LogTrace, "pulseaudio %s: context state callback",
             device_type_to_str(self.device_type_));
 
-    if (self.opened_) {
+    if (self.open_done_) {
         return;
     }
 
@@ -391,7 +563,7 @@ void PulseaudioDevice::context_state_cb_(pa_context* context, void* userdata) {
                 device_type_to_str(self.device_type_));
 
         if (!self.start_device_info_op_()) {
-            self.set_opened_(false);
+            self.set_open_status_(status::StatusErrDevice);
         }
 
         break;
@@ -401,7 +573,7 @@ void PulseaudioDevice::context_state_cb_(pa_context* context, void* userdata) {
         roc_log(LogDebug, "pulseaudio %s: failed to open context",
                 device_type_to_str(self.device_type_));
 
-        self.set_opened_(false);
+        self.set_open_status_(status::StatusErrDevice);
         break;
 
     default:
@@ -454,7 +626,7 @@ void PulseaudioDevice::device_info_cb_(pa_context*,
     if (!info) {
         roc_log(LogDebug, "pulseaudio %s: failed to retrieve device info",
                 device_type_to_str(self.device_type_));
-        self.set_opened_(false);
+        self.set_open_status_(status::StatusErrDevice);
         return;
     }
 
@@ -464,31 +636,45 @@ void PulseaudioDevice::device_info_cb_(pa_context*,
     switch (self.device_type_) {
     case DeviceType_Sink:
         if (!self.load_device_params_((*(const pa_sink_info*)info).sample_spec)) {
-            self.set_opened_(false);
+            self.set_open_status_(status::StatusErrDevice);
             return;
         }
-        self.init_stream_params_((*(const pa_sink_info*)info).sample_spec);
+        if (!self.init_stream_params_((*(const pa_sink_info*)info).sample_spec)) {
+            self.set_open_status_(status::StatusErrDevice);
+            return;
+        }
         break;
 
     case DeviceType_Source:
         if (!self.load_device_params_((*(const pa_source_info*)info).sample_spec)) {
-            self.set_opened_(false);
+            self.set_open_status_(status::StatusErrDevice);
             return;
         }
-        self.init_stream_params_((*(const pa_source_info*)info).sample_spec);
+        if (!self.init_stream_params_((*(const pa_source_info*)info).sample_spec)) {
+            self.set_open_status_(status::StatusErrDevice);
+            return;
+        }
         break;
     }
 
     if (!self.open_stream_()) {
-        self.set_opened_(false);
+        self.set_open_status_(status::StatusErrDevice);
         return;
     }
 }
 
 bool PulseaudioDevice::load_device_params_(const pa_sample_spec& device_spec) {
-    if (sample_spec_.sample_format() == audio::SampleFormat_Invalid) {
-        sample_spec_.set_sample_format(audio::SampleFormat_Pcm);
-        sample_spec_.set_pcm_format(audio::Sample_RawFormat);
+    if (sample_spec_.format() == audio::Format_Invalid) {
+        audio::PcmSubformat fmt = from_pulse_format(device_spec.format);
+
+        if (fmt == audio::PcmSubformat_Invalid) {
+            // If don't support device's native format, ask pulseaudio
+            // to do conversion to our native format.
+            fmt = audio::PcmSubformat_Raw;
+        }
+
+        sample_spec_.set_format(audio::Format_Pcm);
+        sample_spec_.set_pcm_subformat(fmt);
     }
 
     if (sample_spec_.sample_rate() == 0) {
@@ -501,7 +687,7 @@ bool PulseaudioDevice::load_device_params_(const pa_sample_spec& device_spec) {
         sample_spec_.channel_set().set_count(device_spec.channels);
     }
 
-    if (!sample_spec_.is_valid()) {
+    if (!sample_spec_.is_complete()) {
         roc_log(LogError,
                 "pulseaudio %s: can't determine device sample spec:"
                 " sample_spec=%s",
@@ -546,17 +732,19 @@ bool PulseaudioDevice::load_device_params_(const pa_sample_spec& device_spec) {
     return true;
 }
 
-void PulseaudioDevice::init_stream_params_(const pa_sample_spec& device_spec) {
-    stream_spec_.format = PA_SAMPLE_FLOAT32LE;
+bool PulseaudioDevice::init_stream_params_(const pa_sample_spec& device_spec) {
+    stream_spec_.format = to_pulse_format(sample_spec_.pcm_subformat());
     stream_spec_.rate = (uint32_t)sample_spec_.sample_rate();
     stream_spec_.channels = (uint8_t)sample_spec_.num_channels();
 
-    roc_panic_if(sizeof(audio::sample_t) != sizeof(float));
+    roc_panic_if(stream_spec_.format == PA_SAMPLE_INVALID);
+    roc_panic_if(stream_spec_.rate == 0);
+    roc_panic_if(stream_spec_.channels == 0);
 
-    const size_t frame_len_bytes = (size_t)frame_len_samples_
-        * sample_spec_.num_channels() * sizeof(audio::sample_t);
-    const size_t target_latency_bytes = (size_t)target_latency_samples_
-        * sample_spec_.num_channels() * sizeof(audio::sample_t);
+    const size_t frame_len_bytes = sample_spec_.stream_timestamp_2_bytes(
+        (packet::stream_timestamp_t)frame_len_samples_);
+    const size_t target_latency_bytes = sample_spec_.stream_timestamp_2_bytes(
+        (packet::stream_timestamp_t)target_latency_samples_);
 
     switch (device_type_) {
     case DeviceType_Sink:
@@ -575,6 +763,8 @@ void PulseaudioDevice::init_stream_params_(const pa_sample_spec& device_spec) {
         buff_attrs_.fragsize = (uint32_t)target_latency_bytes;
         break;
     }
+
+    return true;
 }
 
 bool PulseaudioDevice::open_stream_() {
@@ -645,7 +835,7 @@ void PulseaudioDevice::close_stream_() {
     stream_ = NULL;
 }
 
-ssize_t PulseaudioDevice::request_stream_(audio::sample_t* data, size_t size) {
+ssize_t PulseaudioDevice::request_stream_(uint8_t* data, size_t size) {
     ssize_t ret = 0;
 
     switch (device_type_) {
@@ -661,7 +851,7 @@ ssize_t PulseaudioDevice::request_stream_(audio::sample_t* data, size_t size) {
     return ret;
 }
 
-ssize_t PulseaudioDevice::write_stream_(const audio::sample_t* data, size_t size) {
+ssize_t PulseaudioDevice::write_stream_(const uint8_t* data, size_t size) {
     ssize_t avail_size = wait_stream_();
 
     if (avail_size == -1) {
@@ -676,8 +866,7 @@ ssize_t PulseaudioDevice::write_stream_(const audio::sample_t* data, size_t size
         size = (size_t)avail_size;
     }
 
-    const int err = pa_stream_write(stream_, data, size * sizeof(audio::sample_t), NULL,
-                                    0, PA_SEEK_RELATIVE);
+    const int err = pa_stream_write(stream_, data, size, NULL, 0, PA_SEEK_RELATIVE);
     if (err != 0) {
         roc_log(LogError, "pulseaudio %s: pa_stream_write(): %s",
                 device_type_to_str(device_type_), pa_strerror(err));
@@ -687,7 +876,7 @@ ssize_t PulseaudioDevice::write_stream_(const audio::sample_t* data, size_t size
     return (ssize_t)size;
 }
 
-ssize_t PulseaudioDevice::read_stream_(audio::sample_t* data, size_t size) {
+ssize_t PulseaudioDevice::read_stream_(uint8_t* data, size_t size) {
     if (record_frag_size_ == 0) {
         wait_stream_();
 
@@ -701,10 +890,8 @@ ssize_t PulseaudioDevice::read_stream_(audio::sample_t* data, size_t size) {
             return -1;
         }
 
-        roc_panic_if_not(fragment_size % sizeof(audio::sample_t) == 0);
-
-        record_frag_data_ = (const audio::sample_t*)fragment;
-        record_frag_size_ = fragment_size / sizeof(audio::sample_t);
+        record_frag_data_ = (const uint8_t*)fragment;
+        record_frag_size_ = fragment_size;
         record_frag_flag_ = fragment_size != 0; // whether we need to call drop
     }
 
@@ -715,10 +902,10 @@ ssize_t PulseaudioDevice::read_stream_(audio::sample_t* data, size_t size) {
     if (size > 0) {
         if (record_frag_data_ != NULL) {
             // data is non-null, size is non-zero, we got samples from buffer
-            memcpy(data, record_frag_data_, size * sizeof(audio::sample_t));
+            memcpy(data, record_frag_data_, size);
         } else {
             // data is null, size is non-zero, we got hole
-            memset(data, 0, size * sizeof(audio::sample_t));
+            memset(data, 0, size);
         }
     }
 
@@ -798,7 +985,7 @@ void PulseaudioDevice::stream_state_cb_(pa_stream* stream, void* userdata) {
     roc_log(LogTrace, "pulseaudio %s: stream state callback",
             device_type_to_str(self.device_type_));
 
-    if (self.opened_) {
+    if (self.open_done_) {
         return;
     }
 
@@ -809,7 +996,7 @@ void PulseaudioDevice::stream_state_cb_(pa_stream* stream, void* userdata) {
         roc_log(LogTrace, "pulseaudio %s: successfully opened stream",
                 device_type_to_str(self.device_type_));
 
-        self.set_opened_(true);
+        self.set_open_status_(status::StatusOK);
         break;
 
     case PA_STREAM_FAILED:
@@ -817,7 +1004,7 @@ void PulseaudioDevice::stream_state_cb_(pa_stream* stream, void* userdata) {
         roc_log(LogError, "pulseaudio %s: failed to open stream",
                 device_type_to_str(self.device_type_));
 
-        self.set_opened_(false);
+        self.set_open_status_(status::StatusErrDevice);
         break;
 
     default:
@@ -848,8 +1035,8 @@ bool PulseaudioDevice::get_latency_(core::nanoseconds_t& result) const {
         return false;
     }
 
-    ssize_t latency = ssize_t(pa_usec_to_bytes(latency_us, &stream_spec_)
-                              / sizeof(audio::sample_t) / sample_spec_.num_channels());
+    ssize_t latency = (ssize_t)sample_spec_.bytes_2_stream_timestamp(
+        pa_usec_to_bytes(latency_us, &stream_spec_));
 
     if (negative) {
         latency = -latency;

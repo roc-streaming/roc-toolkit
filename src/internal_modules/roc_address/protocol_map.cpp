@@ -16,7 +16,7 @@ ProtocolMap::ProtocolMap() {
     {
         ProtocolAttrs attrs;
         attrs.protocol = Proto_RTSP;
-        attrs.iface = Iface_Consolidated;
+        attrs.iface = Iface_Aggregate;
         attrs.scheme_name = "rtsp";
         attrs.path_supported = true;
         attrs.default_port = 554;
@@ -125,7 +125,7 @@ bool ProtocolMap::get_supported_interfaces(core::Array<Interface>& interface_arr
     interface_array.clear();
     bool interfaces_exist = false;
 
-    for (unsigned n_iface = (unsigned)Iface_Consolidated; n_iface != (unsigned)Iface_Max;
+    for (unsigned n_iface = (unsigned)Iface_Aggregate; n_iface != (unsigned)Iface_Max;
          n_iface++) {
         for (size_t n_proto = 0; n_proto < MaxProtos; n_proto++) {
             if (protos_[n_proto].protocol == Proto_None) {

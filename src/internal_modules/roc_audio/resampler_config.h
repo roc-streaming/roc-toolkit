@@ -12,17 +12,17 @@
 #ifndef ROC_AUDIO_RESAMPLER_CONFIG_H_
 #define ROC_AUDIO_RESAMPLER_CONFIG_H_
 
-#include "roc_audio/latency_tuner.h"
+#include "roc_audio/latency_config.h"
+#include "roc_core/attributes.h"
 
 namespace roc {
 namespace audio {
 
 //! Resampler backends.
 enum ResamplerBackend {
-    //! Default backend.
     //! Resolved to one of other backends, depending on what
     //! is enabled at build time.
-    ResamplerBackend_Default,
+    ResamplerBackend_Auto,
 
     //! Built-in resampler.
     //! High precision, high quality, slow.
@@ -36,7 +36,10 @@ enum ResamplerBackend {
     //! Combined SpeexDSP + decimating resampler.
     //! Tolerable precision, tolerable quality, fast.
     //! May be disabled at build time.
-    ResamplerBackend_SpeexDec
+    ResamplerBackend_SpeexDec,
+
+    //! Maximum enum value.
+    ResamplerBackend_Max
 };
 
 //! Resampler parameters presets.
@@ -60,13 +63,14 @@ struct ResamplerConfig {
     ResamplerProfile profile;
 
     ResamplerConfig()
-        : backend(ResamplerBackend_Default)
+        : backend(ResamplerBackend_Auto)
         , profile(ResamplerProfile_Medium) {
     }
 
     //! Automatically fill missing settings.
-    void deduce_defaults(LatencyTunerBackend latency_backend,
-                         LatencyTunerProfile latency_tuner);
+    ROC_NODISCARD bool deduce_defaults(class ProcessorMap& processor_map,
+                                       LatencyTunerBackend latency_backend,
+                                       LatencyTunerProfile latency_profile);
 };
 
 //! Get string name of resampler backend.

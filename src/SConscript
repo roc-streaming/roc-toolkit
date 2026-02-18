@@ -267,10 +267,14 @@ if GetOption('enable_tests') or GetOption('enable_benchmarks'):
     common_test_env.Prepend(LIBS=[all_modules_libs])
 
     if GetOption('enable_tests'):
-        test_main_object = common_test_env.Object('tests/test_main.cpp')
+        test_main_objects = []
+        for src in common_test_env.Glob('tests/test_*.cpp'):
+            test_main_objects += common_test_env.Object(src)
 
     if GetOption('enable_benchmarks'):
-        bench_main_object = common_test_env.Object('tests/bench_main.cpp')
+        bench_main_objects = []
+        for src in common_test_env.Glob('tests/bench_*.cpp'):
+            bench_main_objects += common_test_env.Object(src)
 
     test_targets = []
 
@@ -278,7 +282,8 @@ if GetOption('enable_tests') or GetOption('enable_benchmarks'):
         test_dir = 'tests/' + test_name
 
         test_env = common_test_env.DeepClone()
-        test_env.Append(CPPPATH=['#src/' + test_dir])
+        test_env.Append(CPPPATH=['#src/tests'])
+        test_env.Append(CPPPATH=['#src/tests/' + test_name])
 
         if test_name == 'public_api':
             if GetOption('disable_shared') and not GetOption('enable_static'):
@@ -288,12 +293,12 @@ if GetOption('enable_tests') or GetOption('enable_benchmarks'):
         for kind in ['test', 'bench']:
             if kind == 'test':
                 if GetOption('enable_tests'):
-                    main_object = test_main_object
+                    main_objects = test_main_objects
                 else:
                     continue
             else:
                 if GetOption('enable_benchmarks'):
-                    main_object = bench_main_object
+                    main_objects = bench_main_objects
                 else:
                     continue
 
@@ -310,7 +315,7 @@ if GetOption('enable_tests') or GetOption('enable_benchmarks'):
             if not sources:
                 continue
 
-            sources_and_objects = sources + main_object + sanitizer_objects
+            sources_and_objects = sources + main_objects + sanitizer_objects
             if test_name == 'public_api':
                 sources_and_objects += public_api_objects
 

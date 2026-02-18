@@ -1,44 +1,48 @@
 package "roc-copy"
 usage "roc-copy OPTIONS"
 
-section "Options"
+option "verbose" v "Increase verbosity level (may be used multiple times)"
+    multiple optional
+option "color" - "Set colored logging mode for stderr output"
+    values="auto","always","never" default="auto" enum optional
 
-    option "verbose" v "Increase verbosity level (may be used multiple times)"
-        multiple optional
+option "list-supported" L "List supported protocols, formats, etc." optional
 
-    option "list-supported" L "list supported schemes and formats" optional
+section "I/O options"
 
-    option "input" i "Input file URI" typestr="FILE_URI" string required
-    option "output" o "Output file URI" typestr="FILE_URI" string optional
+    option "input" i "Input file URI" typestr="IO_URI" string optional
+    option "input-encoding" - "Input file encoding" typestr="IO_ENCODING" string optional
 
-    option "input-format" - "Force input file format" typestr="FILE_FORMAT" string optional
-    option "output-format" - "Force output file format" typestr="FILE_FORMAT" string optional
+    option "output" o "Output file URI" typestr="IO_URI" string optional
+    option "output-encoding" - "Output file encoding" typestr="IO_ENCODING" string optional
 
-    option "frame-len" - "Duration of the internal frames, TIME units"
-        typestr="TIME" string optional
+    option "io-frame-len" - "I/O frame length, TIME units" typestr="TIME" string optional
 
-    option "rate" r "Output sample rate, Hz"
-        int optional
+section "Transcoding options"
 
     option "resampler-backend" - "Resampler backend"
         values="default","builtin","speex","speexdec" default="default" enum optional
-
     option "resampler-profile" - "Resampler profile"
         values="low","medium","high" default="medium" enum optional
 
-    option "profiling" - "Enable self profiling" flag off
+section "Debugging options"
 
-    option "color" - "Set colored logging mode for stderr output"
-        values="auto","always","never" default="auto" enum optional
+    option "prof" - "Enable self-profiling" flag off
 
 text "
-FILE_URI defines an absolute or relative file path, e.g.:
-  file:///home/user/test.wav; file:./test.wav; file:-
+IO_URI is input or output file URI in forms:
+    <driver>://<device>; file://<path>; file:<path>
+  Examples:
+    file:///home/user/test.wav; file:./test.wav; file:-
+  (use 'file://-' for stdin/stdout)
 
-FILE_FORMAT is the output file format name, e.g.:
-  wav; ogg; mp3
+IO_ENCODING is input or output file encoding in form:
+     <format>[@<subformat>]/<rate>/<channels>
+  Examples:
+    pcm@s16/44100/mono; wav/-/-
+  (any component may be '-' to use default value)
 
-TIME is an integer or floating-point number with a suffix, e.g.:
+TIME defines duration using a number with mandatory suffix:
   123ns; 1.23us; 1.23ms; 1.23s; 1.23m; 1.23h;
 
 Use --list-supported option to print the list of the supported

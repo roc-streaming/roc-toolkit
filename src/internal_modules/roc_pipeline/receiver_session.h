@@ -20,6 +20,9 @@
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/latency_monitor.h"
+#include "roc_audio/pcm_mapper_reader.h"
+#include "roc_audio/plc_reader.h"
+#include "roc_audio/processor_map.h"
 #include "roc_audio/resampler_reader.h"
 #include "roc_audio/watchdog.h"
 #include "roc_core/iarena.h"
@@ -27,8 +30,9 @@
 #include "roc_core/optional.h"
 #include "roc_core/ref_counted.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_dbgio/csv_dumper.h"
+#include "roc_fec/block_reader.h"
 #include "roc_fec/iblock_decoder.h"
-#include "roc_fec/reader.h"
 #include "roc_packet/delayed_reader.h"
 #include "roc_packet/iparser.h"
 #include "roc_packet/ireader.h"
@@ -56,18 +60,21 @@ namespace pipeline {
 //!  - a pipeline for processing packets from single sender and converting
 //!    them into audio frames
 class ReceiverSession : public core::RefCounted<ReceiverSession, core::ArenaAllocation>,
-                        public core::ListNode<> {
+                        public core::ListNode<ReceiverSession>,
+                        private audio::IFrameReader {
 public:
     //! Initialize.
     ReceiverSession(const ReceiverSessionConfig& session_config,
                     const ReceiverCommonConfig& common_config,
-                    const rtp::EncodingMap& encoding_map,
+                    audio::ProcessorMap& processor_map,
+                    rtp::EncodingMap& encoding_map,
                     packet::PacketFactory& packet_factory,
                     audio::FrameFactory& frame_factory,
-                    core::IArena& arena);
+                    core::IArena& arena,
+                    dbgio::CsvDumper* dumper);
 
-    //! Check if the session was succefully constructed.
-    bool is_valid() const;
+    //! Check if the pipeline was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get frame reader.
     //! @remarks
@@ -76,28 +83,26 @@ public:
     //!  clock, happens during the read operation.
     audio::IFrameReader& frame_reader();
 
-    //! Route a packet to the session.
-    //! @remarks
-    //!  This way packets from sender reach receiver pipeline.
-    //!  Packets are stored inside internal pipeline queues, and then fetched
-    //!  when frame are requested from frame_reader().
-    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet);
-
     //! Refresh pipeline according to current time.
     //! @remarks
-    //!  writes to @p next_refresh deadline (absolute time) when refresh should
-    //!  be invoked again if there are no frames
-    //! @returns
-    //!  false if the session is ended
-    bool refresh(core::nanoseconds_t current_time, core::nanoseconds_t* next_refresh);
+    //!  Should be invoked before reading each frame.
+    //!  If there are no frames for a while, should be invoked no
+    //!  later than the deadline returned via @p next_deadline.
+    ROC_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
+                                             core::nanoseconds_t& next_deadline);
 
     //! Adjust session clock to match consumer clock.
     //! @remarks
     //!  @p playback_time specified absolute time when first sample of last frame
     //!  retrieved from pipeline will be actually played on sink
-    //! @returns
-    //!  false if the session is ended
-    bool reclock(core::nanoseconds_t playback_time);
+    void reclock(core::nanoseconds_t playback_time);
+
+    //! Route a packet to the session.
+    //! @remarks
+    //!  This way packets from sender reach receiver pipeline.
+    //!  Packets are stored inside internal pipeline queues, and then fetched
+    //!  when frame are requested from frame_reader().
+    ROC_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet);
 
     //! Get number of RTCP reports to be generated.
     size_t num_reports() const;
@@ -116,6 +121,11 @@ public:
     ReceiverParticipantMetrics get_metrics() const;
 
 private:
+    // Implementation of audio::IFrameReader.
+    virtual status::StatusCode read(audio::Frame& frame,
+                                    packet::stream_timestamp_t duration,
+                                    audio::FrameReadMode mode);
+
     audio::IFrameReader* frame_reader_;
 
     core::Optional<packet::Router> packet_router_;
@@ -130,25 +140,28 @@ private:
 
     core::Optional<rtp::Filter> filter_;
     core::Optional<packet::DelayedReader> delayed_reader_;
-    core::Optional<audio::Watchdog> watchdog_;
 
     core::Optional<rtp::Parser> fec_parser_;
     core::ScopedPtr<fec::IBlockDecoder> fec_decoder_;
-    core::Optional<fec::Reader> fec_reader_;
+    core::Optional<fec::BlockReader> fec_reader_;
     core::Optional<rtp::Filter> fec_filter_;
 
     core::Optional<rtp::TimestampInjector> timestamp_injector_;
 
     core::Optional<audio::Depacketizer> depacketizer_;
-
+    core::ScopedPtr<audio::IPlc> plc_;
+    core::Optional<audio::PlcReader> plc_reader_;
+    core::Optional<audio::Watchdog> watchdog_;
     core::Optional<audio::ChannelMapperReader> channel_mapper_reader_;
-
-    core::Optional<audio::ResamplerReader> resampler_reader_;
     core::SharedPtr<audio::IResampler> resampler_;
+    core::Optional<audio::ResamplerReader> resampler_reader_;
 
     core::Optional<audio::LatencyMonitor> latency_monitor_;
 
-    bool valid_;
+    dbgio::CsvDumper* dumper_;
+
+    status::StatusCode init_status_;
+    status::StatusCode fail_status_;
 };
 
 } // namespace pipeline

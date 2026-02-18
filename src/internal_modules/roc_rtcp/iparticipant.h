@@ -75,7 +75,7 @@ public:
     //! @p recv_source_id identifies remote receiver which sent report.
     //! In case of multicast sessions, one sending stream may have
     //! multiple receivers.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
+    virtual ROC_NODISCARD status::StatusCode
     notify_send_stream(packet::stream_source_t recv_source_id,
                        const RecvReport& recv_report) {
         return status::StatusOK;
@@ -102,7 +102,7 @@ public:
     //! @p send_source_id identifies remote sender which sent report.
     //! If there are multiple receiving streams, each one will be notified
     //! with corresponding report.
-    virtual ROC_ATTR_NODISCARD status::StatusCode
+    virtual ROC_NODISCARD status::StatusCode
     notify_recv_stream(packet::stream_source_t send_source_id,
                        const SendReport& send_report) {
         return status::StatusOK;

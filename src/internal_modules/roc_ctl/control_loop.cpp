@@ -37,7 +37,7 @@ ControlLoop::Tasks::DeleteEndpoint::DeleteEndpoint(ControlLoop::EndpointHandle e
 }
 
 ControlLoop::Tasks::BindEndpoint::BindEndpoint(EndpointHandle endpoint,
-                                               const address::EndpointUri& uri)
+                                               const address::NetworkUri& uri)
     : ControlTask(&ControlLoop::task_bind_endpoint_)
     , endpoint_((BasicControlEndpoint*)endpoint)
     , uri_(uri)
@@ -45,7 +45,7 @@ ControlLoop::Tasks::BindEndpoint::BindEndpoint(EndpointHandle endpoint,
 }
 
 ControlLoop::Tasks::ConnectEndpoint::ConnectEndpoint(EndpointHandle endpoint,
-                                                     const address::EndpointUri& uri)
+                                                     const address::NetworkUri& uri)
     : ControlTask(&ControlLoop::task_connect_endpoint_)
     , endpoint_((BasicControlEndpoint*)endpoint)
     , uri_(uri)
@@ -53,7 +53,7 @@ ControlLoop::Tasks::ConnectEndpoint::ConnectEndpoint(EndpointHandle endpoint,
 }
 
 ControlLoop::Tasks::AttachSink::AttachSink(EndpointHandle endpoint,
-                                           const address::EndpointUri& uri,
+                                           const address::NetworkUri& uri,
                                            pipeline::SenderLoop& sink)
     : ControlTask(&ControlLoop::task_attach_sink_)
     , endpoint_((BasicControlEndpoint*)endpoint)
@@ -69,7 +69,7 @@ ControlLoop::Tasks::DetachSink::DetachSink(EndpointHandle endpoint,
 }
 
 ControlLoop::Tasks::AttachSource::AttachSource(EndpointHandle endpoint,
-                                               const address::EndpointUri& uri,
+                                               const address::NetworkUri& uri,
                                                pipeline::ReceiverLoop& source)
     : ControlTask(&ControlLoop::task_attach_source_)
     , endpoint_((BasicControlEndpoint*)endpoint)
@@ -98,8 +98,8 @@ ControlLoop::ControlLoop(netio::NetworkLoop& network_loop, core::IArena& arena)
 ControlLoop::~ControlLoop() {
 }
 
-bool ControlLoop::is_valid() const {
-    return task_queue_.is_valid();
+status::StatusCode ControlLoop::init_status() const {
+    return task_queue_.init_status();
 }
 
 void ControlLoop::schedule(ControlTask& task, IControlTaskCompleter* completer) {

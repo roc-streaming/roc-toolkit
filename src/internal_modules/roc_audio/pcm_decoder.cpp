@@ -13,18 +13,23 @@
 namespace roc {
 namespace audio {
 
-IFrameDecoder* PcmDecoder::construct(core::IArena& arena, const SampleSpec& sample_spec) {
-    return new (arena) PcmDecoder(sample_spec);
+IFrameDecoder* PcmDecoder::construct(const SampleSpec& sample_spec, core::IArena& arena) {
+    return new (arena) PcmDecoder(sample_spec, arena);
 }
 
-PcmDecoder::PcmDecoder(const SampleSpec& sample_spec)
-    : pcm_mapper_(sample_spec.pcm_format(), Sample_RawFormat)
+PcmDecoder::PcmDecoder(const SampleSpec& sample_spec, core::IArena& arena)
+    : IFrameDecoder(arena)
+    , pcm_mapper_(sample_spec.pcm_subformat(), PcmSubformat_Raw)
     , n_chans_(sample_spec.num_channels())
     , stream_pos_(0)
     , stream_avail_(0)
     , frame_data_(NULL)
     , frame_byte_size_(0)
     , frame_bit_off_(0) {
+}
+
+status::StatusCode PcmDecoder::init_status() const {
+    return status::StatusOK;
 }
 
 packet::stream_timestamp_t PcmDecoder::position() const {
@@ -41,9 +46,9 @@ size_t PcmDecoder::decoded_sample_count(const void* frame_data, size_t frame_siz
     return pcm_mapper_.input_sample_count(frame_size) / n_chans_;
 }
 
-void PcmDecoder::begin(packet::stream_timestamp_t frame_position,
-                       const void* frame_data,
-                       size_t frame_size) {
+status::StatusCode PcmDecoder::begin_frame(packet::stream_timestamp_t frame_position,
+                                           const void* frame_data,
+                                           size_t frame_size) {
     roc_panic_if_not(frame_data);
 
     if (frame_data_) {
@@ -56,9 +61,13 @@ void PcmDecoder::begin(packet::stream_timestamp_t frame_position,
     stream_pos_ = frame_position;
     stream_avail_ =
         packet::stream_timestamp_t(pcm_mapper_.input_sample_count(frame_size) / n_chans_);
+
+    return status::StatusOK;
 }
 
-size_t PcmDecoder::read(sample_t* samples, size_t n_samples) {
+size_t PcmDecoder::read_samples(sample_t* samples, size_t n_samples) {
+    roc_panic_if_not(samples);
+
     if (!frame_data_) {
         roc_panic("pcm decoder: read should be called only between begin/end");
     }
@@ -84,7 +93,7 @@ size_t PcmDecoder::read(sample_t* samples, size_t n_samples) {
     return n_mapped_samples;
 }
 
-size_t PcmDecoder::shift(size_t n_samples) {
+size_t PcmDecoder::drop_samples(size_t n_samples) {
     if (!frame_data_) {
         roc_panic("pcm decoder: shift should be called only between begin/end");
     }
@@ -101,7 +110,7 @@ size_t PcmDecoder::shift(size_t n_samples) {
     return n_samples;
 }
 
-void PcmDecoder::end() {
+status::StatusCode PcmDecoder::end_frame() {
     if (!frame_data_) {
         roc_panic("pcm decoder: unpaired begin/end");
     }
@@ -111,6 +120,8 @@ void PcmDecoder::end() {
     frame_data_ = NULL;
     frame_byte_size_ = 0;
     frame_bit_off_ = 0;
+
+    return status::StatusOK;
 }
 
 } // namespace audio

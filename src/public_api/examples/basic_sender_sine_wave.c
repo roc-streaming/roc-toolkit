@@ -1,13 +1,15 @@
-/* Basic sender example.
+/*
+ * This example implements minimal sender that generates a sine wave.
  *
- * This example creates a sender and connects it to remote receiver.
- * Then it generates a 10-second beep and writes it to the sender.
+ * Flow:
+ *   - creates a sender and connects it to remote address
+ *   - generates a 10-second beep and writes it to the sender
  *
  * Building:
- *   cc basic_sender_sine_wave.c -lroc
+ *   cc -o basic_sender_sine_wave basic_sender_sine_wave.c -lroc -lm
  *
  * Running:
- *   ./a.out
+ *   ./basic_sender_sine_wave
  *
  * License:
  *   public domain
@@ -19,16 +21,16 @@
 #include <string.h>
 
 #include <roc/context.h>
-#include <roc/endpoint.h>
 #include <roc/log.h>
 #include <roc/sender.h>
 
-/* Receiver parameters. */
+/* Network parameters. */
 #define MY_RECEIVER_IP "127.0.0.1"
 #define MY_RECEIVER_SOURCE_PORT 10101
 #define MY_RECEIVER_REPAIR_PORT 10102
+#define MY_RECEIVER_CONTROL_PORT 10103
 
-/* Signal parameters */
+/* Audio parameters. */
 #define MY_SAMPLE_RATE 44100
 #define MY_SINE_RATE 440
 #define MY_SINE_DURATION (MY_SAMPLE_RATE * 10)
@@ -41,7 +43,7 @@
         exit(1);                                                                         \
     } while (0)
 
-static void gensine(float* samples, size_t batch_num, size_t num_samples) {
+static void generate_sine(float* samples, size_t batch_num, size_t num_samples) {
     double t = batch_num * num_samples / 2.0;
     size_t i;
     for (i = 0; i < num_samples / 2; i++) {
@@ -57,8 +59,8 @@ static void gensine(float* samples, size_t batch_num, size_t num_samples) {
 }
 
 int main() {
-    /* Enable verbose logging. */
-    roc_log_set_level(ROC_LOG_DEBUG);
+    /* Enable more verbose logging. */
+    roc_log_set_level(ROC_LOG_INFO);
 
     /* Initialize context config.
      * Initialize to zero to use default values for all fields. */
@@ -66,7 +68,7 @@ int main() {
     memset(&context_config, 0, sizeof(context_config));
 
     /* Create context.
-     * Context contains memory pools and the network worker thread(s).
+     * Context contains memory pools and the worker thread(s).
      * We need a context to create a sender. */
     roc_context* context = NULL;
     if (roc_context_open(&context_config, &context) != 0) {
@@ -74,14 +76,18 @@ int main() {
     }
 
     /* Initialize sender config.
-     * Initialize to zero to use default values for unset fields. */
+     * We keep most fields zero to use default values. */
     roc_sender_config sender_config;
     memset(&sender_config, 0, sizeof(sender_config));
 
-    /* Setup input frame format. */
+    /* Setup frame format that we want to write to sender. */
+    sender_config.frame_encoding.format = ROC_FORMAT_PCM;
+    sender_config.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
     sender_config.frame_encoding.rate = MY_SAMPLE_RATE;
-    sender_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
     sender_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
+
+    /* Setup network packets format that sender should generate. */
+    sender_config.packet_encoding = ROC_PACKET_ENCODING_AVP_L16_STEREO;
 
     /* Turn on internal CPU timer.
      * Sender must send packets with steady rate, so we should either implement
@@ -138,12 +144,32 @@ int main() {
         oops();
     }
 
+    /* Connect sender to the receiver control (RTCP) packets endpoint. */
+    roc_endpoint* control_endp = NULL;
+    if (roc_endpoint_allocate(&control_endp) != 0) {
+        oops();
+    }
+
+    roc_endpoint_set_protocol(control_endp, ROC_PROTO_RTCP);
+    roc_endpoint_set_host(control_endp, MY_RECEIVER_IP);
+    roc_endpoint_set_port(control_endp, MY_RECEIVER_CONTROL_PORT);
+
+    if (roc_sender_connect(sender, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_CONTROL,
+                           control_endp)
+        != 0) {
+        oops();
+    }
+
+    if (roc_endpoint_deallocate(control_endp) != 0) {
+        oops();
+    }
+
     /* Generate sine wave and write it to the sender. */
     size_t i;
     for (i = 0; i < MY_SINE_DURATION / MY_BUFFER_SIZE; i++) {
         /* Generate sine wave. */
         float samples[MY_BUFFER_SIZE];
-        gensine(samples, i, MY_BUFFER_SIZE);
+        generate_sine(samples, i, MY_BUFFER_SIZE);
 
         /* Write samples to the sender. */
         roc_frame frame;

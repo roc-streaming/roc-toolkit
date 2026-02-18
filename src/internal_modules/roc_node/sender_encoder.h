@@ -15,7 +15,7 @@
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
 #include "roc_address/socket_addr.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_ptr.h"
 #include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/optional.h"
@@ -39,14 +39,14 @@ public:
     //! Deinitialize.
     ~SenderEncoder();
 
-    //! Check if successfully constructed.
-    bool is_valid() const;
+    //! Check if the node was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get packet factory.
     packet::PacketFactory& packet_factory();
 
     //! Activate interface.
-    ROC_ATTR_NODISCARD bool activate(address::Interface iface, address::Protocol proto);
+    ROC_NODISCARD bool activate(address::Interface iface, address::Protocol proto);
 
     //! Callback for slot metrics.
     typedef void (*slot_metrics_func_t)(const pipeline::SenderSlotMetrics& slot_metrics,
@@ -59,23 +59,29 @@ public:
         void* party_arg);
 
     //! Get metrics.
-    ROC_ATTR_NODISCARD bool get_metrics(slot_metrics_func_t slot_metrics_func,
-                                        void* slot_metrics_arg,
-                                        party_metrics_func_t party_metrics_func,
-                                        void* party_metrics_arg);
+    ROC_NODISCARD bool get_metrics(slot_metrics_func_t slot_metrics_func,
+                                   void* slot_metrics_arg,
+                                   party_metrics_func_t party_metrics_func,
+                                   void* party_metrics_arg);
 
     //! Check if everything is connected.
     bool is_complete();
 
     //! Read encoded packet.
-    ROC_ATTR_NODISCARD status::StatusCode read_packet(address::Interface iface,
-                                                      packet::PacketPtr& packet);
+    ROC_NODISCARD status::StatusCode
+    read_packet(address::Interface iface, void* bytes, size_t* n_bytes);
 
     //! Write packet for decoding.
     //! @note
     //!  Typically used to deliver control packets with receiver feedback.
-    ROC_ATTR_NODISCARD status::StatusCode write_packet(address::Interface iface,
-                                                       const packet::PacketPtr& packet);
+    ROC_NODISCARD status::StatusCode
+    write_packet(address::Interface iface, const void* bytes, size_t n_bytes);
+
+    //! Write frame.
+    //! @remarks
+    //!  Performs necessary checks and allocations on top of ISink::write(),
+    //!  needed when working with byte buffers instead of Frame objects.
+    ROC_NODISCARD status::StatusCode write_frame(const void* bytes, size_t n_bytes);
 
     //! Sink for writing frames for encoding.
     sndio::ISink& sink();
@@ -85,21 +91,27 @@ private:
                                           core::nanoseconds_t delay);
     virtual void cancel_task_processing(pipeline::PipelineLoop&);
 
-    core::Mutex mutex_;
+    core::Mutex control_mutex_;
 
     address::SocketAddr dest_address_;
 
     core::Optional<packet::ConcurrentQueue> endpoint_queues_[address::Iface_Max];
-    core::Atomic<packet::IReader*> endpoint_readers_[address::Iface_Max];
-    core::Atomic<packet::IWriter*> endpoint_writers_[address::Iface_Max];
-
-    packet::PacketFactory packet_factory_;
+    core::AtomicPtr<packet::IReader> endpoint_readers_[address::Iface_Max];
+    core::AtomicPtr<packet::IWriter> endpoint_writers_[address::Iface_Max];
 
     pipeline::SenderLoop pipeline_;
     pipeline::SenderLoop::SlotHandle slot_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
 
-    bool valid_;
+    packet::PacketFactory packet_factory_;
+
+    core::Mutex frame_mutex_;
+
+    audio::FrameFactory frame_factory_;
+    audio::FramePtr frame_;
+    audio::SampleSpec sample_spec_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace node

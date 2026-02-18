@@ -11,8 +11,8 @@
 #include "roc_core/heap_arena.h"
 #include "roc_core/macro_helpers.h"
 #include "roc_packet/delayed_reader.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_status/status_code.h"
 
 namespace roc {
@@ -25,7 +25,7 @@ enum { SampleRate = 1000, NumSamples = 100, NumPackets = 30, MaxBufSize = 100 };
 const core::nanoseconds_t NsPerSample = core::Second / SampleRate;
 
 const audio::SampleSpec sample_spec(SampleRate,
-                                    audio::Sample_RawFormat,
+                                    audio::PcmSubformat_Raw,
                                     audio::ChanLayout_Surround,
                                     audio::ChanOrder_Smpte,
                                     audio::ChanMask_Surround_Stereo);
@@ -40,17 +40,35 @@ PacketPtr new_packet(seqnum_t sn) {
     packet->add_flags(Packet::FlagRTP);
     packet->rtp()->seqnum = sn;
     packet->rtp()->stream_timestamp = stream_timestamp_t(sn * NumSamples);
+    packet->rtp()->duration = NumSamples;
 
     return packet;
 }
 
-class StatusReader : public IReader {
+void write_packet(IWriter& writer, const PacketPtr& pp) {
+    CHECK(pp);
+    LONGS_EQUAL(status::StatusOK, writer.write(pp));
+}
+
+PacketPtr
+expect_read(status::StatusCode expect_code, IReader& reader, PacketReadMode mode) {
+    PacketPtr pp;
+    LONGS_EQUAL(expect_code, reader.read(pp, mode));
+    if (expect_code == status::StatusOK) {
+        CHECK(pp);
+    } else {
+        CHECK(!pp);
+    }
+    return pp;
+}
+
+class MockReader : public IReader {
 public:
-    explicit StatusReader(status::StatusCode code)
+    explicit MockReader(status::StatusCode code)
         : code_(code) {
     }
 
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr&) {
+    virtual ROC_NODISCARD status::StatusCode read(PacketPtr& pp, PacketReadMode mode) {
         return code_;
     }
 
@@ -62,157 +80,194 @@ private:
 
 TEST_GROUP(delayed_reader) {};
 
-TEST(delayed_reader, failed_to_read_packet) {
-    const status::StatusCode codes[] = {
-        status::StatusUnknown,
-        status::StatusNoData,
-    };
-
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
-        StatusReader reader(codes[n]);
-        DelayedReader dr(reader, 0, sample_spec);
-        CHECK(dr.is_valid());
-
-        PacketPtr pp;
-        LONGS_EQUAL(codes[n], dr.read(pp));
-        CHECK(!pp);
-    }
-}
-
 TEST(delayed_reader, no_delay) {
-    Queue queue;
+    FifoQueue queue;
     DelayedReader dr(queue, 0, sample_spec);
-    CHECK(dr.is_valid());
+    LONGS_EQUAL(status::StatusOK, dr.init_status());
 
-    PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    PacketPtr pp = expect_read(status::StatusDrain, dr, ModeFetch);
     CHECK(!pp);
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr wp = new_packet(n);
-        LONGS_EQUAL(status::StatusOK, queue.write(wp));
+        write_packet(queue, wp);
 
-        PacketPtr rp;
-        LONGS_EQUAL(status::StatusOK, dr.read(rp));
+        PacketPtr rp = expect_read(status::StatusOK, dr, ModeFetch);
         CHECK(wp == rp);
     }
 }
 
 TEST(delayed_reader, delay) {
-    Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
-    CHECK(dr.is_valid());
+    FifoQueue queue;
+    DelayedReader dr(queue, NumSamples * NumPackets * NsPerSample, sample_spec);
+    LONGS_EQUAL(status::StatusOK, dr.init_status());
 
     PacketPtr packets[NumPackets];
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
-        PacketPtr p;
-        LONGS_EQUAL(status::StatusNoData, dr.read(p));
-        CHECK(!p);
+        PacketPtr pp = expect_read(status::StatusDrain, dr, ModeFetch);
+        CHECK(!pp);
 
         packets[n] = new_packet(n);
-        LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
+        write_packet(queue, packets[n]);
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
-        PacketPtr p;
-        LONGS_EQUAL(status::StatusOK, dr.read(p));
-        CHECK(p == packets[n]);
+        PacketPtr pp = expect_read(status::StatusOK, dr, ModeFetch);
+        CHECK(pp == packets[n]);
     }
 
-    PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    PacketPtr pp = expect_read(status::StatusDrain, dr, ModeFetch);
     CHECK(!pp);
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr wp = new_packet(NumPackets + n);
-        LONGS_EQUAL(status::StatusOK, queue.write(wp));
+        write_packet(queue, wp);
 
-        PacketPtr rp;
-        LONGS_EQUAL(status::StatusOK, dr.read(rp));
+        PacketPtr rp = expect_read(status::StatusOK, dr, ModeFetch);
         CHECK(wp == rp);
     }
 
-    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    pp = expect_read(status::StatusDrain, dr, ModeFetch);
     CHECK(!pp);
 }
 
 TEST(delayed_reader, instant) {
-    Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
-    CHECK(dr.is_valid());
+    FifoQueue queue;
+    DelayedReader dr(queue, NumSamples * NumPackets * NsPerSample, sample_spec);
+    LONGS_EQUAL(status::StatusOK, dr.init_status());
 
     PacketPtr packets[NumPackets];
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         packets[n] = new_packet(n);
-        LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
+        write_packet(queue, packets[n]);
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
-        PacketPtr p;
-        LONGS_EQUAL(status::StatusOK, dr.read(p));
-        CHECK(p == packets[n]);
+        PacketPtr pp = expect_read(status::StatusOK, dr, ModeFetch);
+        CHECK(pp == packets[n]);
     }
 
-    PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    PacketPtr pp = expect_read(status::StatusDrain, dr, ModeFetch);
     CHECK(!pp);
 }
 
 TEST(delayed_reader, trim) {
-    Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
-    CHECK(dr.is_valid());
+    FifoQueue queue;
+    DelayedReader dr(queue, NumSamples * NumPackets * NsPerSample, sample_spec);
+    LONGS_EQUAL(status::StatusOK, dr.init_status());
 
     PacketPtr packets[NumPackets * 2];
 
     for (seqnum_t n = 0; n < NumPackets * 2; n++) {
         packets[n] = new_packet(n);
-        LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
+        write_packet(queue, packets[n]);
     }
 
     for (seqnum_t n = NumPackets; n < NumPackets * 2; n++) {
-        PacketPtr p;
-        LONGS_EQUAL(status::StatusOK, dr.read(p));
-        CHECK(p == packets[n]);
+        PacketPtr pp = expect_read(status::StatusOK, dr, ModeFetch);
+        CHECK(pp == packets[n]);
     }
 
-    PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    PacketPtr pp = expect_read(status::StatusDrain, dr, ModeFetch);
     CHECK(!pp);
 }
 
 TEST(delayed_reader, late_duplicates) {
-    Queue queue;
-    DelayedReader dr(queue, NumSamples * (NumPackets - 1) * NsPerSample, sample_spec);
-    CHECK(dr.is_valid());
+    FifoQueue queue;
+    DelayedReader dr(queue, NumSamples * NumPackets * NsPerSample, sample_spec);
+    LONGS_EQUAL(status::StatusOK, dr.init_status());
 
     PacketPtr packets[NumPackets];
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         packets[n] = new_packet(n);
-        LONGS_EQUAL(status::StatusOK, queue.write(packets[n]));
+        write_packet(queue, packets[n]);
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
-        PacketPtr p;
-        LONGS_EQUAL(status::StatusOK, dr.read(p));
-        CHECK(p == packets[n]);
+        PacketPtr pp = expect_read(status::StatusOK, dr, ModeFetch);
+        CHECK(pp == packets[n]);
     }
 
     for (seqnum_t n = 0; n < NumPackets; n++) {
         PacketPtr wp = new_packet(n);
-        LONGS_EQUAL(status::StatusOK, queue.write(wp));
+        write_packet(queue, wp);
 
-        PacketPtr rp;
-        LONGS_EQUAL(status::StatusOK, dr.read(rp));
+        PacketPtr rp = expect_read(status::StatusOK, dr, ModeFetch);
         CHECK(wp == rp);
     }
 
-    PacketPtr pp;
-    LONGS_EQUAL(status::StatusNoData, dr.read(pp));
+    PacketPtr pp = expect_read(status::StatusDrain, dr, ModeFetch);
     CHECK(!pp);
+}
+
+TEST(delayed_reader, fetch_peek) {
+    FifoQueue queue;
+    DelayedReader dr(queue, NumSamples * NumPackets * NsPerSample, sample_spec);
+    LONGS_EQUAL(status::StatusOK, dr.init_status());
+
+    PacketPtr packets[NumPackets * 2];
+
+    for (seqnum_t n = 0; n < NumPackets; n++) {
+        PacketPtr pp;
+
+        pp = expect_read(status::StatusDrain, dr, ModePeek);
+        CHECK(!pp);
+
+        pp = expect_read(status::StatusDrain, dr, ModeFetch);
+        CHECK(!pp);
+
+        packets[n] = new_packet(n);
+        write_packet(queue, packets[n]);
+    }
+
+    for (seqnum_t n = 0; n < NumPackets; n++) {
+        PacketPtr pp;
+
+        pp = expect_read(status::StatusOK, dr, ModePeek);
+        CHECK(pp == packets[n]);
+
+        pp = expect_read(status::StatusOK, dr, ModeFetch);
+        CHECK(pp == packets[n]);
+
+        packets[NumPackets + n] = new_packet(NumPackets + n);
+        write_packet(queue, packets[NumPackets + n]);
+    }
+
+    for (seqnum_t n = 0; n < NumPackets; n++) {
+        PacketPtr pp;
+
+        pp = expect_read(status::StatusOK, dr, ModePeek);
+        CHECK(pp == packets[NumPackets + n]);
+
+        pp = expect_read(status::StatusOK, dr, ModeFetch);
+        CHECK(pp == packets[NumPackets + n]);
+    }
+}
+
+TEST(delayed_reader, forward_error) {
+    const status::StatusCode status_list[] = {
+        status::StatusDrain,
+        status::StatusAbort,
+    };
+
+    const stream_timestamp_t delay_list[] = {
+        0,
+        NumSamples * NumPackets * NsPerSample,
+    };
+
+    for (size_t st_n = 0; st_n < ROC_ARRAY_SIZE(status_list); st_n++) {
+        for (size_t dl_n = 0; dl_n < ROC_ARRAY_SIZE(delay_list); dl_n++) {
+            MockReader reader(status_list[st_n]);
+            DelayedReader dr(reader, delay_list[dl_n], sample_spec);
+            LONGS_EQUAL(status::StatusOK, dr.init_status());
+
+            expect_read(status_list[st_n], dr, ModePeek);
+            expect_read(status_list[st_n], dr, ModeFetch);
+        }
+    }
 }
 
 } // namespace packet

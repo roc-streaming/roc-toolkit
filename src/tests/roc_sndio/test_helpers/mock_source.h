@@ -11,6 +11,8 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "roc_audio/frame_factory.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/time.h"
 #include "roc_sndio/isource.h"
 
@@ -20,9 +22,19 @@ namespace test {
 
 class MockSource : public ISource {
 public:
-    MockSource()
-        : pos_(0)
+    MockSource(const audio::SampleSpec& sample_spec,
+               audio::FrameFactory& frame_factory,
+               core::IArena& arena)
+        : IDevice(arena)
+        , ISource(arena)
+        , frame_factory_(frame_factory)
+        , sample_spec_(sample_spec)
+        , pos_(0)
         , size_(0) {
+    }
+
+    virtual DeviceType type() const {
+        return DeviceType_Source;
     }
 
     virtual ISink* to_sink() {
@@ -33,8 +45,16 @@ public:
         return this;
     }
 
-    virtual DeviceType type() const {
-        return DeviceType_Source;
+    virtual audio::SampleSpec sample_spec() const {
+        return sample_spec_;
+    }
+
+    core::nanoseconds_t frame_length() const {
+        return 0;
+    }
+
+    virtual bool has_state() const {
+        return true;
     }
 
     virtual DeviceState state() const {
@@ -45,26 +65,14 @@ public:
         }
     }
 
-    virtual void pause() {
+    virtual status::StatusCode pause() {
         FAIL("not implemented");
+        return status::StatusAbort;
     }
 
-    virtual bool resume() {
+    virtual status::StatusCode resume() {
         FAIL("not implemented");
-        return false;
-    }
-
-    virtual bool restart() {
-        FAIL("not implemented");
-        return false;
-    }
-
-    virtual audio::SampleSpec sample_spec() const {
-        return audio::SampleSpec();
-    }
-
-    virtual core::nanoseconds_t latency() const {
-        return 0;
+        return status::StatusAbort;
     }
 
     virtual bool has_latency() const {
@@ -75,27 +83,50 @@ public:
         return false;
     }
 
+    virtual status::StatusCode rewind() {
+        FAIL("not implemented");
+        return status::StatusAbort;
+    }
+
     virtual void reclock(core::nanoseconds_t) {
         // no-op
     }
 
-    virtual bool read(audio::Frame& frame) {
-        size_t ns = frame.num_raw_samples();
-        if (ns > size_ - pos_) {
-            ns = size_ - pos_;
+    virtual status::StatusCode read(audio::Frame& frame,
+                                    packet::stream_timestamp_t duration,
+                                    audio::FrameReadMode mode) {
+        LONGS_EQUAL(audio::ModeHard, mode);
+
+        CHECK(frame_factory_.reallocate_frame(
+            frame, sample_spec_.stream_timestamp_2_bytes(duration)));
+
+        frame.set_raw(true);
+
+        size_t n_samples = frame.num_raw_samples();
+        if (n_samples > size_ - pos_) {
+            n_samples = size_ - pos_;
         }
 
-        if (ns > 0) {
-            memcpy(frame.raw_samples(), samples_ + pos_, ns * sizeof(audio::sample_t));
-            pos_ += ns;
+        if (n_samples == 0) {
+            return status::StatusFinish;
         }
 
-        if (ns < frame.num_raw_samples()) {
-            memset(frame.raw_samples() + ns, 0,
-                   (frame.num_raw_samples() - ns) * sizeof(audio::sample_t));
-        }
+        memcpy(frame.raw_samples(), samples_ + pos_, n_samples * sizeof(audio::sample_t));
+        pos_ += n_samples;
 
-        return true;
+        frame.set_num_raw_samples(n_samples);
+        frame.set_duration((packet::stream_timestamp_t)n_samples
+                           / sample_spec_.num_channels());
+
+        return frame.duration() == duration ? status::StatusOK : status::StatusPart;
+    }
+
+    virtual status::StatusCode close() {
+        return status::StatusOK;
+    }
+
+    virtual void dispose() {
+        arena().dispose_object(*this);
     }
 
     void add(size_t sz) {
@@ -117,6 +148,9 @@ private:
     audio::sample_t nth_sample_(size_t n) {
         return audio::sample_t(uint8_t(n)) / audio::sample_t(1 << 8);
     }
+
+    audio::FrameFactory& frame_factory_;
+    const audio::SampleSpec sample_spec_;
 
     audio::sample_t samples_[MaxSz];
     size_t pos_;

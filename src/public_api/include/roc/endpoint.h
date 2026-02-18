@@ -78,7 +78,7 @@ typedef struct roc_endpoint roc_endpoint;
  * All components of the newly created endpoint are empty.
  *
  * **Parameters**
- *  - \p result should point to an unitialized roc_endpoint pointer
+ *  - \p result should point to an uninitialized roc_endpoint pointer
  *
  * **Returns**
  *  - returns zero if endpoint was successfully allocated and initialized

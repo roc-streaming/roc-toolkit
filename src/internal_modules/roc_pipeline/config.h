@@ -14,16 +14,20 @@
 
 #include "roc_address/protocol.h"
 #include "roc_audio/feedback_monitor.h"
-#include "roc_audio/latency_tuner.h"
+#include "roc_audio/jitter_meter.h"
+#include "roc_audio/latency_config.h"
+#include "roc_audio/plc_config.h"
 #include "roc_audio/profiler.h"
 #include "roc_audio/resampler_config.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_audio/watchdog.h"
+#include "roc_core/attributes.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
+#include "roc_dbgio/csv_dumper.h"
+#include "roc_fec/block_reader.h"
+#include "roc_fec/block_writer.h"
 #include "roc_fec/codec_config.h"
-#include "roc_fec/reader.h"
-#include "roc_fec/writer.h"
 #include "roc_packet/units.h"
 #include "roc_pipeline/pipeline_loop.h"
 #include "roc_rtcp/config.h"
@@ -32,12 +36,9 @@
 namespace roc {
 namespace pipeline {
 
-//! Default sample rate, number of samples per second.
-const size_t DefaultSampleRate = 44100;
-
 //! Default sample specification.
-static const audio::SampleSpec DefaultSampleSpec(DefaultSampleRate,
-                                                 audio::Sample_RawFormat,
+static const audio::SampleSpec DefaultSampleSpec(44100,
+                                                 audio::PcmSubformat_Raw,
                                                  audio::ChanLayout_Surround,
                                                  audio::ChanOrder_Smpte,
                                                  audio::ChanMask_Surround_Stereo);
@@ -69,16 +70,19 @@ struct SenderSinkConfig {
     core::nanoseconds_t packet_length;
 
     //! FEC writer parameters.
-    fec::WriterConfig fec_writer;
+    fec::BlockWriterConfig fec_writer;
 
     //! FEC encoder parameters.
     fec::CodecConfig fec_encoder;
 
+    //! Feedback parameters.
+    audio::FeedbackConfig feedback;
+
     //! Latency parameters.
     audio::LatencyConfig latency;
 
-    //! Feedback parameters.
-    audio::FeedbackConfig feedback;
+    //! Freq estimator parameters.
+    audio::FreqEstimatorConfig freq_est;
 
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
@@ -89,26 +93,26 @@ struct SenderSinkConfig {
     //! RTCP config.
     rtcp::Config rtcp;
 
-    //! Constrain receiver speed using a CPU timer according to the sample rate.
-    bool enable_timing;
-
-    //! Automatically fill duration of input frames.
-    bool enable_auto_duration;
+    //! Block write operations on CPU timer according to the sample rate.
+    bool enable_cpu_clock;
 
     //! Automatically fill capture timestamps of input frames with invocation time.
     bool enable_auto_cts;
 
+    //! Interleave packets.
+    bool enable_interleaving;
+
     //! Profile moving average of frames being written.
     bool enable_profiling;
 
-    //! Interleave packets.
-    bool enable_interleaving;
+    //! Parameters for a logger in csv format with some run-time metrics.
+    dbgio::CsvConfig dumper;
 
     //! Initialize config.
     SenderSinkConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    ROC_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of sender slot.
@@ -117,7 +121,7 @@ struct SenderSlotConfig {
     SenderSlotConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    ROC_NODISCARD bool deduce_defaults();
 };
 
 //! Parameters common for all receiver sessions.
@@ -134,8 +138,8 @@ struct ReceiverCommonConfig {
     //! RTCP config.
     rtcp::Config rtcp;
 
-    //! Constrain receiver speed using a CPU timer according to the sample rate.
-    bool enable_timing;
+    //! Block read operations on CPU timer according to the sample rate.
+    bool enable_cpu_clock;
 
     //! Automatically invoke reclock before returning frames with invocation time.
     bool enable_auto_reclock;
@@ -143,11 +147,14 @@ struct ReceiverCommonConfig {
     //! Profile moving average of frames being written.
     bool enable_profiling;
 
+    //! Parameters for a logger in csv format with some run-time metrics.
+    dbgio::CsvConfig dumper;
+
     //! Initialize config.
     ReceiverCommonConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    ROC_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of receiver session.
@@ -156,31 +163,38 @@ struct ReceiverSessionConfig {
     unsigned int payload_type;
 
     //! FEC reader parameters.
-    fec::ReaderConfig fec_reader;
+    fec::BlockReaderConfig fec_reader;
 
     //! FEC decoder parameters.
     fec::CodecConfig fec_decoder;
 
+    //! PLC parameters.
+    audio::PlcConfig plc;
+
     //! Latency parameters.
     audio::LatencyConfig latency;
 
-    //! Watchdog parameters.
-    audio::WatchdogConfig watchdog;
+    //! Jitter meter parameters.
+    audio::JitterMeterConfig jitter_meter;
+
+    //! Freq estimator parameters.
+    audio::FreqEstimatorConfig freq_est;
 
     //! Resampler parameters.
     audio::ResamplerConfig resampler;
 
-    //! Insert weird beeps instead of silence on packet loss.
-    bool enable_beeping;
+    //! Watchdog parameters.
+    audio::WatchdogConfig watchdog;
 
     //! Initialize config.
     ReceiverSessionConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    ROC_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of receiver session.
+//! Top-level config, actual settings are stored in sub-configs.
 struct ReceiverSourceConfig {
     //! Task processing parameters.
     PipelineLoopConfig pipeline_loop;
@@ -195,7 +209,7 @@ struct ReceiverSourceConfig {
     ReceiverSourceConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    ROC_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 //! Parameters of receiver slot.
@@ -207,7 +221,7 @@ struct ReceiverSlotConfig {
     ReceiverSlotConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    ROC_NODISCARD bool deduce_defaults();
 };
 
 //! Converter parameters.
@@ -231,7 +245,7 @@ struct TranscoderConfig {
     TranscoderConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    ROC_NODISCARD bool deduce_defaults(audio::ProcessorMap& processor_map);
 };
 
 } // namespace pipeline

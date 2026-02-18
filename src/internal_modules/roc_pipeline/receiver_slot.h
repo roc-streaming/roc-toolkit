@@ -16,9 +16,11 @@
 #include "roc_address/protocol.h"
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/mixer.h"
+#include "roc_audio/processor_map.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list_node.h"
 #include "roc_core/ref_counted.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/metrics.h"
 #include "roc_pipeline/receiver_endpoint.h"
@@ -42,13 +44,15 @@ public:
                  const ReceiverSlotConfig& slot_config,
                  StateTracker& state_tracker,
                  audio::Mixer& mixer,
-                 const rtp::EncodingMap& encoding_map,
+                 audio::ProcessorMap& processor_map,
+                 rtp::EncodingMap& encoding_map,
                  packet::PacketFactory& packet_factory,
                  audio::FrameFactory& frame_factory,
-                 core::IArena& arena);
+                 core::IArena& arena,
+                 dbgio::CsvDumper* dumper);
 
-    //! Check if the slot was succefully constructed.
-    bool is_valid() const;
+    //! Check if the pipeline was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Add endpoint.
     ReceiverEndpoint* add_endpoint(address::Interface iface,
@@ -56,11 +60,13 @@ public:
                                    const address::SocketAddr& inbound_address,
                                    packet::IWriter* outbound_writer);
 
-    //! Pull packets and refresh sessions according to current time.
-    //! @returns
-    //!  deadline (absolute time) when refresh should be invoked again
-    //!  if there are no frames
-    core::nanoseconds_t refresh(core::nanoseconds_t current_time);
+    //! Pull packets and refresh pipeline according to current time.
+    //! @remarks
+    //!  Should be invoked before reading each frame.
+    //!  If there are no frames for a while, should be invoked no
+    //!  later than the deadline returned via @p next_deadline.
+    ROC_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
+                                             core::nanoseconds_t& next_deadline);
 
     //! Adjust sessions clock to match consumer clock.
     //! @remarks
@@ -87,7 +93,7 @@ private:
                                                const address::SocketAddr& inbound_address,
                                                packet::IWriter* outbound_writer);
 
-    const rtp::EncodingMap& encoding_map_;
+    rtp::EncodingMap& encoding_map_;
 
     StateTracker& state_tracker_;
     ReceiverSessionGroup session_group_;
@@ -96,7 +102,7 @@ private:
     core::Optional<ReceiverEndpoint> repair_endpoint_;
     core::Optional<ReceiverEndpoint> control_endpoint_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

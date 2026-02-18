@@ -74,12 +74,12 @@ ReceiverSessionRouter::add_session(const core::SharedPtr<ReceiverSession>& sessi
                 "session router: conflict:"
                 " another session already exists for source address %s",
                 address::socket_addr_to_str(source_addr).c_str());
-        return status::StatusConflict;
+        return status::StatusNoRoute;
     }
 
     if (session_route_map_.find(session)) {
         roc_log(LogError, "session router: conflict: session already registered");
-        return status::StatusConflict;
+        return status::StatusNoRoute;
     }
 
     if (SourceNode* node = source_route_map_.find(source_id)) {

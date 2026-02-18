@@ -22,22 +22,19 @@ namespace core {
 //! Base class for object with reference counter.
 //!
 //! Allows to increment and decrement reference counter. When the counter
-//! reaches zero, the object is automatically destroyed.
+//! reaches zero, the object is automatically disposed.
 //!
 //! @tparam T defines the derived class.
-//! @tparam AllocationPolicy defines destroy policy.
+//! @tparam AllocationPolicy defines allocation policy to be inherited
+//! (ArenaAllocation, PoolAllocation, etc.)
 //!
-//! When reference counter becomes zero, AllocationPolicy::destroy() is invoked
-//! by RefCounted to destroy itself.
-//!
-//! Inherits AllocationPolicy to make its methods and state available in the
-//! derived class. E.g., PoolAllocation policy holds a reference to the pool
-//! and uses it to release the object.
+//! When reference counter becomes zero, RefCounted invokes dispose() method
+//! implemented by allocation policy.
 //!
 //! Thread-safe.
 template <class T, class AllocationPolicy>
-class RefCounted : public NonCopyable<RefCounted<T, AllocationPolicy> >,
-                   protected AllocationPolicy {
+class RefCounted : public AllocationPolicy,
+                   public NonCopyable<RefCounted<T, AllocationPolicy> > {
 public:
     //! Initialize.
     RefCounted()
@@ -45,8 +42,9 @@ public:
     }
 
     //! Initialize.
-    explicit RefCounted(const AllocationPolicy& policy)
-        : AllocationPolicy(policy) {
+    template <class Arg>
+    explicit RefCounted(Arg& arg)
+        : AllocationPolicy(arg) {
     }
 
     //! Get reference counter.
@@ -66,8 +64,7 @@ public:
         const int current_counter = impl_.decref();
 
         if (current_counter == 0) {
-            const_cast<RefCounted&>(*this).destroy(
-                static_cast<T&>(const_cast<RefCounted&>(*this)));
+            const_cast<RefCounted&>(*this).dispose();
         }
     }
 

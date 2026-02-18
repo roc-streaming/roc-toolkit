@@ -13,7 +13,7 @@
 #define ROC_CORE_HEAP_ARENA_H_
 
 #include "roc_core/align_ops.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_size.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 
@@ -108,8 +108,8 @@ private:
 
     bool report_guard_(HeapArenaGuard guard) const;
 
-    Atomic<int> num_allocations_;
-    mutable Atomic<size_t> num_guard_failures_;
+    AtomicSize num_allocations_;
+    mutable AtomicSize num_guard_failures_;
 
     static size_t guards_;
 };

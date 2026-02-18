@@ -12,8 +12,8 @@
 #ifndef ROC_NODE_RECEIVER_H_
 #define ROC_NODE_RECEIVER_H_
 
-#include "roc_address/endpoint_uri.h"
 #include "roc_address/interface.h"
+#include "roc_address/network_uri.h"
 #include "roc_address/protocol.h"
 #include "roc_core/attributes.h"
 #include "roc_core/hashmap.h"
@@ -42,20 +42,20 @@ public:
     //! Deinitialize.
     ~Receiver();
 
-    //! Check if successfully constructed.
-    bool is_valid();
+    //! Check if the node was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Set interface config.
-    ROC_ATTR_NODISCARD bool configure(slot_index_t slot_index,
-                                      address::Interface iface,
-                                      const netio::UdpConfig& config);
+    ROC_NODISCARD bool configure(slot_index_t slot_index,
+                                 address::Interface iface,
+                                 const netio::UdpConfig& config);
 
     //! Bind to local endpoint.
-    ROC_ATTR_NODISCARD bool
-    bind(slot_index_t slot_index, address::Interface iface, address::EndpointUri& uri);
+    ROC_NODISCARD bool
+    bind(slot_index_t slot_index, address::Interface iface, address::NetworkUri& uri);
 
     //! Remove slot.
-    ROC_ATTR_NODISCARD bool unlink(slot_index_t slot_index);
+    ROC_NODISCARD bool unlink(slot_index_t slot_index);
 
     //! Callback for slot metrics.
     typedef void (*slot_metrics_func_t)(const pipeline::ReceiverSlotMetrics& slot_metrics,
@@ -68,15 +68,21 @@ public:
         void* party_arg);
 
     //! Get metrics.
-    ROC_ATTR_NODISCARD bool get_metrics(slot_index_t slot_index,
-                                        slot_metrics_func_t slot_metrics_func,
-                                        void* slot_metrics_arg,
-                                        party_metrics_func_t party_metrics_func,
-                                        size_t* party_metrics_size,
-                                        void* party_metrics_arg);
+    ROC_NODISCARD bool get_metrics(slot_index_t slot_index,
+                                   slot_metrics_func_t slot_metrics_func,
+                                   void* slot_metrics_arg,
+                                   party_metrics_func_t party_metrics_func,
+                                   size_t* party_metrics_size,
+                                   void* party_metrics_arg);
 
     //! Check if there are broken slots.
-    bool has_broken();
+    bool has_broken_slots();
+
+    //! Read frame.
+    //! @remarks
+    //!  Performs necessary checks and allocations on top of ISource::read(),
+    //!  used when working with raw byte buffers instead of Frame objects.
+    ROC_NODISCARD status::StatusCode read_frame(void* bytes, size_t n_bytes);
 
     //! Get receiver source.
     sndio::ISource& source();
@@ -119,9 +125,6 @@ private:
         }
     };
 
-    bool check_compatibility_(address::Interface iface, const address::EndpointUri& uri);
-    void update_compatibility_(address::Interface iface, const address::EndpointUri& uri);
-
     core::SharedPtr<Slot> get_slot_(slot_index_t slot_index, bool auto_create);
     void cleanup_slot_(Slot& slot);
     void break_slot_(Slot& slot);
@@ -130,7 +133,7 @@ private:
                                           core::nanoseconds_t delay);
     virtual void cancel_task_processing(pipeline::PipelineLoop&);
 
-    core::Mutex mutex_;
+    core::Mutex control_mutex_;
 
     pipeline::ReceiverLoop pipeline_;
     ctl::ControlLoop::Tasks::PipelineProcessing processing_task_;
@@ -138,13 +141,16 @@ private:
     core::SlabPool<Slot> slot_pool_;
     core::Hashmap<Slot> slot_map_;
 
-    bool used_interfaces_[address::Iface_Max];
-    address::Protocol used_protocols_[address::Iface_Max];
-
     pipeline::ReceiverSlotMetrics slot_metrics_;
     core::Array<pipeline::ReceiverParticipantMetrics, 8> party_metrics_;
 
-    bool valid_;
+    core::Mutex frame_mutex_;
+
+    audio::FrameFactory frame_factory_;
+    audio::FramePtr frame_;
+    audio::SampleSpec sample_spec_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace node

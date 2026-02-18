@@ -12,13 +12,13 @@
 #ifndef ROC_CORE_THREAD_H_
 #define ROC_CORE_THREAD_H_
 
-#include <pthread.h>
-
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_bool.h"
 #include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
+
+#include <pthread.h>
 
 namespace roc {
 namespace core {
@@ -33,7 +33,7 @@ public:
     static uint64_t get_tid();
 
     //! Raise current thread priority to realtime.
-    ROC_ATTR_NODISCARD static bool enable_realtime();
+    ROC_NODISCARD static bool enable_realtime();
 
     //! Check if thread was started and can be joined.
     //! @returns
@@ -43,7 +43,7 @@ public:
     //! Start thread.
     //! @remarks
     //!  Executes run() in new thread.
-    ROC_ATTR_NODISCARD bool start();
+    ROC_NODISCARD bool start();
 
     //! Join thread.
     //! @remarks
@@ -64,7 +64,7 @@ private:
     pthread_t thread_;
 
     int started_;
-    Atomic<int> joinable_;
+    AtomicBool joinable_;
 
     Mutex mutex_;
 };

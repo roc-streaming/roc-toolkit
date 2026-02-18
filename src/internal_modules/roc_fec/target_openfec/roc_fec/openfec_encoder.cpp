@@ -9,6 +9,7 @@
 #include "roc_fec/openfec_encoder.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_packet/fec_scheme.h"
 
 namespace roc {
 namespace fec {
@@ -16,14 +17,17 @@ namespace fec {
 OpenfecEncoder::OpenfecEncoder(const CodecConfig& config,
                                packet::PacketFactory& packet_factory,
                                core::IArena& arena)
-    : sblen_(0)
+    : IBlockEncoder(arena)
+    , sblen_(0)
     , rblen_(0)
     , payload_size_(0)
     , of_sess_(NULL)
     , buff_tab_(arena)
     , data_tab_(arena)
-    , valid_(false) {
-    if (config.scheme == packet::FEC_ReedSolomon_M8) {
+    , init_status_(status::NoStatus) {
+    switch (config.scheme) {
+#ifdef OF_USE_REED_SOLOMON_2_M_CODEC
+    case packet::FEC_ReedSolomon_M8: {
         roc_log(LogDebug, "openfec encoder: initializing: codec=rs m=%u",
                 (unsigned)config.rs_m);
 
@@ -32,8 +36,12 @@ OpenfecEncoder::OpenfecEncoder(const CodecConfig& config,
 
         of_sess_params_ = (of_parameters_t*)&codec_params_.rs_params_;
 
-        max_block_length_ = OF_REED_SOLOMON_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
-    } else if (config.scheme == packet::FEC_LDPC_Staircase) {
+        max_block_length_ = size_t(1 << config.rs_m) - 1;
+    } break;
+#endif // OF_USE_REED_SOLOMON_2_M_CODEC
+
+#ifdef OF_USE_LDPC_STAIRCASE_CODEC
+    case packet::FEC_LDPC_Staircase: {
         roc_log(LogDebug, "openfec encoder: initializing: codec=ldpc prng_seed=%ld n1=%d",
                 (long)config.ldpc_prng_seed, (int)config.ldpc_N1);
 
@@ -44,13 +52,18 @@ OpenfecEncoder::OpenfecEncoder(const CodecConfig& config,
         of_sess_params_ = (of_parameters_t*)&codec_params_.ldpc_params_;
 
         max_block_length_ = OF_LDPC_STAIRCASE_MAX_NB_ENCODING_SYMBOLS_DEFAULT;
-    } else {
-        roc_panic("openfec encoder: unexpected fec scheme");
+    } break;
+#endif // OF_USE_LDPC_STAIRCASE_CODEC
+
+    default:
+        roc_log(LogError, "openfec encoder: unsupported fec scheme: scheme=%s",
+                packet::fec_scheme_to_str(config.scheme));
+        init_status_ = status::StatusBadConfig;
+        return;
     }
 
     of_verbosity = 0;
-
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 OpenfecEncoder::~OpenfecEncoder() {
@@ -59,29 +72,36 @@ OpenfecEncoder::~OpenfecEncoder() {
     }
 }
 
-bool OpenfecEncoder::is_valid() const {
-    return valid_;
-}
-
-size_t OpenfecEncoder::alignment() const {
-    return Alignment;
+status::StatusCode OpenfecEncoder::init_status() const {
+    return init_status_;
 }
 
 size_t OpenfecEncoder::max_block_length() const {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return max_block_length_;
 }
 
-bool OpenfecEncoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
-    roc_panic_if_not(is_valid());
+size_t OpenfecEncoder::buffer_alignment() const {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    return Alignment;
+}
+
+status::StatusCode
+OpenfecEncoder::begin_block(size_t sblen, size_t rblen, size_t payload_size) {
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (sblen_ == sblen && rblen_ == rblen && payload_size_ == payload_size) {
-        return true;
+        return status::StatusOK;
     }
 
     if (!resize_tabs_(sblen + rblen)) {
-        return false;
+        roc_log(
+            LogError,
+            "openfec encoder: failed to resize tabs in begin_block, sblen=%lu, rblen=%lu",
+            (unsigned long)sblen, (unsigned long)rblen);
+        return status::StatusNoMem;
     }
 
     sblen_ = sblen;
@@ -91,11 +111,11 @@ bool OpenfecEncoder::begin(size_t sblen, size_t rblen, size_t payload_size) {
     update_session_params_(sblen, rblen, payload_size);
     reset_session_();
 
-    return true;
+    return status::StatusOK;
 }
 
-void OpenfecEncoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
-    roc_panic_if_not(is_valid());
+void OpenfecEncoder::set_buffer(size_t index, const core::Slice<uint8_t>& buffer) {
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (index >= sblen_ + rblen_) {
         roc_panic("openfec encoder: can't write more than %lu data buffers",
@@ -120,8 +140,8 @@ void OpenfecEncoder::set(size_t index, const core::Slice<uint8_t>& buffer) {
     buff_tab_[index] = buffer;
 }
 
-void OpenfecEncoder::fill() {
-    roc_panic_if_not(is_valid());
+void OpenfecEncoder::fill_buffers() {
+    roc_panic_if(init_status_ != status::StatusOK);
 
     for (size_t i = sblen_; i < sblen_ + rblen_; ++i) {
         roc_log(LogTrace, "openfec encoder: of_build_repair_symbol(): index=%lu",
@@ -134,8 +154,8 @@ void OpenfecEncoder::fill() {
     }
 }
 
-void OpenfecEncoder::end() {
-    roc_panic_if_not(is_valid());
+void OpenfecEncoder::end_block() {
+    roc_panic_if(init_status_ != status::StatusOK);
 
     for (size_t i = 0; i < buff_tab_.size(); ++i) {
         data_tab_[i] = NULL;

@@ -42,7 +42,7 @@ enum PctMode {
 //! @remarks
 //!  The source string should NOT be null-terminated.
 //!  The source string size should NOT include the terminating zero byte.
-ROC_ATTR_NODISCARD bool
+ROC_NODISCARD bool
 pct_encode(core::StringBuilder& dst, const char* src, size_t src_sz, PctMode mode);
 
 //! Percent-decode an UTF-8 string.
@@ -55,8 +55,7 @@ pct_encode(core::StringBuilder& dst, const char* src, size_t src_sz, PctMode mod
 //! @remarks
 //!  The source string should NOT be null-terminated.
 //!  The source string size should NOT include the terminating zero byte.
-ROC_ATTR_NODISCARD bool
-pct_decode(core::StringBuilder& dst, const char* src, size_t src_sz);
+ROC_NODISCARD bool pct_decode(core::StringBuilder& dst, const char* src, size_t src_sz);
 
 } // namespace address
 } // namespace roc

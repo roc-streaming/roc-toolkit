@@ -12,33 +12,20 @@
 #include "roc_core/log.h"
 #include "roc_core/parse_units.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/scoped_release.h"
+#include "roc_dbgio/print_supported.h"
 #include "roc_pipeline/transcoder_sink.h"
 #include "roc_sndio/backend_dispatcher.h"
-#include "roc_sndio/backend_map.h"
-#include "roc_sndio/config.h"
-#include "roc_sndio/print_supported.h"
-#include "roc_sndio/pump.h"
+#include "roc_sndio/io_pump.h"
+#include "roc_status/code_to_str.h"
 
 #include "roc_copy/cmdline.h"
 
 using namespace roc;
 
-int main(int argc, char** argv) {
-    core::HeapArena::set_guards(core::HeapArena_DefaultGuards
-                                | core::HeapArena_LeakGuard);
+namespace {
 
-    core::CrashHandler crash_handler;
-
-    gengetopt_args_info args;
-
-    const int code = cmdline_parser(argc, argv, &args);
-    if (code != 0) {
-        return code;
-    }
-
-    core::ScopedPtr<gengetopt_args_info, core::CustomAllocation> args_holder(
-        &args, &cmdline_parser_free);
-
+void init_logger(const gengetopt_args_info& args) {
     core::Logger::instance().set_verbosity(args.verbose_given);
 
     switch (args.color_arg) {
@@ -54,86 +41,46 @@ int main(int argc, char** argv) {
     default:
         break;
     }
+}
 
-    core::HeapArena arena;
-    sndio::BackendDispatcher backend_dispatcher(arena);
-
-    if (args.list_supported_given) {
-        if (!sndio::print_supported(backend_dispatcher, arena)) {
-            return 1;
-        }
-        return 0;
-    }
-
-    pipeline::TranscoderConfig transcoder_config;
-
-    sndio::Config source_config;
-    source_config.sample_spec.set_channel_set(
-        transcoder_config.input_sample_spec.channel_set());
-    source_config.sample_spec.set_sample_rate(0);
-
-    if (args.frame_len_given) {
-        if (!core::parse_duration(args.frame_len_arg, source_config.frame_length)) {
+bool build_input_config(const gengetopt_args_info& args, sndio::IoConfig& input_config) {
+    if (args.io_frame_len_given) {
+        if (!core::parse_duration(args.io_frame_len_arg, input_config.frame_length)) {
             roc_log(LogError, "invalid --frame-len: bad format");
-            return 1;
+            return false;
         }
-        if (source_config.frame_length <= 0) {
+        if (input_config.frame_length <= 0) {
             roc_log(LogError, "invalid --frame-len: should be > 0");
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool build_output_config(const gengetopt_args_info& args,
+                         const sndio::IoConfig& input_config,
+                         sndio::IoConfig& output_config) {
+    output_config = input_config;
+
+    if (args.output_encoding_given) {
+        if (!audio::parse_sample_spec(args.output_encoding_arg,
+                                      output_config.sample_spec)) {
+            roc_log(LogError, "invalid --output-encoding");
             return 1;
         }
     }
 
-    sndio::BackendMap::instance().set_frame_size(source_config.frame_length,
-                                                 transcoder_config.input_sample_spec);
+    return true;
+}
 
-    core::SlabPool<core::Buffer> frame_buffer_pool(
-        "frame_buffer_pool", arena,
-        sizeof(core::Buffer)
-            + transcoder_config.input_sample_spec.ns_2_bytes(source_config.frame_length));
-
-    address::IoUri input_uri(arena);
-    if (args.input_given) {
-        if (!address::parse_io_uri(args.input_arg, input_uri) || !input_uri.is_file()) {
-            roc_log(LogError, "invalid --input file URI");
-            return 1;
-        }
-    }
-
-    if (!args.input_format_given && input_uri.is_special_file()) {
-        roc_log(LogError, "--input-format should be specified if --input is \"-\"");
-        return 1;
-    }
-
-    core::ScopedPtr<sndio::ISource> input_source;
-    if (input_uri.is_valid()) {
-        input_source.reset(backend_dispatcher.open_source(
-                               input_uri, args.input_format_arg, source_config),
-                           arena);
-    } else {
-        input_source.reset(backend_dispatcher.open_default_source(source_config), arena);
-    }
-    if (!input_source) {
-        roc_log(LogError, "can't open input: %s", args.input_arg);
-        return 1;
-    }
-    if (input_source->has_clock()) {
-        roc_log(LogError, "unsupported input: %s", args.input_arg);
-        return 1;
-    }
-
-    transcoder_config.input_sample_spec.set_sample_rate(
-        input_source->sample_spec().sample_rate());
-
-    if (args.rate_given) {
-        transcoder_config.output_sample_spec.set_sample_rate((size_t)args.rate_arg);
-    } else {
-        transcoder_config.output_sample_spec.set_sample_rate(
-            transcoder_config.input_sample_spec.sample_rate());
-    }
-
+bool build_transcoder_config(const gengetopt_args_info& args,
+                             pipeline::TranscoderConfig& transcoder_config,
+                             sndio::ISource& input_source,
+                             sndio::ISink* output_sink) {
     switch (args.resampler_backend_arg) {
     case resampler_backend_arg_default:
-        transcoder_config.resampler.backend = audio::ResamplerBackend_Default;
+        transcoder_config.resampler.backend = audio::ResamplerBackend_Auto;
         break;
     case resampler_backend_arg_builtin:
         transcoder_config.resampler.backend = audio::ResamplerBackend_Builtin;
@@ -162,64 +109,209 @@ int main(int argc, char** argv) {
         break;
     }
 
-    transcoder_config.enable_profiling = args.profiling_flag;
+    transcoder_config.enable_profiling = args.prof_flag;
 
-    audio::IFrameWriter* output_writer = NULL;
+    transcoder_config.input_sample_spec = input_source.sample_spec();
+    transcoder_config.output_sample_spec =
+        output_sink ? output_sink->sample_spec() : input_source.sample_spec();
 
-    sndio::Config sink_config;
-    sink_config.sample_spec = transcoder_config.output_sample_spec;
-    sink_config.frame_length = source_config.frame_length;
+    return true;
+}
 
-    address::IoUri output_uri(arena);
-    if (args.output_given) {
-        if (!address::parse_io_uri(args.output_arg, output_uri)
-            || !output_uri.is_file()) {
-            roc_log(LogError, "invalid --output file URI");
-            return 1;
+size_t compute_max_frame_size(const sndio::IoConfig& io_config) {
+    audio::SampleSpec spec = io_config.sample_spec;
+    spec.use_defaults(audio::Format_Pcm, audio::PcmSubformat_Raw,
+                      audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
+                      audio::ChanMask_Surround_7_1_4, 48000);
+
+    return spec.ns_2_samples_overall(io_config.frame_length) * sizeof(audio::sample_t);
+}
+
+bool parse_input_uri(const gengetopt_args_info& args, address::IoUri& input_uri) {
+    if (!args.input_given) {
+        roc_log(LogError, "missing mandatory --input URI");
+        return false;
+    }
+
+    if (!address::parse_io_uri(args.input_arg, input_uri)) {
+        roc_log(LogError, "invalid --input URI: bad format");
+        return false;
+    }
+
+    if (!input_uri.is_file()) {
+        roc_log(LogError, "invalid --input URI: should be file");
+        return false;
+    }
+
+    return true;
+}
+
+bool parse_output_uri(const gengetopt_args_info& args, address::IoUri& output_uri) {
+    if (!address::parse_io_uri(args.output_arg, output_uri)) {
+        roc_log(LogError, "invalid --output URI: bad format");
+        return false;
+    }
+
+    if (!output_uri.is_file()) {
+        roc_log(LogError, "invalid --output URI: should be file");
+        return false;
+    }
+
+    if (output_uri.is_special_file()) {
+        if (!args.output_encoding_given) {
+            roc_log(LogError, "--output-encoding is required when --output is \"-\"");
+            return false;
         }
     }
 
-    if (!args.output_format_given && output_uri.is_special_file()) {
-        roc_log(LogError, "--output-format should be specified if --output is \"-\"");
+    return true;
+}
+
+bool open_input_source(sndio::BackendDispatcher& backend_dispatcher,
+                       const sndio::IoConfig& io_config,
+                       const address::IoUri& input_uri,
+                       core::ScopedPtr<sndio::ISource>& input_source) {
+    const status::StatusCode code =
+        backend_dispatcher.open_source(input_uri, io_config, input_source);
+
+    if (code != status::StatusOK) {
+        roc_log(LogError, "can't open --input file or device: status=%s",
+                status::code_to_str(code));
+        return false;
+    }
+
+    if (input_source->has_clock()) {
+        roc_log(LogError, "unsupported --input type");
+        return false;
+    }
+
+    return true;
+}
+
+bool open_output_sink(sndio::BackendDispatcher& backend_dispatcher,
+                      const sndio::IoConfig& io_config,
+                      const address::IoUri& output_uri,
+                      core::ScopedPtr<sndio::ISink>& output_sink) {
+    const status::StatusCode code =
+        backend_dispatcher.open_sink(output_uri, io_config, output_sink);
+
+    if (code != status::StatusOK) {
+        roc_log(LogError, "can't open --output file or device: status=%s",
+                status::code_to_str(code));
+        return false;
+    }
+
+    if (output_sink->has_clock()) {
+        roc_log(LogError, "unsupported --output type");
+        return false;
+    }
+
+    return true;
+}
+
+} // namespace
+
+int main(int argc, char** argv) {
+    core::CrashHandler crash_handler;
+
+    core::HeapArena::set_guards(core::HeapArena_DefaultGuards
+                                | core::HeapArena_LeakGuard);
+    core::HeapArena heap_arena;
+
+    gengetopt_args_info args;
+    const int code = cmdline_parser(argc, argv, &args);
+    if (code != 0) {
+        return code;
+    }
+    core::ScopedRelease<gengetopt_args_info> args_releaser(&args, &cmdline_parser_free);
+
+    init_logger(args);
+
+    sndio::IoConfig input_config;
+    if (!build_input_config(args, input_config)) {
         return 1;
+    }
+
+    core::SlabPool<audio::Frame> frame_pool("frame_pool", heap_arena);
+    core::SlabPool<core::Buffer> frame_buffer_pool(
+        "frame_buffer_pool", heap_arena,
+        sizeof(core::Buffer) + compute_max_frame_size(input_config));
+
+    sndio::BackendDispatcher backend_dispatcher(frame_pool, frame_buffer_pool,
+                                                heap_arena);
+
+    if (args.list_supported_given) {
+        if (!dbgio::print_supported(dbgio::Print_Sndio | dbgio::Print_Audio,
+                                    backend_dispatcher, heap_arena)) {
+            return 1;
+        }
+        return 0;
+    }
+
+    address::IoUri input_uri(heap_arena);
+    if (!parse_input_uri(args, input_uri)) {
+        return 1;
+    }
+
+    core::ScopedPtr<sndio::ISource> input_source;
+    if (!open_input_source(backend_dispatcher, input_config, input_uri, input_source)) {
+        return 1;
+    }
+
+    input_config.sample_spec = input_source->sample_spec();
+    input_config.frame_length = input_source->frame_length();
+
+    sndio::IoConfig output_config;
+    if (!build_output_config(args, input_config, output_config)) {
+        return 1;
+    }
+
+    address::IoUri output_uri(heap_arena);
+    if (args.output_given) {
+        if (!parse_output_uri(args, output_uri)) {
+            return 1;
+        }
     }
 
     core::ScopedPtr<sndio::ISink> output_sink;
     if (args.output_given) {
-        if (output_uri.is_valid()) {
-            output_sink.reset(backend_dispatcher.open_sink(
-                                  output_uri, args.output_format_arg, sink_config),
-                              arena);
-        } else {
-            output_sink.reset(backend_dispatcher.open_default_sink(sink_config), arena);
-        }
-        if (!output_sink) {
-            roc_log(LogError, "can't open output: %s", args.output_arg);
+        if (!open_output_sink(backend_dispatcher, output_config, output_uri,
+                              output_sink)) {
             return 1;
         }
-        if (output_sink->has_clock()) {
-            roc_log(LogError, "unsupported output: %s", args.output_arg);
-            return 1;
-        }
-        output_writer = output_sink.get();
+        output_config.sample_spec = output_sink->sample_spec();
     }
 
-    pipeline::TranscoderSink transcoder(transcoder_config, output_writer,
-                                        frame_buffer_pool, arena);
-    if (!transcoder.is_valid()) {
-        roc_log(LogError, "can't create transcoder pipeline");
+    pipeline::TranscoderConfig transcoder_config;
+    if (!build_transcoder_config(args, transcoder_config, *input_source,
+                                 output_sink.get())) {
         return 1;
     }
 
-    sndio::Pump pump(frame_buffer_pool, *input_source, NULL, transcoder,
-                     source_config.frame_length, transcoder_config.input_sample_spec,
-                     sndio::Pump::ModePermanent);
-    if (!pump.is_valid()) {
-        roc_log(LogError, "can't create audio pump");
+    audio::ProcessorMap processor_map(heap_arena);
+
+    pipeline::TranscoderSink transcoder(transcoder_config, output_sink.get(),
+                                        processor_map, frame_pool, frame_buffer_pool,
+                                        heap_arena);
+    if (transcoder.init_status() != status::StatusOK) {
+        roc_log(LogError, "can't create transcoder pipeline: status=%s",
+                status::code_to_str(transcoder.init_status()));
         return 1;
     }
 
-    const bool ok = pump.run();
+    sndio::IoPump pump(frame_pool, frame_buffer_pool, *input_source, NULL, transcoder,
+                       input_config, sndio::IoPump::ModePermanent);
+    if (pump.init_status() != status::StatusOK) {
+        roc_log(LogError, "can't create io pump: status=%s",
+                status::code_to_str(pump.init_status()));
+        return 1;
+    }
 
-    return ok ? 0 : 1;
+    const status::StatusCode status = pump.run();
+    if (status != status::StatusOK) {
+        roc_log(LogError, "io pump failed: status=%s", status::code_to_str(status));
+        return 1;
+    }
+
+    return 0;
 }

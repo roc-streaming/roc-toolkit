@@ -93,8 +93,8 @@ public:
     Reporter(const Config& config, IParticipant& participant, core::IArena& arena);
     ~Reporter();
 
-    //! Check if initialization succeeded.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Check if there is local sending stream.
     bool is_sending() const;
@@ -113,7 +113,7 @@ public:
 
     //! Begin report processing.
     //! Invoked before process_xxx() functions.
-    ROC_ATTR_NODISCARD status::StatusCode
+    ROC_NODISCARD status::StatusCode
     begin_processing(const address::SocketAddr& report_addr,
                      core::nanoseconds_t report_time);
 
@@ -151,7 +151,7 @@ public:
 
     //! End report processing.
     //! Invoked after process_xxx() functions.
-    ROC_ATTR_NODISCARD status::StatusCode end_processing();
+    ROC_NODISCARD status::StatusCode end_processing();
 
     //! @}
 
@@ -160,8 +160,7 @@ public:
 
     //! Begin report generation.
     //! Invoked before genrate_xxx() functions.
-    ROC_ATTR_NODISCARD status::StatusCode
-    begin_generation(core::nanoseconds_t report_time);
+    ROC_NODISCARD status::StatusCode begin_generation(core::nanoseconds_t report_time);
 
     //! Get number of destination addresses to which to send reports.
     size_t num_dest_addresses() const;
@@ -236,7 +235,7 @@ public:
 
     //! End report generation.
     //! Invoked after generate_xxx() functions.
-    ROC_ATTR_NODISCARD status::StatusCode end_generation();
+    ROC_NODISCARD status::StatusCode end_generation();
 
     //! @}
 
@@ -482,7 +481,7 @@ private:
     const Config config_;
     const core::nanoseconds_t max_delay_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace rtcp

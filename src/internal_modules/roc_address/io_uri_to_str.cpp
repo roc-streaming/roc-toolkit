@@ -15,11 +15,14 @@ io_uri_to_str::io_uri_to_str(const IoUri& u) {
     core::StringBuilder b(buf_, sizeof(buf_));
 
     if (!u.is_valid()) {
-        b.assign_str("<bad>");
+        b.rewrite("<bad>");
         return;
     }
 
-    format_io_uri(u, b);
+    if (!format_io_uri(u, b)) {
+        b.rewrite("<bad>");
+        return;
+    }
 }
 
 } // namespace address

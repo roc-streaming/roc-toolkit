@@ -28,25 +28,22 @@ TimestampInjector::TimestampInjector(packet::IReader& reader,
     , reader_(reader)
     , sample_spec_(sample_spec)
     , n_drops_(0)
-    , rate_limiter_(ReportInterval) {
+    , rate_limiter_(ReportInterval, 1) {
 }
 
-TimestampInjector::~TimestampInjector() {
+status::StatusCode TimestampInjector::init_status() const {
+    return status::StatusOK;
 }
 
-status::StatusCode TimestampInjector::read(packet::PacketPtr& pkt) {
-    const status::StatusCode code = reader_.read(pkt);
+status::StatusCode TimestampInjector::read(packet::PacketPtr& pkt,
+                                           packet::PacketReadMode mode) {
+    const status::StatusCode code = reader_.read(pkt, mode);
     if (code != status::StatusOK) {
         return code;
     }
 
-    if (!pkt->rtp()) {
+    if (!pkt->has_flags(packet::Packet::FlagRTP)) {
         roc_panic("timestamp injector: unexpected non-rtp packet");
-    }
-
-    if (pkt->rtp()->capture_timestamp != 0) {
-        roc_panic("timestamp injector: unexpected non-zero cts in packet: %lld",
-                  (long long)pkt->rtp()->capture_timestamp);
     }
 
     if (has_ts_) {

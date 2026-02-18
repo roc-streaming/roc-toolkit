@@ -16,10 +16,12 @@
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/mixer.h"
 #include "roc_audio/pcm_mapper_reader.h"
+#include "roc_audio/processor_map.h"
 #include "roc_audio/profiling_reader.h"
 #include "roc_core/iarena.h"
 #include "roc_core/optional.h"
 #include "roc_core/stddefs.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/receiver_endpoint.h"
@@ -44,14 +46,18 @@ class ReceiverSource : public sndio::ISource, public core::NonCopyable<> {
 public:
     //! Initialize.
     ReceiverSource(const ReceiverSourceConfig& source_config,
-                   const rtp::EncodingMap& encoding_map,
+                   audio::ProcessorMap& processor_map,
+                   rtp::EncodingMap& encoding_map,
                    core::IPool& packet_pool,
                    core::IPool& packet_buffer_pool,
+                   core::IPool& frame_pool,
                    core::IPool& frame_buffer_pool,
                    core::IArena& arena);
 
+    ~ReceiverSource();
+
     //! Check if the pipeline was successfully constructed.
-    bool is_valid() const;
+    status::StatusCode init_status() const;
 
     //! Create slot.
     ReceiverSlot* create_slot(const ReceiverSlotConfig& slot_config);
@@ -65,65 +71,79 @@ public:
     //! Pull packets and refresh pipeline according to current time.
     //! @remarks
     //!  Should be invoked before reading each frame.
-    //!  Also should be invoked after provided deadline if no frames were
-    //!  read until that deadline expires.
-    //! @returns
-    //!  deadline (absolute time) when refresh should be invoked again
-    //!  if there are no frames
-    core::nanoseconds_t refresh(core::nanoseconds_t current_time);
+    //!  If there are no frames for a while, should be invoked no
+    //!  later than the deadline returned via @p next_deadline.
+    ROC_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
+                                             core::nanoseconds_t* next_deadline);
 
-    //! Cast IDevice to ISink.
-    virtual sndio::ISink* to_sink();
-
-    //! Cast IDevice to ISink.
-    virtual sndio::ISource* to_source();
-
-    //! Get device type.
+    //! Get type (sink or source).
     virtual sndio::DeviceType type() const;
 
-    //! Get current receiver state.
-    virtual sndio::DeviceState state() const;
+    //! Try to cast to ISink.
+    virtual sndio::ISink* to_sink();
 
-    //! Pause reading.
-    virtual void pause();
-
-    //! Resume paused reading.
-    virtual bool resume();
-
-    //! Restart reading from the beginning.
-    virtual bool restart();
+    //! Try to cast to ISource.
+    virtual sndio::ISource* to_source();
 
     //! Get sample specification of the source.
     virtual audio::SampleSpec sample_spec() const;
 
-    //! Get latency of the source.
-    virtual core::nanoseconds_t latency() const;
+    //! Get recommended frame length of the source.
+    virtual core::nanoseconds_t frame_length() const;
+
+    //! Check if the source supports state updates.
+    virtual bool has_state() const;
+
+    //! Get current source state.
+    virtual sndio::DeviceState state() const;
+
+    //! Pause source.
+    virtual ROC_NODISCARD status::StatusCode pause();
+
+    //! Resume source.
+    virtual ROC_NODISCARD status::StatusCode resume();
 
     //! Check if the source supports latency reports.
     virtual bool has_latency() const;
 
+    //! Get latency of the source.
+    virtual core::nanoseconds_t latency() const;
+
     //! Check if the source has own clock.
     virtual bool has_clock() const;
 
+    //! Restart reading from beginning.
+    virtual ROC_NODISCARD status::StatusCode rewind();
+
     //! Adjust sessions clock to match consumer clock.
     //! @remarks
-    //!  @p playback_time specified absolute time when first sample of last frame
-    //!  retrieved from pipeline will be actually played on sink
+    //!  Should be invoked regularly after reading every or several frames.
     virtual void reclock(core::nanoseconds_t playback_time);
 
-    //! Read audio frame.
-    virtual bool read(audio::Frame&);
+    //! Read frame.
+    virtual ROC_NODISCARD status::StatusCode read(audio::Frame& frame,
+                                                  packet::stream_timestamp_t duration,
+                                                  audio::FrameReadMode mode);
+
+    //! Explicitly close the source.
+    virtual ROC_NODISCARD status::StatusCode close();
+
+    //! Destroy object and return memory to arena.
+    virtual void dispose();
 
 private:
     ReceiverSourceConfig source_config_;
 
-    const rtp::EncodingMap& encoding_map_;
+    audio::ProcessorMap& processor_map_;
+    rtp::EncodingMap& encoding_map_;
 
     packet::PacketFactory packet_factory_;
     audio::FrameFactory frame_factory_;
     core::IArena& arena_;
 
     StateTracker state_tracker_;
+
+    core::Optional<dbgio::CsvDumper> dumper_;
 
     core::Optional<audio::Mixer> mixer_;
     core::Optional<audio::ProfilingReader> profiler_;
@@ -133,7 +153,7 @@ private:
 
     audio::IFrameReader* frame_reader_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

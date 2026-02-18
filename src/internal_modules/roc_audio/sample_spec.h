@@ -13,9 +13,11 @@
 #define ROC_AUDIO_SAMPLE_SPEC_H_
 
 #include "roc_audio/channel_set.h"
-#include "roc_audio/pcm_format.h"
+#include "roc_audio/format.h"
+#include "roc_audio/frame.h"
+#include "roc_audio/frame_factory.h"
+#include "roc_audio/pcm_subformat.h"
 #include "roc_audio/sample.h"
-#include "roc_audio/sample_format.h"
 #include "roc_core/attributes.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/string_builder.h"
@@ -26,7 +28,7 @@ namespace roc {
 namespace audio {
 
 //! Sample specification.
-//! Describes sample rate and channels.
+//! Describes format, rate, and channels.
 class SampleSpec {
 public:
     //! Construct empty specification.
@@ -34,17 +36,17 @@ public:
 
     //! Construct specification with parameters.
     //! @note
-    //!  This constructor sets sample_format() to SampleFormat_Pcm.
-    SampleSpec(size_t sample_rate, PcmFormat pcm_fmt, const ChannelSet& channel_set);
+    //!  This constructor sets format() to Format_Pcm.
+    SampleSpec(size_t sample_rate, PcmSubformat pcm_fmt, const ChannelSet& channel_set);
 
     //! Construct specification with parameters.
     //! @remarks
     //!  This is a convenient overload for the case when 32-bit mask is enough to
     //!  describe channels. Otherwise, use overload that accepts ChannelSet.
     //! @note
-    //!  This constructor sets sample_format() to SampleFormat_Pcm.
+    //!  This constructor sets format() to Format_Pcm.
     SampleSpec(size_t sample_rate,
-               PcmFormat pcm_fmt,
+               PcmSubformat pcm_fmt,
                ChannelLayout channel_layout,
                ChannelOrder channel_order,
                ChannelMask channel_mask);
@@ -63,16 +65,16 @@ public:
     //! @name Getters and setters
     //! @{
 
-    //! Check if sample spec has non-zero rate and valid channel set.
-    bool is_valid() const;
+    //! True if all required fields are set and valid.
+    bool is_complete() const;
 
-    //! Check if sample spec has a zero rate, empty channel set, and invalid_format.
+    //! True if all fields are unset.
     bool is_empty() const;
 
-    //! Check if samples are in raw format.
-    //! @returns
-    //!  true if sample_format() is SampleFormat_Pcm and pcm_format()
-    //!  is Sample_RawFormat (32-bit native-endian floats).
+    //! True if format is PCM and sub-format is valid PCM encoding.
+    bool is_pcm() const;
+
+    //! True if format is PCM and sub-format is PcmSubformat_Raw.
     bool is_raw() const;
 
     //! Unset all fields.
@@ -82,11 +84,74 @@ public:
     //! @remarks
     //!  Updates only those fields which don't have values,
     //!  with corresponding values provided as arguments.
-    void use_defaults(PcmFormat default_pcm_fmt,
+    void use_defaults(Format default_fmt,
+                      PcmSubformat default_pcm_fmt,
                       ChannelLayout default_channel_layout,
                       ChannelOrder default_channel_order,
                       ChannelMask default_channel_mask,
                       size_t default_sample_rate);
+
+    //! True format is set to a valid value.
+    bool has_format() const;
+
+    //! Get format id.
+    //! @remarks
+    //!  Format and sub-format define how samples are represented in memory.
+    //!  What kind of sub-format is used depends on format, e.g. if format()
+    //!  is Format_Pcm(), pcm_subformat() is used.
+    Format format() const;
+
+    //! Get format name.
+    //! @remarks
+    //!  If set_custom_format() was called, returns custom format name. Otherwise,
+    //!  returns string name of format() enum value.
+    const char* format_name() const;
+
+    //! Set format id.
+    void set_format(Format sample_fmt);
+
+    //! Store custom format name and set format to Format_Custom.
+    //! @remarks
+    //!  Custom format and sub-format names are used for file I/O. We can't and don't
+    //!  need to maintain enums for all possible file formats, instead we just forward
+    //!  string format name to the file I/O library.
+    //! @returns
+    //!  false if name is too long.
+    ROC_NODISCARD bool set_custom_format(const char* name);
+
+    //! True if sub-format is set.
+    bool has_subformat() const;
+
+    //! Get sub-format name.
+    //! @remarks
+    //!  If set_custom_subformat() was called, returns custom sub-format name.
+    //!  Otherwise, returns string name of sub-format enum value, e.g. if
+    //!  pmc_subformat() is used, returns its string name.
+    const char* subformat_name() const;
+
+    //! Get PCM sub-format.
+    //! @remarks
+    //!  Set only if sub-format is PCM.
+    PcmSubformat pcm_subformat() const;
+
+    //! Get number of bits in PCM sample.
+    //! @remarks
+    //!  Set only if sub-format is PCM.
+    size_t pcm_bit_width() const;
+
+    //! Set PCM sub-format.
+    void set_pcm_subformat(PcmSubformat pcm_fmt);
+
+    //! Store custom sub-format name.
+    //! @remarks
+    //!  Custom format and sub-format names are used for file I/O.
+    //!  See comment for set_custom_format() for rationale.
+    //! @returns
+    //!  false if name is too long.
+    ROC_NODISCARD bool set_custom_subformat(const char* name);
+
+    //! True if rate is set to non-zero value.
+    bool has_sample_rate() const;
 
     //! Get sample rate.
     //! @remarks
@@ -96,24 +161,13 @@ public:
     //! Set sample rate.
     void set_sample_rate(size_t sample_rate);
 
-    //! Get sample format.
+    //! True if channel set is valid.
+    bool has_channel_set() const;
+
+    //! Get number enabled channels in channel set.
     //! @remarks
-    //!  Defines how samples are represented in memory.
-    //!  When set to SampleFormat_Pcm, pcm_format() defines what exact PCM coding
-    //!  and endian are used.
-    SampleFormat sample_format() const;
-
-    //! Set sample format.
-    void set_sample_format(SampleFormat sample_fmt);
-
-    //! Get PCM format.
-    //! @remarks
-    //!  When sample_format() is set to SampleFormat_Pcm, defines what exact PCM coding
-    //!  and endian are used.
-    PcmFormat pcm_format() const;
-
-    //! Set PCM format.
-    void set_pcm_format(PcmFormat pcm_fmt);
+    //!  Shorthand for channel_set().num_channels().
+    size_t num_channels() const;
 
     //! Get channel set.
     //! @remarks
@@ -125,11 +179,6 @@ public:
 
     //! Set channel set.
     void set_channel_set(const ChannelSet& channel_set);
-
-    //! Get number enabled channels in channel set.
-    //! @remarks
-    //!  Shorthand for channel_set().num_channels().
-    size_t num_channels() const;
 
     // @}
 
@@ -219,31 +268,56 @@ public:
 
     //! Convert byte size to stream timestamp.
     //! @pre
-    //!  sample_format() should be PCM.
+    //!  format() should be PCM.
     packet::stream_timestamp_t bytes_2_stream_timestamp(size_t n_bytes) const;
 
     //! Convert stream timestamp to byte size.
     //! @pre
-    //!  sample_format() should be PCM.
+    //!  format() should be PCM.
     size_t stream_timestamp_2_bytes(packet::stream_timestamp_t duration) const;
 
     //! Convert byte size to nanosecond duration.
     //! @pre
-    //!  sample_format() should be PCM.
+    //!  format() should be PCM.
     core::nanoseconds_t bytes_2_ns(size_t n_bytes) const;
 
     //! Convert nanosecond duration to byte size.
     //! @pre
-    //!  sample_format() should be PCM.
+    //!  format() should be PCM.
     size_t ns_2_bytes(core::nanoseconds_t duration) const;
 
     // @}
 
+    //! @name Frame helpers
+    //! @{
+
+    //! Check if frame corresponds to the sample spec.
+    //! Panic if something is wrong.
+    void validate_frame(Frame& frame) const;
+
+    //! Check if frame size is multiple of sample size and channel count.
+    //! Returns false if size is invalid.
+    bool is_valid_frame_size(size_t n_bytes);
+
+    //! Cap duration to fit given buffer size in bytes.
+    //! Returns @p duration or smaller value.
+    packet::stream_timestamp_t cap_frame_duration(packet::stream_timestamp_t duration,
+                                                  size_t n_bytes) const;
+
+    // @}
+
 private:
+    enum { MaxNameLen = 8 };
+
+    Format fmt_;
+    char fmt_name_[MaxNameLen];
+
+    bool has_subfmt_;
+    char subfmt_name_[MaxNameLen];
+    PcmSubformat pcm_subfmt_;
+    size_t pcm_subfmt_width_;
+
     size_t sample_rate_;
-    SampleFormat sample_fmt_;
-    PcmFormat pcm_fmt_;
-    size_t pcm_width_;
     ChannelSet channel_set_;
 };
 
@@ -285,7 +359,7 @@ private:
 //!
 //! @returns
 //!  false if string can't be parsed.
-ROC_ATTR_NODISCARD bool parse_sample_spec(const char* str, SampleSpec& result);
+ROC_NODISCARD bool parse_sample_spec(const char* str, SampleSpec& result);
 
 //! Format sample spec to string.
 void format_sample_spec(const SampleSpec& sample_spec, core::StringBuilder& bld);

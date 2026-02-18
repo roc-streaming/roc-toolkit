@@ -10,7 +10,7 @@
 #include "roc_address/protocol_map.h"
 #include "roc_core/log.h"
 #include "roc_fec/codec_map.h"
-#include "roc_packet/fec_scheme_to_str.h"
+#include "roc_packet/fec_scheme.h"
 
 namespace roc {
 namespace pipeline {
@@ -33,7 +33,7 @@ bool validate_endpoint(address::Interface iface, address::Protocol proto) {
     }
 
     if (proto_attrs->fec_scheme != packet::FEC_None
-        && !fec::CodecMap::instance().is_supported(proto_attrs->fec_scheme)) {
+        && !fec::CodecMap::instance().has_scheme(proto_attrs->fec_scheme)) {
         roc_log(LogError,
                 "bad endpoints configuration:"
                 " %s endpoint protocol '%s' implies fec scheme '%s',"

@@ -1,18 +1,18 @@
 # build results
-/bin
-/build
-/dist
-/docs/html
+/bin/
+/build/
+/dist/
+/docs/html/
 
 # scons
-.sconsign*.dblite
-.sconf_temp
-config.log
-build.log
+/.sconsign*.dblite
+/.sconf_temp/
+/config.log
+/build.log
 
 # clang
-compile_commands.json
-.cache
+/compile_commands.json
+/.cache/
 
 # gdb
 .gdb_history
@@ -32,30 +32,34 @@ __pycache__/
 # emacs
 .#*
 .dir-locals.el
-TODO.org
+.dir-conf.el
+.projectile
 
 # vim
 *.sw[nop]
 
 # clion
-.idea/
+/.idea/
 
-# ctags
+# universal ctags
 /tags
 
 # deb
-debian/.debhelper
-debian/debhelper-build-stamp
-debian/files
-debian/tmp
-debian/*.substvars
-debian/*.debhelper.log
-debian/libroc
-debian/libroc-dev
-debian/roc
+/debian/.debhelper
+/debian/debhelper-build-stamp
+/debian/files
+/debian/tmp
+/debian/*.substvars
+/debian/*.debhelper.log
+/debian/libroc
+/debian/libroc-dev
+/debian/roc
+
+# llm
+.aider.*
 
 # personal
+TODO.org
 /Makefile
 .justfile
-.projectile
 .unisonignore

@@ -31,11 +31,14 @@ public:
             IWriter& outbound_writer,
             const address::SocketAddr* outbound_address);
 
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
+
     //! Get destination address for outbound packets.
     const address::SocketAddr& outbound_address() const;
 
     //! Write outgoing packet.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
+    virtual ROC_NODISCARD status::StatusCode write(const PacketPtr& packet);
 
 private:
     IComposer& composer_;

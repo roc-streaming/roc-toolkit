@@ -19,6 +19,7 @@ thirdparty_versions = {
     'json-c':           '0.12-20140410',
     'libatomic_ops':    '7.6.10',
     'libunwind':        '1.2.1',
+    'libuuid':          '2.33.2',
     'libuv':            '1.35.0',
     'ltdl':             '2.4.6',
     'openfec':          '1.4.2.12',
@@ -28,7 +29,7 @@ thirdparty_versions = {
     'sox':              '14.4.2',
     'speexdsp':         '1.2.0',
 
-    # CLI tools
+    # cli tools
     'gengetopt':        '2.22.6',
     'ragel':            '6.10',
 
@@ -53,7 +54,7 @@ if meta.platform in ['linux'] and 'pulseaudio' in external_dependencies:
     external_dependencies.add('alsa')
 
 # on macOS, libunwind is provided by the OS
-if meta.platform in ['darwin']:
+if meta.platform in ['macos']:
     external_dependencies.discard('libunwind')
 
 # tools dependencies
@@ -132,6 +133,21 @@ elif 'libunwind' in system_dependencies:
 
     env = conf.Finish()
 
+# dep: libuuid
+if 'libuuid' in autobuild_dependencies:
+    env.BuildThirdParty(thirdparty_versions, 'libuuid')
+
+elif 'libuuid' in system_dependencies:
+    conf = Configure(env, custom_tests=env.CustomTests)
+
+    if not conf.AddPkgConfigDependency('uuid', '--cflags --libs'):
+        conf.env.AddManualDependency(libs=['uuid'])
+
+    if not conf.CheckLibWithHeaderExt('uuid', 'uuid.h', 'C', run=not is_crosscompiling):
+        env.Die("libuuid not found (see 'config.log' for details)")
+
+    env = conf.Finish()
+
 # dep: libatomic_ops
 if 'libatomic_ops' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_versions, 'libatomic_ops')
@@ -191,29 +207,34 @@ elif 'openfec' in system_dependencies:
     if not conf.CheckDeclaration('OF_USE_DECODER', '#include <of_openfec_api.h>', 'c'):
         env.Die("openfec has no decoder support (OF_USE_DECODER)")
 
-    if not conf.CheckDeclaration('OF_USE_LDPC_STAIRCASE_CODEC',
-                                 '#include <of_openfec_api.h>', 'c'):
-        env.Die(
-            "openfec has no LDPC-Staircase codec support (OF_USE_LDPC_STAIRCASE_CODEC)")
-
     env = conf.Finish()
 
 # dep: openssl
 if 'openssl' in autobuild_dependencies:
     env.BuildThirdParty(thirdparty_versions, 'openssl')
 
+    if meta.compiler in ['gcc', 'clang']:
+        conf = Configure(env, custom_tests=env.CustomTests)
+
+        # -latomic may be needed by libcrypto when present in toolchain
+        if conf.CheckLib('atomic'):
+            env.AddManualDependency(libs=['atomic'])
+
+        env = conf.Finish()
+
 elif 'openssl' in system_dependencies:
     ossl_prefix = None
     # macOS: fallback to use a brew-installed openssl
-    if meta.platform == 'darwin' and not is_crosscompiling:
+    if meta.platform == 'macos' and not is_crosscompiling:
         ossl_prefix = env.FindBrewPackage('openssl')
 
     conf = Configure(env, custom_tests=env.CustomTests)
 
     if not conf.AddPkgConfigDependency('libssl', '--cflags --libs', add_prefix=ossl_prefix):
-        conf.env.AddManualDependency(libs=['ssl'], prefix=ossl_prefix)
+        conf.env.AddManualDependency(libs=['ssl', 'crypto'], prefix=ossl_prefix)
 
-    if not conf.CheckLibWithHeaderExt('ssl', 'openssl/rand.h', 'C', run=not is_crosscompiling):
+    if not conf.CheckLibWithHeaderExt('ssl', 'openssl/rand.h', 'C', run=not is_crosscompiling) or \
+        not conf.CheckLibWithHeaderExt('crypto', 'openssl/crypto.h', 'C', run=not is_crosscompiling):
         env.Die("OpenSSL not found (see 'config.log' for details)")
 
     env = conf.Finish()
@@ -273,11 +294,13 @@ if 'pulseaudio' in autobuild_dependencies:
     pa_deps = [
         'ltdl',
         'json-c',
-        'sndfile',
         ]
 
     if 'alsa' in autobuild_dependencies:
         pa_deps += ['alsa']
+
+    if 'sndfile' in autobuild_dependencies:
+        pa_deps += ['sndfile']
 
     env.BuildThirdParty(thirdparty_versions, 'ltdl')
     env.BuildThirdParty(thirdparty_versions, 'json-c')
@@ -328,7 +351,7 @@ if 'sox' in autobuild_dependencies:
                 ]:
             conf.CheckLib(lib)
 
-    if meta.platform in ['darwin']:
+    if meta.platform in ['macos']:
         env.Append(LINKFLAGS=[
             '-Wl,-framework,CoreAudio'
         ])

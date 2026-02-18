@@ -30,15 +30,16 @@ namespace audio {
 //! Metrics of packetizer.
 struct PacketizerMetrics {
     //! Cumulative count of produced packets.
-    uint64_t packet_count;
+    //! Incremented each time packetizer starts encoding a packet.
+    uint64_t encoded_packets;
 
-    //! Cumulative count of produced payload bytes.
+    //! Cumulative count of encoded payload bytes.
     //! This excludes packet headers and padding.
-    uint64_t payload_count;
+    uint64_t payload_bytes;
 
     PacketizerMetrics()
-        : packet_count(0)
-        , payload_count(0) {
+        : encoded_packets(0)
+        , payload_bytes(0) {
     }
 };
 
@@ -49,16 +50,6 @@ struct PacketizerMetrics {
 class Packetizer : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialization.
-    //!
-    //! @b Parameters
-    //!  - @p writer is used to write generated packets
-    //!  - @p composer is used to initialize new packets
-    //!  - @p sequencer is used to put packets in sequence
-    //!  - @p payload_encoder is used to write samples to packets
-    //!  - @p packet_factory is used to allocate packets
-    //!  - @p buffer_factory is used to allocate buffers for packets
-    //!  - @p packet_length defines packet length in nanoseconds
-    //!  - @p sample_spec describes input frames
     Packetizer(packet::IWriter& writer,
                packet::IComposer& composer,
                packet::ISequencer& sequencer,
@@ -67,8 +58,8 @@ public:
                core::nanoseconds_t packet_length,
                const SampleSpec& sample_spec);
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get sample rate.
     size_t sample_rate() const;
@@ -77,20 +68,19 @@ public:
     const PacketizerMetrics& metrics() const;
 
     //! Write audio frame.
-    virtual void write(Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode write(Frame& frame);
 
     //! Flush buffered packet, if any.
     //! @remarks
     //!  Packet is padded to match fixed size.
-    void flush();
+    ROC_NODISCARD status::StatusCode flush();
 
 private:
-    bool begin_packet_();
-    void end_packet_();
+    status::StatusCode begin_packet_();
+    status::StatusCode end_packet_();
 
-    void pad_packet_(size_t written_payload_size);
-
-    packet::PacketPtr create_packet_();
+    status::StatusCode create_packet_();
+    status::StatusCode pad_packet_(size_t written_payload_size);
 
     packet::IWriter& writer_;
     packet::IComposer& composer_;
@@ -111,7 +101,7 @@ private:
 
     PacketizerMetrics metrics_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

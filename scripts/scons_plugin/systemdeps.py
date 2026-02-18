@@ -70,8 +70,8 @@ def GeneratePkgConfig(env, build_dir, filename, prefix, libdir, name, desc, url,
 # If libs arg is provided, libs are added to linker options.
 # If prefix arg is provided, and it defines a dir which has include and lib subdirs,
 # those subdirs are added to the headers and library search paths.
-# This function also automatically informs GeneratePkgConfig that correspondings
-# paths and libs should be added to .pc file.
+# This function also automatically informs GeneratePkgConfig that corresponding
+# paths and libs should be added to the generated .pc file.
 def AddManualDependency(env, libs=[], prefix=None, exclude_from_pc=False):
     def _append_var(var, values):
         if var not in env.Dictionary():

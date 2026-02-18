@@ -105,7 +105,7 @@ public:
 
     void read_eof() {
         packet::PacketPtr pp;
-        LONGS_EQUAL(status::StatusNoData, reader_.read(pp));
+        LONGS_EQUAL(status::StatusDrain, reader_.read(pp, packet::ModeFetch));
         CHECK(!pp);
     }
 
@@ -117,16 +117,16 @@ private:
         // payload decoder
         const rtp::Encoding* enc = encoding_map.find_by_pt(pt);
         CHECK(enc);
-        payload_decoder_.reset(enc->new_decoder(arena, enc->sample_spec), arena);
+        payload_decoder_.reset(enc->new_decoder(enc->sample_spec, arena));
         CHECK(payload_decoder_);
 
         // rtp parser
-        parser_.reset(new (arena) rtp::Parser(encoding_map, NULL), arena);
+        parser_.reset(new (arena) rtp::Parser(NULL, encoding_map, arena));
     }
 
     packet::PacketPtr read_packet_() {
         packet::PacketPtr pp;
-        LONGS_EQUAL(status::StatusOK, reader_.read(pp));
+        LONGS_EQUAL(status::StatusOK, reader_.read(pp, packet::ModeFetch));
         CHECK(pp);
 
         CHECK(pp->flags() & packet::Packet::FlagUDP);
@@ -143,7 +143,7 @@ private:
         packet::PacketPtr pp = packet_factory_.new_packet();
         CHECK(pp);
 
-        CHECK(parser_->parse(*pp, bp));
+        LONGS_EQUAL(status::StatusOK, parser_->parse(*pp, bp));
         CHECK(pp->flags() & packet::Packet::FlagRTP);
 
         if (first_) {
@@ -162,13 +162,15 @@ private:
         seqnum_++;
         timestamp_ += samples_per_packet;
 
-        payload_decoder_->begin(pp->rtp()->stream_timestamp, pp->rtp()->payload.data(),
-                                pp->rtp()->payload.size());
+        LONGS_EQUAL(status::StatusOK,
+                    payload_decoder_->begin_frame(pp->rtp()->stream_timestamp,
+                                                  pp->rtp()->payload.data(),
+                                                  pp->rtp()->payload.size()));
 
         UNSIGNED_LONGS_EQUAL(samples_per_packet,
-                             payload_decoder_->read(samples, samples_per_packet));
+                             payload_decoder_->read_samples(samples, samples_per_packet));
 
-        payload_decoder_->end();
+        LONGS_EQUAL(status::StatusOK, payload_decoder_->end_frame());
     }
 
     void check_capture_timestamp_(const packet::Packet& pkt,

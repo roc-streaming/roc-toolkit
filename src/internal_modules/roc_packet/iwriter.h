@@ -26,12 +26,18 @@ public:
 
     //! Write packet.
     //!
+    //! @note
+    //!  Writer is allowed to store shared pointer to the packet.
+    //!  It can assume that the packet is read-only.
+    //!
     //! @returns
-    //!  - If a returned code is not status::StatusOK, a packet is never written;
-    //!  - If a packet is written, a returned code is always status::StatusOK.
+    //!  - If packet was successfully and completely written, returns status::StatusOK,
+    //!    otherwise, returns an error.
+    //!  - In case of error, it's not guaranteed that pipeline state didn't change,
+    //!    e.g. part of the packet may be written.
     //!
     //! @see status::StatusCode.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr&) = 0;
+    virtual ROC_NODISCARD status::StatusCode write(const PacketPtr&) = 0;
 };
 
 } // namespace packet

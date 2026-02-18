@@ -70,7 +70,12 @@ Runtime dependencies
    * - `libatomic_ops <https://github.com/ivmai/libatomic_ops/>`_
      - >= 7.6.0
      - MIT
-     - only required on pre-C11 compilers
+     - required on non-GNU toolchains
+
+   * - `libsndfile <https://libsndfile.github.io/libsndfile/>`_
+     - >= 1.0.26
+     - LGPL
+     - optional, enables additional audio file formats
 
    * - `libsndfile <https://libsndfile.github.io/libsndfile/>`_
      - >= 1.0.26
@@ -80,7 +85,7 @@ Runtime dependencies
    * - `libunwind <https://www.nongnu.org/libunwind/>`_
      - >= 1.2.1
      - X11
-     - optional, used to print backtraces
+     - optional, enables backtrace on panic or crash
 
    * - `libuv <https://libuv.org>`_
      - >= 1.5.0 (recommended >= 1.35.0)
@@ -95,12 +100,12 @@ Runtime dependencies
    * - `OpenSSL <https://www.openssl.org/>`_
      - >= 1.1.1
      - Apache
-     - optional, used for SRTP and DTLS support and CSPRNG
+     - optional, enables CSPRNG
 
    * - `PulseAudio <https://www.freedesktop.org/wiki/Software/PulseAudio/>`_
      - >= 5.0
      - LGPL
-     - optional, used for PulseAudio I/O
+     - optional, enables PulseAudio support
 
    * - `SoX <https://sox.sourceforge.net>`_
      - >= 14.4.0
@@ -110,11 +115,15 @@ Runtime dependencies
    * - `SpeexDSP <https://github.com/xiph/speexdsp>`_
      - >= 1.2beta3
      - BSD
-     - optional, used for fast resampling
+     - optional, enables fast Speex resampler
 
 .. note::
 
    For OpenFEC, it's highly recommended to use `our fork <https://github.com/roc-streaming/openfec>`_ or manually apply patches from it. The fork is automatically used when using ``--build-3rdparty=openfec`` option. It contains several critical fixes that are not available in the upstream.
+
+.. note::
+
+   On some systems (e.g. Raspbian), you may need to explicitly install ``libatomic1``. It is part of GCC runtime, but is packaged separately and is not pre-installed everywhere.
 
 .. note::
 

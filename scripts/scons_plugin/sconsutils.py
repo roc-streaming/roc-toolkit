@@ -7,8 +7,12 @@ import sys
 
 # Formats message, prints to stderr, and exits with error.
 def Die(env, fmt, *args):
-    print('error: {}\n'.format(fmt.format(*args).strip()), file=sys.stderr)
+    env.ColorPrint('red', 'error: {}\n', fmt.format(*args).strip())
     SCons.Script.Exit(1)
+
+# Formats message and prints to stderr.
+def Warn(env, fmt, *args):
+    env.ColorPrint('yellow', 'warning: {}\n', fmt.format(*args).strip())
 
 # Returns a deep clone of env.
 # Workaround for buggy behavior of env.Clone() in recent scons.
@@ -61,5 +65,6 @@ def MergeFrom(dst_env, src_env, exclude=[]):
 
 def init(env):
     env.AddMethod(Die, 'Die')
+    env.AddMethod(Warn, 'Warn')
     env.AddMethod(DeepClone, 'DeepClone')
     env.AddMethod(MergeFrom, 'MergeFrom')

@@ -134,19 +134,18 @@ bool StringBuilder::is_ok() const {
     return !truncation_error_ && !write_error_;
 }
 
-bool StringBuilder::assign_str(const char* str) {
+bool StringBuilder::rewrite(const char* str) {
     roc_panic_if_not(str);
 
     reset_();
     return append_(str, strlen(str), false);
 }
 
-bool StringBuilder::assign_str(const char* str_begin, const char* str_end) {
+bool StringBuilder::append_range(const char* str_begin, const char* str_end) {
     roc_panic_if_not(str_begin);
     roc_panic_if_not(str_begin <= str_end);
 
-    reset_();
-    return append_(str_begin, size_t(str_end - str_begin), false);
+    return append_(str_begin, size_t(str_end - str_begin), true);
 }
 
 bool StringBuilder::append_str(const char* str) {
@@ -155,15 +154,19 @@ bool StringBuilder::append_str(const char* str) {
     return append_(str, strlen(str), true);
 }
 
-bool StringBuilder::append_str(const char* str_begin, const char* str_end) {
-    roc_panic_if_not(str_begin);
-    roc_panic_if_not(str_begin <= str_end);
-
-    return append_(str_begin, size_t(str_end - str_begin), true);
-}
-
 bool StringBuilder::append_char(char ch) {
     return append_(&ch, 1, true);
+}
+
+bool StringBuilder::append_sint(int64_t number, unsigned int base) {
+    roc_panic_if_not(base >= 2 && base <= 16);
+
+    if (number < 0) {
+        append_("-", 1, true);
+        number = -number;
+    }
+
+    return append_uint((uint64_t)number, base);
 }
 
 bool StringBuilder::append_uint(uint64_t number, unsigned int base) {

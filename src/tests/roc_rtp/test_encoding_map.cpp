@@ -10,7 +10,7 @@
 
 #include "roc_audio/pcm_decoder.h"
 #include "roc_audio/pcm_encoder.h"
-#include "roc_audio/pcm_format.h"
+#include "roc_audio/pcm_subformat.h"
 #include "roc_core/heap_arena.h"
 #include "roc_rtp/encoding_map.h"
 
@@ -35,9 +35,9 @@ TEST(encoding_map, find_by_pt) {
 
         LONGS_EQUAL(PayloadType_L16_Mono, enc->payload_type);
 
-        CHECK(enc->sample_spec.is_valid());
+        CHECK(enc->sample_spec.is_complete());
         CHECK(enc->sample_spec
-              == audio::SampleSpec(44100, audio::PcmFormat_SInt16_Be,
+              == audio::SampleSpec(44100, audio::PcmSubformat_SInt16_Be,
                                    audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                                    audio::ChanMask_Surround_Mono));
 
@@ -53,9 +53,9 @@ TEST(encoding_map, find_by_pt) {
 
         LONGS_EQUAL(PayloadType_L16_Stereo, enc->payload_type);
 
-        CHECK(enc->sample_spec.is_valid());
+        CHECK(enc->sample_spec.is_complete());
         CHECK(enc->sample_spec
-              == audio::SampleSpec(44100, audio::PcmFormat_SInt16_Be,
+              == audio::SampleSpec(44100, audio::PcmSubformat_SInt16_Be,
                                    audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                                    audio::ChanMask_Surround_Stereo));
 
@@ -71,7 +71,7 @@ TEST(encoding_map, find_by_spec) {
 
     {
         const Encoding* enc = enc_map.find_by_spec(audio::SampleSpec(
-            48000, audio::PcmFormat_SInt16_Be, audio::ChanLayout_Surround,
+            48000, audio::PcmSubformat_SInt16_Be, audio::ChanLayout_Surround,
             audio::ChanOrder_Smpte, audio::ChanMask_Surround_Mono));
 
         CHECK(!enc);
@@ -79,7 +79,7 @@ TEST(encoding_map, find_by_spec) {
 
     {
         const Encoding* enc = enc_map.find_by_spec(audio::SampleSpec(
-            44100, audio::PcmFormat_SInt16_Be, audio::ChanLayout_Surround,
+            44100, audio::PcmSubformat_SInt16_Be, audio::ChanLayout_Surround,
             audio::ChanOrder_Smpte, audio::ChanMask_Surround_Mono));
 
         CHECK(enc);
@@ -89,7 +89,7 @@ TEST(encoding_map, find_by_spec) {
 
     {
         const Encoding* enc = enc_map.find_by_spec(audio::SampleSpec(
-            44100, audio::PcmFormat_SInt16_Be, audio::ChanLayout_Surround,
+            44100, audio::PcmSubformat_SInt16_Be, audio::ChanLayout_Surround,
             audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo));
 
         CHECK(enc);
@@ -105,13 +105,13 @@ TEST(encoding_map, add_encoding) {
         Encoding enc;
         enc.payload_type = (PayloadType)100;
         enc.packet_flags = packet::Packet::FlagAudio;
-        enc.sample_spec =
-            audio::SampleSpec(48000, audio::PcmFormat_SInt32, audio::ChanLayout_Surround,
-                              audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo);
+        enc.sample_spec = audio::SampleSpec(
+            48000, audio::PcmSubformat_SInt32, audio::ChanLayout_Surround,
+            audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo);
         enc.new_encoder = &audio::PcmEncoder::construct;
         enc.new_decoder = &audio::PcmDecoder::construct;
 
-        CHECK(enc_map.add_encoding(enc));
+        LONGS_EQUAL(status::StatusOK, enc_map.register_encoding(enc));
     }
 
     {
@@ -121,7 +121,7 @@ TEST(encoding_map, add_encoding) {
         LONGS_EQUAL(100, enc->payload_type);
 
         CHECK(enc->sample_spec
-              == audio::SampleSpec(48000, audio::PcmFormat_SInt32,
+              == audio::SampleSpec(48000, audio::PcmSubformat_SInt32,
                                    audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                                    audio::ChanMask_Surround_Stereo));
 
@@ -132,15 +132,15 @@ TEST(encoding_map, add_encoding) {
     }
 
     {
-        const Encoding* enc = enc_map.find_by_spec(
-            audio::SampleSpec(48000, audio::PcmFormat_SInt32, audio::ChanLayout_Surround,
-                              audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo));
+        const Encoding* enc = enc_map.find_by_spec(audio::SampleSpec(
+            48000, audio::PcmSubformat_SInt32, audio::ChanLayout_Surround,
+            audio::ChanOrder_Smpte, audio::ChanMask_Surround_Stereo));
         CHECK(enc);
 
         LONGS_EQUAL(100, enc->payload_type);
 
         CHECK(enc->sample_spec
-              == audio::SampleSpec(48000, audio::PcmFormat_SInt32,
+              == audio::SampleSpec(48000, audio::PcmSubformat_SInt32,
                                    audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                                    audio::ChanMask_Surround_Stereo));
 

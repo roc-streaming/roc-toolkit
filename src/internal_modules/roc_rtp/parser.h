@@ -29,10 +29,16 @@ public:
     //!    payload type
     //!  - if @p inner_parser is not NULL, it is used to parse the
     //!    packet payload
-    Parser(const EncodingMap& encoding_map, packet::IParser* inner_parser);
+    Parser(packet::IParser* inner_parser,
+           const EncodingMap& encoding_map,
+           core::IArena& arena);
+
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
 
     //! Parse packet from buffer.
-    virtual bool parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer);
+    virtual ROC_NODISCARD status::StatusCode parse(packet::Packet& packet,
+                                                   const core::Slice<uint8_t>& buffer);
 
 private:
     const EncodingMap& encoding_map_;

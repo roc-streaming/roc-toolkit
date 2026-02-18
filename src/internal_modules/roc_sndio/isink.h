@@ -14,6 +14,7 @@
 
 #include "roc_audio/iframe_writer.h"
 #include "roc_sndio/idevice.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace sndio {
@@ -21,7 +22,14 @@ namespace sndio {
 //! Sink interface.
 class ISink : virtual public IDevice, public audio::IFrameWriter {
 public:
+    //! Initialize.
+    explicit ISink(core::IArena& arena);
+
+    //! Deinitialize.
     virtual ~ISink();
+
+    //! Flush buffered data, if any.
+    virtual ROC_NODISCARD status::StatusCode flush() = 0;
 };
 
 } // namespace sndio

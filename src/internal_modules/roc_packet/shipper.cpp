@@ -7,6 +7,8 @@
  */
 
 #include "roc_packet/shipper.h"
+#include "roc_core/log.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace packet {
@@ -19,6 +21,10 @@ Shipper::Shipper(IComposer& composer,
     if (outbound_address) {
         outbound_address_ = *outbound_address;
     }
+}
+
+status::StatusCode Shipper::init_status() const {
+    return status::StatusOK;
 }
 
 const address::SocketAddr& Shipper::outbound_address() const {
@@ -40,9 +46,10 @@ status::StatusCode Shipper::write(const PacketPtr& packet) {
     }
 
     if (!packet->has_flags(Packet::FlagComposed)) {
-        if (!composer_.compose(*packet)) {
-            // TODO(gh-183): return status from composer
-            roc_panic("shipper: can't compose packet");
+        status::StatusCode status = composer_.compose(*packet);
+        if (status != status::StatusOK) {
+            roc_log(LogError, "shipper: can't compose packet");
+            return status;
         }
         packet->add_flags(Packet::FlagComposed);
     }

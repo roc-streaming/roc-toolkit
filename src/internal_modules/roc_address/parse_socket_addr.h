@@ -27,7 +27,7 @@ namespace address {
 //!
 //! @returns
 //!  false if @p host can't be parsed.
-ROC_ATTR_NODISCARD bool parse_socket_addr(const char* host, int port, SocketAddr& addr);
+ROC_NODISCARD bool parse_socket_addr(const char* host, int port, SocketAddr& addr);
 
 } // namespace address
 } // namespace roc

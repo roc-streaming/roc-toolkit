@@ -17,7 +17,7 @@
 #include "test_helpers/utils.h"
 
 #include "roc_core/array.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_bool.h"
 #include "roc_core/noop_arena.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
@@ -135,14 +135,17 @@ public:
     }
 
     const roc_endpoint* source_endpoint(roc_slot slot = ROC_SLOT_DEFAULT) const {
+        CHECK(source_endp_[slot]);
         return source_endp_[slot];
     }
 
     const roc_endpoint* repair_endpoint(roc_slot slot = ROC_SLOT_DEFAULT) const {
+        CHECK(repair_endp_[slot]);
         return repair_endp_[slot];
     }
 
     const roc_endpoint* control_endpoint(roc_slot slot = ROC_SLOT_DEFAULT) const {
+        CHECK(control_endp_[slot]);
         return control_endp_[slot];
     }
 
@@ -292,8 +295,9 @@ public:
         return conn_metrics_[n];
     }
 
-    void stop() {
+    void stop_and_join() {
         stopped_ = true;
+        join();
     }
 
 private:
@@ -320,7 +324,7 @@ private:
     const size_t frame_samples_;
     const unsigned flags_;
 
-    core::Atomic<int> stopped_;
+    core::AtomicBool stopped_;
 };
 
 } // namespace test

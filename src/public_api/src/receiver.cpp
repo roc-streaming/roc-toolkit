@@ -13,6 +13,7 @@
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_node/receiver.h"
+#include "roc_status/code_to_str.h"
 
 using namespace roc;
 
@@ -45,20 +46,20 @@ int roc_receiver_open(roc_context* context,
     }
 
     core::ScopedPtr<node::Receiver> imp_receiver(
-        new (imp_context->arena()) node::Receiver(*imp_context, imp_config),
-        imp_context->arena());
+        new (imp_context->arena()) node::Receiver(*imp_context, imp_config));
 
     if (!imp_receiver) {
         roc_log(LogError, "roc_receiver_open(): can't allocate receiver");
         return -1;
     }
 
-    if (!imp_receiver->is_valid()) {
-        roc_log(LogError, "roc_receiver_open(): can't initialize receiver");
+    if (imp_receiver->init_status() != status::StatusOK) {
+        roc_log(LogError, "roc_receiver_open(): can't initialize receiver: status=%s",
+                status::code_to_str(imp_receiver->init_status()));
         return -1;
     }
 
-    *result = (roc_receiver*)imp_receiver.release();
+    *result = (roc_receiver*)imp_receiver.hijack();
     return 0;
 }
 
@@ -115,7 +116,7 @@ int roc_receiver_bind(roc_receiver* receiver,
         return -1;
     }
 
-    address::EndpointUri& imp_endpoint = *(address::EndpointUri*)endpoint;
+    address::NetworkUri& imp_endpoint = *(address::NetworkUri*)endpoint;
 
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {
@@ -184,8 +185,6 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
 
     node::Receiver* imp_receiver = (node::Receiver*)receiver;
 
-    sndio::ISource& imp_source = imp_receiver->source();
-
     if (!frame) {
         roc_log(LogError, "roc_receiver_read(): invalid arguments: frame is null");
         return -1;
@@ -195,26 +194,18 @@ int roc_receiver_read(roc_receiver* receiver, roc_frame* frame) {
         return 0;
     }
 
-    const size_t factor = imp_source.sample_spec().num_channels() * sizeof(float);
-
-    if (frame->samples_size % factor != 0) {
-        roc_log(LogError,
-                "roc_receiver_read(): invalid arguments:"
-                " # of samples should be multiple of %u",
-                (unsigned)factor);
-        return -1;
-    }
-
     if (!frame->samples) {
         roc_log(LogError,
                 "roc_receiver_read(): invalid arguments: frame samples buffer is null");
         return -1;
     }
 
-    audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float));
+    const status::StatusCode code =
+        imp_receiver->read_frame(frame->samples, frame->samples_size);
 
-    if (!imp_source.read(imp_frame)) {
-        roc_log(LogError, "roc_receiver_read(): got unexpected eof from source");
+    if (code != status::StatusOK) {
+        roc_log(LogError, "roc_receiver_read(): can't read frame from decoder: status=%s",
+                status::code_to_str(code));
         return -1;
     }
 
@@ -228,7 +219,7 @@ int roc_receiver_close(roc_receiver* receiver) {
     }
 
     node::Receiver* imp_receiver = (node::Receiver*)receiver;
-    imp_receiver->context().arena().destroy_object(*imp_receiver);
+    imp_receiver->context().arena().dispose_object(*imp_receiver);
 
     roc_log(LogInfo, "roc_receiver_close(): closed receiver");
 

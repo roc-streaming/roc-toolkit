@@ -388,7 +388,7 @@ void HashmapImpl::migrate_node_(HashmapData* node) {
 }
 
 size_t HashmapImpl::get_next_bucket_size_(size_t current_count) {
-    // rougtly doubling sequence of prime numbers, used as bucket counts
+    // roughly doubling sequence of prime numbers, used as bucket counts
     static const size_t prime_counts[] = {
         5,    11,   23,    53,    97,    193,   389,    769,    1543,
         3079, 6151, 12289, 24593, 49157, 98317, 196613, 393241, 786433,

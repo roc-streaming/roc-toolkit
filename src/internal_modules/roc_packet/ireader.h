@@ -19,6 +19,21 @@
 namespace roc {
 namespace packet {
 
+//! Packet reading mode.
+enum PacketReadMode {
+    //! Read packet and remove in queue.
+    //! @note
+    //!  Next call to read will return new packet.
+    ModeFetch,
+
+    //! Read packet but keep it in queue.
+    //! @note
+    //!  Next call to read typically will return same packet.
+    //!  However it may also return another packet if an older
+    //!  packet arrives by the time of the next read.
+    ModePeek
+};
+
 //! Packet reader interface.
 class IReader {
 public:
@@ -26,12 +41,20 @@ public:
 
     //! Read packet.
     //!
+    //! @note
+    //!  @p packet is output-only parameter, it is set to
+    //!  the returned packet.
+    //!
     //! @returns
-    //!  - If a returned code is not status::StatusOK, a packet is never set;
-    //!  - If a packet is set, a returned code is always status::StatusOK.
+    //!  - If packet was successfully read, returns status::StatusOK and sets
+    //!    @p packet to the returned packet.
+    //!  - If there are no errors but also no packets to read, returns
+    //!    status::StatusDrain.
+    //!  - Otherwise, returns an error.
     //!
     //! @see status::StatusCode.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet) = 0;
+    virtual ROC_NODISCARD status::StatusCode read(PacketPtr& packet,
+                                                  PacketReadMode mode) = 0;
 };
 
 } // namespace packet

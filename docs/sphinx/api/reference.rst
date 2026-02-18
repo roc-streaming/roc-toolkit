@@ -26,6 +26,8 @@ roc_context
 
 .. doxygenfunction:: roc_context_register_encoding
 
+.. doxygenfunction:: roc_context_register_plc
+
 .. doxygenfunction:: roc_context_close
 
 roc_sender
@@ -194,6 +196,8 @@ roc_config
 
 .. doxygenenum:: roc_format
 
+.. doxygenenum:: roc_subformat
+
 .. doxygenenum:: roc_channel_layout
 
 .. doxygenstruct:: roc_media_encoding
@@ -208,6 +212,8 @@ roc_config
 .. doxygenenum:: roc_resampler_backend
 
 .. doxygenenum:: roc_resampler_profile
+
+.. doxygenenum:: roc_plc_backend
 
 .. doxygenstruct:: roc_context_config
    :members:
@@ -232,6 +238,24 @@ roc_metrics
    :members:
 
 .. doxygenstruct:: roc_receiver_metrics
+   :members:
+
+roc_plugin
+==========
+
+.. code-block:: c
+
+   #include <roc/plugin.h>
+
+.. doxygenenumvalue:: ROC_ENCODING_ID_MIN
+
+.. doxygenenumvalue:: ROC_ENCODING_ID_MAX
+
+.. doxygenenumvalue:: ROC_PLUGIN_ID_MIN
+
+.. doxygenenumvalue:: ROC_PLUGIN_ID_MAX
+
+.. doxygenstruct:: roc_plugin_plc
    :members:
 
 roc_log

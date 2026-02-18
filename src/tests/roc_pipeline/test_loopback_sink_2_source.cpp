@@ -6,16 +6,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/frame_reader.h"
 #include "test_helpers/frame_writer.h"
 
 #include "roc_core/heap_arena.h"
 #include "roc_core/slab_pool.h"
 #include "roc_fec/codec_map.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/ireader.h"
-#include "roc_packet/queue.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_rtcp/print_packet.h"
@@ -50,6 +49,11 @@ namespace {
 const audio::ChannelMask Chans_Mono = audio::ChanMask_Surround_Mono;
 const audio::ChannelMask Chans_Stereo = audio::ChanMask_Surround_Stereo;
 
+const audio::PcmSubformat Format_Raw = audio::PcmSubformat_Raw;
+const audio::PcmSubformat Format_S16_Be = audio::PcmSubformat_SInt16_Be;
+const audio::PcmSubformat Format_S16_Ne = audio::PcmSubformat_SInt16;
+const audio::PcmSubformat Format_S32_Ne = audio::PcmSubformat_SInt32;
+
 const rtp::PayloadType PayloadType_Ch1 = rtp::PayloadType_L16_Mono;
 const rtp::PayloadType PayloadType_Ch2 = rtp::PayloadType_L16_Stereo;
 
@@ -62,10 +66,10 @@ enum {
     SamplesPerPacket = 40,
     FramesPerPacket = SamplesPerPacket / SamplesPerFrame,
 
-    SourcePackets = 20,
-    RepairPackets = 10,
+    SourcePacketsInBlock = 20,
+    RepairPacketsInBlock = 10,
 
-    Latency = SamplesPerPacket * SourcePackets,
+    Latency = SamplesPerPacket * SourcePacketsInBlock,
     Timeout = Latency * 20,
     Warmup = SamplesPerPacket * 3,
 
@@ -106,14 +110,17 @@ core::HeapArena arena;
 core::SlabPool<packet::Packet> packet_pool("packet_pool", arena);
 core::SlabPool<core::Buffer>
     packet_buffer_pool("packet_buffer_pool", arena, sizeof(core::Buffer) + MaxBufSize);
+
+core::SlabPool<audio::Frame> frame_pool("frame_pool", arena);
 core::SlabPool<core::Buffer>
     frame_buffer_pool("frame_buffer_pool",
                       arena,
                       sizeof(core::Buffer) + MaxBufSize * sizeof(audio::sample_t));
 
 packet::PacketFactory packet_factory(packet_pool, packet_buffer_pool);
-audio::FrameFactory frame_factory(frame_buffer_pool);
+audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
 
+audio::ProcessorMap processor_map(arena);
 rtp::EncodingMap encoding_map(arena);
 
 // Copy sequence of packets to multiple writers.
@@ -155,14 +162,14 @@ public:
     void deliver_from(packet::IReader& reader) {
         for (;;) {
             packet::PacketPtr pp;
-            const status::StatusCode code = reader.read(pp);
+            const status::StatusCode code = reader.read(pp, packet::ModeFetch);
             if (code != status::StatusOK) {
-                UNSIGNED_LONGS_EQUAL(status::StatusNoData, code);
+                LONGS_EQUAL(status::StatusDrain, code);
                 break;
             }
 
             if ((flags_ & FlagLosses)
-                && counter_++ % (SourcePackets + RepairPackets) == 1) {
+                && counter_++ % (SourcePacketsInBlock + RepairPacketsInBlock) == 1) {
                 continue;
             }
 
@@ -236,13 +243,14 @@ private:
 };
 
 SenderSinkConfig make_sender_config(int flags,
+                                    audio::PcmSubformat frame_format,
                                     audio::ChannelMask frame_channels,
                                     audio::ChannelMask packet_channels) {
     SenderSinkConfig config;
 
+    config.input_sample_spec.set_format(audio::Format_Pcm);
+    config.input_sample_spec.set_pcm_subformat(frame_format);
     config.input_sample_spec.set_sample_rate(SampleRate);
-    config.input_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
-    config.input_sample_spec.set_pcm_format(audio::Sample_RawFormat);
     config.input_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
     config.input_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
     config.input_sample_spec.channel_set().set_mask(frame_channels);
@@ -266,11 +274,11 @@ SenderSinkConfig make_sender_config(int flags,
         config.fec_encoder.scheme = packet::FEC_LDPC_Staircase;
     }
 
-    config.fec_writer.n_source_packets = SourcePackets;
-    config.fec_writer.n_repair_packets = RepairPackets;
+    config.fec_writer.n_source_packets = SourcePacketsInBlock;
+    config.fec_writer.n_repair_packets = RepairPacketsInBlock;
 
     config.enable_interleaving = (flags & FlagInterleaving);
-    config.enable_timing = false;
+    config.enable_cpu_clock = false;
     config.enable_profiling = true;
 
     config.latency.tuner_backend = audio::LatencyTunerBackend_Niq;
@@ -282,18 +290,19 @@ SenderSinkConfig make_sender_config(int flags,
     return config;
 }
 
-ReceiverSourceConfig make_receiver_config(audio::ChannelMask frame_channels,
+ReceiverSourceConfig make_receiver_config(audio::PcmSubformat frame_format,
+                                          audio::ChannelMask frame_channels,
                                           audio::ChannelMask packet_channels) {
     ReceiverSourceConfig config;
 
+    config.common.output_sample_spec.set_format(audio::Format_Pcm);
+    config.common.output_sample_spec.set_pcm_subformat(frame_format);
     config.common.output_sample_spec.set_sample_rate(SampleRate);
-    config.common.output_sample_spec.set_sample_format(audio::SampleFormat_Pcm);
-    config.common.output_sample_spec.set_pcm_format(audio::Sample_RawFormat);
     config.common.output_sample_spec.channel_set().set_layout(audio::ChanLayout_Surround);
     config.common.output_sample_spec.channel_set().set_order(audio::ChanOrder_Smpte);
     config.common.output_sample_spec.channel_set().set_mask(frame_channels);
 
-    config.common.enable_timing = false;
+    config.common.enable_cpu_clock = false;
 
     config.common.rtcp.report_interval = SamplesPerPacket * core::Second / SampleRate;
     config.common.rtcp.inactivity_timeout = Timeout * core::Second / SampleRate;
@@ -336,15 +345,51 @@ address::Protocol select_control_proto(int flags) {
 
 bool is_fec_supported(int flags) {
     if (flags & FlagReedSolomon) {
-        return fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8);
+        return fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8);
     }
     if (flags & FlagLDPC) {
-        return fec::CodecMap::instance().is_supported(packet::FEC_LDPC_Staircase);
+        return fec::CodecMap::instance().has_scheme(packet::FEC_LDPC_Staircase);
     }
     return true;
 }
 
-void check_metrics(ReceiverSlot& receiver, SenderSlot& sender, int flags) {
+void write_samples(test::FrameWriter& frame_writer,
+                   size_t n_samples,
+                   audio::PcmSubformat frame_format,
+                   const audio::SampleSpec& sample_spec,
+                   core::nanoseconds_t base_cts) {
+    if (frame_format == Format_Raw) {
+        frame_writer.write_samples(n_samples, sample_spec, base_cts);
+    } else if (frame_format == Format_S16_Ne) {
+        frame_writer.write_s16_samples(n_samples, sample_spec, base_cts);
+    } else if (frame_format == Format_S32_Ne) {
+        frame_writer.write_s32_samples(n_samples, sample_spec, base_cts);
+    } else {
+        FAIL("bad format");
+    }
+}
+
+void read_samples(test::FrameReader& frame_reader,
+                  size_t n_samples,
+                  size_t n_sessions,
+                  audio::PcmSubformat frame_format,
+                  const audio::SampleSpec& sample_spec,
+                  core::nanoseconds_t base_cts) {
+    if (frame_format == Format_Raw) {
+        frame_reader.read_samples(n_samples, n_sessions, sample_spec, base_cts);
+    } else if (frame_format == Format_S16_Ne) {
+        frame_reader.read_s16_samples(n_samples, n_sessions, sample_spec, base_cts);
+    } else if (frame_format == Format_S32_Ne) {
+        frame_reader.read_s32_samples(n_samples, n_sessions, sample_spec, base_cts);
+    } else {
+        FAIL("bad format");
+    }
+}
+
+void check_metrics(ReceiverSlot& receiver,
+                   SenderSlot& sender,
+                   int flags,
+                   PacketProxy& packet_proxy) {
     ReceiverSlotMetrics recv_metrics;
     ReceiverParticipantMetrics recv_party_metrics;
     size_t recv_party_count = 1;
@@ -358,10 +403,17 @@ void check_metrics(ReceiverSlot& receiver, SenderSlot& sender, int flags) {
     CHECK(recv_party_metrics.link.ext_first_seqnum > 0);
     CHECK(recv_party_metrics.link.ext_last_seqnum > 0);
 
-    // TODO(gh-688): check that metrics are non-zero:
-    //  - total_packets
-    //  - lost_packets
-    //  - jitter
+    LONGS_EQUAL((int64_t)recv_party_metrics.link.expected_packets
+                    - recv_party_metrics.link.lost_packets,
+                packet_proxy.n_source());
+    if (flags & FlagLosses) {
+        CHECK(recv_party_metrics.link.lost_packets > 0);
+    } else if (flags & FlagInterleaving) {
+        CHECK(recv_party_metrics.link.lost_packets >= 0);
+    } else {
+        CHECK(recv_party_metrics.link.lost_packets == 0);
+    }
+    CHECK(recv_party_metrics.link.peak_jitter > 0);
 
     CHECK(recv_party_metrics.latency.niq_latency > 0);
     CHECK(recv_party_metrics.latency.niq_stalling >= 0);
@@ -389,10 +441,17 @@ void check_metrics(ReceiverSlot& receiver, SenderSlot& sender, int flags) {
                                   send_party_metrics.link.ext_last_seqnum)
               <= 1);
 
-        // TODO(gh-688): check that metrics are equal on sender and receiver:
-        //  - total_packets
-        //  - lost_packets
-        //  - jitter
+        CHECK((send_party_metrics.link.expected_packets >= packet_proxy.n_source() - 1)
+              && (send_party_metrics.link.expected_packets <= packet_proxy.n_source()));
+
+        UNSIGNED_LONGS_EQUAL(packet_proxy.n_source(),
+                             recv_party_metrics.link.expected_packets);
+
+        UNSIGNED_LONGS_EQUAL(recv_party_metrics.link.lost_packets,
+                             send_party_metrics.link.lost_packets);
+        CHECK(std::abs(recv_party_metrics.link.peak_jitter
+                       - send_party_metrics.link.peak_jitter)
+              < 20 * core::Millisecond);
 
         DOUBLES_EQUAL(recv_party_metrics.latency.niq_latency,
                       send_party_metrics.latency.niq_latency, core::Millisecond);
@@ -413,10 +472,11 @@ void check_metrics(ReceiverSlot& receiver, SenderSlot& sender, int flags) {
 
 void send_receive(int flags,
                   size_t num_sessions,
+                  audio::PcmSubformat frame_format,
                   audio::ChannelMask frame_channels,
                   audio::ChannelMask packet_channels) {
-    packet::Queue sender_outbound_queue;
-    packet::Queue receiver_outbound_queue;
+    packet::FifoQueue sender_outbound_queue;
+    packet::FifoQueue receiver_outbound_queue;
 
     address::Protocol source_proto = select_source_proto(flags);
     address::Protocol repair_proto = select_repair_proto(flags);
@@ -429,11 +489,11 @@ void send_receive(int flags,
     address::SocketAddr sender_addr = test::new_address(44);
 
     SenderSinkConfig sender_config =
-        make_sender_config(flags, frame_channels, packet_channels);
+        make_sender_config(flags, frame_format, frame_channels, packet_channels);
 
-    SenderSink sender(sender_config, encoding_map, packet_pool, packet_buffer_pool,
-                      frame_buffer_pool, arena);
-    CHECK(sender.is_valid());
+    SenderSink sender(sender_config, processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
 
     SenderSlotConfig sender_slot_config;
     SenderSlot* sender_slot = sender.create_slot(sender_slot_config);
@@ -466,11 +526,11 @@ void send_receive(int flags,
     }
 
     ReceiverSourceConfig receiver_config =
-        make_receiver_config(frame_channels, packet_channels);
+        make_receiver_config(frame_format, frame_channels, packet_channels);
 
-    ReceiverSource receiver(receiver_config, encoding_map, packet_pool,
-                            packet_buffer_pool, frame_buffer_pool, arena);
-    CHECK(receiver.is_valid());
+    ReceiverSource receiver(receiver_config, processor_map, encoding_map, packet_pool,
+                            packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     ReceiverSlotConfig receiver_slot_config;
     ReceiverSlot* receiver_slot = receiver.create_slot(receiver_slot_config);
@@ -524,9 +584,11 @@ void send_receive(int flags,
     test::FrameReader frame_reader(receiver, frame_factory);
 
     for (size_t nf = 0; nf < ManyFrames; nf++) {
-        frame_writer.write_samples(SamplesPerFrame, sender_config.input_sample_spec,
-                                   send_base_cts);
-        sender.refresh(frame_writer.refresh_ts(send_base_cts));
+        write_samples(frame_writer, SamplesPerFrame, frame_format,
+                      sender_config.input_sample_spec, send_base_cts);
+
+        LONGS_EQUAL(status::StatusOK,
+                    sender.refresh(frame_writer.refresh_ts(send_base_cts), NULL));
 
         proxy.deliver_from(sender_outbound_queue);
 
@@ -536,10 +598,11 @@ void send_receive(int flags,
                 recv_base_cts = send_base_cts;
             }
 
-            receiver.refresh(frame_reader.refresh_ts(recv_base_cts));
-            frame_reader.read_samples(SamplesPerFrame, num_sessions,
-                                      receiver_config.common.output_sample_spec,
-                                      recv_base_cts);
+            LONGS_EQUAL(status::StatusOK,
+                        receiver.refresh(frame_reader.refresh_ts(recv_base_cts), NULL));
+
+            read_samples(frame_reader, SamplesPerFrame, num_sessions, frame_format,
+                         receiver_config.common.output_sample_spec, recv_base_cts);
 
             if (flags & FlagCTS) {
                 receiver.reclock(frame_reader.last_capture_ts() + virtual_e2e_latency);
@@ -550,9 +613,17 @@ void send_receive(int flags,
             reverse_proxy.deliver_from(receiver_outbound_queue);
 
             if (num_sessions == 1 && nf > (Latency + Warmup) / SamplesPerFrame) {
-                check_metrics(*receiver_slot, *sender_slot, flags);
+                check_metrics(*receiver_slot, *sender_slot, flags, proxy);
             }
         }
+    }
+    // While receiving interleaved packets losses could be detected incorrectly,
+    // so we postpone the final check for lost packets metric till the whole bunch
+    // of packets is sent.
+    if (flags & FlagInterleaving) {
+        // Here we exclude FlagInterleaving from flags so that check_metrics could
+        // undertake the full check.
+        check_metrics(*receiver_slot, *sender_slot, flags ^ FlagInterleaving, proxy);
     }
 
     if ((flags & FlagDropSource) == 0) {
@@ -581,20 +652,20 @@ TEST_GROUP(loopback_sink_2_source) {};
 TEST(loopback_sink_2_source, bare_rtp) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
-    send_receive(FlagNone, NumSess, Chans, Chans);
+    send_receive(FlagNone, NumSess, Format_Raw, Chans, Chans);
 }
 
 TEST(loopback_sink_2_source, interleaving) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
-    send_receive(FlagInterleaving, NumSess, Chans, Chans);
+    send_receive(FlagInterleaving, NumSess, Format_Raw, Chans, Chans);
 }
 
 TEST(loopback_sink_2_source, fec_rs) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon, NumSess, Chans, Chans);
+        send_receive(FlagReedSolomon, NumSess, Format_Raw, Chans, Chans);
     }
 }
 
@@ -602,7 +673,7 @@ TEST(loopback_sink_2_source, fec_ldpc) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagLDPC)) {
-        send_receive(FlagLDPC, NumSess, Chans, Chans);
+        send_receive(FlagLDPC, NumSess, Format_Raw, Chans, Chans);
     }
 }
 
@@ -610,7 +681,8 @@ TEST(loopback_sink_2_source, fec_interleaving) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagInterleaving, NumSess, Chans, Chans);
+        send_receive(FlagReedSolomon | FlagInterleaving, NumSess, Format_Raw, Chans,
+                     Chans);
     }
 }
 
@@ -618,7 +690,7 @@ TEST(loopback_sink_2_source, fec_loss) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagLosses, NumSess, Chans, Chans);
+        send_receive(FlagReedSolomon | FlagLosses, NumSess, Format_Raw, Chans, Chans);
     }
 }
 
@@ -626,7 +698,7 @@ TEST(loopback_sink_2_source, fec_drop_source) {
     enum { Chans = Chans_Stereo, NumSess = 0 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagDropSource, NumSess, Chans, Chans);
+        send_receive(FlagReedSolomon | FlagDropSource, NumSess, Format_Raw, Chans, Chans);
     }
 }
 
@@ -634,32 +706,44 @@ TEST(loopback_sink_2_source, fec_drop_repair) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
     if (is_fec_supported(FlagReedSolomon)) {
-        send_receive(FlagReedSolomon | FlagDropRepair, NumSess, Chans, Chans);
+        send_receive(FlagReedSolomon | FlagDropRepair, NumSess, Format_Raw, Chans, Chans);
     }
 }
 
 TEST(loopback_sink_2_source, channel_mapping_stereo_to_mono) {
     enum { FrameChans = Chans_Stereo, PacketChans = Chans_Mono, NumSess = 1 };
 
-    send_receive(FlagNone, NumSess, FrameChans, PacketChans);
+    send_receive(FlagNone, NumSess, Format_Raw, FrameChans, PacketChans);
 }
 
 TEST(loopback_sink_2_source, channel_mapping_mono_to_stereo) {
     enum { FrameChans = Chans_Mono, PacketChans = Chans_Stereo, NumSess = 1 };
 
-    send_receive(FlagNone, NumSess, FrameChans, PacketChans);
+    send_receive(FlagNone, NumSess, Format_Raw, FrameChans, PacketChans);
+}
+
+TEST(loopback_sink_2_source, format_mapping_s16) {
+    enum { FrameChans = Chans_Stereo, PacketChans = Chans_Mono, NumSess = 1 };
+
+    send_receive(FlagNone, NumSess, Format_S16_Ne, FrameChans, PacketChans);
+}
+
+TEST(loopback_sink_2_source, format_mapping_s32) {
+    enum { FrameChans = Chans_Stereo, PacketChans = Chans_Mono, NumSess = 1 };
+
+    send_receive(FlagNone, NumSess, Format_S32_Ne, FrameChans, PacketChans);
 }
 
 TEST(loopback_sink_2_source, timestamp_mapping) {
     enum { Chans = Chans_Stereo, NumSess = 1 };
 
-    send_receive(FlagRTCP | FlagCTS, NumSess, Chans, Chans);
+    send_receive(FlagRTCP | FlagCTS, NumSess, Format_Raw, Chans, Chans);
 }
 
 TEST(loopback_sink_2_source, timestamp_mapping_remixing) {
     enum { FrameChans = Chans_Mono, PacketChans = Chans_Stereo, NumSess = 1 };
 
-    send_receive(FlagRTCP | FlagCTS, NumSess, FrameChans, PacketChans);
+    send_receive(FlagRTCP | FlagCTS, NumSess, Format_S16_Ne, FrameChans, PacketChans);
 }
 
 } // namespace pipeline

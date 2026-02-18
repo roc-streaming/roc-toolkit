@@ -24,7 +24,7 @@ public:
     LossEstimator();
 
     //! Update and return fractional loss ration since previous update.
-    //! @p total_packets defines total count of packets expected.
+    //! @p expected_packets defines total count of packets expected.
     //! @p lost_packets defines count of packets not received,
     //! probably negative dues to duplicates.
     float update(uint64_t total_packets, int64_t lost_packets);

@@ -1,3 +1,4 @@
+import SCons.Script
 import os
 import os.path
 import fnmatch
@@ -48,6 +49,7 @@ def _build_thirdparty(env, versions, name, deps, is_native):
             '--root-dir', quote(os.path.abspath(project_root)),
             '--work-dir', quote(os.path.relpath(build_root, project_root)),
             '--dist-dir', quote(os.path.relpath(distfiles_dir, project_root)),
+            '--jobs', quote(str(SCons.Script.GetOption('num_jobs'))),
             ]
 
         if not is_native:
@@ -76,10 +78,10 @@ def _build_thirdparty(env, versions, name, deps, is_native):
         if env['ROC_PLATFORM'] == 'android' and env['ROC_ANDROID_PLATFORM']:
             cmd += ['--android-platform', env['ROC_ANDROID_PLATFORM']]
 
-        if env['ROC_PLATFORM'] == 'darwin' and env['ROC_MACOS_PLATFORM']:
+        if env['ROC_PLATFORM'] == 'macos' and env['ROC_MACOS_PLATFORM']:
             cmd += ['--macos-platform', env['ROC_MACOS_PLATFORM']]
 
-        if env['ROC_PLATFORM'] == 'darwin' and env['ROC_MACOS_ARCH']:
+        if env['ROC_PLATFORM'] == 'macos' and env['ROC_MACOS_ARCH']:
             cmd += ['--macos-arch', ' '.join(env['ROC_MACOS_ARCH'])]
 
         if env.Execute(

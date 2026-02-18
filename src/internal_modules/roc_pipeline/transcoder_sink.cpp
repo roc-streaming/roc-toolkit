@@ -7,7 +7,7 @@
  */
 
 #include "roc_pipeline/transcoder_sink.h"
-#include "roc_audio/resampler_map.h"
+#include "roc_audio/processor_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
@@ -16,13 +16,20 @@ namespace pipeline {
 
 TranscoderSink::TranscoderSink(const TranscoderConfig& config,
                                audio::IFrameWriter* output_writer,
-                               core::IPool& buffer_pool,
+                               audio::ProcessorMap& processor_map,
+                               core::IPool& frame_pool,
+                               core::IPool& frame_buffer_pool,
                                core::IArena& arena)
-    : frame_factory_(buffer_pool)
+    : IDevice(arena)
+    , ISink(arena)
+    , frame_factory_(frame_pool, frame_buffer_pool)
     , frame_writer_(NULL)
     , config_(config)
-    , valid_(false) {
-    config_.deduce_defaults();
+    , init_status_(status::NoStatus) {
+    if (!config_.deduce_defaults(processor_map)) {
+        init_status_ = status::StatusBadConfig;
+        return;
+    }
 
     audio::IFrameWriter* frm_writer = output_writer;
     if (!frm_writer) {
@@ -32,17 +39,17 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
     if (config_.input_sample_spec.channel_set()
         != config_.output_sample_spec.channel_set()) {
         const audio::SampleSpec from_spec(config_.output_sample_spec.sample_rate(),
-                                          audio::Sample_RawFormat,
+                                          audio::PcmSubformat_Raw,
                                           config_.input_sample_spec.channel_set());
 
         const audio::SampleSpec to_spec(config_.output_sample_spec.sample_rate(),
-                                        audio::Sample_RawFormat,
+                                        audio::PcmSubformat_Raw,
                                         config_.output_sample_spec.channel_set());
 
         channel_mapper_writer_.reset(
             new (channel_mapper_writer_) audio::ChannelMapperWriter(
                 *frm_writer, frame_factory_, from_spec, to_spec));
-        if (!channel_mapper_writer_ || !channel_mapper_writer_->is_valid()) {
+        if ((init_status_ = channel_mapper_writer_->init_status()) != status::StatusOK) {
             return;
         }
         frm_writer = channel_mapper_writer_.get();
@@ -51,22 +58,26 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
     if (config_.input_sample_spec.sample_rate()
         != config_.output_sample_spec.sample_rate()) {
         const audio::SampleSpec from_spec(config_.input_sample_spec.sample_rate(),
-                                          audio::Sample_RawFormat,
+                                          audio::PcmSubformat_Raw,
                                           config_.input_sample_spec.channel_set());
 
         const audio::SampleSpec to_spec(config_.output_sample_spec.sample_rate(),
-                                        audio::Sample_RawFormat,
+                                        audio::PcmSubformat_Raw,
                                         config_.input_sample_spec.channel_set());
 
-        resampler_.reset(audio::ResamplerMap::instance().new_resampler(
-            arena, frame_factory_, config_.resampler, from_spec, to_spec));
+        resampler_.reset(processor_map.new_resampler(config_.resampler, from_spec,
+                                                     to_spec, frame_factory_, arena));
         if (!resampler_) {
+            init_status_ = status::StatusNoMem;
+            return;
+        }
+        if ((init_status_ = resampler_->init_status()) != status::StatusOK) {
             return;
         }
 
         resampler_writer_.reset(new (resampler_writer_) audio::ResamplerWriter(
-            *frm_writer, *resampler_, frame_factory_, from_spec, to_spec));
-        if (!resampler_writer_ || !resampler_writer_->is_valid()) {
+            *frm_writer, frame_factory_, *resampler_, from_spec, to_spec));
+        if ((init_status_ = resampler_writer_->init_status()) != status::StatusOK) {
             return;
         }
         frm_writer = resampler_writer_.get();
@@ -75,22 +86,22 @@ TranscoderSink::TranscoderSink(const TranscoderConfig& config,
     if (config_.enable_profiling) {
         profiler_.reset(new (profiler_) audio::ProfilingWriter(
             *frm_writer, arena, config_.input_sample_spec, config_.profiler));
-        if (!profiler_ || !profiler_->is_valid()) {
+        if ((init_status_ = profiler_->init_status()) != status::StatusOK) {
             return;
         }
         frm_writer = profiler_.get();
     }
 
-    if (!frm_writer) {
-        return;
-    }
-
     frame_writer_ = frm_writer;
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool TranscoderSink::is_valid() {
-    return valid_;
+status::StatusCode TranscoderSink::init_status() const {
+    return init_status_;
+}
+
+sndio::DeviceType TranscoderSink::type() const {
+    return sndio::DeviceType_Sink;
 }
 
 sndio::ISink* TranscoderSink::to_sink() {
@@ -101,32 +112,16 @@ sndio::ISource* TranscoderSink::to_source() {
     return NULL;
 }
 
-sndio::DeviceType TranscoderSink::type() const {
-    return sndio::DeviceType_Sink;
-}
-
-sndio::DeviceState TranscoderSink::state() const {
-    return sndio::DeviceState_Active;
-}
-
-void TranscoderSink::pause() {
-    // no-op
-}
-
-bool TranscoderSink::resume() {
-    return true;
-}
-
-bool TranscoderSink::restart() {
-    return true;
-}
-
 audio::SampleSpec TranscoderSink::sample_spec() const {
     return config_.output_sample_spec;
 }
 
-core::nanoseconds_t TranscoderSink::latency() const {
+core::nanoseconds_t TranscoderSink::frame_length() const {
     return 0;
+}
+
+bool TranscoderSink::has_state() const {
+    return false;
 }
 
 bool TranscoderSink::has_latency() const {
@@ -137,10 +132,22 @@ bool TranscoderSink::has_clock() const {
     return false;
 }
 
-void TranscoderSink::write(audio::Frame& frame) {
-    roc_panic_if(!is_valid());
+status::StatusCode TranscoderSink::write(audio::Frame& frame) {
+    roc_panic_if(init_status_ != status::StatusOK);
 
-    frame_writer_->write(frame);
+    return frame_writer_->write(frame);
+}
+
+status::StatusCode TranscoderSink::flush() {
+    return status::StatusOK;
+}
+
+status::StatusCode TranscoderSink::close() {
+    return status::StatusOK;
+}
+
+void TranscoderSink::dispose() {
+    arena().dispose_object(*this);
 }
 
 } // namespace pipeline

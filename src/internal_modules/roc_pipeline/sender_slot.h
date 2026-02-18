@@ -16,10 +16,12 @@
 #include "roc_address/protocol.h"
 #include "roc_audio/fanout.h"
 #include "roc_audio/frame_factory.h"
+#include "roc_audio/processor_map.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/ref_counted.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/metrics.h"
@@ -42,16 +44,18 @@ public:
     SenderSlot(const SenderSinkConfig& sink_config,
                const SenderSlotConfig& slot_config,
                StateTracker& state_tracker,
-               const rtp::EncodingMap& encoding_map,
+               audio::ProcessorMap& processor_map,
+               rtp::EncodingMap& encoding_map,
                audio::Fanout& fanout,
                packet::PacketFactory& packet_factory,
                audio::FrameFactory& frame_factory,
-               core::IArena& arena);
+               core::IArena& arena,
+               dbgio::CsvDumper* dumper);
 
     ~SenderSlot();
 
-    //! Check if the slot was successfully constructed.
-    bool is_valid() const;
+    //! Check if the pipeline was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Add endpoint.
     SenderEndpoint* add_endpoint(address::Interface iface,
@@ -59,11 +63,13 @@ public:
                                  const address::SocketAddr& outbound_address,
                                  packet::IWriter& outbound_writer);
 
-    //! Refresh pipeline according to current time.
-    //! @returns
-    //!  deadline (absolute time) when refresh should be invoked again
-    //!  if there are no frames
-    core::nanoseconds_t refresh(core::nanoseconds_t current_time);
+    //! Pull packets and refresh pipeline according to current time.
+    //! @remarks
+    //!  Should be invoked before reading each frame.
+    //!  If there are no frames for a while, should be invoked no
+    //!  later than the deadline returned via @p next_deadline.
+    ROC_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
+                                             core::nanoseconds_t& next_deadline);
 
     //! Get metrics for slot and its participants.
     void get_metrics(SenderSlotMetrics& slot_metrics,
@@ -92,7 +98,7 @@ private:
     StateTracker& state_tracker_;
     SenderSession session_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

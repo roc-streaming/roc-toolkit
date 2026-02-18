@@ -12,7 +12,8 @@
 #ifndef ROC_PIPELINE_METRICS_H_
 #define ROC_PIPELINE_METRICS_H_
 
-#include "roc_audio/latency_tuner.h"
+#include "roc_audio/depacketizer.h"
+#include "roc_audio/latency_config.h"
 #include "roc_core/stddefs.h"
 #include "roc_packet/ilink_meter.h"
 #include "roc_packet/units.h"
@@ -57,6 +58,9 @@ struct ReceiverParticipantMetrics {
 
     //! Latency metrics.
     audio::LatencyMetrics latency;
+
+    //! Depacketizer metrics.
+    audio::DepacketizerMetrics depacketizer;
 
     ReceiverParticipantMetrics() {
     }

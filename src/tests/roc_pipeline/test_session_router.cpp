@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/utils.h"
 
 #include "roc_core/heap_arena.h"
@@ -27,6 +26,7 @@ core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, MaxBufSize);
 audio::FrameFactory frame_factory(arena, MaxBufSize * sizeof(audio::sample_t));
 
+audio::ProcessorMap processor_map(arena);
 rtp::EncodingMap encoding_map(arena);
 
 } // namespace
@@ -60,12 +60,12 @@ TEST_GROUP(session_router) {
             ReceiverSessionConfig session_config;
             ReceiverCommonConfig common_config;
 
-            sess1 =
-                new (arena) ReceiverSession(session_config, common_config, encoding_map,
-                                            packet_factory, frame_factory, arena);
-            sess2 =
-                new (arena) ReceiverSession(session_config, common_config, encoding_map,
-                                            packet_factory, frame_factory, arena);
+            sess1 = new (arena)
+                ReceiverSession(session_config, common_config, processor_map,
+                                encoding_map, packet_factory, frame_factory, arena, NULL);
+            sess2 = new (arena)
+                ReceiverSession(session_config, common_config, processor_map,
+                                encoding_map, packet_factory, frame_factory, arena, NULL);
         }
     }
 };
@@ -787,7 +787,7 @@ TEST(session_router, conflict_session_exists) {
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr2));
 
-    LONGS_EQUAL(status::StatusConflict, router.add_session(sess1, ssrc2, addr2));
+    LONGS_EQUAL(status::StatusNoRoute, router.add_session(sess1, ssrc2, addr2));
 
     LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);
@@ -807,7 +807,7 @@ TEST(session_router, conflict_address_exists) {
     CHECK(!router.find_by_source(ssrc2));
     CHECK(!router.find_by_address(addr2));
 
-    LONGS_EQUAL(status::StatusConflict, router.add_session(sess2, ssrc2, addr1));
+    LONGS_EQUAL(status::StatusNoRoute, router.add_session(sess2, ssrc2, addr1));
 
     LONGS_EQUAL(1, router.num_routes());
     CHECK(router.find_by_source(ssrc1) == sess1);

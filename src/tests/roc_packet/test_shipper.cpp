@@ -9,10 +9,11 @@
 #include <CppUTest/TestHarness.h>
 
 #include "roc_core/heap_arena.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
 #include "roc_packet/shipper.h"
 #include "roc_rtp/headers.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
@@ -44,7 +45,7 @@ public:
         : code_(code) {
     }
 
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr&) {
+    virtual ROC_NODISCARD status::StatusCode write(const PacketPtr&) {
         return code_;
     }
 
@@ -53,25 +54,32 @@ private:
 };
 
 struct MockComposer : public IComposer, public core::NonCopyable<> {
-    MockComposer()
-        : compose_call_count(0) {
+    MockComposer(core::IArena& arena)
+        : IComposer(arena)
+        , compose_call_count(0) {
     }
 
-    virtual bool align(core::Slice<uint8_t>&, size_t, size_t) {
-        return true;
+    ROC_NODISCARD virtual status::StatusCode init_status() const {
+        return status::StatusOK;
     }
 
-    virtual bool prepare(Packet&, core::Slice<uint8_t>&, size_t) {
-        return true;
+    ROC_NODISCARD virtual status::StatusCode
+    align(core::Slice<uint8_t>&, size_t, size_t) {
+        return status::StatusOK;
     }
 
-    virtual bool pad(Packet&, size_t) {
-        return true;
+    ROC_NODISCARD virtual status::StatusCode
+    prepare(Packet&, core::Slice<uint8_t>&, size_t) {
+        return status::StatusOK;
     }
 
-    virtual bool compose(Packet&) {
+    ROC_NODISCARD virtual status::StatusCode pad(Packet&, size_t) {
+        return status::StatusOK;
+    }
+
+    ROC_NODISCARD virtual status::StatusCode compose(Packet&) {
         ++compose_call_count;
-        return true;
+        return status::StatusOK;
     }
 
     unsigned compose_call_count;
@@ -81,27 +89,9 @@ struct MockComposer : public IComposer, public core::NonCopyable<> {
 
 TEST_GROUP(shipper) {};
 
-TEST(shipper, forward_write_status) {
-    const status::StatusCode codes[] = {
-        status::StatusOK,
-        status::StatusNoMem,
-    };
-
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
-        address::SocketAddr address;
-        MockComposer composer;
-        MockWriter writer(codes[n]);
-
-        Shipper shipper(composer, writer, &address);
-
-        PacketPtr pp = new_packet();
-        LONGS_EQUAL(codes[n], shipper.write(pp));
-    }
-}
-
 TEST(shipper, without_address) {
-    MockComposer composer;
-    Queue queue;
+    MockComposer composer(arena);
+    FifoQueue queue;
 
     Shipper shipper(composer, queue, NULL);
 
@@ -116,7 +106,7 @@ TEST(shipper, without_address) {
     CHECK(!wp->udp());
 
     packet::PacketPtr rp;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
     CHECK(wp == rp);
 }
 
@@ -124,8 +114,8 @@ TEST(shipper, with_address) {
     address::SocketAddr address;
     CHECK(address.set_host_port_auto("127.0.0.1", 123));
 
-    MockComposer composer;
-    Queue queue;
+    MockComposer composer(arena);
+    FifoQueue queue;
 
     Shipper shipper(composer, queue, &address);
 
@@ -140,14 +130,14 @@ TEST(shipper, with_address) {
     CHECK(address == wp->udp()->dst_addr);
 
     packet::PacketPtr rp;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
     CHECK(wp == rp);
 }
 
 TEST(shipper, packet_already_composed) {
     address::SocketAddr address;
-    MockComposer composer;
-    Queue queue;
+    MockComposer composer(arena);
+    FifoQueue queue;
 
     Shipper shipper(composer, queue, &address);
 
@@ -163,14 +153,14 @@ TEST(shipper, packet_already_composed) {
     LONGS_EQUAL(0, composer.compose_call_count);
 
     packet::PacketPtr rp;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
     CHECK(wp == rp);
 }
 
 TEST(shipper, packet_not_composed) {
     address::SocketAddr address;
-    MockComposer composer;
-    Queue queue;
+    MockComposer composer(arena);
+    FifoQueue queue;
 
     Shipper shipper(composer, queue, &address);
 
@@ -185,8 +175,26 @@ TEST(shipper, packet_not_composed) {
     CHECK(wp->flags() & Packet::FlagComposed);
 
     packet::PacketPtr rp;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp, ModeFetch));
     CHECK(wp == rp);
+}
+
+TEST(shipper, forward_error) {
+    const status::StatusCode status_codes[] = {
+        status::StatusOK,
+        status::StatusAbort,
+    };
+
+    for (size_t st_n = 0; st_n < ROC_ARRAY_SIZE(status_codes); ++st_n) {
+        address::SocketAddr address;
+        MockComposer composer(arena);
+        MockWriter writer(status_codes[st_n]);
+
+        Shipper shipper(composer, writer, &address);
+
+        PacketPtr pp = new_packet();
+        LONGS_EQUAL(status_codes[st_n], shipper.write(pp));
+    }
 }
 
 } // namespace packet

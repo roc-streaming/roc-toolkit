@@ -19,13 +19,15 @@
 #include "roc_audio/iframe_encoder.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/packetizer.h"
+#include "roc_audio/processor_map.h"
 #include "roc_audio/resampler_writer.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_dbgio/csv_dumper.h"
+#include "roc_fec/block_writer.h"
 #include "roc_fec/iblock_encoder.h"
-#include "roc_fec/writer.h"
 #include "roc_packet/interleaver.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_packet/router.h"
@@ -49,45 +51,53 @@ namespace pipeline {
 //! Contains:
 //!  - a pipeline for processing audio frames from single sender and converting
 //!    them into packets
-class SenderSession : public core::NonCopyable<>, private rtcp::IParticipant {
+class SenderSession : public core::NonCopyable<>,
+                      private rtcp::IParticipant,
+                      private audio::IFrameWriter {
 public:
     //! Initialize.
     SenderSession(const SenderSinkConfig& sink_config,
-                  const rtp::EncodingMap& encoding_map,
+                  audio::ProcessorMap& processor_map,
+                  rtp::EncodingMap& encoding_map,
                   packet::PacketFactory& packet_factory,
                   audio::FrameFactory& frame_factory,
-                  core::IArena& arena);
+                  core::IArena& arena,
+                  dbgio::CsvDumper* dumper);
 
-    //! Check if the session was succefully constructed.
-    bool is_valid() const;
+    //! Check if the pipeline was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Create transport sub-pipeline.
-    bool create_transport_pipeline(SenderEndpoint* source_endpoint,
-                                   SenderEndpoint* repair_endpoint);
+    ROC_NODISCARD status::StatusCode
+    create_transport_pipeline(SenderEndpoint* source_endpoint,
+                              SenderEndpoint* repair_endpoint);
 
     //! Create control sub-pipeline.
-    bool create_control_pipeline(SenderEndpoint* control_endpoint);
+    ROC_NODISCARD status::StatusCode
+    create_control_pipeline(SenderEndpoint* control_endpoint);
 
     //! Get frame writer.
     //! @remarks
     //!  This way samples reach the pipeline.
     //!  Most of the processing, like encoding packets, generating redundancy packets,
     //!  etc, happens during the write operation.
-    audio::IFrameWriter* frame_writer() const;
+    audio::IFrameWriter* frame_writer();
+
+    //! Refresh pipeline according to current time.
+    //! @remarks
+    //!  Should be invoked before reading each frame.
+    //!  If there are no frames for a while, should be invoked no
+    //!  later than the deadline returned via @p next_deadline.
+    ROC_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
+                                             core::nanoseconds_t& next_deadline);
 
     //! Route a packet to the session.
     //! @remarks
     //!  This way feedback packets from receiver reach sender pipeline.
     //!  Packets are stored inside internal pipeline queues, and then fetched
     //!  when frame are passed from frame_writer().
-    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
-                                                       core::nanoseconds_t current_time);
-
-    //! Refresh pipeline according to current time.
-    //! @returns
-    //!  deadline (absolute time) when refresh should be invoked again
-    //!  if there are no frames
-    core::nanoseconds_t refresh(core::nanoseconds_t current_time);
+    ROC_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
+                                                  core::nanoseconds_t current_time);
 
     //! Get slot metrics.
     //! @remarks
@@ -118,6 +128,9 @@ private:
     virtual status::StatusCode notify_send_stream(packet::stream_source_t recv_source_id,
                                                   const rtcp::RecvReport& recv_report);
 
+    // Implementation of audio::IFrameWriter.
+    virtual status::StatusCode write(audio::Frame& frame);
+
     void start_feedback_monitor_();
 
     status::StatusCode route_control_packet_(const packet::PacketPtr& packet,
@@ -127,7 +140,8 @@ private:
 
     const SenderSinkConfig sink_config_;
 
-    const rtp::EncodingMap& encoding_map_;
+    audio::ProcessorMap& processor_map_;
+    rtp::EncodingMap& encoding_map_;
 
     packet::PacketFactory& packet_factory_;
     audio::FrameFactory& frame_factory_;
@@ -140,15 +154,13 @@ private:
     core::Optional<packet::Interleaver> interleaver_;
 
     core::ScopedPtr<fec::IBlockEncoder> fec_encoder_;
-    core::Optional<fec::Writer> fec_writer_;
+    core::Optional<fec::BlockWriter> fec_writer_;
 
     core::Optional<rtp::TimestampExtractor> timestamp_extractor_;
 
     core::ScopedPtr<audio::IFrameEncoder> payload_encoder_;
     core::Optional<audio::Packetizer> packetizer_;
-
     core::Optional<audio::ChannelMapperWriter> channel_mapper_writer_;
-
     core::Optional<audio::ResamplerWriter> resampler_writer_;
     core::SharedPtr<audio::IResampler> resampler_;
 
@@ -159,7 +171,10 @@ private:
 
     audio::IFrameWriter* frame_writer_;
 
-    bool valid_;
+    dbgio::CsvDumper* dumper_;
+
+    status::StatusCode init_status_;
+    status::StatusCode fail_status_;
 };
 
 } // namespace pipeline

@@ -71,6 +71,7 @@ Here is the full list of available modules:
 module            description
 ================= =================================
 `roc_core`_       General-purpose building blocks (containers, memory management, multithreading, etc)
+`roc_stat`_       Statistical functions
 `roc_status`_     Status codes
 `roc_address`_    Network URIs and addresses
 `roc_packet`_     Network packets and packet processing
@@ -83,10 +84,12 @@ module            description
 `roc_ctl`_        Control loop that handles signaling protocols and background tasks
 `roc_netio`_      Network I/O loop
 `roc_sndio`_      Sound I/O loop
+`roc_dbgio`_      Debugging I/O (dumps, temp files)
 `roc_node`_       Top-level module that glues everything together
 ================= =================================
 
 .. _roc_core: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1core.html
+.. _roc_stat: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1stat.html
 .. _roc_status: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1status.html
 .. _roc_address: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1address.html
 .. _roc_packet: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1packet.html
@@ -99,6 +102,7 @@ module            description
 .. _roc_ctl: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1ctl.html
 .. _roc_netio: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1netio.html
 .. _roc_sndio: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1sndio.html
+.. _roc_dbgio: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1dbgio.html
 .. _roc_node: https://roc-streaming.org/toolkit/doxygen/namespaceroc_1_1node.html
 
 .. _targets:
@@ -117,6 +121,18 @@ Currently supported targets are:
 ===================== ===============================================
 target                description
 ===================== ===============================================
+target_android        Enabled for Android
+target_darwin         Enabled for macOS
+target_gnu            Enabled for GNU-like libc and compiler
+target_libatomic_ops  Enabled if libatomic_ops is available
+target_libunwind      Enabled if libunwind is available
+target_libuuid        Enabled if libuuid is available
+target_nobacktrace    Enabled if no backtrace API is available
+target_nocsprng       Enabled if no CSPRNG API available
+target_nodemangle     Enabled if no demangling API is available
+target_nouuid         Enabled if no UUID API is available
+target_openfec        Enabled if OpenFEC is available
+target_openssl        Enabled if OpenSSL is available
 target_pc             Enabled for PC (like server, desktop, laptop)
 target_posix          Enabled for a POSIX OS
 target_posix_ext      Enabled for a POSIX OS with POSIX extensions
@@ -133,8 +149,9 @@ target_speexdsp       Enabled if SpeexDSP is available
 target_sox            Enabled if SoX is available
 target_sndfile        Enabled if libsndfile is available
 target_pulseaudio     Enabled if PulseAudio is available
-target_nobacktrace    Enabled if no backtrace API is available
-target_nodemangle     Enabled if no demangling API is available
+target_sndfile        Enabled if libsndfile is available
+target_sox            Enabled if SoX is available
+target_speexdsp       Enabled if SpeexDSP is available
 ===================== ===============================================
 
 Example directory structure employing targets:

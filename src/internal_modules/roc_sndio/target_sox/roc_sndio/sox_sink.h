@@ -14,14 +14,13 @@
 
 #include <sox.h>
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/array.h"
 #include "roc_core/iarena.h"
 #include "roc_core/noncopyable.h"
-#include "roc_core/stddefs.h"
-#include "roc_packet/units.h"
-#include "roc_sndio/config.h"
-#include "roc_sndio/driver.h"
+#include "roc_sndio/driver_defs.h"
+#include "roc_sndio/io_config.h"
 #include "roc_sndio/isink.h"
 
 namespace roc {
@@ -29,54 +28,48 @@ namespace sndio {
 
 //! SoX sink.
 //! @remarks
-//!  Writes samples to output file or device.
-//!  Supports multiple drivers for different file types and audio systems.
+//!  Writes samples to output device.
+//!  Supports multiple drivers for different audio systems.
+//!  Does not support files.
 class SoxSink : public ISink, public core::NonCopyable<> {
 public:
     //! Initialize.
-    SoxSink(core::IArena& arena, const Config& config, DriverType type);
-
-    virtual ~SoxSink();
+    SoxSink(audio::FrameFactory& frame_factory,
+            core::IArena& arena,
+            const IoConfig& io_config,
+            const char* driver,
+            const char* path);
+    ~SoxSink();
 
     //! Check if the object was successfully constructed.
-    bool is_valid() const;
-
-    //! Open output file or device.
-    //!
-    //! @b Parameters
-    //!  - @p driver is output driver name;
-    //!  - @p path is output file or device name, "-" for stdout.
-    //!
-    //! @remarks
-    //!  If @p driver or @p path are NULL, defaults are used.
-    bool open(const char* driver, const char* path);
-
-    //! Cast IDevice to ISink.
-    virtual ISink* to_sink();
-
-    //! Cast IDevice to ISink.
-    virtual ISource* to_source();
+    status::StatusCode init_status() const;
 
     //! Get device type.
     virtual DeviceType type() const;
 
-    //! Get device state.
-    virtual DeviceState state() const;
+    //! Try to cast to ISink.
+    virtual ISink* to_sink();
 
-    //! Pause reading.
-    virtual void pause();
-
-    //! Resume paused reading.
-    virtual bool resume();
-
-    //! Restart reading from the beginning.
-    virtual bool restart();
+    //! Try to cast to ISource.
+    virtual ISource* to_source();
 
     //! Get sample specification of the sink.
     virtual audio::SampleSpec sample_spec() const;
 
-    //! Get latency of the sink.
-    virtual core::nanoseconds_t latency() const;
+    //! Get recommended frame length of the sink.
+    virtual core::nanoseconds_t frame_length() const;
+
+    //! Check if the sink supports state updates.
+    virtual bool has_state() const;
+
+    //! Get sink state.
+    virtual DeviceState state() const;
+
+    //! Pause sink.
+    virtual ROC_NODISCARD status::StatusCode pause();
+
+    //! Resume sink.
+    virtual ROC_NODISCARD status::StatusCode resume();
 
     //! Check if the sink supports latency reports.
     virtual bool has_latency() const;
@@ -84,14 +77,28 @@ public:
     //! Check if the sink has own clock.
     virtual bool has_clock() const;
 
-    //! Write audio frame.
-    virtual void write(audio::Frame& frame);
+    //! Write frame.
+    virtual ROC_NODISCARD status::StatusCode write(audio::Frame& frame);
+
+    //! Flush buffered data, if any.
+    virtual ROC_NODISCARD status::StatusCode flush();
+
+    //! Explicitly close the sink.
+    virtual ROC_NODISCARD status::StatusCode close();
+
+    //! Destroy object and return memory to arena.
+    virtual void dispose();
 
 private:
-    bool setup_buffer_();
-    bool open_(const char* driver, const char* path);
-    void write_(const sox_sample_t* samples, size_t n_samples);
-    void close_();
+    status::StatusCode init_names_(const char* driver, const char* path);
+    status::StatusCode init_buffer_();
+
+    status::StatusCode open_();
+    status::StatusCode write_(const sox_sample_t* samples, size_t n_samples);
+    status::StatusCode close_();
+
+    core::StringBuffer driver_;
+    core::StringBuffer path_;
 
     sox_format_t* output_;
     sox_signalinfo_t out_signal_;
@@ -99,10 +106,13 @@ private:
     core::Array<sox_sample_t> buffer_;
     size_t buffer_size_;
     core::nanoseconds_t frame_length_;
-    audio::SampleSpec sample_spec_;
 
-    bool is_file_;
-    bool valid_;
+    audio::SampleSpec frame_spec_;
+    audio::SampleSpec out_spec_;
+
+    bool paused_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace sndio

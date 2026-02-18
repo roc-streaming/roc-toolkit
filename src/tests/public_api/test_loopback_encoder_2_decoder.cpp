@@ -6,8 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
-
+#include "test_harness.h"
 #include "test_helpers/utils.h"
 
 #include "roc_core/macro_helpers.h"
@@ -26,6 +25,7 @@ namespace api {
 namespace {
 
 enum {
+    SampleRate = 44100,
     NoFlags = 0,
     FlagLosses = (1 << 0),
 };
@@ -46,23 +46,23 @@ TEST_GROUP(loopback_encoder_2_decoder) {
         CHECK(context);
 
         memset(&sender_conf, 0, sizeof(sender_conf));
-        sender_conf.frame_encoding.rate = test::SampleRate;
-        sender_conf.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+        sender_conf.frame_encoding.format = ROC_FORMAT_PCM;
+        sender_conf.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
+        sender_conf.frame_encoding.rate = SampleRate;
         sender_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
         sender_conf.packet_encoding = ROC_PACKET_ENCODING_AVP_L16_STEREO;
-        sender_conf.packet_length =
-            test::PacketSamples * 1000000000ull / test::SampleRate;
+        sender_conf.packet_length = test::PacketSamples * 1000000000ull / SampleRate;
         sender_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
 
         memset(&receiver_conf, 0, sizeof(receiver_conf));
-        receiver_conf.frame_encoding.rate = test::SampleRate;
-        receiver_conf.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
+        receiver_conf.frame_encoding.format = ROC_FORMAT_PCM;
+        receiver_conf.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
+        receiver_conf.frame_encoding.rate = SampleRate;
         receiver_conf.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
         receiver_conf.clock_source = ROC_CLOCK_SOURCE_INTERNAL;
         receiver_conf.latency_tuner_profile = ROC_LATENCY_TUNER_PROFILE_INTACT;
-        receiver_conf.target_latency = test::Latency * 1000000000ull / test::SampleRate;
-        receiver_conf.no_playback_timeout =
-            test::Timeout * 1000000000ull / test::SampleRate;
+        receiver_conf.target_latency = test::Latency * 1000000000ull / SampleRate;
+        receiver_conf.no_playback_timeout = test::Timeout * 1000000000ull / SampleRate;
     }
 
     void teardown() {
@@ -70,7 +70,7 @@ TEST_GROUP(loopback_encoder_2_decoder) {
     }
 
     bool is_rs8m_supported() {
-        return fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8);
+        return fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8);
     }
 
     bool is_zero(float s) {
@@ -91,6 +91,12 @@ TEST_GROUP(loopback_encoder_2_decoder) {
         bool leading_zeros = true;
 
         size_t iface_packets[10] = {};
+        size_t recv_expected_pkts = 0;
+        uint64_t recv_lost_pkts = 0;
+        uint64_t recv_late_pkts = 0;
+        uint64_t recv_recovered_pkts = 0;
+        size_t send_expected_pkts = 0;
+        size_t send_lost_pkts = 0;
         size_t feedback_packets = 0;
         size_t zero_samples = 0, total_samples = 0;
         size_t n_pkt = 0;
@@ -108,7 +114,8 @@ TEST_GROUP(loopback_encoder_2_decoder) {
             }
         }
 
-        for (size_t nf = 0; nf < NumFrames || !got_all_metrics; nf++) {
+        const size_t last_frame = NumFrames - 1;
+        for (size_t nf = 0; nf <= last_frame || !got_all_metrics; nf++) {
             { // write frame to encoder
                 float samples[test::FrameSamples] = {};
 
@@ -139,7 +146,7 @@ TEST_GROUP(loopback_encoder_2_decoder) {
 
                         const bool loss = (flags & FlagLosses)
                             && (ifaces[n_if] == ROC_INTERFACE_AUDIO_SOURCE)
-                            && ((n_pkt + 3) % LossRatio == 0);
+                            && ((n_pkt + 3) % LossRatio == 0) && nf < last_frame;
 
                         if (!loss) {
                             CHECK(roc_receiver_decoder_push_packet(decoder, ifaces[n_if],
@@ -227,6 +234,21 @@ TEST_GROUP(loopback_encoder_2_decoder) {
 
                 max_recv_e2e_latency =
                     std::max(max_recv_e2e_latency, conn_metrics.e2e_latency);
+
+                CHECK(conn_metrics.expected_packets >= recv_expected_pkts);
+                recv_expected_pkts = conn_metrics.expected_packets;
+
+                CHECK(conn_metrics.lost_packets >= recv_lost_pkts);
+                CHECK(conn_metrics.lost_packets <= conn_metrics.expected_packets);
+                recv_lost_pkts = conn_metrics.lost_packets;
+
+                CHECK(conn_metrics.late_packets >= recv_late_pkts);
+                CHECK(conn_metrics.late_packets <= conn_metrics.expected_packets);
+                recv_late_pkts = conn_metrics.late_packets;
+
+                CHECK(conn_metrics.recovered_packets >= recv_recovered_pkts);
+                CHECK(conn_metrics.recovered_packets <= conn_metrics.expected_packets);
+                recv_recovered_pkts = conn_metrics.recovered_packets;
             }
             { // check sender metrics
                 roc_sender_metrics send_metrics;
@@ -242,17 +264,25 @@ TEST_GROUP(loopback_encoder_2_decoder) {
 
                     max_send_e2e_latency =
                         std::max(max_send_e2e_latency, conn_metrics.e2e_latency);
+
+                    CHECK(conn_metrics.expected_packets >= send_expected_pkts);
+                    send_expected_pkts = conn_metrics.expected_packets;
+
+                    CHECK(conn_metrics.lost_packets >= send_lost_pkts);
+                    CHECK(conn_metrics.lost_packets <= conn_metrics.expected_packets);
+                    send_lost_pkts = conn_metrics.lost_packets;
                 }
             }
 
             if (has_control) {
-                got_all_metrics = max_recv_e2e_latency > 0 && max_send_e2e_latency > 0;
+                got_all_metrics = max_recv_e2e_latency > 0 && max_send_e2e_latency > 0
+                    && recv_lost_pkts >= n_lost && send_lost_pkts >= n_lost;
             } else {
                 got_all_metrics = true;
             }
         }
 
-        // check we have received enough good samples
+        // ensure that we have received enough good samples
         CHECK(zero_samples < MaxLeadingZeros);
 
         // check that there were packets on all active interfaces
@@ -260,22 +290,50 @@ TEST_GROUP(loopback_encoder_2_decoder) {
             CHECK(iface_packets[n_if] > 0);
         }
 
+        // check feedback packets
         if (has_control) {
             CHECK(feedback_packets > 0);
         } else {
             CHECK(feedback_packets == 0);
         }
 
+        // check packet counters: expected_packets
+        for (size_t n_if = 0; n_if < num_ifaces; n_if++) {
+            if (ifaces[n_if] == ROC_INTERFACE_AUDIO_SOURCE) {
+                UNSIGNED_LONGS_EQUAL(iface_packets[n_if], recv_expected_pkts);
+                if (has_control) {
+                    const size_t nlag = test::FrameSamples / test::PacketSamples;
+                    CHECK(recv_expected_pkts >= send_expected_pkts
+                          && recv_expected_pkts <= send_expected_pkts + nlag);
+                }
+            }
+        }
+
+        // check packet counters: late_packets, lost_packets, recovered_packets
+        UNSIGNED_LONGS_EQUAL(0, recv_late_pkts);
+        UNSIGNED_LONGS_EQUAL(n_lost, recv_lost_pkts);
+        if (has_control) {
+            UNSIGNED_LONGS_EQUAL(n_lost, send_lost_pkts);
+        } else {
+            UNSIGNED_LONGS_EQUAL(0, send_lost_pkts);
+        }
+        if (flags & FlagLosses) {
+            CHECK(n_lost > 0);
+            CHECK(n_lost < recv_expected_pkts);
+            CHECK(recv_recovered_pkts > 0);
+            CHECK(recv_recovered_pkts <= n_lost);
+        } else {
+            CHECK(n_lost == 0);
+            CHECK(recv_recovered_pkts == 0);
+        }
+
+        // check measured latency
         if (has_control) {
             CHECK(max_recv_e2e_latency > 0);
             CHECK(max_send_e2e_latency > 0);
         } else {
             CHECK(max_recv_e2e_latency == 0);
             CHECK(max_send_e2e_latency == 0);
-        }
-
-        if (flags & FlagLosses) {
-            CHECK(n_lost > 0);
         }
     }
 };
@@ -349,7 +407,7 @@ TEST(loopback_encoder_2_decoder, source_control) {
 
 TEST(loopback_encoder_2_decoder, source_repair) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     sender_conf.fec_encoding = ROC_FEC_ENCODING_RS8M;
@@ -393,7 +451,7 @@ TEST(loopback_encoder_2_decoder, source_repair) {
 
 TEST(loopback_encoder_2_decoder, source_repair_losses) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     sender_conf.fec_encoding = ROC_FEC_ENCODING_RS8M;
@@ -437,7 +495,7 @@ TEST(loopback_encoder_2_decoder, source_repair_losses) {
 
 TEST(loopback_encoder_2_decoder, source_repair_control) {
     if (!is_rs8m_supported()) {
-        return;
+        TEST_SKIP();
     }
 
     sender_conf.fec_encoding = ROC_FEC_ENCODING_RS8M;

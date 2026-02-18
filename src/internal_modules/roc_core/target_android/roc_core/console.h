@@ -26,10 +26,10 @@ enum Color {
 bool console_supports_colors();
 
 //! Print line.
-ROC_ATTR_PRINTF(1, 2) void console_println(const char* format, ...);
+ROC_PRINTF(1, 2) void console_println(const char* format, ...);
 
 //! Print line (with color).
-ROC_ATTR_PRINTF(2, 3) void console_println(Color color, const char* format, ...);
+ROC_PRINTF(2, 3) void console_println(Color color, const char* format, ...);
 
 } // namespace core
 } // namespace roc

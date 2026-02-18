@@ -12,23 +12,29 @@
 namespace roc {
 namespace audio {
 
-IFrameEncoder* PcmEncoder::construct(core::IArena& arena, const SampleSpec& sample_spec) {
-    return new (arena) PcmEncoder(sample_spec);
+IFrameEncoder* PcmEncoder::construct(const SampleSpec& sample_spec, core::IArena& arena) {
+    return new (arena) PcmEncoder(sample_spec, arena);
 }
 
-PcmEncoder::PcmEncoder(const SampleSpec& sample_spec)
-    : pcm_mapper_(Sample_RawFormat, sample_spec.pcm_format())
+PcmEncoder::PcmEncoder(const SampleSpec& sample_spec, core::IArena& arena)
+    : IFrameEncoder(arena)
+    , pcm_mapper_(PcmSubformat_Raw, sample_spec.pcm_subformat())
     , n_chans_(sample_spec.num_channels())
     , frame_data_(NULL)
     , frame_byte_size_(0)
     , frame_bit_off_(0) {
 }
 
+status::StatusCode PcmEncoder::init_status() const {
+    return status::StatusOK;
+}
+
 size_t PcmEncoder::encoded_byte_count(size_t num_samples) const {
     return pcm_mapper_.output_byte_count(num_samples * n_chans_);
 }
 
-void PcmEncoder::begin(void* frame_data, size_t frame_size) {
+ROC_NODISCARD status::StatusCode PcmEncoder::begin_frame(void* frame_data,
+                                                         size_t frame_size) {
     roc_panic_if_not(frame_data);
 
     if (frame_data_) {
@@ -37,9 +43,11 @@ void PcmEncoder::begin(void* frame_data, size_t frame_size) {
 
     frame_data_ = frame_data;
     frame_byte_size_ = frame_size;
+
+    return status::StatusOK;
 }
 
-size_t PcmEncoder::write(const sample_t* samples, size_t n_samples) {
+size_t PcmEncoder::write_samples(const sample_t* samples, size_t n_samples) {
     if (!frame_data_) {
         roc_panic("pcm encoder: write should be called only between begin/end");
     }
@@ -58,7 +66,7 @@ size_t PcmEncoder::write(const sample_t* samples, size_t n_samples) {
     return n_mapped_samples;
 }
 
-void PcmEncoder::end() {
+ROC_NODISCARD status::StatusCode PcmEncoder::end_frame() {
     if (!frame_data_) {
         roc_panic("pcm encoder: unpaired begin/end");
     }
@@ -66,6 +74,8 @@ void PcmEncoder::end() {
     frame_data_ = NULL;
     frame_byte_size_ = 0;
     frame_bit_off_ = 0;
+
+    return status::StatusOK;
 }
 
 } // namespace audio

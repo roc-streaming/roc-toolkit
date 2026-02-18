@@ -46,25 +46,25 @@ bool SessionDescription::set_guid(const char* start_p_origin_username,
                                   const char* end_p_origin_addr) {
     core::StringBuilder b(guid_);
 
-    if (!b.append_str(start_p_origin_username, end_p_origin_username)) {
+    if (!b.append_range(start_p_origin_username, end_p_origin_username)) {
         return false;
     }
 
     b.append_char(' ');
 
-    if (!b.append_str(start_p_origin_sess_id, end_p_origin_sess_id)) {
+    if (!b.append_range(start_p_origin_sess_id, end_p_origin_sess_id)) {
         return false;
     }
 
     b.append_char(' ');
 
-    if (!b.append_str(start_p_origin_nettype, end_p_origin_nettype)) {
+    if (!b.append_range(start_p_origin_nettype, end_p_origin_nettype)) {
         return false;
     }
 
     b.append_char(' ');
 
-    if (!b.append_str(start_p_origin_addr, end_p_origin_addr)) {
+    if (!b.append_range(start_p_origin_addr, end_p_origin_addr)) {
         return false;
     }
 
@@ -83,7 +83,7 @@ bool SessionDescription::set_origin_unicast_address(address::AddrFamily addrtype
     char addr[address::SocketAddr::MaxStrLen];
     core::StringBuilder b(addr, sizeof(addr));
 
-    if (!b.append_str(str, str + str_len)) {
+    if (!b.append_range(str, str + str_len)) {
         return false;
     }
 

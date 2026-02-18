@@ -7,7 +7,7 @@
  */
 
 #include "roc_node/sender.h"
-#include "roc_address/endpoint_uri_to_str.h"
+#include "roc_address/network_uri_to_str.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
@@ -19,26 +19,31 @@ Sender::Sender(Context& context, const pipeline::SenderSinkConfig& pipeline_conf
     : Node(context)
     , pipeline_(*this,
                 pipeline_config,
+                context.processor_map(),
                 context.encoding_map(),
                 context.packet_pool(),
                 context.packet_buffer_pool(),
+                context.frame_pool(),
                 context.frame_buffer_pool(),
                 context.arena())
     , processing_task_(pipeline_)
     , slot_pool_("slot_pool", context.arena())
     , slot_map_(context.arena())
     , party_metrics_(context.arena())
-    , valid_(false) {
+    , frame_factory_(context.frame_pool(), context.frame_buffer_pool())
+    , init_status_(status::NoStatus) {
     roc_log(LogDebug, "sender node: initializing");
+
+    if ((init_status_ = pipeline_.init_status()) != status::StatusOK) {
+        return;
+    }
+
+    sample_spec_ = pipeline_.sink().sample_spec();
 
     memset(used_interfaces_, 0, sizeof(used_interfaces_));
     memset(used_protocols_, 0, sizeof(used_protocols_));
 
-    if (!pipeline_.is_valid()) {
-        return;
-    }
-
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 Sender::~Sender() {
@@ -55,16 +60,16 @@ Sender::~Sender() {
     context().control_loop().wait(processing_task_);
 }
 
-bool Sender::is_valid() const {
-    return valid_;
+status::StatusCode Sender::init_status() const {
+    return init_status_;
 }
 
 bool Sender::configure(slot_index_t slot_index,
                        address::Interface iface,
                        const netio::UdpConfig& config) {
-    core::Mutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(control_mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
@@ -108,17 +113,17 @@ bool Sender::configure(slot_index_t slot_index,
 
 bool Sender::connect(slot_index_t slot_index,
                      address::Interface iface,
-                     const address::EndpointUri& uri) {
-    core::Mutex::Lock lock(mutex_);
+                     const address::NetworkUri& uri) {
+    core::Mutex::Lock lock(control_mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(iface < 0);
     roc_panic_if(iface >= (int)address::Iface_Max);
 
     roc_log(LogInfo, "sender node: connecting %s interface of slot %lu to %s",
             address::interface_to_str(iface), (unsigned long)slot_index,
-            address::endpoint_uri_to_str(uri).c_str());
+            address::network_uri_to_str(uri).c_str());
 
     core::SharedPtr<Slot> slot = get_slot_(slot_index, true);
     if (!slot) {
@@ -139,7 +144,7 @@ bool Sender::connect(slot_index_t slot_index,
         return false;
     }
 
-    if (!uri.verify(address::EndpointUri::Subset_Full)) {
+    if (!uri.is_valid()) {
         roc_log(LogError,
                 "sender node: can't connect %s interface of slot %lu: invalid uri",
                 address::interface_to_str(iface), (unsigned long)slot_index);
@@ -248,9 +253,9 @@ bool Sender::connect(slot_index_t slot_index,
 }
 
 bool Sender::unlink(slot_index_t slot_index) {
-    core::Mutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(control_mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_log(LogDebug, "sender node: unlinking slot %lu", (unsigned long)slot_index);
 
@@ -275,9 +280,9 @@ bool Sender::get_metrics(slot_index_t slot_index,
                          party_metrics_func_t party_metrics_func,
                          size_t* party_metrics_size,
                          void* party_metrics_arg) {
-    core::Mutex::Lock lock(mutex_);
+    core::Mutex::Lock lock(control_mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(!slot_metrics_func);
     roc_panic_if(!party_metrics_func);
@@ -326,10 +331,10 @@ bool Sender::get_metrics(slot_index_t slot_index,
     return true;
 }
 
-bool Sender::has_incomplete() {
-    core::Mutex::Lock lock(mutex_);
+bool Sender::has_incomplete_slots() {
+    core::Mutex::Lock lock(control_mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     for (core::SharedPtr<Slot> slot = slot_map_.front(); slot;
          slot = slot_map_.nextof(*slot)) {
@@ -353,10 +358,10 @@ bool Sender::has_incomplete() {
     return false;
 }
 
-bool Sender::has_broken() {
-    core::Mutex::Lock lock(mutex_);
+bool Sender::has_broken_slots() {
+    core::Mutex::Lock lock(control_mutex_);
 
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     for (core::SharedPtr<Slot> slot = slot_map_.front(); slot;
          slot = slot_map_.nextof(*slot)) {
@@ -368,14 +373,46 @@ bool Sender::has_broken() {
     return false;
 }
 
+status::StatusCode Sender::write_frame(const void* bytes, size_t n_bytes) {
+    core::Mutex::Lock lock(frame_mutex_);
+
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    roc_panic_if(!bytes);
+    roc_panic_if(n_bytes == 0);
+
+    if (!sample_spec_.is_valid_frame_size(n_bytes)) {
+        return status::StatusBadBuffer;
+    }
+
+    if (!frame_) {
+        if (!(frame_ = frame_factory_.allocate_frame_no_buffer())) {
+            return status::StatusNoMem;
+        }
+    }
+
+    core::BufferView frame_buffer(const_cast<void*>(bytes), n_bytes);
+
+    frame_->set_buffer(frame_buffer);
+    frame_->set_raw(sample_spec_.is_raw());
+    frame_->set_duration(sample_spec_.bytes_2_stream_timestamp(n_bytes));
+
+    const status::StatusCode code = pipeline_.sink().write(*frame_);
+
+    // Detach buffer, clear frame for re-use.
+    frame_->clear();
+
+    return code;
+}
+
 sndio::ISink& Sender::sink() {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return pipeline_.sink();
 }
 
 bool Sender::check_compatibility_(address::Interface iface,
-                                  const address::EndpointUri& uri) {
+                                  const address::NetworkUri& uri) {
     if (used_interfaces_[iface] && used_protocols_[iface] != uri.proto()) {
         roc_log(LogError,
                 "sender node: same interface of all slots should use same protocols:"
@@ -389,7 +426,7 @@ bool Sender::check_compatibility_(address::Interface iface,
 }
 
 void Sender::update_compatibility_(address::Interface iface,
-                                   const address::EndpointUri& uri) {
+                                   const address::NetworkUri& uri) {
     used_interfaces_[iface] = true;
     used_protocols_[iface] = uri.proto();
 }
@@ -467,7 +504,7 @@ Sender::Port& Sender::select_outgoing_port_(Slot& slot,
                                             address::Interface iface,
                                             address::AddrFamily family) {
     // We try to share outgoing port for source and repair interfaces, if they have
-    // identical configuratrion. This should not harm, and it may help receiver to
+    // identical configuration. This should not harm, and it may help receiver to
     // associate source and repair streams together, in case when no control and
     // signaling protocol is used, by source addresses. This technique is neither
     // standard nor universal, but in many cases it allows us to work even without

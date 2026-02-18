@@ -19,8 +19,14 @@ namespace test {
 
 class MockSink : public ISink {
 public:
-    MockSink()
-        : pos_(0) {
+    MockSink(core::IArena& arena)
+        : IDevice(arena)
+        , ISink(arena)
+        , pos_(0) {
+    }
+
+    virtual DeviceType type() const {
+        return DeviceType_Sink;
     }
 
     virtual ISink* to_sink() {
@@ -31,34 +37,30 @@ public:
         return NULL;
     }
 
-    virtual DeviceType type() const {
-        return DeviceType_Sink;
+    virtual audio::SampleSpec sample_spec() const {
+        return audio::SampleSpec();
+    }
+
+    core::nanoseconds_t frame_length() const {
+        return 0;
+    }
+
+    virtual bool has_state() const {
+        return true;
     }
 
     virtual DeviceState state() const {
         return DeviceState_Active;
     }
 
-    virtual void pause() {
+    virtual status::StatusCode pause() {
         FAIL("not implemented");
+        return status::StatusAbort;
     }
 
-    virtual bool resume() {
+    virtual status::StatusCode resume() {
         FAIL("not implemented");
-        return false;
-    }
-
-    virtual bool restart() {
-        FAIL("not implemented");
-        return false;
-    }
-
-    virtual audio::SampleSpec sample_spec() const {
-        return audio::SampleSpec();
-    }
-
-    virtual core::nanoseconds_t latency() const {
-        return 0;
+        return status::StatusAbort;
     }
 
     virtual bool has_latency() const {
@@ -69,12 +71,25 @@ public:
         return false;
     }
 
-    virtual void write(audio::Frame& frame) {
+    virtual status::StatusCode write(audio::Frame& frame) {
         CHECK(pos_ + frame.num_raw_samples() <= MaxSz);
 
         memcpy(samples_ + pos_, frame.raw_samples(),
                frame.num_raw_samples() * sizeof(audio::sample_t));
         pos_ += frame.num_raw_samples();
+        return status::StatusOK;
+    }
+
+    virtual ROC_NODISCARD status::StatusCode flush() {
+        return status::StatusOK;
+    }
+
+    virtual status::StatusCode close() {
+        return status::StatusOK;
+    }
+
+    virtual void dispose() {
+        arena().dispose_object(*this);
     }
 
     void check(size_t offset, size_t size) {

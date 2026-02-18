@@ -31,12 +31,20 @@ typedef SharedPtr<Buffer> BufferPtr;
 //! Fixed-size dynamically-allocated byte buffer.
 //!
 //! @remarks
+//!  Buffer is typically allocated from pool and then used to create a Slice.
+//!  Slice holds a shared pointer to either Buffer or BufferView and implements
+//!  type-safety and dynamic resizing on top of it.
+//!  Slices are widely used to hold data of packets and frames.
+//!
+//! @note
+//!  Buffer has a reference counter. When it reaches zero (i.e. when there are
+//!  no slices referring buffer), buffer is returned to pool.
+//!
+//! @note
 //!  Buffer size is fixed, but determined at runtime, not compile time.
 //!  It is defined by the pool that allocates the buffer.
-//!  User typically works with buffers via Slice, which holds a shared pointer
-//!  to buffer and points to a variable-size subset of its memory.
 //!
-//! @see BufferFactory, Slice.
+//! @see BufferView, Slice.
 class Buffer : public RefCounted<Buffer, PoolAllocation> {
 public:
     //! Initialize empty buffer.

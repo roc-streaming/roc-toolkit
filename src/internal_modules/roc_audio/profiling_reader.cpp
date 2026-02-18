@@ -22,26 +22,22 @@ ProfilingReader::ProfilingReader(IFrameReader& reader,
     , reader_(reader) {
 }
 
-bool ProfilingReader::is_valid() const {
-    return profiler_.is_valid();
+status::StatusCode ProfilingReader::init_status() const {
+    return profiler_.init_status();
 }
 
-bool ProfilingReader::read(Frame& frame) {
-    bool ret;
-    const core::nanoseconds_t elapsed = read_(frame, ret);
+status::StatusCode ProfilingReader::read(Frame& frame,
+                                         packet::stream_timestamp_t duration,
+                                         audio::FrameReadMode mode) {
+    const core::nanoseconds_t started = core::timestamp(core::ClockMonotonic);
+    const status::StatusCode code = reader_.read(frame, duration, mode);
+    const core::nanoseconds_t elapsed = core::timestamp(core::ClockMonotonic) - started;
 
-    if (ret) {
+    if (code == status::StatusOK || code == status::StatusPart) {
         profiler_.add_frame(frame.duration(), elapsed);
     }
-    return ret;
-}
 
-core::nanoseconds_t ProfilingReader::read_(Frame& frame, bool& ret) {
-    const core::nanoseconds_t start = core::timestamp(core::ClockMonotonic);
-
-    ret = reader_.read(frame);
-
-    return core::timestamp(core::ClockMonotonic) - start;
+    return code;
 }
 
 } // namespace audio

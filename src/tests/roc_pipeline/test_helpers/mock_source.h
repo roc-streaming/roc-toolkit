@@ -13,6 +13,7 @@
 
 #include "test_helpers/utils.h"
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_sndio/isource.h"
 
@@ -22,12 +23,22 @@ namespace test {
 
 class MockSource : public sndio::ISource {
 public:
-    MockSource()
-        : state_(sndio::DeviceState_Active)
+    MockSource(audio::FrameFactory& frame_factory,
+               const audio::SampleSpec& sample_spec,
+               core::IArena& arena)
+        : sndio::IDevice(arena)
+        , sndio::ISource(arena)
+        , frame_factory_(frame_factory)
+        , sample_spec_(sample_spec)
+        , state_(sndio::DeviceState_Active)
         , pos_(0)
         , size_(0)
         , value_(0)
         , n_ch_(0) {
+    }
+
+    virtual sndio::DeviceType type() const {
+        return sndio::DeviceType_Source;
     }
 
     virtual sndio::ISink* to_sink() {
@@ -38,38 +49,34 @@ public:
         return this;
     }
 
-    virtual sndio::DeviceType type() const {
-        return sndio::DeviceType_Source;
+    virtual audio::SampleSpec sample_spec() const {
+        return audio::SampleSpec();
     }
 
-    void set_state(sndio::DeviceState st) {
-        state_ = st;
+    core::nanoseconds_t frame_length() const {
+        return 0;
+    }
+
+    virtual bool has_state() const {
+        return true;
     }
 
     virtual sndio::DeviceState state() const {
         return state_;
     }
 
-    virtual void pause() {
+    void set_state(sndio::DeviceState st) {
+        state_ = st;
+    }
+
+    virtual status::StatusCode pause() {
         state_ = sndio::DeviceState_Paused;
+        return status::StatusOK;
     }
 
-    virtual bool resume() {
+    virtual status::StatusCode resume() {
         state_ = sndio::DeviceState_Active;
-        return true;
-    }
-
-    virtual bool restart() {
-        state_ = sndio::DeviceState_Active;
-        return true;
-    }
-
-    virtual audio::SampleSpec sample_spec() const {
-        return audio::SampleSpec();
-    }
-
-    virtual core::nanoseconds_t latency() const {
-        return 0;
+        return status::StatusOK;
     }
 
     virtual bool has_latency() const {
@@ -80,14 +87,29 @@ public:
         return false;
     }
 
+    virtual status::StatusCode rewind() {
+        state_ = sndio::DeviceState_Active;
+        return status::StatusOK;
+    }
+
     virtual void reclock(core::nanoseconds_t) {
         // no-op
     }
 
-    virtual bool read(audio::Frame& frame) {
+    virtual status::StatusCode read(audio::Frame& frame,
+                                    packet::stream_timestamp_t duration,
+                                    audio::FrameReadMode mode) {
+        LONGS_EQUAL(audio::ModeHard, mode);
+
         if (pos_ == size_) {
-            return false;
+            return status::StatusFinish;
         }
+
+        CHECK(frame_factory_.reallocate_frame(
+            frame, sample_spec_.stream_timestamp_2_bytes(duration)));
+
+        frame.set_raw(true);
+        frame.set_duration(duration);
 
         size_t ns = frame.num_raw_samples();
         if (ns > size_ - pos_) {
@@ -107,7 +129,15 @@ public:
         CHECK(n_ch_ > 0);
         frame.set_duration(frame.num_raw_samples() / n_ch_);
 
-        return true;
+        return status::StatusOK;
+    }
+
+    virtual status::StatusCode close() {
+        return status::StatusOK;
+    }
+
+    virtual void dispose() {
+        arena().dispose_object(*this);
     }
 
     void add(size_t num_samples, const audio::SampleSpec& sample_spec) {
@@ -133,6 +163,9 @@ public:
 
 private:
     enum { MaxSz = 256 * 1024 };
+
+    audio::FrameFactory& frame_factory_;
+    const audio::SampleSpec sample_spec_;
 
     sndio::DeviceState state_;
 

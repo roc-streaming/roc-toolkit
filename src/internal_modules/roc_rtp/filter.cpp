@@ -24,22 +24,31 @@ Filter::Filter(packet::IReader& reader,
     , sample_spec_(sample_spec) {
 }
 
-status::StatusCode Filter::read(packet::PacketPtr& result_packet) {
-    packet::PacketPtr next_packet;
-    const status::StatusCode code = reader_.read(next_packet);
-    if (code != status::StatusOK) {
-        return code;
-    }
-
-    if (!validate_(next_packet)) {
-        // TODO(gh-183): return StatusAgain
-        return status::StatusNoData;
-    }
-
-    populate_(next_packet);
-
-    result_packet = next_packet;
+status::StatusCode Filter::init_status() const {
     return status::StatusOK;
+}
+
+status::StatusCode Filter::read(packet::PacketPtr& result_packet,
+                                packet::PacketReadMode mode) {
+    for (;;) {
+        packet::PacketPtr next_packet;
+        const status::StatusCode code = reader_.read(next_packet, mode);
+        if (code != status::StatusOK) {
+            return code;
+        }
+
+        if (!validate_(next_packet)) {
+            if (mode == packet::ModePeek) {
+                return status::StatusDrain;
+            }
+            continue;
+        }
+
+        populate_(next_packet);
+
+        result_packet = next_packet;
+        return status::StatusOK;
+    }
 }
 
 bool Filter::validate_(const packet::PacketPtr& packet) {

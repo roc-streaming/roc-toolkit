@@ -123,7 +123,7 @@ enum PacketType {
 //! |V=2|P|    RC   |       PT      |             length            |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class PacketHeader {
+ROC_PACKED_BEGIN class PacketHeader {
 private:
     enum {
         //! @name RTCP protocol version.
@@ -235,7 +235,7 @@ public:
     void set_len_bytes(const size_t len) {
         set_len_words(size_t_2_rtcp_length(len));
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! 64-bit NTP timestamp.
 //!
@@ -250,7 +250,7 @@ public:
 //! @endcode
 //!
 //! From RFC 3550.
-ROC_ATTR_PACKED_BEGIN class NtpTimestamp64 {
+ROC_PACKED_BEGIN class NtpTimestamp64 {
 private:
     uint32_t high_;
     uint32_t low_;
@@ -271,7 +271,7 @@ public:
         high_ = core::hton32u((uint32_t)(t >> 32));
         low_ = core::hton32u((uint32_t)t);
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! 32-bit NTP absolute time (stored as middle 32 bits of 64-bit timestamp).
 //!
@@ -284,7 +284,7 @@ public:
 //! @endcode
 //!
 //! From RFC 3550.
-ROC_ATTR_PACKED_BEGIN class NtpTimestamp32 {
+ROC_PACKED_BEGIN class NtpTimestamp32 {
 private:
     uint32_t mid_;
 
@@ -304,7 +304,7 @@ public:
     void set_value(const packet::ntp_timestamp_t t) {
         mid_ = core::hton32u(t >> 16);
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! Reception report block.
 //!
@@ -330,7 +330,7 @@ public:
 //! |                   delay since last SR (DLSR)                  |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //!  @endcode
-ROC_ATTR_PACKED_BEGIN class ReceptionReportBlock {
+ROC_PACKED_BEGIN class ReceptionReportBlock {
 private:
     enum {
         //! @name Fraction lost since last SR/RR.
@@ -488,7 +488,7 @@ public:
     void set_delay_last_sr(const packet::ntp_timestamp_t x) {
         delay_last_sr_.set_value(ntp_clamp_32(x, MaxDelay));
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! Receiver Report RTCP packet (RR).
 //!
@@ -521,7 +521,7 @@ public:
 //!        |                  profile-specific extensions                  |
 //!        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //!  @endcode
-ROC_ATTR_PACKED_BEGIN class ReceiverReportPacket {
+ROC_PACKED_BEGIN class ReceiverReportPacket {
 private:
     PacketHeader header_;
 
@@ -575,7 +575,7 @@ public:
         return get_block_by_index<ReceptionReportBlock>(this, i, header().counter(),
                                                         "rtcp rr");
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! Sender Report RTCP packet (SR).
 //!
@@ -618,7 +618,7 @@ public:
 //!        |                  profile-specific extensions                  |
 //!        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class SenderReportPacket {
+ROC_PACKED_BEGIN class SenderReportPacket {
 private:
     PacketHeader header_;
 
@@ -719,7 +719,7 @@ public:
         return get_block_by_index<ReceptionReportBlock>(this, i, header().counter(),
                                                         "rtcp sr");
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! SDES item type.
 enum SdesItemType {
@@ -747,7 +747,7 @@ enum SdesItemType {
 //! |                              SSRC                             |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class SdesChunkHeader {
+ROC_PACKED_BEGIN class SdesChunkHeader {
 private:
     uint32_t ssrc_;
 
@@ -770,7 +770,7 @@ public:
     void set_ssrc(const packet::stream_source_t s) {
         ssrc_ = core::hton32u(s);
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! SDES item header.
 //!
@@ -785,7 +785,7 @@ public:
 //! |     Type      |   Length      | Text  in UTF-8              ...
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class SdesItemHeader {
+ROC_PACKED_BEGIN class SdesItemHeader {
 private:
     uint8_t type_;
     uint8_t len_;
@@ -832,7 +832,7 @@ public:
     uint8_t* text() {
         return (uint8_t*)this + sizeof(*this);
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! Source Description RTCP packet (SDES).
 //!
@@ -861,7 +861,7 @@ public:
 //!        :                               ...                             :
 //!        +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class SdesPacket {
+ROC_PACKED_BEGIN class SdesPacket {
 private:
     PacketHeader header_;
 
@@ -884,7 +884,7 @@ public:
     PacketHeader& header() {
         return header_;
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! BYE source header.
 //!
@@ -899,7 +899,7 @@ public:
 //! |                              SSRC                             |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class ByeSourceHeader {
+ROC_PACKED_BEGIN class ByeSourceHeader {
 private:
     uint32_t ssrc_;
 
@@ -922,7 +922,7 @@ public:
     void set_ssrc(const packet::stream_source_t s) {
         ssrc_ = core::hton32u(s);
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! BYE reason header.
 //!
@@ -937,7 +937,7 @@ public:
 //! |     length    |               reason for leaving            ...
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class ByeReasonHeader {
+ROC_PACKED_BEGIN class ByeReasonHeader {
 private:
     uint8_t len_;
 
@@ -973,7 +973,7 @@ public:
     uint8_t* text() {
         return (uint8_t*)this + sizeof(*this);
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! Goodbye RTCP packet (BYE).
 //!
@@ -992,7 +992,7 @@ public:
 //! (opt) |     length    |               reason for leaving            ...
 //!       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class ByePacket {
+ROC_PACKED_BEGIN class ByePacket {
 private:
     PacketHeader header_;
 
@@ -1015,7 +1015,7 @@ public:
     PacketHeader& header() {
         return header_;
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! RTCP Extended Report Packet.
 //!
@@ -1032,7 +1032,7 @@ public:
 //! :                         report blocks                         :
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class XrPacket {
+ROC_PACKED_BEGIN class XrPacket {
 private:
     PacketHeader header_;
 
@@ -1069,7 +1069,7 @@ public:
     void set_ssrc(const packet::stream_source_t ssrc) {
         ssrc_ = core::hton32u(ssrc);
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! XR Block Type.
 enum XrBlockType {
@@ -1097,7 +1097,7 @@ enum XrBlockType {
 //! :             type-specific block contents                      :
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class XrBlockHeader {
+ROC_PACKED_BEGIN class XrBlockHeader {
 private:
     uint8_t block_type_;
     uint8_t type_specific_;
@@ -1154,7 +1154,7 @@ public:
     void set_len_bytes(const size_t len) {
         set_len_words(size_t_2_rtcp_length(len));
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! XR Receiver Reference Time Report block.
 //!
@@ -1171,7 +1171,7 @@ public:
 //! |             NTP timestamp, least significant word             |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class XrRrtrBlock {
+ROC_PACKED_BEGIN class XrRrtrBlock {
 private:
     XrBlockHeader header_;
 
@@ -1208,7 +1208,7 @@ public:
     void set_ntp_timestamp(const packet::ntp_timestamp_t t) {
         ntp_timestamp_.set_value(t);
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! XR DLRR Report sub-block.
 //!
@@ -1225,7 +1225,7 @@ public:
 //! |                   delay since last RR (DLRR)                  |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class XrDlrrSubblock {
+ROC_PACKED_BEGIN class XrDlrrSubblock {
 private:
     uint32_t ssrc_;
     NtpTimestamp32 last_rr_;
@@ -1274,7 +1274,7 @@ public:
     void set_delay_last_rr(const packet::ntp_timestamp_t x) {
         delay_last_rr_.set_value(ntp_clamp_32(x, MaxDelay));
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! XR DLRR Report block.
 //!
@@ -1300,7 +1300,7 @@ public:
 //! :                               ...                             :   2
 //! +=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class XrDlrrBlock {
+ROC_PACKED_BEGIN class XrDlrrBlock {
 private:
     XrBlockHeader header_;
 
@@ -1340,7 +1340,7 @@ public:
         return get_block_by_index<XrDlrrSubblock>(this, i, num_subblocks(),
                                                   "rtcp xr_dlrr");
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! XR Measurement Info Report Block.
 //!
@@ -1370,7 +1370,7 @@ public:
 //! |     Measurement Duration (Cumulative) - Fraction (bit 0-31)   |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class XrMeasurementInfoBlock {
+ROC_PACKED_BEGIN class XrMeasurementInfoBlock {
 private:
     XrBlockHeader header_;
 
@@ -1512,7 +1512,7 @@ enum MetricFlag {
 //! |              End System Delay - Fraction (bit 0-31)           |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class XrDelayMetricsBlock {
+ROC_PACKED_BEGIN class XrDelayMetricsBlock {
 private:
     enum {
         MetricFlag_shift = 6,
@@ -1637,7 +1637,7 @@ public:
     void set_e2e_latency(const packet::ntp_timestamp_t t) {
         e2e_latency_.set_value(ntp_clamp_64(t, MetricUnavail_64 - 1));
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! XR Queue Metrics Block.
 //!
@@ -1665,7 +1665,7 @@ public:
 //! |                  Network Incoming Queue Stalling              |
 //! +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class XrQueueMetricsBlock {
+ROC_PACKED_BEGIN class XrQueueMetricsBlock {
 private:
     enum {
         MetricFlag_shift = 6,
@@ -1753,7 +1753,7 @@ public:
     void set_niq_stalling(const packet::ntp_timestamp_t t) {
         niq_stalling_.set_value(ntp_clamp_32(t, MetricUnavail_32 - 1));
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 } // namespace header
 } // namespace rtcp

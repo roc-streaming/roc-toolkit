@@ -45,7 +45,7 @@ public:
 
     //! Set URI scheme.
     //! String should not be zero-terminated.
-    ROC_ATTR_NODISCARD bool set_scheme(const char* str, size_t str_len);
+    ROC_NODISCARD bool set_scheme(const char* str, size_t str_len);
 
     //! URI path.
     //! May be device name or file path depending on scheme.
@@ -54,11 +54,11 @@ public:
     //! Set URI path.
     //! String should be percent-encoded.
     //! String should not be zero-terminated.
-    ROC_ATTR_NODISCARD bool set_encoded_path(const char* str, size_t str_len);
+    ROC_NODISCARD bool set_encoded_path(const char* str, size_t str_len);
 
     //! Get URI path.
     //! String will be percent-encoded.
-    ROC_ATTR_NODISCARD bool format_encoded_path(core::StringBuilder& dst) const;
+    ROC_NODISCARD bool format_encoded_path(core::StringBuilder& dst) const;
 
 private:
     core::StringBuffer scheme_;
@@ -112,7 +112,7 @@ private:
 //!
 //! This parser does not try to perform full URI validation. For example, it does not
 //! check that path contains only allowed symbols. If it can be parsed, it will be.
-bool parse_io_uri(const char* str, IoUri& result);
+ROC_NODISCARD bool parse_io_uri(const char* str, IoUri& result);
 
 //! Format IoUri to string.
 //!
@@ -125,7 +125,7 @@ bool parse_io_uri(const char* str, IoUri& result);
 //!
 //! @returns
 //!  true on success or false if the buffer is too small.
-bool format_io_uri(const IoUri& uri, core::StringBuilder& dst);
+ROC_NODISCARD bool format_io_uri(const IoUri& uri, core::StringBuilder& dst);
 
 } // namespace address
 } // namespace roc

@@ -63,8 +63,8 @@ public:
                  packet::PacketFactory& packet_factory,
                  core::IArena& arena);
 
-    //! Check if initialization succeeded.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get number of tracked destination addresses, for testing.
     size_t total_destinations() const;
@@ -74,8 +74,8 @@ public:
 
     //! Parse and process incoming packet.
     //! Invokes IParticipant methods during processing.
-    ROC_ATTR_NODISCARD status::StatusCode
-    process_packet(const packet::PacketPtr& packet, core::nanoseconds_t current_time);
+    ROC_NODISCARD status::StatusCode process_packet(const packet::PacketPtr& packet,
+                                                    core::nanoseconds_t current_time);
 
     //! When we should generate packets next time.
     //! Returns absolute time.
@@ -86,15 +86,13 @@ public:
     //! Should be called according to generation_deadline().
     //! @p current_time is current time in nanoseconds since Unix epoch.
     //! Invokes IParticipant methods during generation.
-    ROC_ATTR_NODISCARD status::StatusCode
-    generate_reports(core::nanoseconds_t current_time);
+    ROC_NODISCARD status::StatusCode generate_reports(core::nanoseconds_t current_time);
 
     //! Generate and send goodbye packet(s).
     //! Should be called before termination sender session.
     //! @p current_time is current time in nanoseconds since Unix epoch.
     //! Invokes IParticipant methods during generation.
-    ROC_ATTR_NODISCARD status::StatusCode
-    generate_goodbye(core::nanoseconds_t current_time);
+    ROC_NODISCARD status::StatusCode generate_goodbye(core::nanoseconds_t current_time);
 
 private:
     enum PacketType { PacketType_Reports, PacketType_Goodbye };
@@ -168,7 +166,7 @@ private:
     size_t generated_packet_count_;
     core::RateLimiter log_limiter_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace rtcp

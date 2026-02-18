@@ -30,7 +30,7 @@ struct RTP {
 
     //! Packet sequence number in packet stream ("sn").
     //! @remarks
-    //!  Packets are numbered sequentaly in every stream, starting from some
+    //!  Packets are numbered sequentially in every stream, starting from some
     //!  random value. May overflow.
     seqnum_t seqnum;
 

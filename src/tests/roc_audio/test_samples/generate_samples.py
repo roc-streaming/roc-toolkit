@@ -4,7 +4,7 @@ import os.path
 import subprocess
 
 def format_name(encoding, endian):
-    return 'PcmFormat_' + \
+    return 'PcmSubformat_' + \
         encoding['pcm_encoding'] + '_' + endian['pcm_endian']
 
 def format_array(array, maxlen=8, indent=1):
@@ -29,7 +29,7 @@ def format_blob(blob):
     return format_array(["0x%02x" % b for b in blob], maxlen=12)
 
 def format_samples(samples):
-    return format_array(["%+.16f" % s for s in samples], maxlen=4)
+    return format_array(["%+.8ff" % s for s in samples], maxlen=4)
 
 def read_samples(datfile):
     samples = []

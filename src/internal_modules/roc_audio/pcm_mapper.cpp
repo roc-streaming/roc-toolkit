@@ -7,34 +7,34 @@
  */
 
 #include "roc_audio/pcm_mapper.h"
+#include "roc_audio/sample.h"
 #include "roc_core/panic.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
 namespace audio {
 
-PcmMapper::PcmMapper(PcmFormat input_fmt, PcmFormat output_fmt)
+PcmMapper::PcmMapper(PcmSubformat input_fmt, PcmSubformat output_fmt)
     : input_fmt_(input_fmt)
     , output_fmt_(output_fmt)
-    , input_traits_(pcm_format_traits(input_fmt))
-    , output_traits_(pcm_format_traits(output_fmt))
-    , map_func_(pcm_format_mapfn(input_fmt, output_fmt)) {
-    if (!input_traits_.is_valid) {
-        roc_panic("pcm mapper: input format is not a pcm format");
-    }
-    if (!output_traits_.is_valid) {
-        roc_panic("pcm mapper: output format is not a pcm format");
-    }
-    if (!map_func_) {
+    , input_traits_(pcm_subformat_traits(input_fmt))
+    , output_traits_(pcm_subformat_traits(output_fmt)) {
+    // To reduce code size, we generate converters only between raw and non-raw formats.
+    // To convert between two non-raw formats, you need a pair of pcm mappers.
+    roc_panic_if_msg(input_fmt != PcmSubformat_Raw && output_fmt != PcmSubformat_Raw,
+                     "pcm mapper: either input or output format must be raw");
+
+    // This must not happen if checks above passed.
+    if (!(map_func_ = pcm_subformat_mapfn(input_fmt, output_fmt))) {
         roc_panic("pcm mapper: unable to select mapping function");
     }
 }
 
-PcmFormat PcmMapper::input_format() const {
+PcmSubformat PcmMapper::input_format() const {
     return input_fmt_;
 }
 
-PcmFormat PcmMapper::output_format() const {
+PcmSubformat PcmMapper::output_format() const {
     return output_fmt_;
 }
 

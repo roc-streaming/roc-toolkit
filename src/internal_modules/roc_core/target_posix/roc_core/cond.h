@@ -12,14 +12,14 @@
 #ifndef ROC_CORE_COND_H_
 #define ROC_CORE_COND_H_
 
-#include <errno.h>
-#include <pthread.h>
-
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
+
+#include <errno.h>
+#include <pthread.h>
 
 namespace roc {
 namespace core {
@@ -35,7 +35,7 @@ public:
 
     //! Wait with timeout.
     //! @returns false if timeout expired.
-    ROC_ATTR_NODISCARD bool timed_wait(nanoseconds_t timeout) const;
+    ROC_NODISCARD bool timed_wait(nanoseconds_t timeout) const;
 
     //! Wait.
     void wait() const;
@@ -48,7 +48,7 @@ public:
 
 private:
     mutable pthread_cond_t cond_;
-    mutable Atomic<int> guard_;
+    mutable AtomicInt<int32_t> guard_;
 
     pthread_mutex_t& mutex_;
 };

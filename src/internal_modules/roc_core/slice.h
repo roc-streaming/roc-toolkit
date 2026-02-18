@@ -13,37 +13,38 @@
 #define ROC_CORE_SLICE_H_
 
 #include "roc_core/buffer.h"
+#include "roc_core/buffer_view.h"
 #include "roc_core/print_memory.h"
-#include "roc_core/shared_ptr.h"
 
 namespace roc {
 namespace core {
 
 //! Slice.
 //!
-//! Slice points to a subrange of data in pool-allocated Buffer.
+//! Slice points to a subrange of data either in Buffer (allocated from pool,
+//! owns data) or BufferView (doesn't manage allocation, doesn't own data).
 //! Copying a slice produces a new slice referring the same data.
 //!
-//! Slice also acts as a kind of shared pointer to Buffer. A buffer won't be freed
-//! (returned to pool) until there are slices referring it. Copying a slice
-//! increments the buffer reference counter, and destroying a slice decrements it.
+//! Slice also acts as a kind of shared pointer to Buffer or BufferView. Copying a
+//! slice increments the reference counter, and destroying a slice decrements it.
+//! Buffer uses reference counter to release itself to pool, and buffer view uses it
+//! to check that its memory is no more referenced upon buffer view destruction.
 //!
-//! While Buffer works with raw bytes, Slice<T> interprets it as array of elements
-//! of type T, and works in terms of those elements.
+//! While Buffer and BufferView work with raw bytes, Slice<T> interprets memory as array
+//! of elements of @tparam T, and its operations work in terms of those elements.
 //!
-//! Slice has two important characteristics:
-//!  - size - the difference between the ending end beginning pointer
-//!  - capacity - the difference between the actual buffer end and the
-//!               slice beginning pointer
+//! Slice has a few important properties:
+//!  - beginning and ending pointers - data inside underlying buffer or buffer view
+//!  - size - number of elements between ending and beginning pointers
+//!  - capacity - number of elements between the actual buffer or buffer view ending,
+//!               and the slice beginning pointer
 //!
-//! Buffers are not resizable. They're allocated from pool and have fixed size,
-//! defined by the pool parameters.
-//!
-//! Slices are reslicable, which means that their pointers to the buffer data
-//! may be moved within the buffer.
+//! Buffers and BufferViews are not resizable. Their size is defined at construction time.
+//! Slices, on the other hand, are *reslicable*, which means that their pointers to
+//! the data may be moved within the available capacity.
 //!
 //! The beginning pointer may be moved only forward. Once moved, it's not allowed
-//! to move it backward again. Moving it decreases the slice size and capacity.
+//! to move it backward again. Moving it decreases both slice size and capacity.
 //! Capacity is affected because it's relative to the beginning pointer.
 //!
 //! The ending pointer may be freely moved forward and backward within the slice
@@ -55,18 +56,17 @@ namespace core {
 template <class T> class Slice {
 public:
     //! Construct empty slice.
-    Slice()
-        : buffer_()
-        , data_(NULL)
-        , size_(0) {
+    Slice() {
+        data_ = NULL;
+        size_ = 0;
     }
 
     //! Construct slice pointing to the whole buffer.
-    Slice(const BufferPtr& buffer) {
-        buffer_ = buffer;
-        if (buffer_) {
-            data_ = (T*)buffer->data();
-            size_ = buffer->size() / sizeof(T);
+    Slice(const BufferPtr& buf) {
+        if (buf) {
+            buffer_ = buf;
+            data_ = buf_data_(*buf);
+            size_ = buf_size_(*buf);
         } else {
             data_ = NULL;
             size_ = 0;
@@ -74,19 +74,56 @@ public:
     }
 
     //! Construct slice pointing to a part of a buffer.
-    Slice(Buffer& buffer, size_t from, size_t to) {
+    Slice(Buffer& buf, size_t from, size_t to) {
+        const size_t max = buf_size_(buf);
+
         if (from > to) {
             roc_panic("slice: invalid range: [%lu,%lu)", (unsigned long)from,
                       (unsigned long)to);
         }
-        if (to > buffer.size() / sizeof(T)) {
+        if (to > max) {
             roc_panic("slice: out of bounds: available=[%lu,%lu) requested=[%lu,%lu)",
-                      (unsigned long)0, (unsigned long)buffer.size() / sizeof(T),
-                      (unsigned long)from, (unsigned long)to);
+                      (unsigned long)0, (unsigned long)max, (unsigned long)from,
+                      (unsigned long)to);
         }
-        buffer_ = &buffer;
-        data_ = (T*)buffer.data() + from;
+
+        buffer_ = &buf;
+        data_ = buf_data_(buf) + from;
         size_ = to - from;
+    }
+
+    //! Construct slice pointing to the whole buffer view.
+    Slice(BufferView& buf_view) {
+        view_ = &buf_view;
+        data_ = view_data_(buf_view);
+        size_ = view_size_(buf_view);
+    }
+
+    //! Construct slice pointing to a part of a buffer view.
+    Slice(BufferView& buf_view, size_t from, size_t to) {
+        const size_t max = view_size_(buf_view);
+
+        if (from > to) {
+            roc_panic("slice: invalid range: [%lu,%lu)", (unsigned long)from,
+                      (unsigned long)to);
+        }
+        if (to > max) {
+            roc_panic("slice: out of bounds: available=[%lu,%lu) requested=[%lu,%lu)",
+                      (unsigned long)0, (unsigned long)max, (unsigned long)from,
+                      (unsigned long)to);
+        }
+
+        view_ = &buf_view;
+        data_ = view_data_(buf_view) + from;
+        size_ = to - from;
+    }
+
+    //! Reset slice to empty state.
+    void reset() {
+        buffer_.reset();
+        view_.reset();
+        data_ = NULL;
+        size_ = 0;
     }
 
     //! Get slice data.
@@ -112,11 +149,7 @@ public:
 
     //! Get maximum possible number of elements in slice.
     size_t capacity() const {
-        if (data_ == NULL) {
-            return 0;
-        } else {
-            return buffer_->size() / sizeof(T) - size_t(data_ - (T*)buffer_->data());
-        }
+        return container_size_() - size_t(data_ - container_data_());
     }
 
     //! Change slice beginning and ending inside the buffer.
@@ -124,16 +157,18 @@ public:
     //!  - @p from and @p to are relative to slice beginning.
     //!  - @p to value can be up to capacity().
     void reslice(size_t from, size_t to) {
-        const size_t cap = capacity();
+        const size_t max = capacity();
+
         if (from > to) {
             roc_panic("slice: invalid range: [%lu,%lu)", (unsigned long)from,
                       (unsigned long)to);
         }
-        if (to > cap) {
+        if (to > max) {
             roc_panic("slice: out of bounds: available=[%lu,%lu) requested=[%lu,%lu)",
-                      (unsigned long)0, (unsigned long)cap, (unsigned long)from,
+                      (unsigned long)0, (unsigned long)max, (unsigned long)from,
                       (unsigned long)to);
         }
+
         if (data_) {
             data_ = data_ + from;
             size_ = to - from;
@@ -150,8 +185,9 @@ public:
         if (add_sz == 0) {
             roc_panic("slice: extend with zero size");
         }
+
         T* ret = data_ + size_;
-        reslice(0, size() + add_sz);
+        reslice(0, size_ + add_sz);
         return ret;
     }
 
@@ -169,8 +205,10 @@ public:
                       (unsigned long)0, (unsigned long)size_, (unsigned long)from,
                       (unsigned long)to);
         }
+
         Slice ret;
         ret.buffer_ = buffer_;
+        ret.view_ = view_;
         ret.data_ = data_ + from;
         ret.size_ = to - from;
         return ret;
@@ -178,24 +216,17 @@ public:
 
     //! Print slice to stderr.
     void print() const {
-        if (buffer_) {
-            core::print_memory_slice(data_, size_, (T*)buffer_->data(),
-                                     buffer_->size() / sizeof(T));
-        } else {
-            core::print_memory_slice(data_, size_, NULL, 0);
-        }
+        core::print_memory_slice(data_, size_, container_data_(), container_size_());
     }
 
     //! Access to an element of the Slice with an array style.
-    T& operator[](const size_t i) const {
-        if (data_ == NULL) {
-            roc_panic("slice: null slice");
-        }
-        if (i > size_) {
+    T& operator[](const size_t index) const {
+        if (index > size_) {
             roc_panic("slice: out of bounds: available=[%lu,%lu) requested=%lu",
-                      (unsigned long)0, (unsigned long)size_, (unsigned long)i);
+                      (unsigned long)0, (unsigned long)size_, (unsigned long)index);
         }
-        return data_[i];
+
+        return data_[index];
     }
 
     //! Convert to bool.
@@ -206,9 +237,36 @@ public:
     }
 
 private:
+    static size_t buf_size_(Buffer& buf) {
+        return buf.size() / sizeof(T);
+    }
+
+    static T* buf_data_(Buffer& buf) {
+        return (T*)buf.data();
+    }
+
+    static size_t view_size_(BufferView& buf_view) {
+        return buf_view.size() / sizeof(T);
+    }
+
+    static T* view_data_(BufferView& buf_view) {
+        return (T*)buf_view.data();
+    }
+
+    size_t container_size_() const {
+        return buffer_ ? buf_size_(*buffer_) : view_ ? view_size_(*view_) : 0;
+    }
+
+    T* container_data_() const {
+        return buffer_ ? buf_data_(*buffer_) : view_ ? view_data_(*view_) : NULL;
+    }
+
+    // only one can be set, either buffer or buffer view
     BufferPtr buffer_;
-    T* data_;
-    size_t size_;
+    BufferViewPtr view_;
+
+    T* data_;     // start of region inside buffer or buffer view
+    size_t size_; // size of region
 };
 
 } // namespace core

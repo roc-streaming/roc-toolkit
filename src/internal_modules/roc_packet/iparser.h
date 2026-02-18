@@ -12,24 +12,39 @@
 #ifndef ROC_PACKET_IPARSER_H_
 #define ROC_PACKET_IPARSER_H_
 
+#include "roc_core/allocation_policy.h"
+#include "roc_core/attributes.h"
 #include "roc_core/slice.h"
 #include "roc_packet/packet.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace packet {
 
 //! Packet parser interface.
-class IParser {
+class IParser : public core::ArenaAllocation {
 public:
+    //! Initialize.
+    explicit IParser(core::IArena& arena);
+
+    //! Deinitialize.
     virtual ~IParser();
+
+    //! Check if the object was successfully constructed.
+    //! @returns
+    //!  status::StatusOK if parser was initialized correctly,
+    //!  or error code otherwise.
+    virtual status::StatusCode init_status() const = 0;
 
     //! Parse packet from buffer.
     //! @remarks
     //!  Parses input @p buffer and fills @p packet. If the packet payload contains
     //!  an inner packet, calls the inner parser as well.
     //! @returns
-    //!  true if the packet was successfully parsed or false if the packet is invalid.
-    virtual bool parse(Packet& packet, const core::Slice<uint8_t>& buffer) = 0;
+    //!  status::StatusOK if the packet was successfully parsed,
+    //!  or error code otherwise.
+    virtual ROC_NODISCARD status::StatusCode
+    parse(Packet& packet, const core::Slice<uint8_t>& buffer) = 0;
 };
 
 } // namespace packet

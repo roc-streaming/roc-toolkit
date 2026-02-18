@@ -20,6 +20,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace audio {
@@ -80,11 +81,12 @@ struct WatchdogConfig {
         , choppy_playback_timeout(0)
         , choppy_playback_window(0)
         , warmup_duration(0)
-        , frame_status_window(0) {
+        , frame_status_window(20) {
     }
 
     //! Automatically fill missing settings.
-    void deduce_defaults(const core::nanoseconds_t target_latency);
+    ROC_NODISCARD bool deduce_defaults(const core::nanoseconds_t default_latency,
+                                       const core::nanoseconds_t target_latency);
 };
 
 //! Watchdog.
@@ -98,22 +100,18 @@ public:
              const WatchdogConfig& config,
              core::IArena& arena);
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
-
-    //! Check if stream is still alive.
-    //! @returns
-    //!  false if during the session timeout each frame has an empty flag or the maximum
-    //!  allowed number of consecutive windows that can contain frames that aren't fully
-    //!  filled and contain dropped packets was exceeded.
-    bool is_alive() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Read audio frame.
     //! @remarks
     //!  Updates stream state and reads frame from the input reader.
-    virtual bool read(Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode
+    read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode);
 
 private:
+    bool update_(Frame& frame);
+
     void update_blank_timeout_(const Frame& frame,
                                packet::stream_timestamp_t next_read_pos);
     bool check_blank_timeout_() const;
@@ -148,8 +146,7 @@ private:
     size_t status_pos_;
     bool show_status_;
 
-    bool alive_;
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

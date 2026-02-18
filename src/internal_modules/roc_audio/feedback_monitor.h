@@ -20,6 +20,7 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/time.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/ilink_meter.h"
 
 namespace roc {
@@ -68,10 +69,12 @@ public:
                     ResamplerWriter* resampler,
                     const FeedbackConfig& feedback_config,
                     const LatencyConfig& latency_config,
-                    const SampleSpec& sample_spec);
+                    const FreqEstimatorConfig& fe_config,
+                    const SampleSpec& sample_spec,
+                    dbgio::CsvDumper* dumper);
 
-    //! Check if the object was initialized successfully.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Check if feedback monitoring is started.
     bool is_started() const;
@@ -87,7 +90,7 @@ public:
     //! Write audio frame.
     //! Passes frame to underlying writer.
     //! If feedback monitoring is started, also performs latency tuning.
-    virtual void write(Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode write(Frame& frame);
 
     //! Get number of remote participants from which there is feedback.
     size_t num_participants() const;
@@ -128,7 +131,8 @@ private:
     const SampleSpec sample_spec_;
 
     bool started_;
-    bool valid_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

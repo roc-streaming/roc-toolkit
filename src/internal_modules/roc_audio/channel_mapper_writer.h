@@ -19,41 +19,39 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/slice.h"
 #include "roc_core/stddefs.h"
+#include "roc_status/status_code.h"
 
 namespace roc {
 namespace audio {
 
 //! Channel mapper writer.
-//! Reads frames from nested writer and maps them to another channel mask.
+//! Maps samples to another channel mask and writes them to nested writer.
 class ChannelMapperWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    ChannelMapperWriter(IFrameWriter& writer,
+    ChannelMapperWriter(IFrameWriter& frame_writer,
                         FrameFactory& frame_factory,
                         const SampleSpec& in_spec,
                         const SampleSpec& out_spec);
 
-    //! Check if the object was succefully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Write audio frame.
-    virtual void write(Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode write(Frame& frame);
 
 private:
-    void write_(sample_t* in_samples,
-                size_t n_samples,
-                unsigned flags,
-                core::nanoseconds_t capture_ts);
+    FrameFactory& frame_factory_;
+    IFrameWriter& frame_writer_;
 
-    IFrameWriter& output_writer_;
-    core::Slice<sample_t> output_buf_;
+    FramePtr out_frame_;
 
     ChannelMapper mapper_;
 
     const SampleSpec in_spec_;
     const SampleSpec out_spec_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

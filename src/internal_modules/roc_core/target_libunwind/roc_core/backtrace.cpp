@@ -15,6 +15,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "roc_core/attributes.h"
 #include "roc_core/backtrace.h"
 #include "roc_core/string_builder.h"
 

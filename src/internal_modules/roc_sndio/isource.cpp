@@ -7,9 +7,14 @@
  */
 
 #include "roc_sndio/isource.h"
+#include "roc_core/panic.h"
 
 namespace roc {
 namespace sndio {
+
+ISource::ISource(core::IArena& arena)
+    : IDevice(arena) {
+}
 
 ISource::~ISource() {
 }

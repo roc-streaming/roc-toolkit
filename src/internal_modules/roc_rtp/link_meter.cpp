@@ -13,16 +13,28 @@
 namespace roc {
 namespace rtp {
 
-LinkMeter::LinkMeter(const EncodingMap& encoding_map)
+LinkMeter::LinkMeter(packet::IWriter& writer,
+                     const audio::JitterMeterConfig& jitter_config,
+                     const EncodingMap& encoding_map,
+                     core::IArena& arena,
+                     dbgio::CsvDumper* dumper)
     : encoding_map_(encoding_map)
     , encoding_(NULL)
-    , writer_(NULL)
-    , reader_(NULL)
+    , writer_(writer)
     , first_packet_(true)
     , has_metrics_(false)
     , first_seqnum_(0)
     , last_seqnum_hi_(0)
-    , last_seqnum_lo_(0) {
+    , last_seqnum_lo_(0)
+    , processed_packets_(0)
+    , prev_queue_timestamp_(-1)
+    , prev_stream_timestamp_(0)
+    , jitter_meter_(jitter_config, arena)
+    , dumper_(dumper) {
+}
+
+status::StatusCode LinkMeter::init_status() const {
+    return status::StatusOK;
 }
 
 bool LinkMeter::has_metrics() const {
@@ -52,17 +64,13 @@ void LinkMeter::process_report(const rtcp::SendReport& report) {
 }
 
 status::StatusCode LinkMeter::write(const packet::PacketPtr& packet) {
-    if (!writer_) {
-        roc_panic("link meter: forgot to call set_writer()");
-    }
-
     if (!packet) {
         roc_panic("link meter: null packet");
     }
 
     // When we create LinkMeter, we don't know yet if RTP is used (e.g.
     // for repair packets), so we should be ready for non-rtp packets.
-    if (packet->rtp()) {
+    if (packet->has_flags(packet::Packet::FlagRTP | packet::Packet::FlagUDP)) {
         // Since we don't know packet type in-before, we also determine
         // encoding dynamically.
         if (!encoding_ || encoding_->payload_type != packet->rtp()->payload_type) {
@@ -73,31 +81,34 @@ status::StatusCode LinkMeter::write(const packet::PacketPtr& packet) {
         }
     }
 
-    return writer_->write(packet);
-}
-
-status::StatusCode LinkMeter::read(packet::PacketPtr& packet) {
-    if (!reader_) {
-        roc_panic("link meter: forgot to call set_reader()");
-    }
-
-    const status::StatusCode code = reader_->read(packet);
-    if (code != status::StatusOK) {
-        return code;
-    }
-
-    return status::StatusOK;
-}
-
-void LinkMeter::set_writer(packet::IWriter& writer) {
-    writer_ = &writer;
-}
-
-void LinkMeter::set_reader(packet::IReader& reader) {
-    reader_ = &reader;
+    return writer_.write(packet);
 }
 
 void LinkMeter::update_metrics_(const packet::Packet& packet) {
+    update_seqnums_(packet);
+
+    if (!first_packet_) {
+        update_jitter_(packet);
+    }
+
+    processed_packets_++;
+
+    if (first_packet_
+        || packet::stream_timestamp_gt(packet.rtp()->stream_timestamp,
+                                       prev_stream_timestamp_)) {
+        prev_queue_timestamp_ = packet.udp()->queue_timestamp;
+        prev_stream_timestamp_ = packet.rtp()->stream_timestamp;
+    }
+
+    first_packet_ = false;
+    has_metrics_ = true;
+
+    if (dumper_) {
+        dump_(packet);
+    }
+}
+
+void LinkMeter::update_seqnums_(const packet::Packet& packet) {
     const packet::seqnum_t pkt_seqnum = packet.rtp()->seqnum;
 
     // If packet seqnum is before first seqnum, and there was no wrap yet,
@@ -107,25 +118,61 @@ void LinkMeter::update_metrics_(const packet::Packet& packet) {
         first_seqnum_ = pkt_seqnum;
     }
 
-    // If packet seqnum is after last seqnum, update last seqnum, and
-    // also counts possible wraps.
-    if (first_packet_ || packet::seqnum_diff(pkt_seqnum, last_seqnum_lo_) > 0) {
+    if (first_packet_) {
+        last_seqnum_hi_ = 0;
+        last_seqnum_lo_ = pkt_seqnum;
+    } else if (packet::seqnum_diff(pkt_seqnum, last_seqnum_lo_) > 0) {
+        // If packet seqnum is after last seqnum, update last seqnum, and count
+        // possible wraps.
         if (pkt_seqnum < last_seqnum_lo_) {
-            last_seqnum_hi_ += (uint16_t)-1;
+            last_seqnum_hi_ += (uint32_t)1 << 16;
         }
         last_seqnum_lo_ = pkt_seqnum;
     }
 
     metrics_.ext_first_seqnum = first_seqnum_;
     metrics_.ext_last_seqnum = last_seqnum_hi_ + last_seqnum_lo_;
+    metrics_.expected_packets = metrics_.ext_last_seqnum - first_seqnum_ + 1;
+    metrics_.lost_packets = (int64_t)metrics_.expected_packets - processed_packets_ - 1;
+}
 
-    // TODO(gh-688):
-    //  - fill total_packets
-    //  - fill lost_packets
-    //  - fill jitter (use encoding_->sample_spec to convert to nanoseconds)
+void LinkMeter::update_jitter_(const packet::Packet& packet) {
+    // Link meter operates before FEC, so we should never see restored packets.
+    // Otherwise we'd need to exclude them from jitter calculations.
+    roc_panic_if_msg(packet.has_flags(packet::Packet::FlagRestored),
+                     "link meter: unexpected packet with restored flag");
 
-    first_packet_ = false;
-    has_metrics_ = true;
+    roc_panic_if(!encoding_);
+    roc_panic_if(prev_queue_timestamp_ <= 0);
+
+    const core::nanoseconds_t d_enq_ns =
+        packet.udp()->queue_timestamp - prev_queue_timestamp_;
+    const packet::stream_timestamp_diff_t d_s_ts = packet::stream_timestamp_diff(
+        packet.rtp()->stream_timestamp, prev_stream_timestamp_);
+    const core::nanoseconds_t d_s_ns =
+        encoding_->sample_spec.stream_timestamp_delta_2_ns(d_s_ts);
+
+    const core::nanoseconds_t jitter = std::abs(d_enq_ns - d_s_ns);
+    jitter_meter_.update_jitter(jitter);
+
+    const audio::JitterMetrics& jit_metrics = jitter_meter_.metrics();
+    metrics_.mean_jitter = jit_metrics.mean_jitter;
+    metrics_.peak_jitter = jit_metrics.peak_jitter;
+}
+
+void LinkMeter::dump_(const packet::Packet& packet) {
+    const audio::JitterMetrics& jit_metrics = jitter_meter_.metrics();
+
+    dbgio::CsvEntry e;
+    e.type = 'm';
+    e.n_fields = 5;
+    e.fields[0] = packet.udp()->queue_timestamp;
+    e.fields[1] = packet.rtp()->stream_timestamp;
+    e.fields[2] = jit_metrics.curr_jitter;
+    e.fields[3] = jit_metrics.peak_jitter;
+    e.fields[4] = jit_metrics.curr_envelope;
+
+    dumper_->write(e);
 }
 
 } // namespace rtp

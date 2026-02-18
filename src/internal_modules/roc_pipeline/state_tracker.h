@@ -12,10 +12,10 @@
 #ifndef ROC_PIPELINE_STATE_TRACKER_H_
 #define ROC_PIPELINE_STATE_TRACKER_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/stddefs.h"
-#include "roc_sndio/device_state.h"
+#include "roc_sndio/device_defs.h"
 
 namespace roc {
 namespace pipeline {
@@ -35,21 +35,37 @@ public:
     //! Compute current state.
     sndio::DeviceState get_state() const;
 
+    //! Returns true if device is not broken or closed.
+    bool is_usable() const;
+
+    //! Returns true if device is closed.
+    bool is_closed() const;
+
+    //! Mark sender/receiver as broken.
+    void set_broken();
+
+    //! Mark sender/receiver as closed.
+    void set_closed();
+
     //! Get active sessions counter.
-    size_t num_active_sessions() const;
+    size_t num_sessions() const;
 
-    //! Add/subtract to active sessions counter.
-    void add_active_sessions(int increment);
+    //! Increment active sessions counter.
+    void register_session();
 
-    //! Get pending packets counter.
-    size_t num_pending_packets() const;
+    //! Decrement active sessions counter.
+    void unregister_session();
 
-    //! Add/subtract to pending packets counter.
-    void add_pending_packets(int increment);
+    //! Increment pending packets counter.
+    void register_packet();
+
+    //! Decrement pending packets counter.
+    void unregister_packet();
 
 private:
-    core::Atomic<int> active_sessions_;
-    core::Atomic<int> pending_packets_;
+    core::AtomicInt<int32_t> halt_state_;
+    core::AtomicInt<int32_t> active_sessions_;
+    core::AtomicInt<int32_t> pending_packets_;
 };
 
 } // namespace pipeline

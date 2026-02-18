@@ -11,6 +11,10 @@
 namespace roc {
 namespace packet {
 
+IComposer::IComposer(core::IArena& arena)
+    : core::ArenaAllocation(arena) {
+}
+
 IComposer::~IComposer() {
 }
 

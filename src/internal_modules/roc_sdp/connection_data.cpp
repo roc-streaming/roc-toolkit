@@ -24,7 +24,7 @@ bool ConnectionData::set_connection_address(address::AddrFamily addrtype,
     char addr[address::SocketAddr::MaxStrLen];
     core::StringBuilder b(addr, sizeof(addr));
 
-    if (!b.append_str(str, str + str_len)) {
+    if (!b.append_range(str, str + str_len)) {
         return false;
     }
 

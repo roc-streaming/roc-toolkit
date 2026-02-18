@@ -21,14 +21,19 @@ const core::nanoseconds_t StatsReportInterval = core::Minute;
 
 PipelineLoop::PipelineLoop(IPipelineTaskScheduler& scheduler,
                            const PipelineLoopConfig& config,
-                           const audio::SampleSpec& sample_spec)
+                           const audio::SampleSpec& sample_spec,
+                           core::IPool& frame_pool,
+                           core::IPool& frame_buffer_pool,
+                           Direction direction)
     : config_(config)
+    , direction_(direction)
     , sample_spec_(sample_spec)
     , min_samples_between_tasks_(
           sample_spec.ns_2_stream_timestamp(config.min_frame_length_between_tasks))
     , max_samples_between_tasks_(
           sample_spec.ns_2_stream_timestamp(config.max_frame_length_between_tasks))
     , no_task_proc_half_interval_(config.task_processing_prohibited_interval / 2)
+    , frame_factory_(frame_pool, frame_buffer_pool)
     , scheduler_(scheduler)
     , pending_tasks_(0)
     , pending_frames_(0)
@@ -38,7 +43,7 @@ PipelineLoop::PipelineLoop(IPipelineTaskScheduler& scheduler,
     , subframe_tasks_deadline_(0)
     , samples_processed_(0)
     , enough_samples_to_process_tasks_(false)
-    , rate_limiter_(StatsReportInterval) {
+    , rate_limiter_(StatsReportInterval, 1) {
 }
 
 PipelineLoop::~PipelineLoop() {
@@ -48,7 +53,7 @@ PipelineLoop::~PipelineLoop() {
     }
 }
 
-const PipelineLoop::Stats& PipelineLoop::get_stats_ref() const {
+const PipelineLoop::Stats& PipelineLoop::stats_ref() const {
     return stats_;
 }
 
@@ -192,21 +197,28 @@ bool PipelineLoop::maybe_process_tasks_() {
     return (n_pending_frames == 0 && pending_tasks_ != 0);
 }
 
-bool PipelineLoop::process_subframes_and_tasks(audio::Frame& frame) {
+status::StatusCode
+PipelineLoop::process_subframes_and_tasks(audio::Frame& frame,
+                                          packet::stream_timestamp_t frame_duration,
+                                          audio::FrameReadMode frame_mode) {
     if (config_.enable_precise_task_scheduling) {
-        return process_subframes_and_tasks_precise_(frame);
+        return process_subframes_and_tasks_precise_(frame, frame_duration, frame_mode);
     }
-    return process_subframes_and_tasks_simple_(frame);
+    return process_subframes_and_tasks_simple_(frame, frame_duration, frame_mode);
 }
 
-bool PipelineLoop::process_subframes_and_tasks_simple_(audio::Frame& frame) {
+status::StatusCode PipelineLoop::process_subframes_and_tasks_simple_(
+    audio::Frame& frame,
+    packet::stream_timestamp_t frame_duration,
+    audio::FrameReadMode frame_mode) {
     ++pending_frames_;
 
     cancel_async_task_processing_();
 
     pipeline_mutex_.lock();
 
-    const bool frame_res = process_subframe_imp(frame);
+    const status::StatusCode frame_status =
+        process_subframe_imp(frame, frame_duration, frame_mode);
 
     pipeline_mutex_.unlock();
 
@@ -214,10 +226,13 @@ bool PipelineLoop::process_subframes_and_tasks_simple_(audio::Frame& frame) {
         schedule_async_task_processing_();
     }
 
-    return frame_res;
+    return frame_status;
 }
 
-bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
+status::StatusCode PipelineLoop::process_subframes_and_tasks_precise_(
+    audio::Frame& frame,
+    packet::stream_timestamp_t frame_duration,
+    audio::FrameReadMode frame_mode) {
     ++pending_frames_;
 
     const core::nanoseconds_t frame_start_time = timestamp_imp();
@@ -229,16 +244,13 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
     core::nanoseconds_t next_frame_deadline = 0;
 
     packet::stream_timestamp_t frame_pos = 0;
-    bool frame_res = false;
-
-    const packet::stream_timestamp_t frame_duration = frame.has_duration()
-        ? frame.duration()
-        : sample_spec_.bytes_2_stream_timestamp(frame.num_bytes());
+    status::StatusCode frame_status = status::NoStatus;
 
     for (;;) {
         const bool first_iteration = (frame_pos == 0);
 
-        frame_res = process_next_subframe_(frame, &frame_pos, frame_duration);
+        frame_status =
+            process_next_subframe_(frame, &frame_pos, frame_duration, frame_mode);
 
         if (first_iteration) {
             next_frame_deadline =
@@ -259,7 +271,7 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
             }
         }
 
-        if (!frame_res || frame_pos == frame_duration) {
+        if (frame_status != status::StatusOK || frame_pos == frame_duration) {
             break;
         }
     }
@@ -274,7 +286,7 @@ bool PipelineLoop::process_subframes_and_tasks_precise_(audio::Frame& frame) {
         schedule_async_task_processing_();
     }
 
-    return frame_res;
+    return frame_status;
 }
 
 void PipelineLoop::schedule_async_task_processing_() {
@@ -343,37 +355,26 @@ void PipelineLoop::process_task_(PipelineTask& task, bool notify) {
     }
 }
 
-bool PipelineLoop::process_next_subframe_(audio::Frame& frame,
-                                          packet::stream_timestamp_t* frame_pos,
-                                          packet::stream_timestamp_t frame_duration) {
+status::StatusCode
+PipelineLoop::process_next_subframe_(audio::Frame& frame,
+                                     packet::stream_timestamp_t* frame_pos,
+                                     packet::stream_timestamp_t frame_duration,
+                                     audio::FrameReadMode frame_mode) {
     const size_t subframe_duration = max_samples_between_tasks_
         ? std::min(frame_duration - *frame_pos, max_samples_between_tasks_)
         : frame_duration;
 
-    audio::Frame sub_frame(frame.bytes()
-                               + sample_spec_.stream_timestamp_2_bytes(*frame_pos),
-                           sample_spec_.stream_timestamp_2_bytes(subframe_duration));
-
-    sub_frame.set_flags(frame.flags());
-    sub_frame.set_duration(subframe_duration);
-
-    if (frame.capture_timestamp()) {
-        sub_frame.set_capture_timestamp(frame.capture_timestamp()
-                                        + sample_spec_.stream_timestamp_2_ns(*frame_pos));
-    }
-
-    const bool ret = process_subframe_imp(sub_frame);
-
-    subframe_tasks_deadline_ = timestamp_imp() + config_.max_inframe_task_processing;
-
-    if (*frame_pos == 0) {
-        frame.set_capture_timestamp(sub_frame.capture_timestamp());
-    }
+    const status::StatusCode code = subframe_duration == frame_duration
+        // Happy path: subframe = whole frame.
+        ? process_subframe_imp(frame, frame_duration, frame_mode)
+        // Heavy path: subsequently process parts of frame (sub-frames), to
+        // allow processing tasks in-between.
+        : make_and_process_subframe_(frame, frame_duration, *frame_pos, subframe_duration,
+                                     frame_mode);
 
     *frame_pos += subframe_duration;
 
-    frame.set_flags(frame.flags() | sub_frame.flags());
-    frame.set_duration(*frame_pos);
+    subframe_tasks_deadline_ = timestamp_imp() + config_.max_inframe_task_processing;
 
     if (!enough_samples_to_process_tasks_) {
         samples_processed_ += subframe_duration;
@@ -383,7 +384,81 @@ bool PipelineLoop::process_next_subframe_(audio::Frame& frame,
         }
     }
 
-    return ret;
+    return code;
+}
+
+status::StatusCode
+PipelineLoop::make_and_process_subframe_(audio::Frame& frame,
+                                         packet::stream_timestamp_t frame_duration,
+                                         packet::stream_timestamp_t subframe_pos,
+                                         packet::stream_timestamp_t subframe_duration,
+                                         audio::FrameReadMode subframe_mode) {
+    if (direction_ == Dir_ReadFrames && subframe_pos == 0) {
+        // Allocate buffer for outer frame if there is no suitable pre-allocated buffer.
+        if (!frame_factory_.reallocate_frame(frame, frame_duration)) {
+            return status::StatusNoMem;
+        }
+    }
+
+    // Allocate subframe if not allocated yet.
+    if (!subframe_ && !(subframe_ = frame_factory_.allocate_frame_no_buffer())) {
+        return status::StatusNoMem;
+    }
+
+    // Attach part of outer frame's buffer to sub-frame.
+    // If we're writing, frame always has a buffer.
+    // If we're reading, frame either had a pre-allocated buffer provided by caller,
+    // or we have (re)allocated it above.
+    core::Slice<uint8_t> subframe_buffer = frame.buffer();
+
+    const size_t byte_offset = sample_spec_.stream_timestamp_2_bytes(subframe_pos);
+    const size_t byte_size = sample_spec_.stream_timestamp_2_bytes(subframe_duration);
+
+    subframe_buffer.reslice(byte_offset, byte_offset + byte_size);
+    subframe_->set_buffer(subframe_buffer);
+
+    if (direction_ == Dir_WriteFrames) {
+        // Propagate meta-data of outer frame to sub-frame.
+        subframe_->set_raw(frame.is_raw());
+        subframe_->set_flags(frame.flags());
+        subframe_->set_duration(subframe_duration);
+
+        if (frame.capture_timestamp()) {
+            subframe_->set_capture_timestamp(
+                frame.capture_timestamp()
+                + sample_spec_.stream_timestamp_2_ns(subframe_pos));
+        }
+    }
+
+    // Perform read or write.
+    const status::StatusCode code =
+        process_subframe_imp(*subframe_, subframe_duration, subframe_mode);
+
+    if (direction_ == Dir_ReadFrames && code == status::StatusOK) {
+        // Propagate meta-data and data of sub-frame to outer frame.
+        frame.set_raw(subframe_->is_raw());
+        frame.set_flags(frame.flags() | subframe_->flags());
+
+        frame.set_duration(subframe_pos + subframe_duration);
+        frame.set_num_bytes(
+            sample_spec_.stream_timestamp_2_bytes(subframe_pos + subframe_duration));
+
+        if (subframe_pos == 0) {
+            frame.set_capture_timestamp(subframe_->capture_timestamp());
+        }
+
+        if (subframe_->buffer() != subframe_buffer) {
+            // Sub-frame buffer may change because frame reader is allowed to attach
+            // its own buffer instead of using pre-allocated one. In this case we
+            // need to copy result back to outer frame.
+            memmove(frame.bytes() + byte_offset, subframe_->bytes(), byte_size);
+        }
+    }
+
+    // Clear buffer and meta-data.
+    subframe_->clear();
+
+    return code;
 }
 
 bool PipelineLoop::start_subframe_task_processing_() {

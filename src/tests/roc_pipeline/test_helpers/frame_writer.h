@@ -42,40 +42,75 @@ public:
     // Write num_samples samples.
     // If base_capture_ts is -1, set CTS to zero.
     // Otherwise, set CTS to base_capture_ts + sample offset.
-    void write_samples(size_t num_samples,
+    void write_samples(size_t samples_per_chan,
                        const audio::SampleSpec& sample_spec,
                        core::nanoseconds_t base_capture_ts = -1) {
-        core::Slice<audio::sample_t> samples = frame_factory_.new_raw_buffer();
-        CHECK(samples);
-        samples.reslice(0, num_samples * sample_spec.num_channels());
+        audio::FramePtr frame =
+            next_frame_(samples_per_chan, sample_spec, base_capture_ts);
 
-        for (size_t ns = 0; ns < num_samples; ns++) {
+        for (size_t ns = 0; ns < samples_per_chan; ns++) {
             for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
-                samples.data()[ns * sample_spec.num_channels() + nc] =
+                frame->raw_samples()[ns * sample_spec.num_channels() + nc] =
                     nth_sample(offset_);
             }
             offset_++;
         }
 
-        audio::Frame frame(samples.data(), samples.size());
+        LONGS_EQUAL(status::StatusOK, sink_.write(*frame));
 
-        frame.set_duration(samples.size() / sample_spec.num_channels());
+        advance_(samples_per_chan, sample_spec, base_capture_ts);
+    }
 
-        if (base_capture_ts >= 0) {
-            last_capture_ts_ =
-                base_capture_ts + sample_spec.samples_per_chan_2_ns(abs_offset_);
+    // Int16 version of write_samples().
+    void write_s16_samples(size_t samples_per_chan,
+                           const audio::SampleSpec& sample_spec,
+                           core::nanoseconds_t base_capture_ts = -1) {
+        audio::FramePtr frame =
+            next_frame_(samples_per_chan, sample_spec, base_capture_ts);
 
-            frame.set_capture_timestamp(last_capture_ts_);
+        UNSIGNED_LONGS_EQUAL(samples_per_chan * sample_spec.num_channels()
+                                 * sizeof(int16_t),
+                             frame->num_bytes());
+
+        int16_t* samples = (int16_t*)frame->bytes();
+
+        for (size_t ns = 0; ns < samples_per_chan; ns++) {
+            for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
+                samples[ns * sample_spec.num_channels() + nc] =
+                    int16_t(nth_sample(offset_) * (audio::sample_t)32768.0);
+            }
+            offset_++;
         }
 
-        sink_.write(frame);
+        LONGS_EQUAL(status::StatusOK, sink_.write(*frame));
 
-        refresh_ts_offset_ = sample_spec.samples_per_chan_2_ns(abs_offset_);
-        abs_offset_ += num_samples;
+        advance_(samples_per_chan, sample_spec, base_capture_ts);
+    }
 
-        if (base_capture_ts > 0) {
-            base_cts_ = base_capture_ts;
+    // Int32 version of write_samples().
+    void write_s32_samples(size_t samples_per_chan,
+                           const audio::SampleSpec& sample_spec,
+                           core::nanoseconds_t base_capture_ts = -1) {
+        audio::FramePtr frame =
+            next_frame_(samples_per_chan, sample_spec, base_capture_ts);
+
+        UNSIGNED_LONGS_EQUAL(samples_per_chan * sample_spec.num_channels()
+                                 * sizeof(int32_t),
+                             frame->num_bytes());
+
+        int32_t* samples = (int32_t*)frame->bytes();
+
+        for (size_t ns = 0; ns < samples_per_chan; ns++) {
+            for (size_t nc = 0; nc < sample_spec.num_channels(); nc++) {
+                samples[ns * sample_spec.num_channels() + nc] =
+                    int32_t(nth_sample(offset_) * (audio::sample_t)2147483648.0);
+            }
+            offset_++;
         }
+
+        LONGS_EQUAL(status::StatusOK, sink_.write(*frame));
+
+        advance_(samples_per_chan, sample_spec, base_capture_ts);
     }
 
     // Get timestamp to be passed to refresh().
@@ -95,6 +130,40 @@ public:
     }
 
 private:
+    audio::FramePtr next_frame_(size_t samples_per_chan,
+                                const audio::SampleSpec& sample_spec,
+                                core::nanoseconds_t base_capture_ts) {
+        audio::FramePtr frame =
+            frame_factory_.allocate_frame(sample_spec.stream_timestamp_2_bytes(
+                (packet::stream_timestamp_t)samples_per_chan));
+        CHECK(frame);
+
+        frame->set_raw(sample_spec.is_raw());
+        frame->set_duration((packet::stream_timestamp_t)samples_per_chan);
+
+        if (base_capture_ts >= 0) {
+            last_capture_ts_ =
+                base_capture_ts + sample_spec.samples_per_chan_2_ns(abs_offset_);
+
+            frame->set_capture_timestamp(last_capture_ts_);
+        }
+
+        sample_spec.validate_frame(*frame);
+
+        return frame;
+    }
+
+    void advance_(size_t samples_per_chan,
+                  const audio::SampleSpec& sample_spec,
+                  core::nanoseconds_t base_capture_ts) {
+        refresh_ts_offset_ = sample_spec.samples_per_chan_2_ns(abs_offset_);
+        abs_offset_ += samples_per_chan;
+
+        if (base_capture_ts > 0) {
+            base_cts_ = base_capture_ts;
+        }
+    }
+
     sndio::ISink& sink_;
     audio::FrameFactory& frame_factory_;
 

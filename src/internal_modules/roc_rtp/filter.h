@@ -61,8 +61,12 @@ public:
            const FilterConfig& config,
            const audio::SampleSpec& sample_spec);
 
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
+
     //! Read next packet.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr& pp);
+    virtual ROC_NODISCARD status::StatusCode read(packet::PacketPtr& pp,
+                                                  packet::PacketReadMode mode);
 
 private:
     bool validate_(const packet::PacketPtr& packet);

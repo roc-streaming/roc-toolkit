@@ -34,7 +34,7 @@ public:
     //! Reserve memory for given number of objects.
     //! @returns
     //!  false if allocation failed.
-    virtual ROC_ATTR_NODISCARD bool reserve(size_t n_objects);
+    virtual ROC_NODISCARD bool reserve(size_t n_objects);
 
     //! Allocate memory for an object, after checking with the memory limiter.
     //! @returns

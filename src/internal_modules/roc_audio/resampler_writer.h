@@ -31,39 +31,43 @@ namespace audio {
 class ResamplerWriter : public IFrameWriter, public core::NonCopyable<> {
 public:
     //! Initialize.
-    ResamplerWriter(IFrameWriter& writer,
-                    IResampler& resampler,
+    ResamplerWriter(IFrameWriter& frame_writer,
                     FrameFactory& frame_factory,
+                    IResampler& resampler,
                     const SampleSpec& in_sample_spec,
                     const SampleSpec& out_sample_spec);
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Set new resample factor.
     bool set_scaling(float multiplier);
 
-    //! Read audio frame.
-    virtual void write(Frame&);
+    //! Write audio frame.
+    virtual ROC_NODISCARD status::StatusCode write(Frame& frame);
 
 private:
-    size_t push_input_(Frame& in_frame, size_t in_pos);
-    core::nanoseconds_t capture_ts_(Frame& in_frame, size_t in_pos);
+    status::StatusCode write_output_(const Frame& in_frame, size_t in_frame_pos);
+    size_t push_input_(Frame& in_frame, size_t in_frame_pos);
+    core::nanoseconds_t capture_ts_(const Frame& in_frame, size_t in_frame_pos);
+
+    FrameFactory& frame_factory_;
+    IFrameWriter& frame_writer_;
 
     IResampler& resampler_;
-    IFrameWriter& writer_;
 
-    const SampleSpec in_sample_spec_;
-    const SampleSpec out_sample_spec_;
+    const SampleSpec in_spec_;
+    const SampleSpec out_spec_;
 
-    core::Slice<sample_t> input_buf_;
-    core::Slice<sample_t> output_buf_;
+    core::Slice<sample_t> in_buf_;
+    size_t in_buf_pos_;
 
-    size_t input_buf_pos_;
-    size_t output_buf_pos_;
+    FramePtr out_frame_;
+    size_t out_frame_pos_;
 
     float scaling_;
-    bool valid_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

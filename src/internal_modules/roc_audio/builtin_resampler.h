@@ -39,16 +39,16 @@ namespace audio {
 class BuiltinResampler : public IResampler, public core::NonCopyable<> {
 public:
     //! Initialize.
-    BuiltinResampler(core::IArena& arena,
-                     FrameFactory& frame_factory,
-                     ResamplerProfile profile,
+    BuiltinResampler(const ResamplerConfig& config,
                      const SampleSpec& in_spec,
-                     const SampleSpec& out_spec);
+                     const SampleSpec& out_spec,
+                     FrameFactory& frame_factory,
+                     core::IArena& arena);
 
     ~BuiltinResampler();
 
-    //! Check if object is successfully constructed.
-    virtual bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
 
     //! Set new resample factor.
     //! @remarks
@@ -135,7 +135,7 @@ private:
 
     const sample_t cutoff_freq_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

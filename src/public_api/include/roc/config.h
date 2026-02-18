@@ -60,14 +60,14 @@ static const roc_slot ROC_SLOT_DEFAULT = 0;
  * The interface defines the type of the communication with the remote peer and the
  * set of protocols (URI schemes) that can be used with this particular interface.
  *
- * \c ROC_INTERFACE_CONSOLIDATED is an interface for high-level protocols which
+ * \c ROC_INTERFACE_AGGREGATE is an interface for high-level protocols which
  * automatically manage all necessary communication: transport streams, control messages,
- * parameter negotiation, etc. When a consolidated connection is established, peers may
+ * parameter negotiation, etc. When an aggregate connection is established, peers may
  * automatically setup lower-level interfaces like \c ROC_INTERFACE_AUDIO_SOURCE, \c
  * ROC_INTERFACE_AUDIO_REPAIR, and \c ROC_INTERFACE_AUDIO_CONTROL.
  *
- * \c ROC_INTERFACE_CONSOLIDATED is mutually exclusive with lower-level interfaces.
- * In most cases, the user needs only \c ROC_INTERFACE_CONSOLIDATED. However, the
+ * \c ROC_INTERFACE_AGGREGATE is mutually exclusive with lower-level interfaces.
+ * In most cases, the user needs only \c ROC_INTERFACE_AGGREGATE. However, the
  * lower-level interfaces may be useful if an external signaling mechanism is used or for
  * compatibility with third-party software.
  *
@@ -81,7 +81,7 @@ static const roc_slot ROC_SLOT_DEFAULT = 0;
  * additional non-transport information.
  */
 typedef enum roc_interface {
-    /** Interface that consolidates all types of streams (source, repair, control).
+    /** Interface that aggregates multiple types of streams (source, repair, control).
      *
      * Allowed operations:
      *  - bind    (sender, receiver)
@@ -90,7 +90,7 @@ typedef enum roc_interface {
      * Allowed protocols:
      *  - \ref ROC_PROTO_RTSP
      */
-    ROC_INTERFACE_CONSOLIDATED = 1,
+    ROC_INTERFACE_AGGREGATE = 1,
 
     /** Interface for audio stream source data.
      *
@@ -137,7 +137,7 @@ typedef enum roc_protocol {
     /** RTSP 1.0 (RFC 2326) or RTSP 2.0 (RFC 7826).
      *
      * Interfaces:
-     *  - \ref ROC_INTERFACE_CONSOLIDATED
+     *  - \ref ROC_INTERFACE_AGGREGATE
      *
      * Transports:
      *   - for signaling: TCP
@@ -315,21 +315,115 @@ typedef enum roc_fec_encoding {
 } roc_fec_encoding;
 
 /** Sample format.
- * Defines how each sample is represented.
- * Does not define channels layout and sample rate.
+ *
+ * Format (\c roc_format) and sub-format (\c roc_subformat) together define how samples
+ * are encoded into binary form (typically local frames or network packets). Each format
+ * allows use of certain sub-formats.
+ *
+ * Format and sub-format don't define sample rate and channels layout, these parameters
+ * are configured separately via \ref roc_media_encoding.
  */
 typedef enum roc_format {
-    /** PCM floats.
-     * Uncompressed samples coded as 32-bit native-endian floats in range [-1; 1].
-     * Channels are interleaved, e.g. two channels are encoded as "L R L R ...".
+    /** Uncompressed interleaved headerless PCM samples.
+     *
+     * Multiple channels are interleaved, e.g. two channels are encoded as "L R L R ...".
+     *
+     * - supported subformats: \c ROC_SUBFORMAT_PCM_*
+     * - supported rates: any
+     * - supported channels: any
      */
-    ROC_FORMAT_PCM_FLOAT32 = 1
+    ROC_FORMAT_PCM = 1,
 } roc_format;
+
+/** Sample sub-format.
+ * Defines samples representation together with \c roc_format.
+ */
+typedef enum roc_subformat {
+    /** 8-bit signed integer. */
+    ROC_SUBFORMAT_PCM_SINT8 = 40,
+    /** 8-bit unsigned integer. */
+    ROC_SUBFORMAT_PCM_UINT8 = 41,
+
+    /** 16-bit signed integer, native endian. */
+    ROC_SUBFORMAT_PCM_SINT16 = 50,
+    /** 16-bit signed integer, little endian. */
+    ROC_SUBFORMAT_PCM_SINT16_LE = 51,
+    /** 16-bit signed integer, big endian. */
+    ROC_SUBFORMAT_PCM_SINT16_BE = 52,
+    /** 16-bit unsigned integer, native endian. */
+    ROC_SUBFORMAT_PCM_UINT16 = 53,
+    /** 16-bit unsigned integer, little endian. */
+    ROC_SUBFORMAT_PCM_UINT16_LE = 54,
+    /** 16-bit unsigned integer, big endian. */
+    ROC_SUBFORMAT_PCM_UINT16_BE = 55,
+
+    /** 24-bit signed integer, native endian. */
+    ROC_SUBFORMAT_PCM_SINT24 = 60,
+    /** 24-bit signed integer, little endian. */
+    ROC_SUBFORMAT_PCM_SINT24_LE = 61,
+    /** 24-bit signed integer, big endian. */
+    ROC_SUBFORMAT_PCM_SINT24_BE = 62,
+    /** 24-bit unsigned integer, native endian. */
+    ROC_SUBFORMAT_PCM_UINT24 = 63,
+    /** 24-bit unsigned integer, little endian. */
+    ROC_SUBFORMAT_PCM_UINT24_LE = 64,
+    /** 24-bit unsigned integer, big endian. */
+    ROC_SUBFORMAT_PCM_UINT24_BE = 65,
+
+    /** 32-bit signed integer, native endian. */
+    ROC_SUBFORMAT_PCM_SINT32 = 70,
+    /** 32-bit signed integer, little endian. */
+    ROC_SUBFORMAT_PCM_SINT32_LE = 71,
+    /** 32-bit signed integer, big endian. */
+    ROC_SUBFORMAT_PCM_SINT32_BE = 72,
+    /** 32-bit unsigned integer, native endian. */
+    ROC_SUBFORMAT_PCM_UINT32 = 73,
+    /** 32-bit unsigned integer, little endian. */
+    ROC_SUBFORMAT_PCM_UINT32_LE = 74,
+    /** 32-bit unsigned integer, big endian. */
+    ROC_SUBFORMAT_PCM_UINT32_BE = 75,
+
+    /** 64-bit signed integer, native endian. */
+    ROC_SUBFORMAT_PCM_SINT64 = 80,
+    /** 64-bit signed integer, little endian. */
+    ROC_SUBFORMAT_PCM_SINT64_LE = 81,
+    /** 64-bit signed integer, big endian. */
+    ROC_SUBFORMAT_PCM_SINT64_BE = 82,
+    /** 64-bit unsigned integer, native endian. */
+    ROC_SUBFORMAT_PCM_UINT64 = 83,
+    /** 64-bit unsigned integer, little endian. */
+    ROC_SUBFORMAT_PCM_UINT64_LE = 84,
+    /** 64-bit unsigned integer, big endian. */
+    ROC_SUBFORMAT_PCM_UINT64_BE = 85,
+
+    /** 32-bit IEEE-754 float in range [-1.0; +1.0], native endian. */
+    ROC_SUBFORMAT_PCM_FLOAT32 = 90,
+    /** 32-bit IEEE-754 float in range [-1.0; +1.0], little endian. */
+    ROC_SUBFORMAT_PCM_FLOAT32_LE = 91,
+    /** 32-bit IEEE-754 float in range [-1.0; +1.0], big endian. */
+    ROC_SUBFORMAT_PCM_FLOAT32_BE = 92,
+    /** 64-bit IEEE-754 float in range [-1.0; +1.0], native endian. */
+    ROC_SUBFORMAT_PCM_FLOAT64 = 93,
+    /** 64-bit IEEE-754 float in range [-1.0; +1.0], little endian. */
+    ROC_SUBFORMAT_PCM_FLOAT64_LE = 94,
+    /** 64-bit IEEE-754 float in range [-1.0; +1.0], big endian. */
+    ROC_SUBFORMAT_PCM_FLOAT64_BE = 95,
+} roc_subformat;
 
 /** Channel layout.
  * Defines number of channels and meaning of each channel.
  */
 typedef enum roc_channel_layout {
+    /** Mono.
+     * One channel with monophonic sound.
+     */
+    ROC_CHANNEL_LAYOUT_MONO = 1,
+
+    /** Stereo.
+     * Two channels: left, right.
+     */
+    ROC_CHANNEL_LAYOUT_STEREO = 2,
+
     /** Multi-track audio.
      *
      * In multitrack layout, stream contains multiple channels which represent
@@ -339,35 +433,33 @@ typedef enum roc_channel_layout {
      * The number of channels is arbitrary and is defined by \c tracks field of
      * \ref roc_media_encoding struct.
      */
-    ROC_CHANNEL_LAYOUT_MULTITRACK = 1,
-
-    /** Mono.
-     * One channel with monophonic sound.
-     */
-    ROC_CHANNEL_LAYOUT_MONO = 2,
-
-    /** Stereo.
-     * Two channels: left, right.
-     */
-    ROC_CHANNEL_LAYOUT_STEREO = 3,
+    ROC_CHANNEL_LAYOUT_MULTITRACK = 4
 } roc_channel_layout;
 
 /** Media encoding.
  * Defines format and parameters of samples encoded in frames or packets.
  */
 typedef struct roc_media_encoding {
-    /** Sample frequency.
-     * Defines number of samples per channel per second (e.g. 44100).
-     */
-    unsigned int rate;
-
     /** Sample format.
-     * Defines sample precision and encoding.
+     * Defines sample binary coding.
      */
     roc_format format;
 
+    /** Sample sub-format.
+     * Defines sample binary representation together with \c format.
+     * Allowed values depend on \c format.
+     */
+    roc_subformat subformat;
+
+    /** Sample frequency.
+     * Defines number of samples per channel per second (e.g. 44100).
+     * Allowed values may be limited by \c format.
+     */
+    unsigned int rate;
+
     /** Channel layout.
      * Defines number of channels and meaning of each channel.
+     * Allowed values may be limited by \c format.
      */
     roc_channel_layout channels;
 
@@ -383,7 +475,7 @@ typedef struct roc_media_encoding {
 } roc_media_encoding;
 
 /** Clock source for sender or receiver.
- * Defines wo is responsible to invoke read or write in proper time.
+ * Defines who is responsible to invoke read or write in proper time.
  */
 typedef enum roc_clock_source {
     /** Default clock source.
@@ -416,7 +508,7 @@ typedef enum roc_clock_source {
 } roc_clock_source;
 
 /** Latency tuner backend.
- * Defines which latency is monitored and tuned by latency tuner.
+ * Defines which latency is monitored and adjusted by latency tuner.
  */
 typedef enum roc_latency_tuner_backend {
     /** Default backend.
@@ -443,7 +535,7 @@ typedef enum roc_latency_tuner_backend {
      *
      * Cons:
      *  - synchronizes only clock speed, but not position; different receivers will
-     *    have different (constant) delays
+     *    have different (constant, on average) delays
      *  - affected by network jitter; spikes in packet delivery will cause slow
      *    oscillations in clock speed
      */
@@ -451,36 +543,36 @@ typedef enum roc_latency_tuner_backend {
 } roc_latency_tuner_backend;
 
 /** Latency tuner profile.
- * Defines whether latency tuning is enabled and which algorithm is used.
+ * Defines whether latency adjustment is enabled and which algorithm is used.
  */
 typedef enum roc_latency_tuner_profile {
     /** Default profile.
      *
-     * On receiver, when \ref ROC_LATENCY_TUNER_BACKEND_NIQ is used, selects \ref
-     * ROC_LATENCY_TUNER_PROFILE_RESPONSIVE if target latency is low, and \ref
-     * ROC_LATENCY_TUNER_PROFILE_GRADUAL if target latency is high.
+     * On receiver, when \c ROC_LATENCY_TUNER_BACKEND_NIQ is used, selects
+     * \c ROC_LATENCY_TUNER_PROFILE_RESPONSIVE if target latency is low, and
+     * \c ROC_LATENCY_TUNER_PROFILE_GRADUAL if target latency is high.
      *
-     * On sender, selects \ref ROC_LATENCY_TUNER_PROFILE_INTACT.
+     * On sender, selects \c ROC_LATENCY_TUNER_PROFILE_INTACT.
      */
     ROC_LATENCY_TUNER_PROFILE_DEFAULT = 0,
 
-    /** No latency tuning.
+    /** No latency adjustment.
      *
-     * In this mode, clock speed is not adjusted. Default on sender.
+     * In this mode, clock speed is not adjusted.
      *
      * You can set this mode on receiver, and set some other mode on sender, to
-     * do latency tuning on sender side instead of recever side. It's useful
+     * do latency adjustment on sender side instead of receiver side. It's useful
      * when receiver is CPU-constrained and sender is not, because latency tuner
-     * relies on resampling, which is CPU-demanding.
+     * relies on resampling, which is increases CPU usage.
      *
      * You can also set this mode on both sender and receiver if you don't need
-     * latency tuning at all. However, if sender and receiver have independent
+     * latency adjustment at all. However, if sender and receiver have independent
      * clocks (which is typically the case), clock drift will lead to periodic
      * playback disruptions caused by underruns and overruns.
      */
     ROC_LATENCY_TUNER_PROFILE_INTACT = 1,
 
-    /** Responsive latency tuning.
+    /** Responsive latency adjustment.
      *
      * Clock speed is adjusted quickly and accurately.
      *
@@ -497,7 +589,7 @@ typedef enum roc_latency_tuner_profile {
      */
     ROC_LATENCY_TUNER_PROFILE_RESPONSIVE = 2,
 
-    /** Gradual latency tuning.
+    /** Gradual latency adjustment.
      *
      * Clock speed is adjusted slowly and smoothly.
      *
@@ -569,9 +661,9 @@ typedef enum roc_resampler_backend {
      * stage is needed, and this becomes fastest possible backend working almost as fast
      * as memcpy().
      *
-     * When frame and packet rates are different, usage of this backend compared to
-     * \c ROC_RESAMPLER_BACKEND_SPEEX allows to sacrify some quality, but somewhat
-     * improve scaling precision and CPU usage in return.
+     * When frame and packet rates are different, usage of this backend, compared to
+     * \c ROC_RESAMPLER_BACKEND_SPEEX, allows to sacrifice some quality and improve
+     * scaling precision and CPU usage in return.
      *
      * This backend is available only when SpeexDSP was enabled at build time.
      *
@@ -599,6 +691,25 @@ typedef enum roc_resampler_profile {
     /** Low quality, lower CPU usage. */
     ROC_RESAMPLER_PROFILE_LOW = 3
 } roc_resampler_profile;
+
+/** PLC backend.
+ *
+ * Packet loss concealment (PLC), is used to reduce distortion caused by lost
+ * packets by filling gaps with interpolated or extrapolated data.
+ *
+ * PLC is used when a packet was lost and FEC was not able to recover it.
+ */
+typedef enum roc_plc_backend {
+    /** No PLC.
+     * Gaps are filled with zeros (silence).
+     */
+    ROC_PLC_BACKEND_DISABLE = -1,
+
+    /** Default backend.
+     * Current default is \c ROC_PLC_BACKEND_DISABLE.
+     */
+    ROC_PLC_BACKEND_DEFAULT = 0,
+} roc_plc_backend;
 
 /** Context configuration.
  *
@@ -638,7 +749,7 @@ typedef struct roc_context_config {
 typedef struct roc_sender_config {
     /** The encoding used in frames passed to sender.
      *
-     * Frame encoding defines sample format, channel layout, and sample rate in local
+     * Frame encoding defines sample format, channel layout, and sample rate in **local**
      * frames created by user and passed to sender.
      *
      * Should be set explicitly (zero value is invalid).
@@ -652,15 +763,14 @@ typedef struct roc_sender_config {
      * automatically.
      *
      * If zero, sender selects packet encoding automatically based on \c frame_encoding.
-     * This automatic selection matches only encodings that have exact same sample rate
-     * and channel layout, and hence don't require conversions. If you need conversions,
-     * you should set packet encoding explicitly.
+     * This automatic selection matches only encodings that have exact same sample rate,
+     * channel layout, and format, hence don't require conversions. If you need
+     * conversions, you should set packet encoding explicitly.
      *
-     * If you want to force specific packet encoding, and built-in set of encodings is
-     * not enough, you can use \ref roc_context_register_encoding() to register custom
-     * encoding, and set \c packet_encoding to registered identifier. If you use signaling
-     * protocol like RTSP, it's enough to register in just on sender; otherwise, you
-     * need to do the same on receiver as well.
+     * You can use \ref roc_context_register_encoding() to register custom encoding, and
+     * set \c packet_encoding to registered identifier. If you use signaling protocol like
+     * RTSP, it's enough to register in just on sender; otherwise, you need to do the same
+     * on receiver as well.
      */
     roc_packet_encoding packet_encoding;
 
@@ -674,13 +784,6 @@ typedef struct roc_sender_config {
      * If zero, default value is used.
      */
     unsigned long long packet_length;
-
-    /** Enable packet interleaving.
-     *
-     * If non-zero, the sender shuffles packets before sending them. This
-     * may increase robustness but also increases latency.
-     */
-    unsigned int packet_interleaving;
 
     /** FEC encoding to use.
      *
@@ -724,32 +827,35 @@ typedef struct roc_sender_config {
     /** Clock source to use.
      * Defines whether write operation is blocking or non-blocking.
      *
+     * If write is non-blocking, the user is responsible to invoke it in appropriate
+     * time. Otherwise it will automatically wait for that time.
+     *
      * If zero, default value is used (\ref ROC_CLOCK_SOURCE_DEFAULT).
      */
     roc_clock_source clock_source;
 
     /** Latency tuner backend.
      * Defines which latency is monitored and controlled by latency tuner.
-     * Defines semantics of \c target_latency, \c min_latency, and \c max_latency fields.
+     * Defines semantics of \c target_latency and related fields.
      *
      * If zero, default backend is used (\ref ROC_LATENCY_TUNER_BACKEND_DEFAULT).
      */
     roc_latency_tuner_backend latency_tuner_backend;
 
     /** Latency tuner profile.
-     * Defines whether latency tuning is enabled and which algorithm is used.
+     * Defines whether latency adjustment is enabled and which algorithm is used.
      *
      * If zero, default profile is used (\ref ROC_LATENCY_TUNER_PROFILE_DEFAULT).
      *
-     * By default, latency tuning is **disabled** on sender. If you enable it on sender,
-     * you need to disable it on receiver. You also need to set \c target_latency to
-     * the exact same value on both sides.
+     * By default, latency adjustment is **disabled** on sender (\c latency_tuner_profile
+     * is \ref ROC_LATENCY_TUNER_PROFILE_INTACT). If you enable it on sender, you
+     * need to disable it on receiver.
      */
     roc_latency_tuner_profile latency_tuner_profile;
 
     /** Resampler backend.
      * Affects CPU usage, quality, and clock synchronization precision
-     * (if latency tuning is enabled).
+     * (if latency adjustment is enabled).
      *
      * If zero, default backend is used (\ref ROC_RESAMPLER_BACKEND_DEFAULT).
      */
@@ -764,35 +870,58 @@ typedef struct roc_sender_config {
 
     /** Target latency, in nanoseconds.
      *
-     * How latency is calculated depends on \c latency_tuner_backend field.
+     * By default, latency adjustment is enabled on receiver and disabled on sender
+     * (see \c latency_tuner_profile). In this case, \c target_latency,
+     * \c latency_tolerance, \c start_target_latency, \c min_target_latency, and
+     * \c max_target_latency should be configured only on receiver, and should be set
+     * to zeros on sender.
      *
-     * If latency tuning is enabled on sender (if \c latency_tuner_profile is not
-     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT), sender adjusts its clock to keep
-     * actual latency as close as possible to the target.
+     * You can enable latency adjustment on sender and disable it on receiver
+     * (again, see \c latency_tuner_profile). In this case, \c target_latency,
+     * \c latency_tolerance, \c start_target_latency, \c min_target_latency, and
+     * \c max_target_latency should be configured on both sender and receiver and
+     * should match each other.
      *
-     * By default, latency tuning is **disabled** on sender. If you enable it on sender,
-     * you need to disable it on receiver. You also need to set \c target_latency to
-     * the exact same value on both sides.
-     *
-     * If latency tuning is enabled, \c target_latency should be non-zero.
+     * Semantics of the fields on sender is the same as on receiver. Refer to comments
+     * in \ref roc_receiver_config for details on each field.
      */
     unsigned long long target_latency;
 
     /** Maximum allowed delta between current and target latency, in nanoseconds.
      *
-     * How latency is calculated depends on \c latency_tuner_backend field.
+     * By default, latency adjustment is enabled on receiver and disabled on sender
+     * (see \c latency_tuner_profile), and this field isn't used and should be zero.
      *
-     * If latency tuning is enabled on sender (if \c latency_tuner_profile is not
-     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT), sender monitors current latency, and
-     * if it differs from \c target_latency more than by \c latency_tolerance, sender
-     * restarts connection to receiver.
-     *
-     * By default, latency bounding is **disabled** on sender. If you enable it on sender,
-     * you likely want to disable it on receiver.
-     *
-     * If zero, default value is used (if latency tuning is enabled on sender).
+     * If you want to enable it, refer to the comment for \c target_latency.
      */
     unsigned long long latency_tolerance;
+
+    /** Starting latency for adaptive mode, in nanoseconds.
+     *
+     * By default, latency adjustment is enabled on receiver and disabled on sender
+     * (see \c latency_tuner_profile), and this field isn't used and should be zero.
+     *
+     * If you want to enable it, refer to the comment for \c target_latency.
+     */
+    unsigned long long start_target_latency;
+
+    /** Minimum latency for adaptive mode, in nanoseconds.
+     *
+     * By default, latency adjustment is enabled on receiver and disabled on sender
+     * (see \c latency_tuner_profile), and this field isn't used and should be zero.
+     *
+     * If you want to enable it, refer to the comment for \c target_latency.
+     */
+    unsigned long long min_target_latency;
+
+    /** Maximum latency for adaptive mode, in nanoseconds.
+     *
+     * By default, latency adjustment is enabled on receiver and disabled on sender
+     * (see \c latency_tuner_profile), and this field isn't used and should be zero.
+     *
+     * If you want to enable it, refer to the comment for \c target_latency.
+     */
+    unsigned long long max_target_latency;
 } roc_sender_config;
 
 /** Receiver configuration.
@@ -806,7 +935,7 @@ typedef struct roc_sender_config {
 typedef struct roc_receiver_config {
     /** The encoding used in frames returned by receiver.
      *
-     * Frame encoding defines sample format, channel layout, and sample rate in local
+     * Frame encoding defines sample format, channel layout, and sample rate in **local**
      * frames returned by receiver to user.
      *
      * Should be set (zero value is invalid).
@@ -816,32 +945,35 @@ typedef struct roc_receiver_config {
     /** Clock source.
      * Defines whether read operation is blocking or non-blocking.
      *
+     * If read is non-blocking, the user is responsible to invoke it in appropriate
+     * time. Otherwise it will automatically wait for that time.
+     *
      * If zero, default value is used (\ref ROC_CLOCK_SOURCE_DEFAULT).
      */
     roc_clock_source clock_source;
 
     /** Latency tuner backend.
      * Defines which latency is monitored and controlled by latency tuner.
-     * Defines semantics of \c target_latency, \c min_latency, and \c max_latency fields.
+     * Defines semantics of \c target_latency and related fields.
      *
      * If zero, default backend is used (\ref ROC_LATENCY_TUNER_BACKEND_DEFAULT).
      */
     roc_latency_tuner_backend latency_tuner_backend;
 
     /** Latency tuner profile.
-     * Defines whether latency tuning is enabled and which algorithm is used.
+     * Defines whether latency adjustment is enabled and which algorithm is used.
      *
      * If zero, default profile is used (\ref ROC_LATENCY_TUNER_PROFILE_DEFAULT).
      *
-     * By default, latency tuning is **enabled** on receiver. If you disable it on
-     * receiver, you usually need to enable it on sender. In that case you also need to
-     * set \c target_latency to the same value on both sides.
+     * By default, latency adjustment is **enabled** on receiver (\c latency_tuner_profile
+     * is not \ref ROC_LATENCY_TUNER_PROFILE_INTACT). If you disable it on receiver,
+     * you usually need to enable it on sender.
      */
     roc_latency_tuner_profile latency_tuner_profile;
 
     /** Resampler backend.
      * Affects CPU usage, quality, and clock synchronization precision
-     * (if latency tuning is enabled).
+     * (if latency adjustment is enabled).
      *
      * If zero, default backend is used (\ref ROC_RESAMPLER_BACKEND_DEFAULT).
      */
@@ -854,43 +986,91 @@ typedef struct roc_receiver_config {
      */
     roc_resampler_profile resampler_profile;
 
+    /** PLC backend.
+     * Allows to reduce distortion cased by packet loss.
+     *
+     * If zero, default backend is used (\ref ROC_PLC_BACKEND_DEFAULT).
+     *
+     * You can use \ref roc_context_register_plc() to register custom PLC implementation,
+     * and set \c plc_backend to registered identifier.
+     */
+    roc_plc_backend plc_backend;
+
     /** Target latency, in nanoseconds.
      *
-     * How latency is calculated depends on \c latency_tuner_backend field.
+     * Defines the latency value to maintain, as measured by the latency backend
+     * (see \c latency_tuner_backend):
+     *   - Non-zero value activates **fixed latency** mode: the latency starts from
+     *     \c target_latency and is kept close to that value.
+     *   - Zero value activates **adaptive latency** mode: the latency is chosen
+     *     dynamically. Initial latency is \c start_target_latency, and the allowed
+     *     range is \c min_target_latency to \c max_target_latency.
+     *     Latency tuner consistently reassesses network conditions and changes target
+     *     to achieve the lowest latency that doesn't cause disruptions.
      *
-     * If latency tuning is enabled on receiver (if \c latency_tuner_profile is not
-     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT), receiver adjusts its clock to keep
-     * actual latency as close as possible to the target.
+     * If latency adjustment is enabled on receiver (default setting, see
+     * \c latency_tuner_profile), receiver starts with the initial latency and
+     * continuously modulates clock speed to keep actual latency close to the target.
+     * It also validates that the latency deviation never exceeds the limit (see
+     * \c latency_tolerance).
      *
-     * By default, latency tuning is **enabled** on receiver. If you disable it on
-     * receiver, you likely want to enable it on sender. In this case you also need to
-     * set \c target_latency to the exact same value on both sides.
+     * If latency adjustment is disabled on receiver, it is should be enabled on sender.
+     * In this case, receiver starts with the initial latency, but afterwards does not
+     * try to adjust clock speed, assuming that sender will do it. However, receiver
+     * still validates that the latency deviation doesn't exceed the limit.
      *
-     * If zero, default value is used.
+     * When latency adjustment is enabled on sender instead of receiver,
+     * \c target_latency, \c start_target_latency, \c min_target_latency and
+     * \c max_target_latency should match on sender and receiver.
+     * This ensures both sides know the initial latency and the allowed range.
      */
     unsigned long long target_latency;
 
     /** Maximum allowed delta between current and target latency, in nanoseconds.
      *
-     * How latency is calculated depends on \c latency_tuner_backend field.
+     * Latency tuner continuously monitors deviation of actual latency from target.
+     * If deviation becomes bigger than \c latency_tolerance, connection to sender
+     * is terminated (but sender may reconnect).
      *
-     * If latency tuning is enabled on receiver (if \c latency_tuner_profile is not
-     * \ref ROC_LATENCY_TUNER_PROFILE_INTACT), receiver monitors current latency, and
-     * if it differs from \c target_latency more than by \c latency_tolerance, receiver
-     * terminates connection to sender (but it then restarts if sender continues
-     * streaming).
-     *
-     * By default, latency bounding is **enabled** on receiver. If you disable it on
-     * receiver, you likely want to enable it on sender.
-     *
-     * If zero, default value is used (if latency tuning is enabled on receiver).
+     * If zero, default value is used.
      */
     unsigned long long latency_tolerance;
+
+    /** Starting latency for adaptive mode, in nanoseconds.
+     *
+     * If adaptive latency mode is used (default setting, see \c target_latency), this
+     * field defines initial value for the target latency.
+     *
+     * If zero, default value is used.
+     */
+    unsigned long long start_target_latency;
+
+    /** Minimum latency for adaptive mode, in nanoseconds.
+     *
+     * If adaptive latency mode is used (default setting, see \c target_latency),
+     * \c min_target_latency and \c max_target_latency define the allowed range
+     * for the target latency.
+     *
+     * You should either set both \c min_target_latency and \c max_target_latency,
+     * or keep both zero to use default values.
+     */
+    unsigned long long min_target_latency;
+
+    /** Maximum latency for adaptive mode, in nanoseconds.
+     *
+     * If adaptive latency mode is used (default setting, see \c target_latency),
+     * \c min_target_latency and \c max_target_latency define the allowed range
+     * for the target latency.
+     *
+     * You should either set both \c min_target_latency and \c max_target_latency,
+     * or keep both zero to use default values.
+     */
+    unsigned long long max_target_latency;
 
     /** Timeout for the lack of playback, in nanoseconds.
      *
      * If there is no playback during this period, receiver terminates connection to
-     * to sender (but it then restarts if sender continues streaming).
+     * to sender (but sender may reconnect).
      *
      * This mechanism allows to detect dead, hanging, or incompatible clients that
      * generate unparseable packets.
@@ -902,7 +1082,7 @@ typedef struct roc_receiver_config {
     /** Timeout for choppy playback, in nanoseconds.
      *
      * If there is constant stuttering during this period, receiver terminates connection
-     * to sender (but it then restarts if sender continues streaming).
+     * to sender (but sender may reconnect).
      *
      * This mechanism allows to detect situations when playback continues but there
      * are frequent glitches, for example because there is a high ratio of late packets.
@@ -978,7 +1158,7 @@ typedef struct roc_interface_config {
      *
      * By default, false.
      */
-    int reuse_address;
+    unsigned int reuse_address;
 } roc_interface_config;
 
 #ifdef __cplusplus

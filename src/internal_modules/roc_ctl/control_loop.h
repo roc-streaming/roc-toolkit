@@ -74,7 +74,7 @@ public:
         class BindEndpoint : public ControlTask {
         public:
             //! Set task parameters.
-            BindEndpoint(EndpointHandle endpoint, const address::EndpointUri& uri);
+            BindEndpoint(EndpointHandle endpoint, const address::NetworkUri& uri);
 
         private:
             friend class ControlLoop;
@@ -82,7 +82,7 @@ public:
             enum Phase { Phase_Prologue, Phase_Epilogue };
 
             core::SharedPtr<BasicControlEndpoint> endpoint_;
-            const address::EndpointUri& uri_;
+            const address::NetworkUri& uri_;
             Phase phase_;
         };
 
@@ -90,7 +90,7 @@ public:
         class ConnectEndpoint : public ControlTask {
         public:
             //! Set task parameters.
-            ConnectEndpoint(EndpointHandle endpoint, const address::EndpointUri& uri);
+            ConnectEndpoint(EndpointHandle endpoint, const address::NetworkUri& uri);
 
         private:
             friend class ControlLoop;
@@ -98,7 +98,7 @@ public:
             enum Phase { Phase_Prologue, Phase_Epilogue };
 
             core::SharedPtr<BasicControlEndpoint> endpoint_;
-            const address::EndpointUri& uri_;
+            const address::NetworkUri& uri_;
             Phase phase_;
         };
 
@@ -107,14 +107,14 @@ public:
         public:
             //! Set task parameters.
             AttachSink(EndpointHandle endpoint,
-                       const address::EndpointUri& uri,
+                       const address::NetworkUri& uri,
                        pipeline::SenderLoop& sink);
 
         private:
             friend class ControlLoop;
 
             core::SharedPtr<BasicControlEndpoint> endpoint_;
-            const address::EndpointUri& uri_;
+            const address::NetworkUri& uri_;
             pipeline::SenderLoop& sink_;
         };
 
@@ -136,14 +136,14 @@ public:
         public:
             //! Set task parameters.
             AttachSource(EndpointHandle endpoint,
-                         const address::EndpointUri& uri,
+                         const address::NetworkUri& uri,
                          pipeline::ReceiverLoop& source);
 
         private:
             friend class ControlLoop;
 
             core::SharedPtr<BasicControlEndpoint> endpoint_;
-            const address::EndpointUri& uri_;
+            const address::NetworkUri& uri_;
             pipeline::ReceiverLoop& source_;
         };
 
@@ -178,8 +178,8 @@ public:
 
     virtual ~ControlLoop();
 
-    //! Check if the object was successfully constructed.
-    bool is_valid() const;
+    //! Check if control loop was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Enqueue a task for asynchronous execution as soon as possible.
     //! @p completer will be invoked on control thread when the task completes.
@@ -198,7 +198,7 @@ public:
     //! Combines schedule() and wait() calls.
     //! @returns
     //!  true if the task succeeded or false if it failed.
-    ROC_ATTR_NODISCARD bool schedule_and_wait(ControlTask& task);
+    ROC_NODISCARD bool schedule_and_wait(ControlTask& task);
 
     //! Try to cancel scheduled task execution, if it's not executed yet.
     //! @see ControlTaskQueue::async_cancel for details.

@@ -13,11 +13,18 @@ namespace roc {
 namespace pipeline {
 
 StateTracker::StateTracker()
-    : active_sessions_(0)
+    : halt_state_(-1)
+    , active_sessions_(0)
     , pending_packets_(0) {
 }
 
 sndio::DeviceState StateTracker::get_state() const {
+    const int halt_state = halt_state_;
+    if (halt_state != -1) {
+        // Happens if set_broken() or set_closed() was called.
+        return (sndio::DeviceState)halt_state;
+    }
+
     if (active_sessions_ != 0) {
         // We have sessions and they're producing some sound.
         return sndio::DeviceState_Active;
@@ -32,22 +39,49 @@ sndio::DeviceState StateTracker::get_state() const {
     return sndio::DeviceState_Idle;
 }
 
-size_t StateTracker::num_active_sessions() const {
+bool StateTracker::is_usable() const {
+    const int halt_state = halt_state_;
+
+    return halt_state != sndio::DeviceState_Broken
+        && halt_state != sndio::DeviceState_Closed;
+}
+
+bool StateTracker::is_closed() const {
+    const int halt_state = halt_state_;
+
+    return halt_state == sndio::DeviceState_Closed;
+}
+
+void StateTracker::set_broken() {
+    halt_state_ = sndio::DeviceState_Broken;
+}
+
+void StateTracker::set_closed() {
+    halt_state_ = sndio::DeviceState_Closed;
+}
+
+size_t StateTracker::num_sessions() const {
     return (size_t)active_sessions_;
 }
 
-void StateTracker::add_active_sessions(int increment) {
-    const long result = active_sessions_ += increment;
-    roc_panic_if(result < 0);
+void StateTracker::register_session() {
+    active_sessions_++;
 }
 
-size_t StateTracker::num_pending_packets() const {
-    return (size_t)pending_packets_;
+void StateTracker::unregister_session() {
+    if (--active_sessions_ < 0) {
+        roc_panic("state tracker: unpaired register/unregister session");
+    }
 }
 
-void StateTracker::add_pending_packets(int increment) {
-    const long result = pending_packets_ += increment;
-    roc_panic_if(result < 0);
+void StateTracker::register_packet() {
+    pending_packets_++;
+}
+
+void StateTracker::unregister_packet() {
+    if (--pending_packets_ < 0) {
+        roc_panic("state tracker: unpaired register/unregister packet");
+    }
 }
 
 } // namespace pipeline

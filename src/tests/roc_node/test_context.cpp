@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
+#include "test_harness.h"
 
 #include "roc_core/heap_arena.h"
 #include "roc_node/context.h"
@@ -28,7 +28,7 @@ TEST(context, reference_counting) {
     ContextConfig context_config;
     Context context(context_config, arena);
 
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
     CHECK(context.getref() == 0);
 
     {

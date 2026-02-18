@@ -15,7 +15,7 @@
 #include <uv.h>
 
 #include "roc_address/socket_addr.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/mutex.h"
 #include "roc_core/rate_limiter.h"
 #include "roc_core/seqlock.h"
@@ -108,7 +108,7 @@ enum TcpConnectionType {
 //!  - after connection is established and before it's terminated you can
 //!    perform I/O
 //!  - even if connection can't be established, async_terminate() still should be
-//!    called before closing and destryoing connection
+//!    called before closing and destroying connection
 //!
 //! Connection FSM
 //! --------------
@@ -138,7 +138,7 @@ public:
     //!  Should be called from network loop thread.
     virtual AsyncOperationStatus async_close(ICloseHandler& handler, void* handler_arg);
 
-    //! Establish conection by accepting it from listening socket.
+    //! Establish connection by accepting it from listening socket.
     //! @remarks
     //!  Should be called from network loop thread.
     bool accept(const TcpConnectionConfig& config,
@@ -335,13 +335,13 @@ private:
 
     SocketHandle socket_;
 
-    core::Atomic<int32_t> conn_state_;
+    core::AtomicInt<int32_t> conn_state_;
 
-    core::Atomic<int32_t> conn_was_established_;
-    core::Atomic<int32_t> conn_was_failed_;
+    core::AtomicInt<int32_t> conn_was_established_;
+    core::AtomicInt<int32_t> conn_was_failed_;
 
-    core::Atomic<int32_t> writable_status_;
-    core::Atomic<int32_t> readable_status_;
+    core::AtomicInt<int32_t> writable_status_;
+    core::AtomicInt<int32_t> readable_status_;
 
     bool got_stream_end_;
 

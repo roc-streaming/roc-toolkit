@@ -44,15 +44,36 @@ public:
         return ctx_;
     }
 
-    void register_multitrack_encoding(int encoding_id, unsigned num_tracks) {
+    void register_custom_encoding(int encoding_id,
+                                  roc_format format,
+                                  roc_subformat subformat,
+                                  unsigned rate,
+                                  roc_channel_layout channels) {
         roc_media_encoding encoding;
         memset(&encoding, 0, sizeof(encoding));
-        encoding.rate = SampleRate;
-        encoding.format = ROC_FORMAT_PCM_FLOAT32;
+        encoding.format = format;
+        encoding.subformat = subformat;
+        encoding.rate = rate;
+        encoding.channels = channels;
+
+        CHECK(roc_context_register_encoding(ctx_, encoding_id, &encoding) == 0);
+    }
+
+    void
+    register_multitrack_encoding(int encoding_id, unsigned rate, unsigned num_tracks) {
+        roc_media_encoding encoding;
+        memset(&encoding, 0, sizeof(encoding));
+        encoding.format = ROC_FORMAT_PCM;
+        encoding.subformat = ROC_SUBFORMAT_PCM_SINT16;
+        encoding.rate = rate;
         encoding.channels = ROC_CHANNEL_LAYOUT_MULTITRACK;
         encoding.tracks = num_tracks;
 
         CHECK(roc_context_register_encoding(ctx_, encoding_id, &encoding) == 0);
+    }
+
+    void register_plc_plugin(int plugin_id, roc_plugin_plc* plugin) {
+        CHECK(roc_context_register_plc(ctx_, plugin_id, plugin) == 0);
     }
 
 private:

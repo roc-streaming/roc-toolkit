@@ -13,6 +13,7 @@
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
 #include "roc_node/sender.h"
+#include "roc_status/code_to_str.h"
 
 using namespace roc;
 
@@ -45,20 +46,20 @@ int roc_sender_open(roc_context* context,
     }
 
     core::ScopedPtr<node::Sender> imp_sender(new (imp_context->arena())
-                                                 node::Sender(*imp_context, imp_config),
-                                             imp_context->arena());
+                                                 node::Sender(*imp_context, imp_config));
 
     if (!imp_sender) {
         roc_log(LogError, "roc_sender_open(): can't allocate sender");
         return -1;
     }
 
-    if (!imp_sender->is_valid()) {
-        roc_log(LogError, "roc_sender_open(): can't initialize sender");
+    if (imp_sender->init_status() != status::StatusOK) {
+        roc_log(LogError, "roc_sender_open(): can't initialize sender: status=%s",
+                status::code_to_str(imp_sender->init_status()));
         return -1;
     }
 
-    *result = (roc_sender*)imp_sender.release();
+    *result = (roc_sender*)imp_sender.hijack();
     return 0;
 }
 
@@ -114,7 +115,7 @@ int roc_sender_connect(roc_sender* sender,
         return -1;
     }
 
-    const address::EndpointUri& imp_endpoint = *(const address::EndpointUri*)endpoint;
+    const address::NetworkUri& imp_endpoint = *(const address::NetworkUri*)endpoint;
 
     address::Interface imp_iface;
     if (!api::interface_from_user(imp_iface, iface)) {
@@ -183,8 +184,6 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
 
     node::Sender* imp_sender = (node::Sender*)sender;
 
-    sndio::ISink& imp_sink = imp_sender->sink();
-
     if (!frame) {
         roc_log(LogError, "roc_sender_write(): invalid arguments: frame is null");
         return -1;
@@ -194,24 +193,20 @@ int roc_sender_write(roc_sender* sender, const roc_frame* frame) {
         return 0;
     }
 
-    const size_t factor = imp_sink.sample_spec().num_channels() * sizeof(float);
-
-    if (frame->samples_size % factor != 0) {
-        roc_log(LogError,
-                "roc_sender_write(): invalid arguments:"
-                " # of samples should be multiple of %u",
-                (unsigned)factor);
-        return -1;
-    }
-
     if (!frame->samples) {
         roc_log(LogError,
                 "roc_sender_write(): invalid arguments: frame samples buffer is null");
         return -1;
     }
 
-    audio::Frame imp_frame((float*)frame->samples, frame->samples_size / sizeof(float));
-    imp_sink.write(imp_frame);
+    const status::StatusCode code =
+        imp_sender->write_frame(frame->samples, frame->samples_size);
+
+    if (code != status::StatusOK) {
+        roc_log(LogError, "roc_sender_write(): can't write frame: status=%s",
+                status::code_to_str(code));
+        return -1;
+    }
 
     return 0;
 }
@@ -223,7 +218,7 @@ int roc_sender_close(roc_sender* sender) {
     }
 
     node::Sender* imp_sender = (node::Sender*)sender;
-    imp_sender->context().arena().destroy_object(*imp_sender);
+    imp_sender->context().arena().dispose_object(*imp_sender);
 
     roc_log(LogInfo, "roc_sender_close(): closed sender");
 

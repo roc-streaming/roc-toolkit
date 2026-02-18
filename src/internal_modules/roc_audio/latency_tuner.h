@@ -13,10 +13,12 @@
 #define ROC_AUDIO_LATENCY_TUNER_H_
 
 #include "roc_audio/freq_estimator.h"
+#include "roc_audio/latency_config.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/time.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/ilink_meter.h"
 #include "roc_packet/units.h"
 #include "roc_status/status_code.h"
@@ -24,167 +26,50 @@
 namespace roc {
 namespace audio {
 
-//! Latency tuner backend.
-//! Defines which latency we monitor and tune to achieve target.
-enum LatencyTunerBackend {
-    //! Deduce best default for given settings.
-    LatencyTunerBackend_Default,
-
-    //! Latency is Network Incoming Queue length.
-    //! Calculated on receiver without use of any signaling protocol.
-    //! Reported back to sender via RTCP XR.
-    LatencyTunerBackend_Niq,
-
-    //! Latency is End-to-end delay.
-    //! Can on receiver if RTCP XR is supported by both sides.
-    //! Reported back to sender via RTCP XR.
-    LatencyTunerBackend_E2e
-};
-
-//! Latency tuner profile.
-//! Defines whether and how we tune latency on fly to compensate clock
-//! drift and jitter.
-enum LatencyTunerProfile {
-    //! Deduce best default for given settings.
-    LatencyTunerProfile_Default,
-
-    //! Do not tune latency.
-    LatencyTunerProfile_Intact,
-
-    //! Fast and responsive tuning.
-    //! Good for lower network latency and jitter.
-    LatencyTunerProfile_Responsive,
-
-    //! Slow and smooth tuning.
-    //! Good for higher network latency and jitter.
-    LatencyTunerProfile_Gradual
-};
-
-//! Latency settings.
-struct LatencyConfig {
-    //! Latency tuner backend to use.
-    //! @remarks
-    //!  Defines which latency to monitor & tune.
-    LatencyTunerBackend tuner_backend;
-
-    //! Latency tuner profile to use.
-    //! @remarks
-    //!  Defines how smooth is the tuning.
-    LatencyTunerProfile tuner_profile;
-
-    //! Target latency.
-    //! @remarks
-    //!  Latency tuner will try to keep latency close to this value.
-    //! @note
-    //!  If zero, default value is used if possible.
-    //!  Negative value is an error.
-    core::nanoseconds_t target_latency;
-
-    //! Maximum allowed deviation from target latency.
-    //! @remarks
-    //!  If the latency goes out of bounds, the session is terminated.
-    //! @note
-    //!  If zero, default value is used if possible.
-    //!  Negative value is an error.
-    core::nanoseconds_t latency_tolerance;
-
-    //! Maximum delay since last packet before queue is considered stalling.
-    //! @remarks
-    //!  If niq_stalling becomes larger than stalling_tolerance, latency
-    //!  tolerance checks are temporary disabled.
-    //! @note
-    //!  If zero, default value is used if possible.
-    //!  Negative value is an error.
-    core::nanoseconds_t stale_tolerance;
-
-    //! Scaling update interval.
-    //! @remarks
-    //!  How often to run FreqEstimator and update Resampler scaling.
-    //! @note
-    //!  If zero, default value is used.
-    //!  Negative value is an error.
-    core::nanoseconds_t scaling_interval;
-
-    //! Maximum allowed deviation of freq_coeff from 1.0.
-    //! @remarks
-    //!  If the scaling goes out of bounds, it is trimmed.
-    //!  For example, 0.01 allows freq_coeff values in range [0.99; 1.01].
-    //! @note
-    //!  If zero, default value is used.
-    //!  Negative value is an error.
-    float scaling_tolerance;
-
-    //! Initialize.
-    LatencyConfig()
-        : tuner_backend(LatencyTunerBackend_Default)
-        , tuner_profile(LatencyTunerProfile_Default)
-        , target_latency(0)
-        , latency_tolerance(0)
-        , stale_tolerance(0)
-        , scaling_interval(0)
-        , scaling_tolerance(0) {
-    }
-
-    //! Automatically fill missing settings.
-    void deduce_defaults(core::nanoseconds_t default_target_latency, bool is_receiver);
-};
-
-//! Latency-related metrics.
-struct LatencyMetrics {
-    //! Estimated network incoming queue latency.
-    //! An estimate of how much media is buffered in receiver packet queue.
-    core::nanoseconds_t niq_latency;
-
-    //! Delay since last received packet.
-    //! In other words, how long there were no new packets in network incoming queue.
-    core::nanoseconds_t niq_stalling;
-
-    //! Estimated end-to-end latency.
-    //! An estimate of the time from recording a frame on sender to playing it
-    //! on receiver.
-    core::nanoseconds_t e2e_latency;
-
-    LatencyMetrics()
-        : niq_latency(0)
-        , niq_stalling(0)
-        , e2e_latency(0) {
-    }
-};
-
 //! Latency tuner.
 //!
 //! On receiver, LatencyMonitor computes local metrics and passes them to LatencyTuner.
-//! On sender, FeedbackMonitor obtains remote metrics and passes them to LatencyTuner.
-//! In both cases, LatencyTuner processes metrics and computes scaling factor that
-//! should be passed to resampler.
+//! On sender, FeedbackMonitor obtains remote metrics and passes them to LatencyTuner
+//! (if sender-side latency tuning is enabled).
 //!
-//! Features:
-//! - monitors how close actual latency and target latency are
-//! - monitors whether latency goes out of bounds
-//! - assuming that the difference between actual latency and target latency is
-//!   caused by the clock drift between sender and receiver, calculates scaling
-//!   factor for resampler to compensate it
+//! If latency tuning is enabled (latency profile is not "intact"), LatencyTuner monitors
+//! how close actual latency is to target latency. Assuming that the deviation is caused
+//! by the clock drift between sender and receiver, it calculates scaling factor to be
+//! passed to resampler to compensate the drift.
+//!
+//! If latency tuning is enabled and adaptive latency is used (target latency is zero),
+//! LatencyTuner constantly re-calculates target latency based on current jitter and
+//! other metrics.
+//!
+//! In addition, LatencyTuner constantly checks whether the actual latency goes out of
+//! bounds, and terminates session if that happens. It may happen either when latency
+//! tuning is disabled, or if it's enabled but we didn't get the job done of the
+//! compensating the clock drift.
 class LatencyTuner : public core::NonCopyable<> {
 public:
     //! Initialize.
-    LatencyTuner(const LatencyConfig& config, const SampleSpec& sample_spec);
+    LatencyTuner(const LatencyConfig& latency_config,
+                 const FreqEstimatorConfig& fe_config,
+                 const SampleSpec& sample_spec,
+                 dbgio::CsvDumper* dumper);
 
-    //! Check if the object was initialized successfully.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Pass updated metrics to tuner.
-    //! Tuner will use new values next time when update_stream() is called.
+    //! Should be called before updating stream.
     void write_metrics(const LatencyMetrics& latency_metrics,
                        const packet::LinkMetrics& link_metrics);
 
     //! Update stream latency and scaling.
-    //! This method performs all actual work:
+    //!  - in adaptive latency mode, re-calculates target latency based
+    //!    on jitter and other metrics
     //!  - depending on configured backend, selects which latency from
-    //!    metrics to use
-    //!  - check if latency goes out of bounds and session should be
+    //!    metrics to use as the actual latency
+    //!  - checks if actual latency goes out of bounds and session should be
     //!    terminated; if so, returns false
-    //!  - computes updated scaling based on latency history and configured
-    //!    profile
+    //!  - computes updated scaling based on actual latency history and
+    //!    configured profile
     bool update_stream();
 
     //! Advance stream by given number of samples.
@@ -194,24 +79,36 @@ public:
     //! If scaling has changed, returns updated value.
     //! Otherwise, returns zero.
     //! @remarks
-    //!  Latency tuner expects that this scaling will applied to the stream
+    //!  Latency tuner expects that this scaling will be applied to the stream
     //!  resampler, so that the latency will slowly achieve target value.
     //!  Returned value is close to 1.0.
     float fetch_scaling();
 
 private:
-    bool check_bounds_(packet::stream_timestamp_diff_t latency);
+    bool measure_actual_latency_(packet::stream_timestamp_diff_t& result);
+
+    bool check_actual_latency_(packet::stream_timestamp_diff_t latency);
     void compute_scaling_(packet::stream_timestamp_diff_t latency);
-    void report_();
+
+    void update_target_latency_(core::nanoseconds_t peak_jitter_ns,
+                                core::nanoseconds_t mean_jitter_ns,
+                                core::nanoseconds_t fec_block_ns);
+    void try_decrease_latency_(core::nanoseconds_t estimate,
+                               core::nanoseconds_t cur_tl_ns);
+    void try_increase_latency_(core::nanoseconds_t estimate,
+                               core::nanoseconds_t cur_tl_ns);
+
+    void periodic_report_();
+    void dump_();
 
     core::Optional<FreqEstimator> fe_;
 
     packet::stream_timestamp_t stream_pos_;
 
-    packet::stream_timestamp_diff_t scale_interval_;
+    packet::stream_timestamp_t scale_interval_;
     packet::stream_timestamp_t scale_pos_;
 
-    packet::stream_timestamp_diff_t report_interval_;
+    packet::stream_timestamp_t report_interval_;
     packet::stream_timestamp_t report_pos_;
 
     bool has_new_freq_coeff_;
@@ -221,8 +118,15 @@ private:
     const LatencyTunerBackend backend_;
     const LatencyTunerProfile profile_;
 
-    const bool enable_tuning_;
-    const bool enable_bounds_;
+    // True if we should actively adjust clock speed using resampler scaling.
+    // Either sender or receiver does it.
+    const bool enable_latency_adjustment_;
+    // True if we should check that deviation from target doesn't exceed limit.
+    // Receiver always does it, sender does it only if latency adjustment is on sender.
+    const bool enable_tolerance_checks_;
+    // True if adaptive latency mode is used (target latency is zero).
+    // This flag doesn't depend on who is doing latency adjustment.
+    const bool latency_is_adaptive_;
 
     bool has_niq_latency_;
     packet::stream_timestamp_diff_t niq_latency_;
@@ -231,24 +135,50 @@ private:
     bool has_e2e_latency_;
     packet::stream_timestamp_diff_t e2e_latency_;
 
-    bool has_jitter_;
-    packet::stream_timestamp_diff_t jitter_;
+    bool has_metrics_;
+    LatencyMetrics latency_metrics_;
+    packet::LinkMetrics link_metrics_;
 
-    packet::stream_timestamp_diff_t target_latency_;
-    packet::stream_timestamp_diff_t min_latency_;
-    packet::stream_timestamp_diff_t max_latency_;
-    packet::stream_timestamp_diff_t max_stalling_;
+    // In fixed mode this is constant, in adaptive mode it is changing
+    // from min_target_latency_ to max_target_latency_.
+    packet::stream_timestamp_diff_t cur_target_latency_;
+
+    // For adaptive mode.
+    packet::stream_timestamp_diff_t min_target_latency_;
+    packet::stream_timestamp_diff_t max_target_latency_;
+
+    // For bounds checking. May be used even when tuning is disabled.
+    packet::stream_timestamp_diff_t min_actual_latency_;
+    packet::stream_timestamp_diff_t max_actual_latency_;
+    const packet::stream_timestamp_diff_t max_stalling_;
 
     const SampleSpec sample_spec_;
 
-    bool valid_;
+    enum TargetLatencyState {
+        TL_IDLE,
+        TL_STARTING,
+        TL_COOLDOWN_AFTER_INC,
+        TL_COOLDOWN_AFTER_DEC
+    } target_latency_state_;
+
+    const packet::stream_timestamp_diff_t starting_timeout_;
+    const packet::stream_timestamp_diff_t cooldown_dec_timeout_;
+    const packet::stream_timestamp_diff_t cooldown_inc_timeout_;
+
+    const float max_jitter_overhead_;
+    const float mean_jitter_overhead_;
+
+    packet::stream_timestamp_t last_target_latency_update_;
+    const float lat_update_upper_thrsh_;
+    const float lat_update_dec_step_;
+    const float lat_update_inc_step_;
+
+    core::RateLimiter last_lat_limiter_;
+
+    dbgio::CsvDumper* dumper_;
+
+    status::StatusCode init_status_;
 };
-
-//! Get string name of latency backend.
-const char* latency_tuner_backend_to_str(LatencyTunerBackend backend);
-
-//! Get string name of latency tuner.
-const char* latency_tuner_profile_to_str(LatencyTunerProfile tuner);
 
 } // namespace audio
 } // namespace roc

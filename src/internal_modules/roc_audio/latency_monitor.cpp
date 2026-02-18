@@ -10,9 +10,7 @@
 #include "roc_audio/freq_estimator.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_core/stddefs.h"
 #include "roc_core/time.h"
-#include "roc_rtp/link_meter.h"
 
 namespace roc {
 namespace audio {
@@ -21,97 +19,90 @@ LatencyMonitor::LatencyMonitor(IFrameReader& frame_reader,
                                const packet::SortedQueue& incoming_queue,
                                const Depacketizer& depacketizer,
                                const packet::ILinkMeter& link_meter,
+                               const fec::BlockReader* fec_reader,
                                ResamplerReader* resampler,
-                               const LatencyConfig& config,
+                               const LatencyConfig& latency_config,
+                               const FreqEstimatorConfig& fe_config,
                                const SampleSpec& packet_sample_spec,
-                               const SampleSpec& frame_sample_spec)
-    : tuner_(config, frame_sample_spec)
+                               const SampleSpec& frame_sample_spec,
+                               dbgio::CsvDumper* dumper)
+    : tuner_(latency_config, fe_config, frame_sample_spec, dumper)
     , frame_reader_(frame_reader)
     , incoming_queue_(incoming_queue)
     , depacketizer_(depacketizer)
     , link_meter_(link_meter)
+    , fec_reader_(fec_reader)
     , resampler_(resampler)
-    , enable_scaling_(config.tuner_profile != audio::LatencyTunerProfile_Intact)
+    , enable_scaling_(latency_config.tuner_profile != audio::LatencyTunerProfile_Intact)
     , capture_ts_(0)
     , packet_sample_spec_(packet_sample_spec)
     , frame_sample_spec_(frame_sample_spec)
-    , alive_(true)
-    , valid_(false) {
-    if (!tuner_.is_valid()) {
+    , init_status_(status::NoStatus) {
+    if ((init_status_ = tuner_.init_status()) != status::StatusOK) {
         return;
     }
 
     if (enable_scaling_) {
         if (!init_scaling_()) {
+            init_status_ = status::StatusBadConfig;
             return;
         }
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool LatencyMonitor::is_valid() const {
-    return valid_;
-}
-
-bool LatencyMonitor::is_alive() const {
-    roc_panic_if(!is_valid());
-
-    return alive_;
+status::StatusCode LatencyMonitor::init_status() const {
+    return init_status_;
 }
 
 const LatencyMetrics& LatencyMonitor::metrics() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return latency_metrics_;
 }
 
-bool LatencyMonitor::read(Frame& frame) {
-    roc_panic_if(!is_valid());
+status::StatusCode LatencyMonitor::read(Frame& frame,
+                                        packet::stream_timestamp_t duration,
+                                        FrameReadMode mode) {
+    roc_panic_if(init_status_ != status::StatusOK);
 
-    if (alive_) {
-        compute_niq_latency_();
-        query_link_meter_();
+    compute_niq_latency_();
+    query_metrics_();
 
-        if (!pre_process_(frame)) {
-            alive_ = false;
-        }
+    if (!pre_read_()) {
+        return status::StatusAbort;
     }
 
-    if (!alive_) {
-        return false;
+    const status::StatusCode code = frame_reader_.read(frame, duration, mode);
+    if (code != status::StatusOK && code != status::StatusPart) {
+        return code;
     }
 
-    if (!frame_reader_.read(frame)) {
-        return false;
-    }
+    frame_sample_spec_.validate_frame(frame);
 
-    post_process_(frame);
+    post_read_(frame);
 
-    return true;
+    return status::StatusOK;
 }
 
-bool LatencyMonitor::reclock(const core::nanoseconds_t playback_timestamp) {
-    roc_panic_if(!is_valid());
+void LatencyMonitor::reclock(const core::nanoseconds_t playback_timestamp) {
+    roc_panic_if(init_status_ != status::StatusOK);
 
     // this method is called when playback time of last frame was reported
     // now we can update e2e latency based on it
     compute_e2e_latency_(playback_timestamp);
-
-    return true;
 }
 
-bool LatencyMonitor::pre_process_(const Frame& frame) {
+bool LatencyMonitor::pre_read_() {
     tuner_.write_metrics(latency_metrics_, link_metrics_);
 
     if (!tuner_.update_stream()) {
-        // TODO(gh-183): forward status code
         return false;
     }
 
     if (enable_scaling_) {
         if (!update_scaling_()) {
-            // TODO(gh-183): forward status code
             return false;
         }
     }
@@ -119,7 +110,7 @@ bool LatencyMonitor::pre_process_(const Frame& frame) {
     return true;
 }
 
-void LatencyMonitor::post_process_(const Frame& frame) {
+void LatencyMonitor::post_read_(const Frame& frame) {
     // for end-2-end latency calculations
     capture_ts_ = frame.capture_timestamp();
 
@@ -177,12 +168,15 @@ void LatencyMonitor::compute_e2e_latency_(const core::nanoseconds_t playback_tim
     latency_metrics_.e2e_latency = playback_timestamp - capture_ts_;
 }
 
-void LatencyMonitor::query_link_meter_() {
-    if (!link_meter_.has_metrics()) {
-        return;
+void LatencyMonitor::query_metrics_() {
+    if (link_meter_.has_metrics()) {
+        link_metrics_ = link_meter_.metrics();
     }
 
-    link_metrics_ = link_meter_.metrics();
+    if (fec_reader_) {
+        latency_metrics_.fec_block_duration =
+            packet_sample_spec_.stream_timestamp_2_ns(fec_reader_->max_block_duration());
+    }
 }
 
 bool LatencyMonitor::init_scaling_() {

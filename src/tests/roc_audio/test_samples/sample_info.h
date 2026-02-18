@@ -9,7 +9,7 @@
 #ifndef ROC_AUDIO_TEST_SAMPLES_SAMPLE_INFO_H_
 #define ROC_AUDIO_TEST_SAMPLES_SAMPLE_INFO_H_
 
-#include "roc_audio/pcm_format.h"
+#include "roc_audio/pcm_subformat.h"
 #include "roc_core/stddefs.h"
 
 namespace roc {
@@ -21,10 +21,10 @@ struct SampleInfo {
 
     const char* name;
 
-    PcmFormat format;
+    PcmSubformat format;
 
     size_t num_samples;
-    double samples[MaxSamples];
+    float samples[MaxSamples];
 
     size_t num_bytes;
     uint8_t bytes[MaxBytes];

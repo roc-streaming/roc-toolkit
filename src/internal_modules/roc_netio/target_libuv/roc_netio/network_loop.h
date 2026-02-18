@@ -15,7 +15,7 @@
 #include <uv.h>
 
 #include "roc_address/socket_addr.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/attributes.h"
 #include "roc_core/iarena.h"
 #include "roc_core/ipool.h"
@@ -140,7 +140,7 @@ public:
             //! Set task parameters.
             //! @remarks
             //!  - Updates @p config with the actual bind address.
-            //!  - Notofies @p conn_handler when connection state changes.
+            //!  - Notifies @p conn_handler when connection state changes.
             AddTcpClientPort(TcpClientConfig& config, IConnHandler& conn_handler);
 
             //! Get created port handle.
@@ -172,7 +172,7 @@ public:
             //! @remarks
             //!  Gets endpoint hostname, resolves it, and writes the resolved IP address
             //!  and the port from the endpoint to the resulting SocketAddr.
-            ResolveEndpointAddress(const address::EndpointUri& endpoint_uri);
+            ResolveEndpointAddress(const address::NetworkUri& endpoint_uri);
 
             //! Get resolved address.
             //! @pre
@@ -196,8 +196,8 @@ public:
     //!  Wait until background thread finishes.
     virtual ~NetworkLoop();
 
-    //! Check if the object was successfully constructed.
-    bool is_valid() const;
+    //! Check if control loop was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get number of receiver and sender ports.
     size_t num_ports() const;
@@ -213,7 +213,7 @@ public:
     //! Should not be called from schedule() callback.
     //! @returns
     //!  true if the task succeeded or false if it failed.
-    ROC_ATTR_NODISCARD bool schedule_and_wait(NetworkTask& task);
+    ROC_NODISCARD bool schedule_and_wait(NetworkTask& task);
 
 private:
     static void task_sem_cb_(uv_async_t* handle);
@@ -268,7 +268,9 @@ private:
     core::List<BasicPort> open_ports_;
     core::List<BasicPort> closing_ports_;
 
-    core::Atomic<int> num_open_ports_;
+    core::AtomicInt<int32_t> num_open_ports_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace netio

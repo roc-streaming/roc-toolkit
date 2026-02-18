@@ -27,10 +27,14 @@ namespace rtcp {
 class Parser : public packet::IParser, public core::NonCopyable<> {
 public:
     //! Initialization.
-    Parser();
+    explicit Parser(core::IArena& arena);
+
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
 
     //! Parse packet from buffer.
-    virtual bool parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer);
+    virtual ROC_NODISCARD status::StatusCode parse(packet::Packet& packet,
+                                                   const core::Slice<uint8_t>& buffer);
 };
 
 } // namespace rtcp

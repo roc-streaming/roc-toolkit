@@ -8,16 +8,11 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/status_writer.h"
+
 #include "roc_core/heap_arena.h"
-#include "roc_core/scoped_ptr.h"
-#include "roc_core/stddefs.h"
-#include "roc_packet/iwriter.h"
+#include "roc_packet/fifo_queue.h"
 #include "roc_packet/packet_factory.h"
-#include "roc_packet/queue.h"
-#include "roc_packet/units.h"
-#include "roc_rtp/composer.h"
-#include "roc_rtp/encoding_map.h"
-#include "roc_rtp/parser.h"
 #include "roc_rtp/timestamp_extractor.h"
 
 namespace roc {
@@ -44,20 +39,6 @@ packet::PacketPtr new_packet(packet::seqnum_t sn,
     return packet;
 }
 
-class StatusWriter : public packet::IWriter, public core::NonCopyable<> {
-public:
-    explicit StatusWriter(status::StatusCode code)
-        : code_(code) {
-    }
-
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const packet::PacketPtr&) {
-        return code_;
-    }
-
-private:
-    status::StatusCode code_;
-};
-
 } // namespace
 
 TEST_GROUP(timestamp_extractor) {};
@@ -65,13 +46,13 @@ TEST_GROUP(timestamp_extractor) {};
 TEST(timestamp_extractor, single_write) {
     // 1 second = 1000 samples
     const audio::SampleSpec sample_spec =
-        audio::SampleSpec(1000, audio::Sample_RawFormat, audio::ChanLayout_Surround,
+        audio::SampleSpec(1000, audio::PcmSubformat_Raw, audio::ChanLayout_Surround,
                           audio::ChanOrder_Smpte, 0x1);
 
     const core::nanoseconds_t cts = 1691499037871419405;
     const packet::stream_timestamp_t rts = 2222;
 
-    packet::Queue queue;
+    packet::FifoQueue queue;
     TimestampExtractor extractor(queue, sample_spec);
 
     // no mapping yet
@@ -84,7 +65,7 @@ TEST(timestamp_extractor, single_write) {
     // ensure packet was passed to inner writer
     UNSIGNED_LONGS_EQUAL(1, queue.size());
     packet::PacketPtr rp;
-    LONGS_EQUAL(status::StatusOK, queue.read(rp));
+    LONGS_EQUAL(status::StatusOK, queue.read(rp, packet::ModeFetch));
     CHECK_EQUAL(wp, rp);
 
     // get mapping for exact time
@@ -100,23 +81,23 @@ TEST(timestamp_extractor, single_write) {
     UNSIGNED_LONGS_EQUAL(rts - 1000, extractor.get_mapping(cts - core::Second));
 }
 
-TEST(timestamp_extractor, failed_to_write_packet) {
+TEST(timestamp_extractor, forward_error) {
     // 1 second = 1000 samples
     const audio::SampleSpec sample_spec =
-        audio::SampleSpec(1000, audio::Sample_RawFormat, audio::ChanLayout_Surround,
+        audio::SampleSpec(1000, audio::PcmSubformat_Raw, audio::ChanLayout_Surround,
                           audio::ChanOrder_Smpte, 0x1);
 
-    const status::StatusCode codes[] = {
-        status::StatusUnknown,
-        status::StatusNoData,
+    const status::StatusCode status_list[] = {
+        status::StatusDrain,
+        status::StatusAbort,
     };
 
-    for (size_t n = 0; n < ROC_ARRAY_SIZE(codes); ++n) {
-        StatusWriter writer(codes[n]);
+    for (size_t st_n = 0; st_n < ROC_ARRAY_SIZE(status_list); st_n++) {
+        test::StatusWriter writer(status_list[st_n]);
         TimestampExtractor extractor(writer, sample_spec);
 
         packet::PacketPtr pp = new_packet(555, 0, 0);
-        LONGS_EQUAL(codes[n], extractor.write(pp));
+        LONGS_EQUAL(status_list[st_n], extractor.write(pp));
     }
 }
 

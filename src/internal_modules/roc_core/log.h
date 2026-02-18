@@ -107,7 +107,7 @@ public:
     }
 
     //! Print message to log.
-    ROC_ATTR_PRINTF(6, 7)
+    ROC_PRINTF(6, 7)
     void writef(LogLevel level,
                 const char* module,
                 const char* file,

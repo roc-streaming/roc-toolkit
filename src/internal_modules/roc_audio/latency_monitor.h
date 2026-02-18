@@ -22,7 +22,8 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/time.h"
-#include "roc_packet/ilink_meter.h"
+#include "roc_dbgio/csv_dumper.h"
+#include "roc_fec/block_reader.h"
 #include "roc_packet/sorted_queue.h"
 #include "roc_packet/units.h"
 
@@ -64,16 +65,16 @@ public:
                    const packet::SortedQueue& incoming_queue,
                    const Depacketizer& depacketizer,
                    const packet::ILinkMeter& link_meter,
+                   const fec::BlockReader* fec_reader,
                    ResamplerReader* resampler,
-                   const LatencyConfig& config,
+                   const LatencyConfig& latency_config,
+                   const FreqEstimatorConfig& fe_config,
                    const SampleSpec& packet_sample_spec,
-                   const SampleSpec& frame_sample_spec);
+                   const SampleSpec& frame_sample_spec,
+                   dbgio::CsvDumper* dumper);
 
-    //! Check if the object was initialized successfully.
-    bool is_valid() const;
-
-    //! Check if the stream is still alive.
-    bool is_alive() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get metrics.
     const LatencyMetrics& metrics() const;
@@ -81,23 +82,22 @@ public:
     //! Read audio frame from a pipeline.
     //! @remarks
     //!  Forwards frame from underlying reader as-is.
-    virtual bool read(Frame& frame);
+    virtual ROC_NODISCARD status::StatusCode
+    read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode);
 
     //! Report playback timestamp of last frame returned by read.
     //! @remarks
     //!  Pipeline invokes this method after adding last frame to
     //!  playback buffer and knowing its playback time.
-    //! @returns
-    //!  false if the session is ended
-    bool reclock(core::nanoseconds_t playback_timestamp);
+    void reclock(core::nanoseconds_t playback_timestamp);
 
 private:
     void compute_niq_latency_();
     void compute_e2e_latency_(core::nanoseconds_t playback_timestamp);
-    void query_link_meter_();
+    void query_metrics_();
 
-    bool pre_process_(const Frame& frame);
-    void post_process_(const Frame& frame);
+    bool pre_read_();
+    void post_read_(const Frame& frame);
 
     bool init_scaling_();
     bool update_scaling_();
@@ -112,6 +112,7 @@ private:
     const packet::SortedQueue& incoming_queue_;
     const Depacketizer& depacketizer_;
     const packet::ILinkMeter& link_meter_;
+    const fec::BlockReader* fec_reader_;
 
     ResamplerReader* resampler_;
     const bool enable_scaling_;
@@ -121,8 +122,7 @@ private:
     const SampleSpec packet_sample_spec_;
     const SampleSpec frame_sample_spec_;
 
-    bool alive_;
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

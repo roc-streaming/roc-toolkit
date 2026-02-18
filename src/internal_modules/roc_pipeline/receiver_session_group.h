@@ -14,9 +14,11 @@
 
 #include "roc_audio/frame_factory.h"
 #include "roc_audio/mixer.h"
+#include "roc_audio/processor_map.h"
 #include "roc_core/iarena.h"
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/metrics.h"
 #include "roc_pipeline/receiver_endpoint.h"
@@ -52,15 +54,17 @@ public:
                          const ReceiverSlotConfig& slot_config,
                          StateTracker& state_tracker,
                          audio::Mixer& mixer,
-                         const rtp::EncodingMap& encoding_map,
+                         audio::ProcessorMap& processor_map,
+                         rtp::EncodingMap& encoding_map,
                          packet::PacketFactory& packet_factory,
                          audio::FrameFactory& frame_factory,
-                         core::IArena& arena);
+                         core::IArena& arena,
+                         dbgio::CsvDumper* dumper);
 
     ~ReceiverSessionGroup();
 
-    //! Check if pipeline was succefully constructed.
-    bool is_valid() const;
+    //! Check if the pipeline was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Create control sub-pipeline.
     //! @note
@@ -68,23 +72,26 @@ public:
     //!  it's created separately using this method. On the other hand,
     //!  transport sub-pipeline is per-session and is created automatically
     //!  when a session is created within group.
-    bool create_control_pipeline(ReceiverEndpoint* control_endpoint);
-
-    //! Route packet to session.
-    ROC_ATTR_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
-                                                       core::nanoseconds_t current_time);
+    ROC_NODISCARD status::StatusCode
+    create_control_pipeline(ReceiverEndpoint* control_endpoint);
 
     //! Refresh pipeline according to current time.
-    //! @returns
-    //!  deadline (absolute time) when refresh should be invoked again
-    //!  if there are no frames
-    core::nanoseconds_t refresh_sessions(core::nanoseconds_t current_time);
+    //! @remarks
+    //!  Should be invoked before reading each frame.
+    //!  If there are no frames for a while, should be invoked no
+    //!  later than the deadline returned via @p next_deadline.
+    ROC_NODISCARD status::StatusCode refresh_sessions(core::nanoseconds_t current_time,
+                                                      core::nanoseconds_t& next_deadline);
 
     //! Adjust session clock to match consumer clock.
     //! @remarks
     //!  @p playback_time specified absolute time when first sample of last frame
     //!  retrieved from pipeline will be actually played on sink
     void reclock_sessions(core::nanoseconds_t playback_time);
+
+    //! Route packet to session.
+    ROC_NODISCARD status::StatusCode route_packet(const packet::PacketPtr& packet,
+                                                  core::nanoseconds_t current_time);
 
     //! Get number of sessions in group.
     size_t num_sessions() const;
@@ -128,7 +135,7 @@ private:
     bool can_create_session_(const packet::PacketPtr& packet);
 
     status::StatusCode create_session_(const packet::PacketPtr& packet);
-    void remove_session_(core::SharedPtr<ReceiverSession> sess);
+    void remove_session_(core::SharedPtr<ReceiverSession> sess, status::StatusCode code);
     void remove_all_sessions_();
 
     ReceiverSessionConfig make_session_config_(const packet::PacketPtr& packet) const;
@@ -139,7 +146,8 @@ private:
     StateTracker& state_tracker_;
     audio::Mixer& mixer_;
 
-    const rtp::EncodingMap& encoding_map_;
+    audio::ProcessorMap& processor_map_;
+    rtp::EncodingMap& encoding_map_;
 
     core::IArena& arena_;
     packet::PacketFactory& packet_factory_;
@@ -150,10 +158,14 @@ private:
     core::Optional<rtcp::Communicator> rtcp_communicator_;
     address::SocketAddr rtcp_inbound_addr_;
 
-    core::List<ReceiverSession> sessions_;
+    core::
+        List<ReceiverSession, core::RefCountedOwnership, core::ListNode<ReceiverSession> >
+            sessions_;
     ReceiverSessionRouter session_router_;
 
-    bool valid_;
+    dbgio::CsvDumper* dumper_;
+
+    status::StatusCode init_status_;
 };
 
 } // namespace pipeline

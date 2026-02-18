@@ -2,7 +2,6 @@
 !.justfile
 !.projectile
 !.unisonignore
-!TODO.org
 3rdparty/_distfiles
 3rdparty/dr_wav
 3rdparty/hedley
@@ -11,3 +10,4 @@ build
 compile_commands.json
 docs/html
 docs/man
+src/internal_modules/roc_audio/pcm_format.cpp

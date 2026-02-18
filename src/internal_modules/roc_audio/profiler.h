@@ -21,6 +21,7 @@
 #include "roc_core/rate_limiter.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace audio {
@@ -69,8 +70,8 @@ public:
              const SampleSpec& sample_spec,
              ProfilerConfig profiler_config);
 
-    //! Check if the profiler was succefully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Profile frame speed.
     void add_frame(packet::stream_timestamp_t frame_duration,
@@ -95,11 +96,11 @@ private:
     size_t last_chunk_samples_;
 
     float moving_avg_;
+    bool buffer_full_;
 
     const SampleSpec sample_spec_;
 
-    bool valid_;
-    bool buffer_full_;
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

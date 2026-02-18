@@ -19,14 +19,9 @@ namespace {
 
 enum { NumObjects = 5 };
 
-struct NoAllocation {
-    template <class T> void destroy(T&) {
-    }
-};
-
 struct Object : ListNode<> {};
 
-struct RefObject : RefCounted<RefObject, NoAllocation>, ListNode<> {};
+struct RefObject : RefCounted<RefObject, NoopAllocation>, ListNode<> {};
 
 } // namespace
 

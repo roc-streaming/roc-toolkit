@@ -32,6 +32,11 @@ enum PayloadType {
     PayloadType_L16_Mono = 11    //!< Audio, 16-bit PCM, 1 channel, 44100 Hz.
 };
 
+enum {
+    MinPayloadType = 1,   //!< Minimum payload type number.
+    MaxPayloadType = 127, //!< Maximum payload type number.
+};
+
 //! RTP header.
 //!
 //! Contains fixed size part of 12 bytes and variable size CSRC array.
@@ -52,7 +57,7 @@ enum PayloadType {
 //!   |                             ....                              |
 //!   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class Header {
+ROC_PACKED_BEGIN class Header {
 private:
     enum {
         //! @name RTP protocol version.
@@ -218,7 +223,7 @@ public:
         roc_panic_if(index >= num_csrc());
         return core::ntoh32u(ssrc_[index + 1]);
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 //! RTP extension header.
 //!
@@ -237,7 +242,7 @@ public:
 //!   |                             ....                              |
 //!   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //! @endcode
-ROC_ATTR_PACKED_BEGIN class ExtentionHeader {
+ROC_PACKED_BEGIN class ExtentionHeader {
 private:
     //! Extenson type.
     uint16_t type_;
@@ -255,7 +260,7 @@ public:
     uint32_t data_size() const {
         return (uint32_t(core::ntoh16u(len_)) << 2);
     }
-} ROC_ATTR_PACKED_END;
+} ROC_PACKED_END;
 
 } // namespace rtp
 } // namespace roc

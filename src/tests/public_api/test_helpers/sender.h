@@ -15,7 +15,7 @@
 #include "test_helpers/utils.h"
 
 #include "roc_core/array.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_bool.h"
 #include "roc_core/noop_arena.h"
 #include "roc_core/panic.h"
 #include "roc_core/thread.h"
@@ -56,6 +56,8 @@ public:
                  const roc_endpoint* receiver_control_endp,
                  roc_slot slot = ROC_SLOT_DEFAULT) {
         if ((flags_ & FlagRS8M) || (flags_ & FlagLDPC)) {
+            CHECK(receiver_source_endp);
+            CHECK(receiver_repair_endp);
             CHECK(roc_sender_connect(sndr_, slot, ROC_INTERFACE_AUDIO_SOURCE,
                                      receiver_source_endp)
                   == 0);
@@ -63,15 +65,20 @@ public:
                                      receiver_repair_endp)
                   == 0);
         } else {
+            CHECK(receiver_source_endp);
+            CHECK(!receiver_repair_endp);
             CHECK(roc_sender_connect(sndr_, slot, ROC_INTERFACE_AUDIO_SOURCE,
                                      receiver_source_endp)
                   == 0);
         }
 
         if (flags_ & FlagRTCP) {
+            CHECK(receiver_control_endp);
             CHECK(roc_sender_connect(sndr_, slot, ROC_INTERFACE_AUDIO_CONTROL,
                                      receiver_control_endp)
                   == 0);
+        } else {
+            CHECK(!receiver_control_endp);
         }
     }
 
@@ -100,8 +107,9 @@ public:
         return conn_metrics_[n];
     }
 
-    void stop() {
+    void stop_and_join() {
         stopped_ = true;
+        join();
     }
 
 private:
@@ -138,7 +146,7 @@ private:
     const size_t frame_samples_;
     const unsigned flags_;
 
-    core::Atomic<int> stopped_;
+    core::AtomicBool stopped_;
 };
 
 } // namespace test

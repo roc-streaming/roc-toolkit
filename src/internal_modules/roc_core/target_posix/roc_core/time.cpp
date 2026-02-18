@@ -6,14 +6,14 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+#include "roc_core/time.h"
+#include "roc_core/errno_to_str.h"
+#include "roc_core/panic.h"
+
 #include <errno.h>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
-
-#include "roc_core/errno_to_str.h"
-#include "roc_core/panic.h"
-#include "roc_core/time.h"
 
 namespace roc {
 namespace core {
@@ -49,7 +49,7 @@ nanoseconds_t timestamp(clock_t clock) {
 
 #else
 
-nanoseconds_t timestamp(clock_t) {
+nanoseconds_t timestamp(clock_t clock) {
     struct timeval tv;
     if (gettimeofday(&tv, NULL) == -1) {
         roc_panic("time: gettimeofday(): %s", errno_to_str().c_str());
@@ -77,7 +77,7 @@ void sleep_for(clock_t clock, nanoseconds_t ns) {
 
 #else
 
-void sleep_for(clock_t, nanoseconds_t ns) {
+void sleep_for(clock_t clock, nanoseconds_t ns) {
     timespec ts;
     ts.tv_sec = time_t(ns / 1000000000);
     ts.tv_nsec = long(ns % 1000000000);

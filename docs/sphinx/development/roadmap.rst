@@ -11,11 +11,11 @@ Basic features
 - |:ballot_box_with_check:| Session multiplexing
 - |:ballot_box_with_check:| Stream breakage detection
 - |:ballot_box_with_check:| Multiple slots on sender and receiver
-- |:white_large_square:| Configurable network encoding
+- |:ballot_box_with_check:| Configurable network encoding
 - |:ballot_box_with_check:| Automatic channel and rate conversions
-- |:white_large_square:| Automatic encoding conversions
+- |:ballot_box_with_check:| Automatic encoding conversions
 - |:ballot_box_with_check:| Metrics reporting
-- |:white_large_square:| State reporting
+- |:white_large_square:| State reporting and polling
 
 Advanced features
 =================
@@ -32,10 +32,8 @@ Advanced features
 - |:ballot_box_with_check:| Multicast support
 - |:white_large_square:| Multi-room support (synchronized playback)
 - |:white_large_square:| Surround sound
-- |:white_large_square:| Congestion control
 - |:white_large_square:| Retransmission (probably `RFC 4588 <https://tools.ietf.org/html/rfc4588>`_ and `RFC 4585 <https://tools.ietf.org/html/rfc4585>`_)
-- |:white_large_square:| Video support
-- |:white_large_square:| Hardware acceleration (maybe OpenMAX)
+- |:white_large_square:| Congestion control
 
 Extensibility
 =============

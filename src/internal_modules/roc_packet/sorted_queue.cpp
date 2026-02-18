@@ -18,14 +18,24 @@ SortedQueue::SortedQueue(size_t max_size)
     : max_size_(max_size) {
 }
 
-status::StatusCode SortedQueue::read(PacketPtr& packet) {
-    packet = list_.back();
-    if (packet) {
-        list_.remove(*packet);
-        return status::StatusOK;
-    }
+status::StatusCode SortedQueue::init_status() const {
+    return status::StatusOK;
+}
 
-    return status::StatusNoData;
+size_t SortedQueue::size() const {
+    return list_.size();
+}
+
+PacketPtr SortedQueue::latest() const {
+    return latest_;
+}
+
+PacketPtr SortedQueue::head() const {
+    return list_.front();
+}
+
+PacketPtr SortedQueue::tail() const {
+    return list_.back();
 }
 
 status::StatusCode SortedQueue::write(const PacketPtr& packet) {
@@ -45,9 +55,9 @@ status::StatusCode SortedQueue::write(const PacketPtr& packet) {
         latest_ = packet;
     }
 
-    PacketPtr pos = list_.front();
+    PacketPtr pos = list_.back();
 
-    for (; pos; pos = list_.nextof(*pos)) {
+    for (; pos; pos = list_.prevof(*pos)) {
         const int cmp = packet->compare(*pos);
 
         if (cmp < 0) {
@@ -63,28 +73,24 @@ status::StatusCode SortedQueue::write(const PacketPtr& packet) {
     }
 
     if (pos) {
-        list_.insert_before(*packet, *pos);
+        list_.insert_after(*packet, *pos);
     } else {
-        list_.push_back(*packet);
+        list_.push_front(*packet);
     }
 
     return status::StatusOK;
 }
 
-size_t SortedQueue::size() const {
-    return list_.size();
-}
+status::StatusCode SortedQueue::read(PacketPtr& packet, PacketReadMode mode) {
+    packet = list_.front();
+    if (!packet) {
+        return status::StatusDrain;
+    }
 
-PacketPtr SortedQueue::head() const {
-    return list_.back();
-}
-
-PacketPtr SortedQueue::tail() const {
-    return list_.front();
-}
-
-PacketPtr SortedQueue::latest() const {
-    return latest_;
+    if (mode == ModeFetch) {
+        list_.remove(*packet);
+    }
+    return status::StatusOK;
 }
 
 } // namespace packet

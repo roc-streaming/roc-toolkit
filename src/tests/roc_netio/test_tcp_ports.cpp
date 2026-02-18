@@ -148,7 +148,7 @@ TEST_GROUP(tcp_ports) {};
 
 TEST(tcp_ports, no_ports) {
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, net_loop.num_ports());
 }
@@ -161,7 +161,7 @@ TEST(tcp_ports, add_anyaddr) {
     acceptor.push_handler(server_conn_handler);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("0.0.0.0", 0);
 
@@ -208,7 +208,7 @@ TEST(tcp_ports, add_localhost) {
     acceptor.push_handler(server_conn_handler);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -255,7 +255,7 @@ TEST(tcp_ports, add_addrinuse) {
     acceptor.push_handler(server_conn_handler);
 
     NetworkLoop net_loop1(packet_pool, buffer_pool, arena);
-    CHECK(net_loop1.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop1.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -284,7 +284,7 @@ TEST(tcp_ports, add_addrinuse) {
     POINTERS_EQUAL(server_conn, acceptor.wait_added());
 
     NetworkLoop net_loop2(packet_pool, buffer_pool, arena);
-    CHECK(net_loop2.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop2.init_status());
 
     UNSIGNED_LONGS_EQUAL(0, net_loop2.num_ports());
 
@@ -307,7 +307,7 @@ TEST(tcp_ports, add_remove) {
     acceptor.push_handler(server_conn_handler);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -353,7 +353,7 @@ TEST(tcp_ports, add_remove_add) {
     test::MockConnAcceptor acceptor;
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -383,7 +383,7 @@ TEST(tcp_ports, connect_one_server_one_client) {
     acceptor.push_handler(server_conn_handler);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -425,7 +425,7 @@ TEST(tcp_ports, connect_one_server_many_clients) {
     acceptor.push_handler(server_conn_handler2);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -490,13 +490,13 @@ TEST(tcp_ports, connect_one_server_many_clients_many_loops) {
     acceptor.push_handler(server_conn_handler2);
 
     NetworkLoop net_loop_client1(packet_pool, buffer_pool, arena);
-    CHECK(net_loop_client1.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop_client1.init_status());
 
     NetworkLoop net_loop_client2(packet_pool, buffer_pool, arena);
-    CHECK(net_loop_client2.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop_client2.init_status());
 
     NetworkLoop net_loop_server(packet_pool, buffer_pool, arena);
-    CHECK(net_loop_server.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop_server.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -563,7 +563,7 @@ TEST(tcp_ports, connect_many_servers_many_clients) {
     acceptor2.push_handler(server_conn_handler2);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config1 = make_server_config("127.0.0.1", 0);
     CHECK(add_tcp_server(net_loop, server_config1, acceptor1));
@@ -632,10 +632,10 @@ TEST(tcp_ports, connect_many_servers_many_clients_many_loops) {
     acceptor2.push_handler(server_conn_handler2);
 
     NetworkLoop net_loop_client(packet_pool, buffer_pool, arena);
-    CHECK(net_loop_client.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop_client.init_status());
 
     NetworkLoop net_loop_server(packet_pool, buffer_pool, arena);
-    CHECK(net_loop_server.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop_server.init_status());
 
     TcpServerConfig server_config1 = make_server_config("127.0.0.1", 0);
     CHECK(add_tcp_server(net_loop_server, server_config1, acceptor1));
@@ -699,7 +699,7 @@ TEST(tcp_ports, connect_error) {
     acceptor.push_handler(server_conn_handler1);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
     CHECK(add_tcp_server(net_loop, server_config, acceptor));
@@ -739,7 +739,7 @@ TEST(tcp_ports, acceptor_error) {
     test::MockConnAcceptor acceptor;
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -790,7 +790,7 @@ TEST(tcp_ports, terminate_client_connection_normal) {
     acceptor.push_handler(server_conn_handler);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -841,7 +841,7 @@ TEST(tcp_ports, terminate_client_connection_failure) {
     acceptor.push_handler(server_conn_handler);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -893,7 +893,7 @@ TEST(tcp_ports, terminate_server_connection_normal) {
     acceptor.push_handler(server_conn_handler);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -944,7 +944,7 @@ TEST(tcp_ports, terminate_server_connection_failure) {
     acceptor.push_handler(server_conn_handler);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 

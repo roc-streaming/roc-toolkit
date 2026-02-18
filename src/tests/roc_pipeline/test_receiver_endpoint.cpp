@@ -6,14 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
+#include "test_harness.h"
 
 #include "roc_address/protocol.h"
 #include "roc_audio/mixer.h"
 #include "roc_audio/sample.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/noop_arena.h"
-#include "roc_packet/queue.h"
 #include "roc_pipeline/config.h"
 #include "roc_pipeline/receiver_endpoint.h"
 #include "roc_pipeline/receiver_session_group.h"
@@ -30,6 +29,7 @@ core::HeapArena arena;
 packet::PacketFactory packet_factory(arena, PacketSz);
 audio::FrameFactory frame_factory(arena, PacketSz * sizeof(audio::sample_t));
 
+audio::ProcessorMap processor_map(arena);
 rtp::EncodingMap encoding_map(arena);
 
 } // namespace
@@ -37,33 +37,33 @@ rtp::EncodingMap encoding_map(arena);
 TEST_GROUP(receiver_endpoint) {};
 
 TEST(receiver_endpoint, valid) {
-    audio::Mixer mixer(frame_factory, DefaultSampleSpec, false);
+    audio::Mixer mixer(DefaultSampleSpec, false, frame_factory, arena);
 
     StateTracker state_tracker;
     ReceiverSourceConfig source_config;
     ReceiverSlotConfig slot_config;
     ReceiverSessionGroup session_group(source_config, slot_config, state_tracker, mixer,
-                                       encoding_map, packet_factory, frame_factory,
-                                       arena);
+                                       processor_map, encoding_map, packet_factory,
+                                       frame_factory, arena, NULL);
 
     ReceiverEndpoint endpoint(address::Proto_RTP, state_tracker, session_group,
                               encoding_map, address::SocketAddr(), NULL, arena);
-    CHECK(endpoint.is_valid());
+    LONGS_EQUAL(status::StatusOK, endpoint.init_status());
 }
 
 TEST(receiver_endpoint, invalid_proto) {
-    audio::Mixer mixer(frame_factory, DefaultSampleSpec, false);
+    audio::Mixer mixer(DefaultSampleSpec, false, frame_factory, arena);
 
     StateTracker state_tracker;
     ReceiverSourceConfig source_config;
     ReceiverSlotConfig slot_config;
     ReceiverSessionGroup session_group(source_config, slot_config, state_tracker, mixer,
-                                       encoding_map, packet_factory, frame_factory,
-                                       arena);
+                                       processor_map, encoding_map, packet_factory,
+                                       frame_factory, arena, NULL);
 
     ReceiverEndpoint endpoint(address::Proto_None, state_tracker, session_group,
                               encoding_map, address::SocketAddr(), NULL, arena);
-    CHECK(!endpoint.is_valid());
+    LONGS_EQUAL(status::StatusBadProtocol, endpoint.init_status());
 }
 
 TEST(receiver_endpoint, no_memory) {
@@ -75,19 +75,18 @@ TEST(receiver_endpoint, no_memory) {
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(protos); ++n) {
-        audio::Mixer mixer(frame_factory, DefaultSampleSpec, false);
+        audio::Mixer mixer(DefaultSampleSpec, false, frame_factory, arena);
 
         StateTracker state_tracker;
         ReceiverSourceConfig source_config;
         ReceiverSlotConfig slot_config;
-        ReceiverSessionGroup session_group(source_config, slot_config, state_tracker,
-                                           mixer, encoding_map, packet_factory,
-                                           frame_factory, core::NoopArena);
+        ReceiverSessionGroup session_group(
+            source_config, slot_config, state_tracker, mixer, processor_map, encoding_map,
+            packet_factory, frame_factory, core::NoopArena, NULL);
 
         ReceiverEndpoint endpoint(protos[n], state_tracker, session_group, encoding_map,
                                   address::SocketAddr(), NULL, core::NoopArena);
-
-        CHECK(!endpoint.is_valid());
+        LONGS_EQUAL(status::StatusNoMem, endpoint.init_status());
     }
 }
 

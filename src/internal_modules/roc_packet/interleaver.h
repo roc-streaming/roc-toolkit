@@ -30,17 +30,17 @@ public:
     //!  them to @p output.
     Interleaver(IWriter& writer, core::IArena& arena, size_t block_size);
 
-    //! Check if object is successfully constructed.
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Write next packet.
     //! @remarks
     //!  Packets are written to internal buffer. Buffered packets are
     //!  then reordered and sent to output writer.
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
+    virtual ROC_NODISCARD status::StatusCode write(const PacketPtr& packet);
 
     //! Send all buffered packets to output writer.
-    ROC_ATTR_NODISCARD status::StatusCode flush();
+    ROC_NODISCARD status::StatusCode flush();
 
     //! Maximum delay between writing packet and moment we get it in output
     //! in terms of packets number.
@@ -65,7 +65,7 @@ private:
     size_t next_2_put_;
     size_t next_2_send_;
 
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace packet

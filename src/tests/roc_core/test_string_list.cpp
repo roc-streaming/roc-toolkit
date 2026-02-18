@@ -40,11 +40,34 @@ TEST(string_list, push_back) {
     STRCMP_EQUAL("foo", sl.front());
     STRCMP_EQUAL("foo", sl.back());
 
-    CHECK(sl.push_back("bar"));
+    CHECK(sl.push_back("barbaz"));
 
     LONGS_EQUAL(2, sl.size());
     STRCMP_EQUAL("foo", sl.front());
-    STRCMP_EQUAL("bar", sl.back());
+    STRCMP_EQUAL("barbaz", sl.back());
+}
+
+TEST(string_list, pop_back) {
+    StringList sl(arena);
+
+    LONGS_EQUAL(0, sl.size());
+    CHECK(sl.push_back("foo"));
+    CHECK(sl.pop_back());
+    LONGS_EQUAL(0, sl.size());
+
+    CHECK(sl.push_back("foo"));
+    CHECK(sl.push_back("barbaz"));
+    CHECK(sl.pop_back());
+    LONGS_EQUAL(1, sl.size());
+    STRCMP_EQUAL("foo", sl.front());
+    STRCMP_EQUAL("foo", sl.back());
+
+    CHECK(sl.push_back("foobarbaz"));
+    CHECK(sl.push_back("baz"));
+    CHECK(sl.pop_back());
+    LONGS_EQUAL(2, sl.size());
+    STRCMP_EQUAL("foo", sl.front());
+    STRCMP_EQUAL("foobarbaz", sl.back());
 }
 
 TEST(string_list, push_back_range) {
@@ -72,8 +95,8 @@ TEST(string_list, nextof) {
     StringList sl(arena);
 
     CHECK(sl.push_back("foo"));
-    CHECK(sl.push_back("bar"));
-    CHECK(sl.push_back("baz"));
+    CHECK(sl.push_back("barbaz"));
+    CHECK(sl.push_back("foobarbaz"));
 
     LONGS_EQUAL(3, sl.size());
 
@@ -83,10 +106,10 @@ TEST(string_list, nextof) {
     STRCMP_EQUAL("foo", str);
 
     str = sl.nextof(str);
-    STRCMP_EQUAL("bar", str);
+    STRCMP_EQUAL("barbaz", str);
 
     str = sl.nextof(str);
-    STRCMP_EQUAL("baz", str);
+    STRCMP_EQUAL("foobarbaz", str);
 
     str = sl.nextof(str);
     CHECK(str == NULL);
@@ -96,18 +119,18 @@ TEST(string_list, prevof) {
     StringList sl(arena);
 
     CHECK(sl.push_back("foo"));
-    CHECK(sl.push_back("bar"));
-    CHECK(sl.push_back("baz"));
+    CHECK(sl.push_back("barbaz"));
+    CHECK(sl.push_back("foobarbaz"));
 
     LONGS_EQUAL(3, sl.size());
 
     const char* str = NULL;
 
     str = sl.back();
-    STRCMP_EQUAL("baz", str);
+    STRCMP_EQUAL("foobarbaz", str);
 
     str = sl.prevof(str);
-    STRCMP_EQUAL("bar", str);
+    STRCMP_EQUAL("barbaz", str);
 
     str = sl.prevof(str);
     STRCMP_EQUAL("foo", str);
@@ -165,12 +188,12 @@ TEST(string_list, find) {
     StringList sl(arena);
 
     CHECK(sl.push_back("foo"));
-    CHECK(sl.push_back("bar"));
-    CHECK(sl.push_back("baz"));
+    CHECK(sl.push_back("barbaz"));
+    CHECK(sl.push_back("foobarbaz"));
 
     LONGS_EQUAL(3, sl.size());
 
-    CHECK(sl.find("bar"));
+    CHECK(sl.find("barbaz"));
     CHECK(!sl.find("qux"));
 
     LONGS_EQUAL(3, sl.size());
@@ -181,10 +204,10 @@ TEST(string_list, find) {
     STRCMP_EQUAL("foo", str);
 
     str = sl.nextof(str);
-    STRCMP_EQUAL("bar", str);
+    STRCMP_EQUAL("barbaz", str);
 
     str = sl.nextof(str);
-    STRCMP_EQUAL("baz", str);
+    STRCMP_EQUAL("foobarbaz", str);
 
     str = sl.nextof(str);
     CHECK(str == NULL);
@@ -232,15 +255,15 @@ TEST(string_list, exponential_growth) {
     int num_reallocs = 0;
 
     int expected_reallocs[] = {
-        1, 1, 1,                               //
-        2, 2, 2,                               //
-        3, 3, 3, 3, 3, 3,                      //
-        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, //
-        5, 5, 5, 5, 5, 5, 5                    //
+        1, 1,                            //
+        2, 2, 2,                         //
+        3, 3, 3, 3, 3,                   //
+        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, //
+        5, 5, 5, 5, 5                    //
     };
 
     for (size_t n = 0; n < ROC_ARRAY_SIZE(expected_reallocs); n++) {
-        CHECK(sl.push_back("123456789abcdef,123456789abcdef"));
+        CHECK(sl.push_back("123456789abcd,123456789abcd"));
 
         if (prev_front != sl.front()) {
             num_reallocs++;

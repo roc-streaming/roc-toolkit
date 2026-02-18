@@ -12,15 +12,15 @@
 #ifndef ROC_CORE_MUTEX_H_
 #define ROC_CORE_MUTEX_H_
 
-#include <errno.h>
-#include <pthread.h>
-
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/attributes.h"
 #include "roc_core/errno_to_str.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/panic.h"
 #include "roc_core/scoped_lock.h"
+
+#include <errno.h>
+#include <pthread.h>
 
 namespace roc {
 namespace core {
@@ -40,7 +40,7 @@ public:
     ~Mutex();
 
     //! Try to lock the mutex.
-    ROC_ATTR_NODISCARD inline bool try_lock() const {
+    ROC_NODISCARD inline bool try_lock() const {
         const int err = pthread_mutex_trylock(&mutex_);
 
         if (err != 0 && err != EBUSY && err != EAGAIN) {
@@ -72,7 +72,7 @@ private:
     friend class Cond;
 
     mutable pthread_mutex_t mutex_;
-    mutable Atomic<int> guard_;
+    mutable AtomicInt<int32_t> guard_;
 };
 
 } // namespace core

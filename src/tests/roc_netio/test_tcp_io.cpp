@@ -99,7 +99,7 @@ TEST(tcp_io, one_server_one_client_one_direction) {
     acceptor.push_handler(server_conn_handler);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -138,7 +138,7 @@ TEST(tcp_io, one_server_one_client_both_directions) {
     acceptor.push_handler(server_conn_handler);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -186,10 +186,10 @@ TEST(tcp_io, one_server_one_client_separate_loops) {
     acceptor.push_handler(server_conn_handler);
 
     NetworkLoop client_net_loop(packet_pool, buffer_pool, arena);
-    CHECK(client_net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, client_net_loop.init_status());
 
     NetworkLoop server_net_loop(packet_pool, buffer_pool, arena);
-    CHECK(server_net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, server_net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 
@@ -232,7 +232,7 @@ TEST(tcp_io, one_server_many_clients) {
     acceptor.push_handler(server_conn_handler2);
 
     NetworkLoop net_loop(packet_pool, buffer_pool, arena);
-    CHECK(net_loop.is_valid());
+    LONGS_EQUAL(status::StatusOK, net_loop.init_status());
 
     TcpServerConfig server_config = make_server_config("127.0.0.1", 0);
 

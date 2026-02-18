@@ -7,7 +7,6 @@
  */
 
 #include "roc_pipeline/sender_loop.h"
-#include "roc_audio/resampler_map.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_core/thread.h"
@@ -88,141 +87,126 @@ packet::IWriter* SenderLoop::Tasks::AddEndpoint::get_inbound_writer() const {
 
 SenderLoop::SenderLoop(IPipelineTaskScheduler& scheduler,
                        const SenderSinkConfig& sink_config,
-                       const rtp::EncodingMap& encoding_map,
+                       audio::ProcessorMap& processor_map,
+                       rtp::EncodingMap& encoding_map,
                        core::IPool& packet_pool,
                        core::IPool& packet_buffer_pool,
+                       core::IPool& frame_pool,
                        core::IPool& frame_buffer_pool,
                        core::IArena& arena)
-    : PipelineLoop(scheduler, sink_config.pipeline_loop, sink_config.input_sample_spec)
+    : IDevice(arena)
+    , PipelineLoop(scheduler,
+                   sink_config.pipeline_loop,
+                   sink_config.input_sample_spec,
+                   frame_pool,
+                   frame_buffer_pool,
+                   Dir_WriteFrames)
+    , ISink(arena)
     , sink_(sink_config,
+            processor_map,
             encoding_map,
             packet_pool,
             packet_buffer_pool,
+            frame_pool,
             frame_buffer_pool,
             arena)
     , ticker_ts_(0)
-    , auto_duration_(sink_config.enable_auto_duration)
     , auto_cts_(sink_config.enable_auto_cts)
     , sample_spec_(sink_config.input_sample_spec)
-    , valid_(false) {
-    if (!sink_.is_valid()) {
+    , init_status_(status::NoStatus) {
+    if ((init_status_ = sink_.init_status()) != status::StatusOK) {
         return;
     }
 
-    if (sink_config.enable_timing) {
+    if (sink_config.enable_cpu_clock) {
         ticker_.reset(new (ticker_)
                           core::Ticker(sink_config.input_sample_spec.sample_rate()));
-        if (!ticker_) {
-            return;
-        }
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool SenderLoop::is_valid() const {
-    return valid_;
+SenderLoop::~SenderLoop() {
+}
+
+status::StatusCode SenderLoop::init_status() const {
+    return init_status_;
 }
 
 sndio::ISink& SenderLoop::sink() {
-    roc_panic_if_not(is_valid());
-
     return *this;
 }
 
-sndio::ISink* SenderLoop::to_sink() {
-    roc_panic_if(!is_valid());
-
-    return this;
-}
-
-sndio::ISource* SenderLoop::to_source() {
-    roc_panic_if(!is_valid());
-
-    return NULL;
-}
-
 sndio::DeviceType SenderLoop::type() const {
-    roc_panic_if(!is_valid());
-
     core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.type();
 }
 
-sndio::DeviceState SenderLoop::state() const {
-    roc_panic_if(!is_valid());
-
-    core::Mutex::Lock lock(sink_mutex_);
-
-    return sink_.state();
+sndio::ISink* SenderLoop::to_sink() {
+    return this;
 }
 
-void SenderLoop::pause() {
-    roc_panic_if(!is_valid());
-
-    core::Mutex::Lock lock(sink_mutex_);
-
-    sink_.pause();
-}
-
-bool SenderLoop::resume() {
-    roc_panic_if(!is_valid());
-
-    core::Mutex::Lock lock(sink_mutex_);
-
-    return sink_.resume();
-}
-
-bool SenderLoop::restart() {
-    roc_panic_if(!is_valid());
-
-    core::Mutex::Lock lock(sink_mutex_);
-
-    return sink_.restart();
+sndio::ISource* SenderLoop::to_source() {
+    return NULL;
 }
 
 audio::SampleSpec SenderLoop::sample_spec() const {
-    roc_panic_if_not(is_valid());
-
     core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.sample_spec();
 }
 
-core::nanoseconds_t SenderLoop::latency() const {
-    roc_panic_if_not(is_valid());
-
+core::nanoseconds_t SenderLoop::frame_length() const {
     core::Mutex::Lock lock(sink_mutex_);
 
-    return sink_.latency();
+    return sink_.frame_length();
+}
+
+bool SenderLoop::has_state() const {
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.has_state();
+}
+
+sndio::DeviceState SenderLoop::state() const {
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.state();
+}
+
+status::StatusCode SenderLoop::pause() {
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.pause();
+}
+
+status::StatusCode SenderLoop::resume() {
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.resume();
 }
 
 bool SenderLoop::has_latency() const {
-    roc_panic_if_not(is_valid());
-
     core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.has_latency();
 }
 
-bool SenderLoop::has_clock() const {
-    roc_panic_if_not(is_valid());
+core::nanoseconds_t SenderLoop::latency() const {
+    core::Mutex::Lock lock(sink_mutex_);
 
+    return sink_.latency();
+}
+
+bool SenderLoop::has_clock() const {
     core::Mutex::Lock lock(sink_mutex_);
 
     return sink_.has_clock();
 }
 
-void SenderLoop::write(audio::Frame& frame) {
-    roc_panic_if_not(is_valid());
-
-    if (auto_duration_) {
-        if (frame.has_duration()) {
-            roc_panic("sender loop: unexpected non-zero duration in auto-duration mode");
-        }
-        frame.set_duration(sample_spec_.bytes_2_stream_timestamp(frame.num_bytes()));
-    }
+status::StatusCode SenderLoop::write(audio::Frame& frame) {
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (auto_cts_) {
         if (frame.capture_timestamp() != 0) {
@@ -233,15 +217,40 @@ void SenderLoop::write(audio::Frame& frame) {
 
     core::Mutex::Lock lock(sink_mutex_);
 
+    if (sink_.state() == sndio::DeviceState_Broken) {
+        // Don't go to sleep if we're broke.
+        return status::StatusBadState;
+    }
+
     if (ticker_) {
         ticker_->wait(ticker_ts_);
         ticker_ts_ += frame.duration();
     }
 
-    // invokes process_subframe_imp() and process_task_imp()
-    if (!process_subframes_and_tasks(frame)) {
-        return;
-    }
+    // Invokes process_subframe_imp() and process_task_imp().
+    const status::StatusCode code =
+        process_subframes_and_tasks(frame, frame.duration(), audio::ModeHard);
+
+    roc_panic_if_msg(code <= status::NoStatus || code >= status::MaxStatus,
+                     "sender loop: invalid status code %d", code);
+
+    return code;
+}
+
+status::StatusCode SenderLoop::flush() {
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.flush();
+}
+
+status::StatusCode SenderLoop::close() {
+    core::Mutex::Lock lock(sink_mutex_);
+
+    return sink_.close();
+}
+
+void SenderLoop::dispose() {
+    arena().dispose_object(*this);
 }
 
 core::nanoseconds_t SenderLoop::timestamp_imp() const {
@@ -252,13 +261,24 @@ uint64_t SenderLoop::tid_imp() const {
     return core::Thread::get_tid();
 }
 
-bool SenderLoop::process_subframe_imp(audio::Frame& frame) {
-    sink_.write(frame);
+status::StatusCode SenderLoop::process_subframe_imp(audio::Frame& frame,
+                                                    packet::stream_timestamp_t,
+                                                    audio::FrameReadMode) {
+    status::StatusCode code = status::NoStatus;
 
-    // TODO: handle returned deadline and schedule refresh
-    sink_.refresh(core::timestamp(core::ClockUnix));
+    if ((code = sink_.write(frame)) != status::StatusOK) {
+        return code;
+    }
 
-    return true;
+    // TODO(gh-674): handle returned deadline and schedule refresh
+    core::nanoseconds_t next_deadline = 0;
+
+    if ((code = sink_.refresh(core::timestamp(core::ClockUnix), &next_deadline))
+        != status::StatusOK) {
+        return code;
+    }
+
+    return status::StatusOK;
 }
 
 bool SenderLoop::process_task_imp(PipelineTask& basic_task) {

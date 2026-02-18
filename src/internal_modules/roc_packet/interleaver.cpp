@@ -9,7 +9,6 @@
 #include "roc_packet/interleaver.h"
 #include "roc_core/fast_random.h"
 #include "roc_core/log.h"
-#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace packet {
@@ -21,13 +20,15 @@ Interleaver::Interleaver(IWriter& writer, core::IArena& arena, size_t block_sz)
     , packets_(arena)
     , next_2_put_(0)
     , next_2_send_(0)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     roc_panic_if(block_sz == 0);
 
     if (!send_seq_.resize(block_size_)) {
+        init_status_ = status::StatusNoMem;
         return;
     }
     if (!packets_.resize(block_size_)) {
+        init_status_ = status::StatusNoMem;
         return;
     }
 
@@ -40,15 +41,15 @@ Interleaver::Interleaver(IWriter& writer, core::IArena& arena, size_t block_sz)
                 (unsigned)send_seq_[i]);
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool Interleaver::is_valid() const {
-    return valid_;
+status::StatusCode Interleaver::init_status() const {
+    return init_status_;
 }
 
 status::StatusCode Interleaver::write(const PacketPtr& p) {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     packets_[next_2_put_] = p;
     next_2_put_ = (next_2_put_ + 1) % block_size_;
@@ -67,7 +68,7 @@ status::StatusCode Interleaver::write(const PacketPtr& p) {
 }
 
 status::StatusCode Interleaver::flush() {
-    roc_panic_if_not(is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     for (size_t i = 0; i < block_size_; ++i) {
         if (!packets_[i]) {
@@ -88,6 +89,8 @@ status::StatusCode Interleaver::flush() {
 }
 
 size_t Interleaver::block_size() const {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     return block_size_;
 }
 

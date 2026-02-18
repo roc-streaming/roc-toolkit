@@ -30,13 +30,14 @@ public:
     //! Initialize.
     TimestampInjector(packet::IReader& reader, const audio::SampleSpec& sample_spec);
 
-    //! Virtual destructor.
-    virtual ~TimestampInjector();
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get packet with filled capture ts field.
     //! @remarks
     //!  If update_mapping has not been called yet, capture timestamp will be 0.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(packet::PacketPtr&);
+    virtual ROC_NODISCARD status::StatusCode read(packet::PacketPtr& packet,
+                                                  packet::PacketReadMode mode);
 
     //! Get a pair of a reference timestamps.
     void update_mapping(core::nanoseconds_t capture_ts,

@@ -107,7 +107,7 @@ public:
     }
 
     //! Reserve memory for given number of objects.
-    virtual ROC_ATTR_NODISCARD bool reserve(size_t n_objects) {
+    virtual ROC_NODISCARD bool reserve(size_t n_objects) {
         return impl_.reserve(n_objects);
     }
 

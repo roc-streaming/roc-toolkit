@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "ROC-COPY" "1" "2024" "Roc Toolkit 0.4" "Roc Toolkit"
+.TH "ROC-COPY" "1" "2025" "Roc Toolkit 0.4" "Roc Toolkit"
 .SH NAME
 roc-copy \- copy local audio
 .SH SYNOPSIS
@@ -35,8 +35,8 @@ roc-copy \- copy local audio
 \fBroc\-copy\fP \fIOPTIONS\fP
 .SH DESCRIPTION
 .sp
-Read audio stream from a file, transform it, and and write it to a another file.
-.SS Options
+Read audio stream from a file, transcode, and write to a another file.
+.SS General options
 .INDENT 0.0
 .TP
 .B  \-h\fP,\fB  \-\-help
@@ -48,51 +48,60 @@ Print version and exit
 .B  \-v\fP,\fB  \-\-verbose
 Increase verbosity level (may be used multiple times)
 .TP
-.B  \-L\fP,\fB  \-\-list\-supported
-list supported schemes and formats
+.BI \-\-color\fB= ENUM
+Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)
 .TP
-.BI \-i\fP,\fB  \-\-input\fB= FILE_URI
+.B  \-L\fP,\fB  \-\-list\-supported
+List supported protocols, formats, etc.
+.UNINDENT
+.SS I/O options
+.INDENT 0.0
+.TP
+.BI \-i\fP,\fB  \-\-input\fB= IO_URI
 Input file URI
 .TP
-.BI \-o\fP,\fB  \-\-output\fB= FILE_URI
+.BI \-\-input\-encoding\fB= IO_ENCODING
+Input file encoding
+.TP
+.BI \-o\fP,\fB  \-\-output\fB= IO_URI
 Output file URI
 .TP
-.BI \-\-input\-format\fB= FILE_FORMAT
-Force input file format
+.BI \-\-output\-encoding\fB= IO_ENCODING
+Output file encoding
 .TP
-.BI \-\-output\-format\fB= FILE_FORMAT
-Force output file format
-.TP
-.BI \-\-frame\-len\fB= TIME
-Duration of the internal frames, TIME units
-.TP
-.BI \-r\fP,\fB  \-\-rate\fB= INT
-Output sample rate, Hz
+.BI \-\-io\-frame\-len\fB= TIME
+I/O frame length, TIME units
+.UNINDENT
+.SS Transcoding options
+.INDENT 0.0
 .TP
 .BI \-\-resampler\-backend\fB= ENUM
 Resampler backend  (possible values=\(dqdefault\(dq, \(dqbuiltin\(dq, \(dqspeex\(dq, \(dqspeexdec\(dq default=\(gadefault\(aq)
 .TP
 .BI \-\-resampler\-profile\fB= ENUM
 Resampler profile  (possible values=\(dqlow\(dq, \(dqmedium\(dq, \(dqhigh\(dq default=\(gamedium\(aq)
-.TP
-.B  \-\-profiling
-Enable self profiling  (default=off)
-.TP
-.BI \-\-color\fB= ENUM
-Set colored logging mode for stderr output (possible values=\(dqauto\(dq, \(dqalways\(dq, \(dqnever\(dq default=\(gaauto\(aq)
 .UNINDENT
-.SS File URI
+.SS Debugging options
+.INDENT 0.0
+.TP
+.B  \-\-prof
+Enable self\-profiling  (default=off)
+.UNINDENT
+.SH DETAILS
+.SS I/O URI
 .sp
-\fB\-\-input\fP and \fB\-\-output\fP options require a file URI in one of the following forms:
+\fB\-\-input\fP and \fB\-\-output\fP options define input / output file URI.
+.sp
+\fIIO_URI\fP should have one of the following forms:
 .INDENT 0.0
 .IP \(bu 2
-\fBfile:///ABS/PATH\fP \-\- absolute file path
+\fBfile:///<abs>/<path>\fP \-\- absolute file path
 .IP \(bu 2
-\fBfile://localhost/ABS/PATH\fP \-\- absolute file path (alternative form; only \(dqlocalhost\(dq host is supported)
+\fBfile://localhost/<abs>/<path>\fP \-\- absolute file path (alternative form; only \(dqlocalhost\(dq host is supported)
 .IP \(bu 2
-\fBfile:/ABS/PATH\fP \-\- absolute file path (alternative form)
+\fBfile:/<abs>/<path>\fP \-\- absolute file path (alternative form)
 .IP \(bu 2
-\fBfile:REL/PATH\fP \-\- relative file path
+\fBfile:<rel>/<path>\fP \-\- relative file path
 .IP \(bu 2
 \fBfile://\-\fP \-\- stdout
 .IP \(bu 2
@@ -117,38 +126,77 @@ The list of supported file formats can be retrieved using \fB\-\-list\-supported
 .sp
 If the \fB\-\-output\fP is omitted, the conversion results are discarded.
 .sp
-The \fB\-\-input\-format\fP and \fB\-\-output\-format\fP options can be used to force the file format. If the option is omitted, the file format is auto\-detected. This option is always required for stdin or stdout.
-.sp
 The path component of the provided URI is \fI\%percent\-decoded\fP\&. For convenience, unencoded characters are allowed as well, except that \fB%\fP should be always encoded as \fB%25\fP\&.
 .sp
 For example, the file named \fB/foo/bar%/[baz]\fP may be specified using either of the following URIs: \fBfile:///foo%2Fbar%25%2F%5Bbaz%5D\fP and \fBfile:///foo/bar%25/[baz]\fP\&.
+.SS I/O encoding
+.sp
+\fB\-\-input\-encoding\fP and \fB\-\-output\-encoding\fP options allow to explicitly specify encoding of the input or output file.
+.sp
+This option is useful when file encoding can\(aqt be detected automatically (e.g. file doesn\(aqt have extension or uses header\-less format like raw PCM).
+.sp
+\fIIO_ENCODING\fP should have the following form:
+.sp
+\fB<format>[@<subformat>]/<rate>/<channels>\fP
+.sp
+Where:
+.INDENT 0.0
+.IP \(bu 2
+\fBformat\fP defines container format, e.g. \fBpcm\fP (raw samples), \fBwav\fP, \fBogg\fP
+.IP \(bu 2
+\fBsubformat\fP is optional format\-dependent codec, e.g. \fBs16\fP for \fBpcm\fP or \fBwav\fP, and \fBvorbis\fP for \fBogg\fP
+.IP \(bu 2
+\fBrate\fP defines sample rate in Hertz (number of samples per second), e.g. \fB48000\fP
+.IP \(bu 2
+\fBchannels\fP defines channel layout, e.g. \fBmono\fP or \fBstereo\fP
+.UNINDENT
+.sp
+\fBformat\fP, \fBrate\fP, and \fBchannels\fP may be set to special value \fB\-\fP, which means using default value for input device, or auto\-detect value for input file.
+.sp
+Whether \fBsubformat\fP is required, allowed, and what values are accepted, depends on \fBformat\fP\&.
+.sp
+Examples:
+.INDENT 0.0
+.IP \(bu 2
+\fBpcm@s16/44100/mono\fP \-\- PCM, 16\-bit native\-endian integers, 44.1KHz, 1 channel
+.IP \(bu 2
+\fBpcm@f32_le/48000/stereo\fP \-\- PCM, 32\-bit little\-endian floats, 48KHz, 2 channels
+.IP \(bu 2
+\fBwav/\-/\-\fP \-\- WAV file, auto\-detect sub\-format, rate, channels
+.IP \(bu 2
+\fBflac\-/\-/\-\fP \-\- FLAC file, auto\-detect sub\-format, rate, channels
+.UNINDENT
+.sp
+The list of supported formats, sub\-formats, and channel layouts can be retrieved using \fB\-\-list\-supported\fP option.
 .SS Time units
+.sp
+\fITIME\fP defines duration with nanosecond precision.
 .INDENT 0.0
 .TP
-.B \fITIME\fP should have one of the following forms:
+.B It should have one of the following forms:
 123ns; 1.23us; 1.23ms; 1.23s; 1.23m; 1.23h;
 .UNINDENT
 .SH EXAMPLES
 .sp
-Convert sample rate to 48k:
+Convert sample rate to 24\-bit 48k stereo:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ roc\-copy \-vv \-\-rate=48000 \-i file:input.wav \-o file:output.wav
+$ roc\-copy \-vv \-i file:input.wav \-o file:output.wav \-\-output\-encoding wav@s24/48000/stereo
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
 .sp
-Drop output results (useful for benchmarking):
+Same, but drop output results instead of writing to file (useful for benchmarking):
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-$ roc\-copy \-vv \-\-rate=48000 \-i file:input.wav
+$ roc\-copy \-vv \-i file:input.wav \-\-output\-encoding pcm@s24/48000/stereo
 .ft P
 .fi
 .UNINDENT
@@ -160,13 +208,13 @@ Input from stdin, output to stdout:
 .sp
 .nf
 .ft C
-$ roc\-copy \-vv \-\-input\-format=wav \-i file:\- \e
-    \-\-output\-format=wav \-o file:\- >./output.wav <./input.wav
+$ roc\-copy \-vv \-\-input\-encoding=wav/\-/\- \-i file:\- \e
+    \-\-output\-encoding=wav/\-/\- \-o file:\- >./output.wav <./input.wav
 .ft P
 .fi
 .UNINDENT
 .UNINDENT
-.SH ENVIRONMENT VARIABLES
+.SH ENVIRONMENT
 .sp
 The following environment variables are supported:
 .INDENT 0.0
@@ -179,7 +227,7 @@ By default, terminal coloring is automatically detected. This environment variab
 .UNINDENT
 .SH SEE ALSO
 .sp
-\fBroc\-recv(1)\fP, \fBroc\-send(1)\fP, the Roc web site at \fI\%https://roc\-streaming.org/\fP
+\fBroc\-send(1)\fP, \fBroc\-recv(1)\fP, and the Roc web site at \fI\%https://roc\-streaming.org/\fP
 .SH BUGS
 .sp
 Please report any bugs found via GitHub (\fI\%https://github.com/roc\-streaming/roc\-toolkit/\fP).
@@ -187,6 +235,6 @@ Please report any bugs found via GitHub (\fI\%https://github.com/roc\-streaming/
 .sp
 See authors page on the website for a list of maintainers and contributors (\fI\%https://roc\-streaming.org/toolkit/docs/about_project/authors.html\fP).
 .SH COPYRIGHT
-2024, Roc Streaming authors
+2025, Roc Streaming authors
 .\" Generated by docutils manpage writer.
 .

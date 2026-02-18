@@ -21,13 +21,15 @@ namespace core {
 
 //! Shared ownership intrusive pointer.
 //!
-//! @tparam T defines pointee type. It may be const.
+//! @tparam T defines pointee type.
 //!
-//! @tparam OwnershipPolicy defines ownwership policy. It provides methods to
+//! @tparam OwnershipPolicy defines ownership policy. It provides methods to
 //! increase and decrease the reference counter embedded into object.
 //!
-//! If RefCountedOwnership is used, T should inherit RefCounted. A template
-//! parameter of RefCounted defines its (de)allocation policy.
+//! If RefCountedOwnership is used, T should inherit RefCounted. RefCounted
+//! has a template parameter AllocationPolicy, and inherits from it.
+//! When reference counter reaches zero, it invokes dispose() method provided
+//! by the allocation policy.
 template <class T, template <class TT> class OwnershipPolicy = RefCountedOwnership>
 class SharedPtr {
 public:
@@ -57,7 +59,7 @@ public:
     //! Create shared pointer from shared pointer of another type.
     //! @remarks
     //!  - This overload hits SharedPtr(SharedPtr<ConvertibleToT>).
-    //!  - This doesn't work as a copy constructor since it's template.
+    //!  - It doesn't work as a copy constructor since it's template.
     template <class TT>
     SharedPtr(const SharedPtr<TT, OwnershipPolicy>& other)
         : ptr_(other.get()) {
@@ -87,6 +89,17 @@ public:
             ptr_ = ptr;
             acquire_();
         }
+    }
+
+    //! Get underlying pointer and pass ownership to the caller.
+    T* hijack() {
+        T* ret = ptr_;
+        if (ret == NULL) {
+            roc_panic("shared ptr: attempting to release a null pointer");
+        }
+
+        ptr_ = NULL;
+        return ret;
     }
 
     //! Get underlying pointer.
@@ -132,14 +145,14 @@ private:
 };
 
 //! Equality check.
-template <class T1, class T2>
-inline bool operator==(const SharedPtr<T1>& a, const SharedPtr<T2>& b) {
+template <class T1, class T2, template <class TT> class P>
+inline bool operator==(const SharedPtr<T1, P>& a, const SharedPtr<T2, P>& b) {
     return a.get() == b.get();
 }
 
 //! Equality check.
-template <class T1, class T2>
-inline bool operator!=(const SharedPtr<T1>& a, const SharedPtr<T2>& b) {
+template <class T1, class T2, template <class TT> class P>
+inline bool operator!=(const SharedPtr<T1, P>& a, const SharedPtr<T2, P>& b) {
     return a.get() != b.get();
 }
 

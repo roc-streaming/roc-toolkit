@@ -7,7 +7,7 @@
  */
 
 #include "roc_netio/resolver.h"
-#include "roc_address/endpoint_uri_to_str.h"
+#include "roc_address/network_uri_to_str.h"
 #include "roc_address/parse_socket_addr.h"
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
@@ -27,14 +27,14 @@ bool Resolver::async_resolve(ResolverRequest& req) {
 
     req.resolved_address.clear();
 
-    if (!req.endpoint_uri->verify(address::EndpointUri::Subset_Full)) {
+    if (!req.endpoint_uri->is_valid()) {
         roc_log(LogError, "resolver: invalid endpoint");
         req.success = false;
         return false;
     }
 
     roc_log(LogTrace, "resolver: starting resolving: endpoint=%s",
-            address::endpoint_uri_to_str(*req.endpoint_uri).c_str());
+            address::network_uri_to_str(*req.endpoint_uri).c_str());
 
     if (address::parse_socket_addr(req.endpoint_uri->host(), req.endpoint_uri->port(),
                                    req.resolved_address)) {
@@ -44,9 +44,12 @@ bool Resolver::async_resolve(ResolverRequest& req) {
 
     req.handle.data = this;
 
-    if (int err =
-            uv_getaddrinfo(&loop_, &req.handle, &Resolver::getaddrinfo_cb_,
-                           req.endpoint_uri->host(), req.endpoint_uri->service(), NULL)) {
+    char fmt_port[6] = {};
+    core::StringBuilder sb(fmt_port, sizeof(fmt_port));
+    sb.append_sint(req.endpoint_uri->port_or_default(), 10);
+
+    if (int err = uv_getaddrinfo(&loop_, &req.handle, &Resolver::getaddrinfo_cb_,
+                                 req.endpoint_uri->host(), fmt_port, NULL)) {
         finish_resolving_(req, err);
         return false;
     }

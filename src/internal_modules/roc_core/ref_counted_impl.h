@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_REF_COUNTED_IMPL_H_
 #define ROC_CORE_REF_COUNTED_IMPL_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 
 namespace roc {
 namespace core {
@@ -41,7 +41,7 @@ public:
 private:
     enum { MaxCounter = 100000 };
 
-    mutable Atomic<int> counter_;
+    mutable AtomicInt<int32_t> counter_;
 };
 
 } // namespace core

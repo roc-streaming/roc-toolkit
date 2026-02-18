@@ -23,10 +23,15 @@ public:
     MockWriter()
         : pos_(0)
         , size_(0)
-        , n_writes_(0) {
+        , n_writes_(0)
+        , status_(status::NoStatus) {
     }
 
-    virtual void write(Frame& frame) {
+    virtual status::StatusCode write(Frame& frame) {
+        if (status_ != status::NoStatus) {
+            return status_;
+        }
+
         CHECK(size_ + frame.num_raw_samples() <= MaxSz);
 
         memcpy(samples_ + size_, frame.raw_samples(),
@@ -40,6 +45,12 @@ public:
         frame_timestamps_[n_writes_] = frame.capture_timestamp();
 
         n_writes_++;
+
+        return status::StatusOK;
+    }
+
+    void set_status(status::StatusCode status) {
+        status_ = status;
     }
 
     sample_t get() {
@@ -50,6 +61,10 @@ public:
 
     size_t num_unread() const {
         return size_ - pos_;
+    }
+
+    size_t written_samples() const {
+        return size_;
     }
 
     size_t n_writes() const {
@@ -83,6 +98,8 @@ private:
     size_t frame_sizes_[MaxWrites];
     unsigned frame_flags_[MaxWrites];
     core::nanoseconds_t frame_timestamps_[MaxWrites];
+
+    status::StatusCode status_;
 };
 
 } // namespace test

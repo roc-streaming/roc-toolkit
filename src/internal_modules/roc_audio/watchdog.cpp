@@ -13,13 +13,13 @@
 namespace roc {
 namespace audio {
 
-void WatchdogConfig::deduce_defaults(core::nanoseconds_t target_latency) {
-    if (target_latency <= 0) {
-        target_latency = 200 * core::Millisecond;
-    }
+bool WatchdogConfig::deduce_defaults(const core::nanoseconds_t default_latency,
+                                     const core::nanoseconds_t target_latency) {
+    const core::nanoseconds_t configured_latency =
+        target_latency != 0 ? target_latency : default_latency;
 
     if (no_playback_timeout == 0) {
-        no_playback_timeout = target_latency * 4 / 3;
+        no_playback_timeout = configured_latency * 4 / 3;
     }
 
     if (choppy_playback_timeout == 0) {
@@ -32,12 +32,10 @@ void WatchdogConfig::deduce_defaults(core::nanoseconds_t target_latency) {
     }
 
     if (warmup_duration == 0) {
-        warmup_duration = target_latency;
+        warmup_duration = configured_latency;
     }
 
-    if (frame_status_window == 0) {
-        frame_status_window = 20;
-    }
+    return true;
 }
 
 Watchdog::Watchdog(IFrameReader& reader,
@@ -58,8 +56,7 @@ Watchdog::Watchdog(IFrameReader& reader,
     , status_(arena)
     , status_pos_(0)
     , show_status_(false)
-    , alive_(true)
-    , valid_(false) {
+    , init_status_(status::NoStatus) {
     if (config.no_playback_timeout >= 0) {
         max_blank_duration_ =
             std::max(sample_spec_.ns_2_stream_timestamp(config.no_playback_timeout), 1u);
@@ -99,6 +96,7 @@ Watchdog::Watchdog(IFrameReader& reader,
             || drops_detection_window_ > max_drops_duration_)) {
         roc_log(LogError,
                 "watchdog: invalid config: drop_detection_window out of bounds");
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
@@ -108,30 +106,32 @@ Watchdog::Watchdog(IFrameReader& reader,
         }
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool Watchdog::is_valid() const {
-    return valid_;
+status::StatusCode Watchdog::init_status() const {
+    return init_status_;
 }
 
-bool Watchdog::is_alive() const {
-    roc_panic_if(!is_valid());
+status::StatusCode
+Watchdog::read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode) {
+    roc_panic_if(init_status_ != status::StatusOK);
 
-    return alive_;
-}
-
-bool Watchdog::read(Frame& frame) {
-    roc_panic_if(!is_valid());
-
-    if (!alive_) {
-        return false;
+    const status::StatusCode code = reader_.read(frame, duration, mode);
+    if (code != status::StatusOK && code != status::StatusPart) {
+        return code;
     }
 
-    if (!reader_.read(frame)) {
-        return false;
+    sample_spec_.validate_frame(frame);
+
+    if (!update_(frame)) {
+        return status::StatusAbort;
     }
 
+    return code;
+}
+
+bool Watchdog::update_(Frame& frame) {
     const packet::stream_timestamp_t next_read_pos = curr_read_pos_ + frame.duration();
 
     update_blank_timeout_(frame, next_read_pos);
@@ -142,12 +142,12 @@ bool Watchdog::read(Frame& frame) {
 
     if (!check_drops_timeout_()) {
         flush_status_();
-        alive_ = false;
+        return false;
     }
 
     if (!check_blank_timeout_()) {
         flush_status_();
-        alive_ = false;
+        return false;
     }
 
     update_warmup_();
@@ -161,7 +161,7 @@ void Watchdog::update_blank_timeout_(const Frame& frame,
         return;
     }
 
-    if (frame.flags() & Frame::FlagNotBlank) {
+    if (frame.flags() & Frame::HasSignal) {
         last_pos_before_blank_ = next_read_pos;
         in_warmup_ = false;
     }
@@ -202,7 +202,7 @@ void Watchdog::update_drops_timeout_(const Frame& frame,
     const packet::stream_timestamp_t window_end = window_start + drops_detection_window_;
 
     if (packet::stream_timestamp_le(window_end, next_read_pos)) {
-        const unsigned drop_flags = Frame::FlagNotComplete | Frame::FlagPacketDrops;
+        const unsigned drop_flags = Frame::HasGaps | Frame::HasDrops;
 
         if ((curr_window_flags_ & drop_flags) != drop_flags) {
             last_pos_before_drops_ = next_read_pos;
@@ -250,27 +250,27 @@ void Watchdog::update_status_(const Frame& frame) {
 
     char symbol = '.';
 
-    if (!(flags & Frame::FlagNotBlank)) {
+    if (!(flags & Frame::HasSignal)) {
         if (in_warmup_) {
-            if (flags & Frame::FlagPacketDrops) {
+            if (flags & Frame::HasDrops) {
                 symbol = 'W';
             } else {
                 symbol = 'w';
             }
         } else {
-            if (flags & Frame::FlagPacketDrops) {
+            if (flags & Frame::HasDrops) {
                 symbol = 'B';
             } else {
                 symbol = 'b';
             }
         }
-    } else if (flags & Frame::FlagNotComplete) {
-        if (flags & Frame::FlagPacketDrops) {
+    } else if (flags & Frame::HasGaps) {
+        if (flags & Frame::HasDrops) {
             symbol = 'I';
         } else {
             symbol = 'i';
         }
-    } else if (flags & Frame::FlagPacketDrops) {
+    } else if (flags & Frame::HasDrops) {
         symbol = 'D';
     }
 

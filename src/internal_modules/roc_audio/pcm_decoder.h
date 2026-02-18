@@ -24,10 +24,13 @@ namespace audio {
 class PcmDecoder : public IFrameDecoder, public core::NonCopyable<> {
 public:
     //! Construction function.
-    static IFrameDecoder* construct(core::IArena& arena, const SampleSpec& sample_spec);
+    static IFrameDecoder* construct(const SampleSpec& sample_spec, core::IArena& arena);
 
     //! Initialize.
-    PcmDecoder(const SampleSpec& sample_spec);
+    PcmDecoder(const SampleSpec& sample_spec, core::IArena& arena);
+
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
 
     //! Get current stream position.
     virtual packet::stream_timestamp_t position() const;
@@ -39,18 +42,19 @@ public:
     virtual size_t decoded_sample_count(const void* frame_data, size_t frame_size) const;
 
     //! Start decoding a new frame.
-    virtual void begin(packet::stream_timestamp_t frame_position,
-                       const void* frame_data,
-                       size_t frame_size);
+    ROC_NODISCARD virtual status::StatusCode
+    begin_frame(packet::stream_timestamp_t frame_position,
+                const void* frame_data,
+                size_t frame_size);
 
     //! Read samples from current frame.
-    virtual size_t read(sample_t* samples, size_t n_samples);
+    virtual size_t read_samples(sample_t* samples, size_t n_samples);
 
     //! Shift samples from current frame.
-    virtual size_t shift(size_t n_samples);
+    virtual size_t drop_samples(size_t n_samples);
 
     //! Finish decoding current frame.
-    virtual void end();
+    ROC_NODISCARD virtual status::StatusCode end_frame();
 
 private:
     PcmMapper pcm_mapper_;

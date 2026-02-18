@@ -6,13 +6,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <benchmark/benchmark.h>
-
-#include "roc_core/fast_random.h"
 #include "roc_core/heap_arena.h"
+#include "roc_core/secure_random.h"
 #include "roc_ctl/control_task_executor.h"
 #include "roc_ctl/control_task_queue.h"
 #include "roc_pipeline/pipeline_loop.h"
+
+#include <benchmark/benchmark.h>
 
 namespace roc {
 namespace pipeline {
@@ -33,10 +33,14 @@ enum {
     Chans = 0x1,
     NumThreads = 16,
     NumIterations = 1000000,
-    BatchSize = 10000
+    BatchSize = 10000,
+    FrameBufSize = 100
 };
 
 core::HeapArena arena;
+
+core::SlabPool<audio::Frame> frame_pool("frame_pool", arena);
+core::SlabPool<core::Buffer> frame_buffer_pool("frame_buffer_pool", arena, FrameBufSize);
 
 class NoopPipeline : public PipelineLoop,
                      private IPipelineTaskScheduler,
@@ -51,10 +55,13 @@ public:
         : PipelineLoop(*this,
                        config,
                        audio::SampleSpec(SampleRate,
-                                         audio::Sample_RawFormat,
+                                         audio::PcmSubformat_Raw,
                                          audio::ChanLayout_Surround,
                                          audio::ChanOrder_Smpte,
-                                         Chans))
+                                         Chans),
+                       frame_pool,
+                       frame_buffer_pool,
+                       Dir_WriteFrames)
         , control_queue_(control_queue)
         , control_task_(*this) {
     }
@@ -89,11 +96,13 @@ private:
         return 0;
     }
 
-    virtual bool process_subframe_imp(audio::Frame&) {
-        return true;
+    virtual status::StatusCode process_subframe_imp(audio::Frame& frame,
+                                                    packet::stream_timestamp_t duration,
+                                                    audio::FrameReadMode mode) {
+        return status::StatusOK;
     }
 
-    virtual bool process_task_imp(PipelineTask&) {
+    virtual bool process_task_imp(PipelineTask& task) {
         return true;
     }
 

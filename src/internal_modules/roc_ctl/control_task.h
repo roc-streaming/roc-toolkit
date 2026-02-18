@@ -12,7 +12,8 @@
 #ifndef ROC_CTL_CONTROL_TASK_H_
 #define ROC_CTL_CONTROL_TASK_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
+#include "roc_core/atomic_ptr.h"
 #include "roc_core/list_node.h"
 #include "roc_core/mpsc_queue_node.h"
 #include "roc_core/mutex.h"
@@ -54,14 +55,14 @@ class ControlTask : public core::MpscQueueNode<>, public core::ListNode<> {
 public:
     ~ControlTask();
 
-    //! True if the task succeeded, failed, or cancelled.
+    //! True if the task succeeded, failed, or canceled.
     bool completed() const;
 
     //! True if the task succeeded.
     bool succeeded() const;
 
-    //! True if the task cancelled.
-    bool cancelled() const;
+    //! True if the task canceled.
+    bool canceled() const;
 
 protected:
     //! Initialize task.
@@ -89,7 +90,7 @@ private:
 
     enum State {
         // task is in ready queue or being fetched from it; after it's
-        // fetched, it will be processed, cancelled, or rescheduled
+        // fetched, it will be processed, canceled, or rescheduled
         StateReady,
 
         // task is in sleeping queue, waiting for its deadline
@@ -118,7 +119,7 @@ private:
         // task resuming was requested
         FlagResumed = (1 << 3),
 
-        // task was cancelled
+        // task was canceled
         FlagCancelled = (1 << 4),
 
         // task destructor was called
@@ -132,16 +133,16 @@ private:
                                   core::seqlock_version_t version);
 
     // scheduling state of the task
-    core::Atomic<uint32_t> state_;
+    core::AtomicInt<uint32_t> state_;
 
     // additional details about current state
-    core::Atomic<uint32_t> flags_;
+    core::AtomicInt<uint32_t> flags_;
 
     // guard to cut off concurrent task renewals (only one succeeds)
-    core::Atomic<uint32_t> renew_guard_;
+    core::AtomicInt<uint32_t> renew_guard_;
 
     // guard to cut off concurrent task waits (only one allowed)
-    core::Atomic<uint32_t> wait_guard_;
+    core::AtomicInt<uint32_t> wait_guard_;
 
     // new task deadline that is probably not yet taken into account
     core::Seqlock<core::nanoseconds_t> renewed_deadline_;
@@ -165,7 +166,7 @@ private:
     IControlTaskCompleter* completer_;
 
     // semaphore to wait for task completion
-    core::Atomic<core::Semaphore*> sem_;
+    core::AtomicPtr<core::Semaphore> sem_;
     core::Optional<core::Semaphore> sem_holder_;
 };
 

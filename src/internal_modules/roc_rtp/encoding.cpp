@@ -24,14 +24,16 @@ bool parse_encoding(const char* str, Encoding& result) {
     if (sep == NULL) {
         roc_log(LogError,
                 "parse encoding: invalid format: missing separator, expected"
-                " <id>:<format>/<rate>/<channels>");
+                " '<id>:<spec>', got '%s'",
+                str);
         return false;
     }
 
     if (!isdigit(*str)) {
         roc_log(LogError,
-                "parse encoding: invalid format: not a number, expected"
-                " <id>:<format>/<rate>/<channels>");
+                "parse encoding: invalid id: not a number, expected"
+                " '<id>:<spec>', got '%s'",
+                str);
         return false;
     }
 
@@ -40,23 +42,22 @@ bool parse_encoding(const char* str, Encoding& result) {
 
     if (number == ULONG_MAX || !number_end || number_end != sep) {
         roc_log(LogError,
-                "parse encoding: invalid format: not a number, expected"
-                " <id>:<format>/<rate>/<channels>");
+                "parse encoding: invalid id: not a number, expected"
+                " '<id>:<spec>', got '%s'",
+                str);
         return false;
     }
 
     if (number > UINT_MAX) {
         roc_log(LogError,
-                "parse encoding: number out of range:"
-                " value=%lu maximum=%u",
+                "parse encoding: invalid id: out of range:"
+                " got=%lu max=%u",
                 number, UINT_MAX);
         return false;
     }
 
     if (!audio::parse_sample_spec(sep + 1, result.sample_spec)) {
-        roc_log(LogError,
-                "parse encoding: invalid format: invalid spec, expected"
-                " <id>:<format>/<rate>/<channels>");
+        roc_log(LogError, "parse encoding: invalid spec");
         return false;
     }
 

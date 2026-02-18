@@ -13,7 +13,7 @@
 
 #include "test_helpers/utils.h"
 
-#include "roc_audio/latency_tuner.h"
+#include "roc_audio/latency_config.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
 #include "roc_packet/ilink_meter.h"
@@ -97,7 +97,7 @@ public:
         rr_blk.set_ssrc(remote_source_);
         rr_blk.set_cum_loss(link_metrics_.lost_packets);
         rr_blk.set_last_seqnum(link_metrics_.ext_last_seqnum);
-        rr_blk.set_jitter(sample_spec.ns_2_stream_timestamp(link_metrics_.jitter));
+        rr_blk.set_jitter(sample_spec.ns_2_stream_timestamp(link_metrics_.peak_jitter));
         rr_blk.set_last_sr(ntp_ts);
         rr_blk.set_delay_last_sr(0);
 

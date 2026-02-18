@@ -24,22 +24,25 @@ namespace audio {
 class PcmEncoder : public IFrameEncoder, public core::NonCopyable<> {
 public:
     //! Construction function.
-    static IFrameEncoder* construct(core::IArena& arena, const SampleSpec& sample_spec);
+    static IFrameEncoder* construct(const SampleSpec& sample_spec, core::IArena& arena);
 
     //! Initialize.
-    PcmEncoder(const SampleSpec& sample_spec);
+    PcmEncoder(const SampleSpec& sample_spec, core::IArena& arena);
+
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const;
 
     //! Get encoded frame size in bytes for given number of samples per channel.
     virtual size_t encoded_byte_count(size_t num_samples) const;
 
     //! Start encoding a new frame.
-    virtual void begin(void* frame, size_t frame_size);
+    ROC_NODISCARD virtual status::StatusCode begin_frame(void* frame, size_t frame_size);
 
     //! Encode samples.
-    virtual size_t write(const sample_t* samples, size_t n_samples);
+    virtual size_t write_samples(const sample_t* samples, size_t n_samples);
 
     //! Finish encoding frame.
-    virtual void end();
+    ROC_NODISCARD virtual status::StatusCode end_frame();
 
 private:
     PcmMapper pcm_mapper_;

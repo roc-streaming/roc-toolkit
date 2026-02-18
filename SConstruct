@@ -9,7 +9,8 @@ import sys
 supported_platforms = [
     'linux',
     'unix',
-    'darwin',
+    'macos',
+    'windows',
     'android',
 ]
 
@@ -166,7 +167,7 @@ AddOption('--enable-tests',
 AddOption('--enable-benchmarks',
           dest='enable_benchmarks',
           action='store_true',
-          help='enable bechmarks building and running (requires Google Benchmark)')
+          help='enable benchmarks building and running (requires Google Benchmark)')
 
 AddOption('--enable-examples',
           dest='enable_examples',
@@ -182,11 +183,6 @@ AddOption('--enable-sphinx',
           dest='enable_sphinx',
           action='store_true',
           help='enable Sphinx documentation generation')
-
-AddOption('--disable-c11',
-          dest='disable_c11',
-          action='store_true',
-          help='disable C11 support')
 
 AddOption('--disable-soversion',
           dest='disable_soversion',
@@ -223,6 +219,11 @@ AddOption('--disable-libunwind',
           dest='disable_libunwind',
           action='store_true',
           help='disable libunwind support required for printing backtrace')
+
+AddOption('--disable-libuuid',
+          dest='disable_libuuid',
+          action='store_true',
+          help='disable libuuid support for reliable UUID generation')
 
 AddOption('--disable-alsa',
           dest='disable_alsa',
@@ -268,7 +269,7 @@ AddOption('--macos-arch',
                 " comma-separated list, supported values: {}".format(
                     ', '.join(["'{}'".format(s) for s in supported_macos_archs])) +
                 " (default is current OS arch, pass multiple values"
-                " or 'all' for univeral binaries)"))
+                " or 'all' for universal binaries)"))
 
 AddOption('--build-3rdparty',
           dest='build_3rdparty',
@@ -454,7 +455,7 @@ if set(COMMAND_LINE_TARGETS) \
 meta = type('meta', (), {
     field: '' for field in ('build host toolchain platform variant thirdparty_variant '
                             'compiler compiler_ver '
-                            'c11_support gnu_toolchain').split()})
+                            'gnu_toolchain').split()})
 
 # toolchain triple of the local system (where we're building), e.g. x86_64-pc-linux-gnu
 meta.build = GetOption('build')
@@ -517,6 +518,15 @@ if not meta.compiler_ver:
         env.Die("can't detect compiler version for compiler '{}'",
                 '-'.join([s for s in [meta.toolchain, meta.compiler] if s]))
 
+if GetOption('compiler') and env.HasArgument('CXX'):
+    detected_compiler = env.ParseCompilerType(env['CXX'])
+    if detected_compiler and detected_compiler != meta.compiler:
+        env.Warn("forcing compiler '{}-{}' from '--compiler={}' option,"+
+                 " but detected compiler '{}' from 'CXX={}' variable",
+                 meta.compiler, '.'.join(map(str, meta.compiler_ver)),
+                 GetOption('compiler'),
+                 detected_compiler, env['CXX'])
+
 conf = Configure(env, custom_tests=env.CustomTests)
 
 if meta.compiler == 'clang':
@@ -560,7 +570,7 @@ if not meta.host:
 if not meta.toolchain and meta.build != meta.host:
     meta.toolchain = meta.host
 
-if not meta.toolchain and meta.build == meta.host:
+if not meta.toolchain and meta.build == meta.host and 'darwin' in meta.host:
     meta.build = meta.host = env.ParseMacosHost(
         meta.host, GetOption('macos_platform'), GetOption('macos_arch'))
 
@@ -570,9 +580,11 @@ if not meta.platform:
     elif 'linux' in meta.host:
         meta.platform = 'linux'
     elif 'darwin' in meta.host:
-        meta.platform = 'darwin'
+        meta.platform = 'macos'
     elif 'gnu' in meta.host:
         meta.platform = 'unix'
+    elif 'mingw' in meta.host:
+        meta.platform = 'windows'
 
 if not meta.platform and meta.host == meta.build:
     if os.name == 'posix':
@@ -652,18 +664,9 @@ conf.env['SHLINK'] = env['CXXLD']
 if GetOption('compiler_launcher'):
     conf.FindProgram('COMPILER_LAUNCHER', GetOption('compiler_launcher'))
 
-if meta.platform == 'darwin':
+if meta.platform == 'macos':
     conf.FindTool('LIPO', [''], [('lipo', None)], required=False)
     conf.FindTool('INSTALL_NAME_TOOL', [''], [('install_name_tool', None)], required=False)
-
-meta.c11_support = False
-if not GetOption('disable_c11'):
-    if meta.compiler == 'gcc':
-        meta.c11_support = meta.compiler_ver[:2] >= (4, 9)
-    elif meta.compiler == 'clang' and meta.platform == 'darwin':
-        meta.c11_support = meta.compiler_ver[:2] >= (7, 0)
-    elif meta.compiler == 'clang' and meta.platform != 'darwin':
-        meta.c11_support = meta.compiler_ver[:2] >= (3, 6)
 
 # true if we have full-featured GNU toolchain with all needed compiler and linker options
 # note that macOS is excluded
@@ -721,16 +724,18 @@ env['ROC_SOVER'] = '.'.join(env['ROC_VERSION'].split('.')[:2])
 env['ROC_MODULES'] = [
     'roc_core',
     'roc_status',
+    'roc_stat',
     'roc_address',
     'roc_packet',
+    'roc_fec',
+    'roc_dbgio',
     'roc_audio',
     'roc_rtp',
     'roc_rtcp',
-    'roc_fec',
+    'roc_sdp',
     'roc_netio',
     'roc_sndio',
     'roc_pipeline',
-    'roc_sdp',
     'roc_ctl',
     'roc_node',
 ]
@@ -762,36 +767,47 @@ if GetOption('override_targets'):
     for t in GetOption('override_targets').split(','):
         env['ROC_TARGETS'] += ['target_' + t]
 else:
-    if meta.platform in ['linux', 'darwin', 'unix']:
+    if meta.platform in ['linux', 'unix', 'macos', 'windows']:
         env.Append(ROC_TARGETS=[
             'target_pc',
         ])
 
-    if meta.platform in ['linux', 'android', 'darwin', 'unix']:
+    if meta.platform in ['linux', 'unix', 'macos', 'android']:
         env.Append(ROC_TARGETS=[
             'target_posix',
         ])
 
-    if meta.platform in ['linux', 'darwin', 'unix']:
+    if meta.platform in ['linux', 'unix', 'macos']:
         env.Append(ROC_TARGETS=[
             'target_posix_pc',
         ])
 
-    if meta.platform in ['linux', 'android', 'unix']:
+    if meta.platform in ['linux', 'unix', 'android']:
         env.Append(ROC_TARGETS=[
             'target_posix_ext',
         ])
 
-    if meta.platform in ['linux', 'android' 'darwin'] or meta.gnu_toolchain:
+    if meta.platform in ['linux', 'unix', 'macos', 'windows', 'android']:
         env.Append(ROC_TARGETS=[
-            # GNU C++ Standard Library (libstdc++), or compatible, like
+            # berkley sockets, or something close
+            'target_berkley',
+        ])
+
+    if meta.platform in ['linux', 'macos', 'android'] or meta.gnu_toolchain:
+        env.Append(ROC_TARGETS=[
+            # GNU C++ Standard Library (libstdc++), or compatible like
             # LLVM C++ Standard Library (libc++)
             'target_gnu',
         ])
 
-    if meta.platform in ['darwin']:
+    if meta.platform in ['macos']:
         env.Append(ROC_TARGETS=[
             'target_darwin',
+        ])
+
+    if meta.platform in ['windows']:
+        env.Append(ROC_TARGETS=[
+            'target_windows',
         ])
 
     if meta.platform in ['android']:
@@ -799,18 +815,18 @@ else:
             'target_android',
         ])
 
-    if meta.c11_support:
+    if meta.platform in ['linux', 'unix', 'macos'] and not GetOption('disable_libunwind'):
         env.Append(ROC_TARGETS=[
-            'target_c11',
+            'target_libunwind',
+        ])
+
+    if meta.platform in ['linux'] and not GetOption('disable_libuuid'):
+        env.Append(ROC_TARGETS=[
+            'target_libuuid',
         ])
     else:
         env.Append(ROC_TARGETS=[
-            'target_libatomic_ops',
-        ])
-
-    if meta.platform in ['linux', 'darwin', 'unix'] and not GetOption('disable_libunwind'):
-        env.Append(ROC_TARGETS=[
-            'target_libunwind',
+            'target_nouuid',
         ])
 
     env.Append(ROC_TARGETS=[
@@ -857,6 +873,7 @@ else:
     if 'target_gnu' not in env['ROC_TARGETS']:
         env.Append(ROC_TARGETS=[
             'target_nodemangle',
+            'target_libatomic_ops',
         ])
 
     if 'target_libunwind' not in env['ROC_TARGETS'] and \
@@ -913,6 +930,9 @@ if meta.platform in ['darwin']:
 if meta.platform in ['linux', 'unix']:
     env.AddManualDependency(libs=['rt', 'dl', 'm'])
 
+if meta.platform in ['windows']:
+    env.AddManualDependency(libs=['ws2_32'])
+
 if meta.platform in ['android']:
     env.AddManualDependency(libs=['log', 'android'])
 
@@ -927,7 +947,7 @@ if meta.compiler in ['gcc', 'clang']:
             '-fPIC',
         ]})
 
-    if meta.platform in ['linux', 'darwin']:
+    if meta.platform in ['linux', 'macos']:
         env.AddManualDependency(libs=['pthread'])
 
     if meta.platform in ['linux', 'android'] or meta.gnu_toolchain:
@@ -944,7 +964,7 @@ if meta.compiler in ['gcc', 'clang']:
                 '-Wl,--version-script={}'.format(env.File('#src/public_api/roc.version').path)
             ])
 
-    if meta.platform in ['darwin']:
+    if meta.platform in ['macos']:
         if not GetOption('disable_soversion'):
             subenvs.public_libs['SHLIBSUFFIX'] = '.{}{}'.format(
                 env['ROC_SOVER'], subenvs.public_libs['SHLIBSUFFIX'])
@@ -1007,7 +1027,7 @@ if meta.compiler in ['cc']:
             ]})
 
     for var in ['CXXFLAGS', 'CFLAGS']:
-        conf.env.Append(**{var: [
+        env.Append(**{var: [
             '-fPIC',
         ]})
 
@@ -1058,6 +1078,7 @@ if meta.compiler == 'gcc':
     ])
 
     if meta.compiler_ver[:2] >= (10, 0):
+        # enable
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wdouble-promotion',
@@ -1066,6 +1087,11 @@ if meta.compiler == 'gcc':
                 '-Woverlength-strings',
                 '-Wsign-conversion',
             ]})
+    else:
+        # disable
+        env.Append(CXXFLAGS=[
+            '-Wno-reorder',
+        ])
 
 if meta.compiler == 'clang':
     for var in ['CXXFLAGS', 'CFLAGS']:
@@ -1100,15 +1126,25 @@ if meta.compiler == 'clang':
         ]})
 
     env.Append(CXXFLAGS=[
-        '-Wno-invalid-offsetof',
+        # enable
         '-Wnon-virtual-dtor',
+
+        # disable
+        '-Wno-invalid-offsetof',
     ])
 
-    if meta.platform in ['darwin', 'android'] or meta.compiler_ver[:2] < (11, 0):
+    if meta.platform not in ['macos', 'android'] and meta.compiler_ver[:2] >= (11, 0):
+        # enable
+        pass
+    else:
+        # disable
         for var in ['CXXFLAGS', 'CFLAGS']:
             env.Append(**{var: [
                 '-Wno-unknown-warning-option',
             ]})
+        env.Append(CXXFLAGS=[
+            '-Wno-reorder',
+        ])
 
 if meta.compiler in ['gcc', 'clang']:
     for var in ['CXXFLAGS', 'CFLAGS']:
@@ -1177,7 +1213,7 @@ if meta.compiler in ['gcc', 'clang']:
             # workaround to force our 3rdparty directories to be placed
             # before /usr/local/include on macos: explicitly place it
             # after previous -isystem options
-            if meta.compiler == 'clang' and meta.platform == 'darwin':
+            if meta.compiler == 'clang' and meta.platform == 'macos':
                 dirs += [('-isystem', '/usr/local/include')]
 
             senv.Prepend(**{var: dirs})

@@ -20,10 +20,10 @@ namespace roc {
 namespace node {
 
 //! Base class for nodes.
-class Node : public core::NonCopyable<> {
+class Node : public core::ArenaAllocation, core::NonCopyable<> {
 public:
     //! Initialize.
-    Node(Context& context);
+    explicit Node(Context& context);
 
     //! Deinitialize.
     virtual ~Node();

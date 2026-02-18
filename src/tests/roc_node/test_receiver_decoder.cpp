@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
+#include "test_harness.h"
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
@@ -24,7 +24,6 @@ namespace {
 enum { MaxBufSize = 100 };
 
 core::HeapArena arena;
-packet::PacketFactory packet_factory(arena, MaxBufSize);
 
 void write_slot_metrics(const pipeline::ReceiverSlotMetrics& slot_metrics,
                         void* slot_arg) {
@@ -46,10 +45,10 @@ TEST_GROUP(receiver_decoder) {
 
 TEST(receiver_decoder, source) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
-    CHECK(receiver_decoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver_decoder.init_status());
 
     LONGS_EQUAL(receiver_decoder.source().sample_spec().sample_rate(),
                 receiver_config.common.output_sample_spec.sample_rate());
@@ -57,61 +56,63 @@ TEST(receiver_decoder, source) {
 
 TEST(receiver_decoder, write_packet) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
-    CHECK(receiver_decoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver_decoder.init_status());
 
-    packet::PacketPtr pp = packet_factory.new_packet();
+    uint8_t packet[MaxBufSize] = {};
 
-    // TODO(gh-183): compare with StatusNotFound
-    LONGS_EQUAL(status::StatusUnknown,
-                receiver_decoder.write_packet(address::Iface_AudioSource, pp));
-    LONGS_EQUAL(status::StatusUnknown,
-                receiver_decoder.write_packet(address::Iface_AudioRepair, pp));
-    LONGS_EQUAL(status::StatusUnknown,
-                receiver_decoder.write_packet(address::Iface_AudioControl, pp));
+    LONGS_EQUAL(status::StatusBadInterface,
+                receiver_decoder.write_packet(address::Iface_AudioSource, packet,
+                                              sizeof(packet)));
+    LONGS_EQUAL(status::StatusBadInterface,
+                receiver_decoder.write_packet(address::Iface_AudioRepair, packet,
+                                              sizeof(packet)));
+    LONGS_EQUAL(status::StatusBadInterface,
+                receiver_decoder.write_packet(address::Iface_AudioControl, packet,
+                                              sizeof(packet)));
 }
 
 TEST(receiver_decoder, read_packet) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
-    CHECK(receiver_decoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver_decoder.init_status());
 
-    packet::PacketPtr pp;
+    uint8_t packet[MaxBufSize] = {};
+    size_t packet_size = sizeof(packet);
 
-    // TODO(gh-183): compare with StatusNotFound
-    LONGS_EQUAL(status::StatusNoData,
-                receiver_decoder.read_packet(address::Iface_AudioSource, pp));
-    CHECK(!pp);
-    LONGS_EQUAL(status::StatusNoData,
-                receiver_decoder.read_packet(address::Iface_AudioRepair, pp));
-    CHECK(!pp);
-    LONGS_EQUAL(status::StatusNoData,
-                receiver_decoder.read_packet(address::Iface_AudioControl, pp));
-    CHECK(!pp);
+    LONGS_EQUAL(
+        status::StatusBadInterface,
+        receiver_decoder.read_packet(address::Iface_AudioSource, packet, &packet_size));
+    LONGS_EQUAL(
+        status::StatusBadInterface,
+        receiver_decoder.read_packet(address::Iface_AudioRepair, packet, &packet_size));
+    LONGS_EQUAL(
+        status::StatusBadInterface,
+        receiver_decoder.read_packet(address::Iface_AudioControl, packet, &packet_size));
 }
 
 TEST(receiver_decoder, activate_no_fec) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
-    CHECK(receiver_decoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver_decoder.init_status());
 
     CHECK(receiver_decoder.activate(address::Iface_AudioSource, address::Proto_RTP));
 }
 
 TEST(receiver_decoder, activate_fec) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
-    CHECK(receiver_decoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver_decoder.init_status());
 
-    if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
+    if (fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8)) {
         CHECK(receiver_decoder.activate(address::Iface_AudioSource,
                                         address::Proto_RTP_RS8M_Source));
         CHECK(receiver_decoder.activate(address::Iface_AudioRepair,
@@ -126,10 +127,10 @@ TEST(receiver_decoder, activate_fec) {
 
 TEST(receiver_decoder, metrics) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     ReceiverDecoder receiver_decoder(context, receiver_config);
-    CHECK(receiver_decoder.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver_decoder.init_status());
 
     pipeline::ReceiverSlotMetrics slot_metrics;
     pipeline::ReceiverParticipantMetrics party_metrics;

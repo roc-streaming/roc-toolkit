@@ -24,6 +24,8 @@ namespace packet {
 //! Sorted packet queue.
 //! @remarks
 //!  Packets order is determined by Packet::compare() method.
+//! @note
+//!  Not thread safe.
 class SortedQueue : public IWriter, public IReader, public core::NonCopyable<> {
 public:
     //! Construct empty queue.
@@ -31,21 +33,19 @@ public:
     //!  If @p max_size is non-zero, it specifies maximum number of packets in queue.
     explicit SortedQueue(size_t max_size);
 
-    //! Add packet to the queue.
-    //! @remarks
-    //!  - if the maximum queue size is reached, packet is dropped
-    //!  - if packet is equal to another packet in the queue, it is dropped
-    //!  - otherwise, packet is inserted into the queue, keeping the queue sorted
-    virtual ROC_ATTR_NODISCARD status::StatusCode write(const PacketPtr& packet);
-
-    //! Read next packet.
-    //!
-    //! @remarks
-    //!  Removes returned packet from the queue.
-    virtual ROC_ATTR_NODISCARD status::StatusCode read(PacketPtr& packet);
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Get number of packets in queue.
     size_t size() const;
+
+    //! Get the latest packet that were ever added to the queue.
+    //! @remarks
+    //!  Returns null if the queue never had any packets. Otherwise, returns
+    //!  the latest (by sorting order) ever added packet, even if that packet is not
+    //!  currently in the queue. Returned packet is not removed from the queue if
+    //!  it's still there.
+    PacketPtr latest() const;
 
     //! Get first packet in the queue.
     //! @returns
@@ -61,13 +61,18 @@ public:
     //!  Returned packet is not removed from the queue.
     PacketPtr tail() const;
 
-    //! Get the latest packet that were ever added to the queue.
+    //! Add packet to the queue.
     //! @remarks
-    //!  Returns null if the queue never had any packets. Otherwise, returns
-    //!  the latest (by sorting order) ever added packet, even if that packet is not
-    //!  currently in the queue. Returned packet is not removed from the queue if
-    //!  it's still there.
-    PacketPtr latest() const;
+    //!  - if the maximum queue size is reached, packet is dropped
+    //!  - if packet is equal to another packet in the queue, it is dropped
+    //!  - otherwise, packet is inserted into the queue, keeping the queue sorted
+    virtual ROC_NODISCARD status::StatusCode write(const PacketPtr& packet);
+
+    //! Read next packet.
+    //!
+    //! @remarks
+    //!  Removes returned packet from the queue.
+    virtual ROC_NODISCARD status::StatusCode read(PacketPtr& packet, PacketReadMode mode);
 
 private:
     core::List<Packet> list_;

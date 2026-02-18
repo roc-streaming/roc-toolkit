@@ -28,16 +28,23 @@ public:
     //! @remarks
     //!  Parses FECFRAME header or footer and passes the rest to @p inner_parser
     //!  if it's not null.
-    explicit Parser(packet::IParser* inner_parser)
-        : inner_parser_(inner_parser) {
+    Parser(packet::IParser* inner_parser, core::IArena& arena)
+        : IParser(arena)
+        , inner_parser_(inner_parser) {
+    }
+
+    //! Check if the object was successfully constructed.
+    virtual status::StatusCode init_status() const {
+        return status::StatusOK;
     }
 
     //! Parse packet from buffer.
-    virtual bool parse(packet::Packet& packet, const core::Slice<uint8_t>& buffer) {
+    virtual ROC_NODISCARD status::StatusCode parse(packet::Packet& packet,
+                                                   const core::Slice<uint8_t>& buffer) {
         if (buffer.size() < sizeof(PayloadID)) {
             roc_log(LogDebug, "fec parser: bad packet, size < %d (payload id)",
                     (int)sizeof(PayloadID));
-            return false;
+            return status::StatusBadPacket;
         }
 
         const PayloadID* payload_id;
@@ -72,7 +79,7 @@ public:
             return inner_parser_->parse(packet, fec.payload);
         }
 
-        return true;
+        return status::StatusOK;
     }
 
 private:

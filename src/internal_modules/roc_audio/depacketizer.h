@@ -12,86 +12,159 @@
 #ifndef ROC_AUDIO_DEPACKETIZER_H_
 #define ROC_AUDIO_DEPACKETIZER_H_
 
+#include "roc_audio/frame_factory.h"
 #include "roc_audio/iframe_decoder.h"
 #include "roc_audio/iframe_reader.h"
 #include "roc_audio/sample.h"
 #include "roc_audio/sample_spec.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/rate_limiter.h"
+#include "roc_dbgio/csv_dumper.h"
 #include "roc_packet/ireader.h"
 
 namespace roc {
 namespace audio {
 
+//! Metrics of depacketizer.
+struct DepacketizerMetrics {
+    //! Cumulative count of packets from which we decoded samples.
+    uint64_t decoded_packets;
+
+    //! Cumulative count of decoded samples.
+    uint64_t decoded_samples;
+
+    //! Cumulative count of samples missing due to losses or delays.
+    uint64_t missing_samples;
+
+    //! Cumulative count of packets dropped because they were late.
+    //! @note
+    //!  This metric includes packets that were only partially late.
+    uint64_t late_packets;
+
+    //! Cumulative count of samples in late packets.
+    uint64_t late_samples;
+
+    //! Cumulative count of packets repaired by FEC.
+    //! @note
+    //!  This metric excludes late packets that were repaired but then dropped.
+    uint64_t recovered_packets;
+
+    //! Cumulative count of samples in recovered packets.
+    uint64_t recovered_samples;
+
+    DepacketizerMetrics()
+        : decoded_packets(0)
+        , decoded_samples(0)
+        , missing_samples(0)
+        , late_packets(0)
+        , late_samples(0)
+        , recovered_packets(0)
+        , recovered_samples(0) {
+    }
+};
+
 //! Depacketizer.
-//! @remarks
-//!  Reads packets from a packet reader, decodes samples from packets using a
-//!  decoder, and produces an audio stream.
+//!
+//! Reads packets from a packet reader, decodes samples from packets using a
+//! frame decoder, and produces an audio stream of frames.
+//!
+//! Notes:
+//!
+//!  - Depacketizer assume that packets from packet reader come in correct
+//!    order, i.e. next packet has higher timestamp that previous one.
+//!
+//!  - If this assumption breaks and a outdated packet is fetched from packet
+//!    reader, it's dropped.
+//!
+//!  - Depacketizer uses ModePeek to see what is the next available packet in
+//!    packet reader. It doesn't use ModeFetch until next packet is actually
+//!    used, to give late packets more time to arrive.
+//!
+//!  - In ModeHard, depacketizer fills gaps caused by packet losses with zeros.
+//!
+//!  - In ModeSoft, depacketizer stops reading at the first gap and returns
+//!    either StatusPart or StatusDrain.
+//!
+//!  - Depacketizer never mixes decoded samples and gaps in same frame. E.g. if
+//!    100 samples are requested, and first 20 samples are missing, depacketizer
+//!    generates two partial reads: first with 20 zeroized samples, second with
+//!    80 decoded samples.
 class Depacketizer : public IFrameReader, public core::NonCopyable<> {
 public:
     //! Initialization.
-    //!
-    //! @b Parameters
-    //!  - @p reader is used to read packets
-    //!  - @p payload_decoder is used to extract samples from packets
-    //!  - @p sample_spec describes output frames
-    //!  - @p beep enables weird beeps instead of silence on packet loss
-    Depacketizer(packet::IReader& reader,
+    Depacketizer(packet::IReader& packet_reader,
                  IFrameDecoder& payload_decoder,
+                 FrameFactory& frame_factory,
                  const SampleSpec& sample_spec,
-                 bool beep);
+                 dbgio::CsvDumper* dumper);
 
-    //! Was depacketizer constructed without errors?
-    bool is_valid() const;
+    //! Check if the object was successfully constructed.
+    status::StatusCode init_status() const;
 
     //! Did depacketizer catch first packet?
     bool is_started() const;
 
-    //! Read audio frame.
-    virtual bool read(Frame& frame);
+    //! Get metrics.
+    const DepacketizerMetrics& metrics() const;
 
     //! Get next timestamp to be rendered.
     //! @pre
     //!  is_started() should return true
     packet::stream_timestamp_t next_timestamp() const;
 
+    //! Read audio frame.
+    virtual ROC_NODISCARD status::StatusCode
+    read(Frame& frame, packet::stream_timestamp_t duration, FrameReadMode mode);
+
 private:
-    struct FrameInfo {
-        // Number of samples decoded from packets into the frame.
+    // Statistics collected during decoding of one frame.
+    struct FrameStats {
+        // Total number of samples written to frame.
+        size_t n_written_samples;
+
+        // How much of all samples written to frame were decoded from packets.
         size_t n_decoded_samples;
 
-        // Number of samples filled out in the frame.
-        size_t n_filled_samples;
+        // How much of all samples written to frame were missing and zeroized.
+        size_t n_missing_samples;
 
-        // Number of packets dropped during frame construction.
+        // Number of packets dropped during decoding of this frame.
         size_t n_dropped_packets;
 
         // This frame first sample timestamp.
         core::nanoseconds_t capture_ts;
 
-        FrameInfo()
-            : n_decoded_samples(0)
-            , n_filled_samples(0)
+        FrameStats()
+            : n_written_samples(0)
+            , n_decoded_samples(0)
+            , n_missing_samples(0)
             , n_dropped_packets(0)
             , capture_ts(0) {
         }
     };
 
-    void read_frame_(Frame& frame);
+    ROC_NODISCARD status::StatusCode read_samples_(sample_t** buff_ptr,
+                                                   sample_t* buff_end,
+                                                   FrameReadMode mode,
+                                                   FrameStats& stats);
 
-    sample_t* read_samples_(sample_t* buff_ptr, sample_t* buff_end, FrameInfo& info);
+    ROC_NODISCARD status::StatusCode read_decoded_samples_(sample_t** buff_ptr,
+                                                           sample_t* buff_end);
+    ROC_NODISCARD status::StatusCode read_missing_samples_(sample_t** buff_ptr,
+                                                           sample_t* buff_end);
 
-    sample_t* read_packet_samples_(sample_t* buff_ptr, sample_t* buff_end);
-    sample_t* read_missing_samples_(sample_t* buff_ptr, sample_t* buff_end);
+    status::StatusCode
+    update_packet_(size_t requested_samples, FrameReadMode mode, FrameStats& stats);
+    status::StatusCode fetch_packet_(size_t requested_samples, FrameReadMode mode);
+    status::StatusCode start_packet_();
 
-    void update_packet_(FrameInfo& info);
-    packet::PacketPtr read_packet_();
+    void commit_frame_(Frame& frame, size_t frame_samples, const FrameStats& stats);
 
-    void set_frame_props_(Frame& frame, const FrameInfo& info);
+    void periodic_report_();
+    void dump_();
 
-    void report_stats_();
-
-    packet::IReader& reader_;
+    FrameFactory& frame_factory_;
+    packet::IReader& packet_reader_;
     IFrameDecoder& payload_decoder_;
 
     const SampleSpec sample_spec_;
@@ -102,16 +175,19 @@ private:
     core::nanoseconds_t next_capture_ts_;
     bool valid_capture_ts_;
 
-    packet::stream_timestamp_t zero_samples_;
-    packet::stream_timestamp_t missing_samples_;
-    packet::stream_timestamp_t packet_samples_;
+    size_t decoded_samples_;
+    size_t missing_samples_;
+    size_t late_samples_;
+    size_t recovered_samples_;
+
+    DepacketizerMetrics metrics_;
+
+    bool is_started_;
 
     core::RateLimiter rate_limiter_;
+    dbgio::CsvDumper* dumper_;
 
-    const bool beep_;
-
-    bool first_packet_;
-    bool valid_;
+    status::StatusCode init_status_;
 };
 
 } // namespace audio

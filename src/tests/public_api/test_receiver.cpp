@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
+#include "test_harness.h"
 
 #include "roc_core/macro_helpers.h"
 #include "roc_core/stddefs.h"
@@ -30,8 +30,9 @@ TEST_GROUP(receiver) {
         CHECK(context);
 
         memset(&receiver_config, 0, sizeof(receiver_config));
+        receiver_config.frame_encoding.format = ROC_FORMAT_PCM;
+        receiver_config.frame_encoding.subformat = ROC_SUBFORMAT_PCM_FLOAT32;
         receiver_config.frame_encoding.rate = 44100;
-        receiver_config.frame_encoding.format = ROC_FORMAT_PCM_FLOAT32;
         receiver_config.frame_encoding.channels = ROC_CHANNEL_LAYOUT_STEREO;
     }
 

@@ -56,6 +56,16 @@ inline bool stream_timestamp_le(const stream_timestamp_t a, const stream_timesta
     return stream_timestamp_diff(a, b) <= 0;
 }
 
+//! Check if `a` is after `b`, taking possible wrap into account.
+inline bool stream_timestamp_gt(const stream_timestamp_t a, const stream_timestamp_t b) {
+    return stream_timestamp_diff(a, b) > 0;
+}
+
+//! Check if `a` is after or equal to `b`, taking possible wrap into account.
+inline bool stream_timestamp_ge(const stream_timestamp_t a, const stream_timestamp_t b) {
+    return stream_timestamp_diff(a, b) >= 0;
+}
+
 //! Convert nanoseconds to stream timestamp.
 stream_timestamp_t ns_2_stream_timestamp(core::nanoseconds_t ns, size_t sample_rate);
 
@@ -97,6 +107,16 @@ inline bool seqnum_le(const seqnum_t a, const seqnum_t b) {
     return seqnum_diff(a, b) <= 0;
 }
 
+//! Check if `a` is after `b`, taking possible wrap into account.
+inline bool seqnum_gt(const seqnum_t a, const seqnum_t b) {
+    return seqnum_diff(a, b) > 0;
+}
+
+//! Check if `a` is after or equal to `b`, taking possible wrap into account.
+inline bool seqnum_ge(const seqnum_t a, const seqnum_t b) {
+    return seqnum_diff(a, b) >= 0;
+}
+
 //! Extended sequence number.
 //! @remarks
 //!  Sequence number extended to 32 bits.
@@ -120,6 +140,16 @@ inline bool ext_seqnum_lt(const ext_seqnum_t a, const ext_seqnum_t b) {
 //! Check if `a` is before or equal to `b`, taking possible wrap into account.
 inline bool ext_seqnum_le(const ext_seqnum_t a, const ext_seqnum_t b) {
     return ext_seqnum_diff(a, b) <= 0;
+}
+
+//! Check if `a` is after `b`, taking possible wrap into account.
+inline bool ext_seqnum_gt(const ext_seqnum_t a, const ext_seqnum_t b) {
+    return ext_seqnum_diff(a, b) > 0;
+}
+
+//! Check if `a` is after or equal to `b`, taking possible wrap into account.
+inline bool ext_seqnum_ge(const ext_seqnum_t a, const ext_seqnum_t b) {
+    return ext_seqnum_diff(a, b) >= 0;
 }
 
 //! FEC packet block number.
@@ -147,6 +177,16 @@ inline bool blknum_lt(const blknum_t a, const blknum_t b) {
 //! Check if `a` is before or equal to `b`, taking possible wrap into account.
 inline bool blknum_le(const blknum_t a, const blknum_t b) {
     return blknum_diff(a, b) <= 0;
+}
+
+//! Check if `a` is after `b`, taking possible wrap into account.
+inline bool blknum_gt(const blknum_t a, const blknum_t b) {
+    return blknum_diff(a, b) > 0;
+}
+
+//! Check if `a` is after or equal to `b`, taking possible wrap into account.
+inline bool blknum_ge(const blknum_t a, const blknum_t b) {
+    return blknum_diff(a, b) >= 0;
 }
 
 } // namespace packet

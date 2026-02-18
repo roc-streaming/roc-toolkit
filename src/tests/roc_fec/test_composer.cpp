@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
+#include "test_harness.h"
 
 #include "roc_core/heap_arena.h"
 #include "roc_fec/composer.h"
@@ -41,8 +41,8 @@ TEST(composer, align_footer) {
     UNSIGNED_LONGS_EQUAL(BufferSize, slice.capacity());
     UNSIGNED_LONGS_EQUAL((unsigned long)buffer->data(), slice.data());
 
-    Composer<RS8M_PayloadID, Source, Footer> composer(NULL);
-    CHECK(composer.align(slice, 0, Alignment));
+    Composer<RS8M_PayloadID, Source, Footer> composer(NULL, arena);
+    LONGS_EQUAL(status::StatusOK, composer.align(slice, 0, Alignment));
 
     UNSIGNED_LONGS_EQUAL(0, slice.size());
     UNSIGNED_LONGS_EQUAL(BufferSize, slice.capacity());
@@ -64,8 +64,8 @@ TEST(composer, align_header) {
     UNSIGNED_LONGS_EQUAL((unsigned long)buffer->data(), slice.data());
     CHECK(((unsigned long)slice.data() + sizeof(RS8M_PayloadID)) % Alignment != 0);
 
-    Composer<RS8M_PayloadID, Source, Header> composer(NULL);
-    CHECK(composer.align(slice, 0, Alignment));
+    Composer<RS8M_PayloadID, Source, Header> composer(NULL, arena);
+    LONGS_EQUAL(status::StatusOK, composer.align(slice, 0, Alignment));
 
     UNSIGNED_LONGS_EQUAL(0, slice.size());
     UNSIGNED_LONGS_EQUAL(BufferSize - (Alignment - sizeof(RS8M_PayloadID)),
@@ -92,8 +92,8 @@ TEST(composer, align_outer_header) {
     CHECK(((unsigned long)slice.data() + sizeof(RS8M_PayloadID) + OuterHeader) % Alignment
           != 0);
 
-    Composer<RS8M_PayloadID, Source, Header> composer(NULL);
-    CHECK(composer.align(slice, OuterHeader, Alignment));
+    Composer<RS8M_PayloadID, Source, Header> composer(NULL, arena);
+    LONGS_EQUAL(status::StatusOK, composer.align(slice, OuterHeader, Alignment));
 
     UNSIGNED_LONGS_EQUAL(0, slice.size());
     UNSIGNED_LONGS_EQUAL(BufferSize
@@ -115,14 +115,14 @@ TEST(composer, packet_size) {
     packet::PacketPtr packet = packet_factory.new_packet();
     CHECK(packet);
 
-    Composer<RS8M_PayloadID, Source, Header> composer(NULL);
+    Composer<RS8M_PayloadID, Source, Header> composer(NULL, arena);
 
-    CHECK(composer.align(buffer, 0, Alignment));
-    CHECK(composer.prepare(*packet, buffer, PayloadSize));
+    LONGS_EQUAL(status::StatusOK, composer.align(buffer, 0, Alignment));
+    LONGS_EQUAL(status::StatusOK, composer.prepare(*packet, buffer, PayloadSize));
 
     packet->set_buffer(buffer);
 
-    CHECK(composer.compose(*packet));
+    LONGS_EQUAL(status::StatusOK, composer.compose(*packet));
 
     UNSIGNED_LONGS_EQUAL(sizeof(RS8M_PayloadID) + PayloadSize, packet->buffer().size());
 }

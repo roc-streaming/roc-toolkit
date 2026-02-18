@@ -22,11 +22,17 @@ namespace test {
 
 class MockSink : public sndio::ISink, public core::NonCopyable<> {
 public:
-    MockSink(const audio::SampleSpec& sample_spec)
-        : off_(0)
+    MockSink(const audio::SampleSpec& sample_spec, core::IArena& arena)
+        : sndio::IDevice(arena)
+        , sndio::ISink(arena)
+        , off_(0)
         , n_frames_(0)
         , n_samples_(0)
         , n_chans_(sample_spec.num_channels()) {
+    }
+
+    virtual sndio::DeviceType type() const {
+        return sndio::DeviceType_Sink;
     }
 
     virtual sndio::ISink* to_sink() {
@@ -37,34 +43,16 @@ public:
         return NULL;
     }
 
-    virtual sndio::DeviceType type() const {
-        return sndio::DeviceType_Sink;
-    }
-
-    virtual sndio::DeviceState state() const {
-        return sndio::DeviceState_Active;
-    }
-
-    virtual void pause() {
-        FAIL("not implemented");
-    }
-
-    virtual bool resume() {
-        FAIL("not implemented");
-        return false;
-    }
-
-    virtual bool restart() {
-        FAIL("not implemented");
-        return false;
-    }
-
     virtual audio::SampleSpec sample_spec() const {
         return audio::SampleSpec();
     }
 
-    virtual core::nanoseconds_t latency() const {
+    core::nanoseconds_t frame_length() const {
         return 0;
+    }
+
+    virtual bool has_state() const {
+        return false;
     }
 
     virtual bool has_latency() const {
@@ -75,7 +63,7 @@ public:
         return false;
     }
 
-    virtual void write(audio::Frame& frame) {
+    virtual status::StatusCode write(audio::Frame& frame) {
         CHECK(frame.num_raw_samples() % n_chans_ == 0);
 
         for (size_t ns = 0; ns < frame.num_raw_samples() / n_chans_; ns++) {
@@ -89,6 +77,20 @@ public:
         n_frames_++;
 
         CHECK(frame.capture_timestamp() == 0);
+
+        return status::StatusOK;
+    }
+
+    virtual ROC_NODISCARD status::StatusCode flush() {
+        return status::StatusOK;
+    }
+
+    virtual status::StatusCode close() {
+        return status::StatusOK;
+    }
+
+    virtual void dispose() {
+        arena().dispose_object(*this);
     }
 
     void expect_frames(size_t total) {

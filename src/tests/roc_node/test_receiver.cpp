@@ -6,7 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include <CppUTest/TestHarness.h>
+#include "test_harness.h"
 
 #include "roc_address/protocol.h"
 #include "roc_core/heap_arena.h"
@@ -24,9 +24,9 @@ enum { DefaultSlot = 0 };
 
 core::HeapArena arena;
 
-void parse_uri(address::EndpointUri& uri, const char* str) {
-    CHECK(address::parse_endpoint_uri(str, address::EndpointUri::Subset_Full, uri));
-    CHECK(uri.verify(address::EndpointUri::Subset_Full));
+void parse_uri(address::NetworkUri& uri, const char* str) {
+    CHECK(address::parse_network_uri(str, uri));
+    CHECK(uri.is_valid());
 }
 
 void write_slot_metrics(const pipeline::ReceiverSlotMetrics& slot_metrics,
@@ -49,10 +49,10 @@ TEST_GROUP(receiver) {
 
 TEST(receiver, source) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     Receiver receiver(context, receiver_config);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     LONGS_EQUAL(receiver_config.common.output_sample_spec.sample_rate(),
                 receiver.source().sample_spec().sample_rate());
@@ -61,12 +61,12 @@ TEST(receiver, source) {
 TEST(receiver, bind) {
     { // one slot
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
         CHECK(source_endp.port() == 0);
@@ -77,19 +77,19 @@ TEST(receiver, bind) {
     }
     { // two slots
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp1(arena);
+        address::NetworkUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://127.0.0.1:0");
 
         CHECK(source_endp1.port() == 0);
         CHECK(receiver.bind(0, address::Iface_AudioSource, source_endp1));
         CHECK(source_endp1.port() != 0);
 
-        address::EndpointUri source_endp2(arena);
+        address::NetworkUri source_endp2(arena);
         parse_uri(source_endp2, "rtp://127.0.0.1:0");
 
         CHECK(source_endp2.port() == 0);
@@ -103,17 +103,17 @@ TEST(receiver, bind) {
 TEST(receiver, configure) {
     { // one slot
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         netio::UdpConfig iface_config;
         CHECK(receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
         CHECK(source_endp.port() == 0);
@@ -124,10 +124,10 @@ TEST(receiver, configure) {
     }
     { // two slots
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         netio::UdpConfig iface_config;
         CHECK(receiver.configure(0, address::Iface_AudioSource, iface_config));
@@ -135,14 +135,14 @@ TEST(receiver, configure) {
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
 
-        address::EndpointUri source_endp1(arena);
+        address::NetworkUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://127.0.0.1:0");
 
         CHECK(source_endp1.port() == 0);
         CHECK(receiver.bind(0, address::Iface_AudioSource, source_endp1));
         CHECK(source_endp1.port() != 0);
 
-        address::EndpointUri source_endp2(arena);
+        address::NetworkUri source_endp2(arena);
         parse_uri(source_endp2, "rtp://127.0.0.1:0");
 
         CHECK(source_endp2.port() == 0);
@@ -156,12 +156,12 @@ TEST(receiver, configure) {
 TEST(receiver, unlink) {
     { // bind one slot, unlink one slot
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
         CHECK(source_endp.port() == 0);
@@ -176,19 +176,19 @@ TEST(receiver, unlink) {
     }
     { // bind two slots, unlink one slot
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp1(arena);
+        address::NetworkUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://127.0.0.1:0");
 
         CHECK(source_endp1.port() == 0);
         CHECK(receiver.bind(0, address::Iface_AudioSource, source_endp1));
         CHECK(source_endp1.port() != 0);
 
-        address::EndpointUri source_endp2(arena);
+        address::NetworkUri source_endp2(arena);
         parse_uri(source_endp2, "rtp://127.0.0.1:0");
 
         CHECK(source_endp2.port() == 0);
@@ -203,19 +203,19 @@ TEST(receiver, unlink) {
     }
     { // bind two slots, unlink two slots
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp1(arena);
+        address::NetworkUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://127.0.0.1:0");
 
         CHECK(source_endp1.port() == 0);
         CHECK(receiver.bind(0, address::Iface_AudioSource, source_endp1));
         CHECK(source_endp1.port() != 0);
 
-        address::EndpointUri source_endp2(arena);
+        address::NetworkUri source_endp2(arena);
         parse_uri(source_endp2, "rtp://127.0.0.1:0");
 
         CHECK(source_endp2.port() == 0);
@@ -231,15 +231,15 @@ TEST(receiver, unlink) {
     }
     { // slot with 2 endpoints
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
-        address::EndpointUri control_endp(arena);
+        address::NetworkUri control_endp(arena);
         parse_uri(control_endp, "rtcp://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
@@ -250,20 +250,20 @@ TEST(receiver, unlink) {
         CHECK(receiver.unlink(DefaultSlot));
     }
     // slot with 3 endpoints
-    if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
+    if (fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8)) {
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:0");
 
-        address::EndpointUri repair_endp(arena);
+        address::NetworkUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:0");
 
-        address::EndpointUri control_endp(arena);
+        address::NetworkUri control_endp(arena);
         parse_uri(control_endp, "rtcp://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
@@ -281,12 +281,12 @@ TEST(receiver, unlink) {
 TEST(receiver, endpoints_no_fec) {
     { // all good
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
@@ -297,20 +297,20 @@ TEST(receiver, endpoints_no_fec) {
 
 TEST(receiver, endpoints_fec) {
     // fec not supported
-    if (!fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
+    if (!fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8)) {
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:0");
 
         // fec is not supported
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
 
-        address::EndpointUri repair_endp(arena);
+        address::NetworkUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:0");
 
         // fec is not supported
@@ -322,15 +322,15 @@ TEST(receiver, endpoints_fec) {
     }
     { // all good
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:0");
 
-        address::EndpointUri repair_endp(arena);
+        address::NetworkUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
@@ -340,15 +340,15 @@ TEST(receiver, endpoints_fec) {
     }
     { // repair port fec scheme mismatch
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:0");
 
-        address::EndpointUri repair_endp(arena);
+        address::NetworkUri repair_endp(arena);
         parse_uri(repair_endp, "ldpc://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
@@ -358,15 +358,15 @@ TEST(receiver, endpoints_fec) {
     }
     { // source port fec scheme mismatch
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri repair_endp(arena);
+        address::NetworkUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:0");
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp+ldpc://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioRepair, repair_endp));
@@ -376,15 +376,15 @@ TEST(receiver, endpoints_fec) {
     }
     { // repair port provided when fec is disabled
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
-        address::EndpointUri repair_endp(arena);
+        address::NetworkUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
@@ -397,12 +397,12 @@ TEST(receiver, endpoints_fec) {
 TEST(receiver, endpoints_control) {
     { // control
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri control_endp(arena);
+        address::NetworkUri control_endp(arena);
         parse_uri(control_endp, "rtcp://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioControl, control_endp));
@@ -411,15 +411,15 @@ TEST(receiver, endpoints_control) {
     }
     { // source + control
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
-        address::EndpointUri control_endp(arena);
+        address::NetworkUri control_endp(arena);
         parse_uri(control_endp, "rtcp://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
@@ -428,20 +428,20 @@ TEST(receiver, endpoints_control) {
         LONGS_EQUAL(2, context.network_loop().num_ports());
     }
     // source + repair + control
-    if (fec::CodecMap::instance().is_supported(packet::FEC_ReedSolomon_M8)) {
+    if (fec::CodecMap::instance().has_scheme(packet::FEC_ReedSolomon_M8)) {
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp+rs8m://127.0.0.1:0");
 
-        address::EndpointUri repair_endp(arena);
+        address::NetworkUri repair_endp(arena);
         parse_uri(repair_endp, "rs8m://127.0.0.1:0");
 
-        address::EndpointUri control_endp(arena);
+        address::NetworkUri control_endp(arena);
         parse_uri(control_endp, "rtcp://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
@@ -452,12 +452,12 @@ TEST(receiver, endpoints_control) {
     }
     { // protocol mismatch
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri control_endp(arena);
+        address::NetworkUri control_endp(arena);
         parse_uri(control_endp, "rtp://127.0.0.1:0");
 
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioControl, control_endp));
@@ -469,65 +469,65 @@ TEST(receiver, endpoints_control) {
 TEST(receiver, bind_errors) {
     { // incomplete endpoint
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         CHECK(source_endp.set_proto(address::Proto_RTP));
 
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(receiver.has_broken());
+        CHECK(receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // partially invalidated endpoint
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
         CHECK(source_endp.set_port(-1));
 
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(receiver.has_broken());
+        CHECK(receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // resolve error
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://invalid.:0");
 
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(receiver.has_broken());
+        CHECK(receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // address already in use
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
 
-        address::EndpointUri control_endp(arena);
+        address::NetworkUri control_endp(arena);
         CHECK(control_endp.set_proto(address::Proto_RTCP));
         CHECK(control_endp.set_host("127.0.0.1"));
         CHECK(control_endp.set_port(source_endp.port()));
@@ -541,68 +541,68 @@ TEST(receiver, bind_errors) {
 TEST(receiver, configure_errors) {
     { // multicast group: inappropriate address
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         netio::UdpConfig iface_config;
         strcpy(iface_config.multicast_interface, "8.8.8.8");
 
         CHECK(receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
-        CHECK(!receiver.has_broken());
+        CHECK(!receiver.has_broken_slots());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(receiver.has_broken());
+        CHECK(receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
-    { // multicast group: IP familty mismatch
+    { // multicast group: IP family mismatch
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         netio::UdpConfig iface_config;
         // set IPv6 group
         strcpy(iface_config.multicast_interface, "::");
 
         CHECK(receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
-        CHECK(!receiver.has_broken());
+        CHECK(!receiver.has_broken_slots());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         // bind to IPv4 address
         parse_uri(source_endp, "rtp://224.0.0.1:0");
 
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(receiver.has_broken());
+        CHECK(receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // multicast group: multicast flag mismatch
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         netio::UdpConfig iface_config;
         // set multicast group
         strcpy(iface_config.multicast_interface, "0.0.0.0");
 
         CHECK(receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
-        CHECK(!receiver.has_broken());
+        CHECK(!receiver.has_broken_slots());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         // bind to non-multicast address
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(receiver.has_broken());
+        CHECK(receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -611,75 +611,75 @@ TEST(receiver, configure_errors) {
 TEST(receiver, flow_errors) {
     { // configure after bind
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(!receiver.has_broken());
+        CHECK(!receiver.has_broken_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
 
         netio::UdpConfig iface_config;
         CHECK(!receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
-        CHECK(receiver.has_broken());
+        CHECK(receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // bind twice
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(!receiver.has_broken());
+        CHECK(!receiver.has_broken_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
 
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(receiver.has_broken());
+        CHECK(receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // unlink non-existent
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
         CHECK(!receiver.unlink(DefaultSlot));
-        CHECK(!receiver.has_broken());
+        CHECK(!receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
     { // unlink twice
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp(arena);
+        address::NetworkUri source_endp(arena);
         parse_uri(source_endp, "rtp://127.0.0.1:0");
 
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
-        CHECK(!receiver.has_broken());
+        CHECK(!receiver.has_broken_slots());
 
         CHECK(receiver.unlink(DefaultSlot));
-        CHECK(!receiver.has_broken());
+        CHECK(!receiver.has_broken_slots());
 
         CHECK(!receiver.unlink(DefaultSlot));
-        CHECK(!receiver.has_broken());
+        CHECK(!receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -688,70 +688,70 @@ TEST(receiver, flow_errors) {
 TEST(receiver, recover) {
     { // rebind after error
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp1(arena);
+        address::NetworkUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://invalid.:0");
 
-        address::EndpointUri source_endp2(arena);
+        address::NetworkUri source_endp2(arena);
         parse_uri(source_endp2, "rtp://127.0.0.1:0");
 
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp1));
-        CHECK(receiver.has_broken());
+        CHECK(receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
 
         // can't bind, slot is broken
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp2));
-        CHECK(receiver.has_broken());
+        CHECK(receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
 
         // unlink slot
         CHECK(receiver.unlink(DefaultSlot));
-        CHECK(!receiver.has_broken());
+        CHECK(!receiver.has_broken_slots());
 
         // can bind
         CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp2));
-        CHECK(!receiver.has_broken());
+        CHECK(!receiver.has_broken_slots());
 
         LONGS_EQUAL(1, context.network_loop().num_ports());
     }
     { // configure after error
         Context context(context_config, arena);
-        CHECK(context.is_valid());
+        LONGS_EQUAL(status::StatusOK, context.init_status());
 
         Receiver receiver(context, receiver_config);
-        CHECK(receiver.is_valid());
+        LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
-        address::EndpointUri source_endp1(arena);
+        address::NetworkUri source_endp1(arena);
         parse_uri(source_endp1, "rtp://invalid.:0");
 
-        address::EndpointUri source_endp2(arena);
+        address::NetworkUri source_endp2(arena);
         parse_uri(source_endp2, "rtp://127.0.0.1:0");
 
         CHECK(!receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp1));
-        CHECK(receiver.has_broken());
+        CHECK(receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
 
         // can't configure, slot is broken
         netio::UdpConfig iface_config;
         CHECK(!receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
-        CHECK(receiver.has_broken());
+        CHECK(receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
 
         // unlink slot
         CHECK(receiver.unlink(DefaultSlot));
-        CHECK(!receiver.has_broken());
+        CHECK(!receiver.has_broken_slots());
 
         // can configure
         CHECK(receiver.configure(DefaultSlot, address::Iface_AudioSource, iface_config));
-        CHECK(!receiver.has_broken());
+        CHECK(!receiver.has_broken_slots());
 
         LONGS_EQUAL(0, context.network_loop().num_ports());
     }
@@ -759,10 +759,10 @@ TEST(receiver, recover) {
 
 TEST(receiver, metrics) {
     Context context(context_config, arena);
-    CHECK(context.is_valid());
+    LONGS_EQUAL(status::StatusOK, context.init_status());
 
     Receiver receiver(context, receiver_config);
-    CHECK(receiver.is_valid());
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
 
     pipeline::ReceiverSlotMetrics slot_metrics;
     pipeline::ReceiverParticipantMetrics party_metrics[10];
@@ -772,7 +772,7 @@ TEST(receiver, metrics) {
     CHECK(!receiver.get_metrics(DefaultSlot, write_slot_metrics, &slot_metrics,
                                 write_party_metrics, &party_count, &party_metrics));
 
-    address::EndpointUri source_endp(arena);
+    address::NetworkUri source_endp(arena);
     parse_uri(source_endp, "rtp://127.0.0.1:0");
     CHECK(receiver.bind(DefaultSlot, address::Iface_AudioSource, source_endp));
 

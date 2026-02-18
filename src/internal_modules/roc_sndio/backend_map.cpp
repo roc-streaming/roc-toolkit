@@ -15,12 +15,15 @@ namespace sndio {
 
 BackendMap::BackendMap()
     : backends_(core::NoopArena)
-    , drivers_(core::NoopArena) {
+    , drivers_(core::NoopArena)
+    , formats_(core::NoopArena) {
     register_backends_();
-    register_drivers_();
+    collect_drivers_();
+    collect_formats_();
 
-    roc_log(LogDebug, "backend map: initializing: n_backends=%d n_drivers=%d",
-            (int)backends_.size(), (int)drivers_.size());
+    roc_log(LogDebug,
+            "backend map: initializing: n_backends=%d n_drivers=%d n_formats=%d",
+            (int)backends_.size(), (int)drivers_.size(), (int)formats_.size());
 }
 
 size_t BackendMap::num_backends() const {
@@ -39,14 +42,12 @@ const DriverInfo& BackendMap::nth_driver(size_t driver_index) const {
     return drivers_[driver_index];
 }
 
-void BackendMap::set_frame_size(core::nanoseconds_t frame_length,
-                                const audio::SampleSpec& sample_spec) {
-#ifdef ROC_TARGET_SOX
-    sox_backend_->set_frame_size(frame_length, sample_spec);
-#endif // ROC_TARGET_SOX
+size_t BackendMap::num_formats() const {
+    return formats_.size();
+}
 
-    (void)frame_length;
-    (void)sample_spec;
+const FormatInfo& BackendMap::nth_format(size_t format_index) const {
+    return formats_[format_index];
 }
 
 void BackendMap::register_backends_() {
@@ -69,15 +70,25 @@ void BackendMap::register_backends_() {
 #endif // ROC_TARGET_SOX
 }
 
-void BackendMap::register_drivers_() {
-    for (size_t n = 0; n < backends_.size(); n++) {
-        backends_[n]->discover_drivers(drivers_);
-    }
-}
-
 void BackendMap::add_backend_(IBackend* backend) {
     if (!backends_.push_back(backend)) {
         roc_panic("backend map: can't register backend");
+    }
+}
+
+void BackendMap::collect_drivers_() {
+    for (size_t n = 0; n < backends_.size(); n++) {
+        if (!backends_[n]->discover_drivers(drivers_)) {
+            roc_panic("backend map: can't register driver");
+        }
+    }
+}
+
+void BackendMap::collect_formats_() {
+    for (size_t n = 0; n < backends_.size(); n++) {
+        if (!backends_[n]->discover_formats(formats_)) {
+            roc_panic("backend map: can't register format");
+        }
     }
 }
 

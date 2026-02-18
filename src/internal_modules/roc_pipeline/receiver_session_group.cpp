@@ -10,7 +10,6 @@
 #include "roc_address/socket_addr_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
-#include "roc_rtcp/participant_info.h"
 #include "roc_status/code_to_str.h"
 
 namespace roc {
@@ -20,60 +19,130 @@ ReceiverSessionGroup::ReceiverSessionGroup(const ReceiverSourceConfig& source_co
                                            const ReceiverSlotConfig& slot_config,
                                            StateTracker& state_tracker,
                                            audio::Mixer& mixer,
-                                           const rtp::EncodingMap& encoding_map,
+                                           audio::ProcessorMap& processor_map,
+                                           rtp::EncodingMap& encoding_map,
                                            packet::PacketFactory& packet_factory,
                                            audio::FrameFactory& frame_factory,
-                                           core::IArena& arena)
+                                           core::IArena& arena,
+                                           dbgio::CsvDumper* dumper)
     : source_config_(source_config)
     , slot_config_(slot_config)
     , state_tracker_(state_tracker)
     , mixer_(mixer)
+    , processor_map_(processor_map)
     , encoding_map_(encoding_map)
     , arena_(arena)
     , packet_factory_(packet_factory)
     , frame_factory_(frame_factory)
     , session_router_(arena)
-    , valid_(false) {
+    , dumper_(dumper)
+    , init_status_(status::NoStatus) {
     identity_.reset(new (identity_) rtp::Identity());
-    if (!identity_ || !identity_->is_valid()) {
+    if ((init_status_ = identity_->init_status()) != status::StatusOK) {
         return;
     }
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
 ReceiverSessionGroup::~ReceiverSessionGroup() {
     remove_all_sessions_();
 }
 
-bool ReceiverSessionGroup::is_valid() const {
-    return valid_;
+status::StatusCode ReceiverSessionGroup::init_status() const {
+    return init_status_;
 }
 
-bool ReceiverSessionGroup::create_control_pipeline(ReceiverEndpoint* control_endpoint) {
-    roc_panic_if(!is_valid());
+status::StatusCode
+ReceiverSessionGroup::create_control_pipeline(ReceiverEndpoint* control_endpoint) {
+    roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if(!control_endpoint);
     roc_panic_if(!control_endpoint->outbound_composer()
                  || !control_endpoint->outbound_writer());
     roc_panic_if(rtcp_communicator_);
 
+    // We will use this address when returning information for
+    // rtcp::Communicator in participant_info().
     rtcp_inbound_addr_ = control_endpoint->inbound_address();
 
+    // We pass this as implementation of rtcp::IParticipant.
+    // rtcp::Communicator will call our methods right now (in constructor)
+    // and later when we call generate_packets() or process_packets().
     rtcp_communicator_.reset(new (rtcp_communicator_) rtcp::Communicator(
         source_config_.common.rtcp, *this, *control_endpoint->outbound_writer(),
         *control_endpoint->outbound_composer(), packet_factory_, arena_));
-    if (!rtcp_communicator_ || !rtcp_communicator_->is_valid()) {
+
+    const status::StatusCode code = rtcp_communicator_->init_status();
+    if (code != status::StatusOK) {
         rtcp_communicator_.reset();
-        return false;
+        rtcp_inbound_addr_.clear();
+        return code;
     }
 
-    return true;
+    return status::StatusOK;
+}
+
+status::StatusCode
+ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time,
+                                       core::nanoseconds_t& next_deadline) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    if (rtcp_communicator_) {
+        // This will invoke IParticipant methods implemented by us,
+        // in particular query_recv_streams().
+        const status::StatusCode code =
+            rtcp_communicator_->generate_reports(current_time);
+
+        if (code != status::StatusOK) {
+            return code;
+        }
+
+        next_deadline = rtcp_communicator_->generation_deadline(current_time);
+    }
+
+    core::SharedPtr<ReceiverSession> curr_sess, next_sess;
+
+    for (curr_sess = sessions_.front(); curr_sess; curr_sess = next_sess) {
+        next_sess = sessions_.nextof(*curr_sess);
+
+        core::nanoseconds_t sess_deadline = 0;
+        const status::StatusCode code = curr_sess->refresh(current_time, sess_deadline);
+
+        // These errors break only session, but not the whole receiver.
+        if (code == status::StatusFinish || code == status::StatusAbort) {
+            remove_session_(curr_sess, code);
+            continue;
+        }
+
+        if (code != status::StatusOK) {
+            return code;
+        }
+
+        if (sess_deadline != 0) {
+            next_deadline = (next_deadline == 0 ? sess_deadline
+                                                : std::min(next_deadline, sess_deadline));
+        }
+    }
+
+    return status::StatusOK;
+}
+
+void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t playback_time) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    core::SharedPtr<ReceiverSession> curr_sess, next_sess;
+
+    for (curr_sess = sessions_.front(); curr_sess; curr_sess = next_sess) {
+        next_sess = sessions_.nextof(*curr_sess);
+
+        curr_sess->reclock(playback_time);
+    }
 }
 
 status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& packet,
                                                       core::nanoseconds_t current_time) {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (packet->has_flags(packet::Packet::FlagControl)) {
         return route_control_packet_(packet, current_time);
@@ -82,71 +151,14 @@ status::StatusCode ReceiverSessionGroup::route_packet(const packet::PacketPtr& p
     return route_transport_packet_(packet);
 }
 
-core::nanoseconds_t
-ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time) {
-    roc_panic_if(!is_valid());
-
-    core::SharedPtr<ReceiverSession> curr, next;
-
-    core::nanoseconds_t next_deadline = 0;
-
-    if (rtcp_communicator_) {
-        // This will invoke IParticipant methods implemented by us,
-        // in particular query_recv_streams().
-        const status::StatusCode code =
-            rtcp_communicator_->generate_reports(current_time);
-        // TODO(gh-183): forward status
-        roc_panic_if(code != status::StatusOK);
-
-        next_deadline = rtcp_communicator_->generation_deadline(current_time);
-    }
-
-    for (curr = sessions_.front(); curr; curr = next) {
-        next = sessions_.nextof(*curr);
-
-        core::nanoseconds_t sess_deadline = 0;
-
-        if (!curr->refresh(current_time, &sess_deadline)) {
-            // Session ended.
-            remove_session_(curr);
-            continue;
-        }
-
-        if (sess_deadline != 0) {
-            if (next_deadline == 0) {
-                next_deadline = sess_deadline;
-            } else {
-                next_deadline = std::min(next_deadline, sess_deadline);
-            }
-        }
-    }
-
-    return next_deadline;
-}
-
-void ReceiverSessionGroup::reclock_sessions(core::nanoseconds_t playback_time) {
-    roc_panic_if(!is_valid());
-
-    core::SharedPtr<ReceiverSession> curr, next;
-
-    for (curr = sessions_.front(); curr; curr = next) {
-        next = sessions_.nextof(*curr);
-
-        if (!curr->reclock(playback_time)) {
-            // Session ended.
-            remove_session_(curr);
-        }
-    }
-}
-
 size_t ReceiverSessionGroup::num_sessions() const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     return sessions_.size();
 }
 
 void ReceiverSessionGroup::get_slot_metrics(ReceiverSlotMetrics& slot_metrics) const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     slot_metrics.source_id = identity_->ssrc();
     slot_metrics.num_participants = sessions_.size();
@@ -154,7 +166,7 @@ void ReceiverSessionGroup::get_slot_metrics(ReceiverSlotMetrics& slot_metrics) c
 
 void ReceiverSessionGroup::get_participant_metrics(
     ReceiverParticipantMetrics* party_metrics, size_t* party_count) const {
-    roc_panic_if(!is_valid());
+    roc_panic_if(init_status_ != status::StatusOK);
 
     if (party_metrics && party_count) {
         *party_count = std::min(*party_count, sessions_.size());
@@ -178,7 +190,7 @@ rtcp::ParticipantInfo ReceiverSessionGroup::participant_info() {
     part_info.cname = identity_->cname();
     part_info.source_id = identity_->ssrc();
 
-    if (rtcp_inbound_addr_.multicast()) {
+    if (rtcp_inbound_addr_.is_multicast()) {
         part_info.report_mode = rtcp::Report_ToAddress;
         part_info.report_address = rtcp_inbound_addr_;
     } else {
@@ -189,7 +201,12 @@ rtcp::ParticipantInfo ReceiverSessionGroup::participant_info() {
 }
 
 void ReceiverSessionGroup::change_source_id() {
-    identity_->change_ssrc();
+    const status::StatusCode code = identity_->change_ssrc();
+
+    if (code != status::StatusOK) {
+        roc_panic("session group: can't change SSRC: status=%s",
+                  status::code_to_str(code));
+    }
 }
 
 size_t ReceiverSessionGroup::num_recv_streams() {
@@ -249,7 +266,7 @@ ReceiverSessionGroup::notify_recv_stream(packet::stream_source_t send_source_id,
     if (old_sess && !session_router_.has_session(old_sess)) {
         // If session existed before link_source(), but does not exist anymore, it
         // means that there are no more routes to that session.
-        remove_session_(old_sess);
+        remove_session_(old_sess, status::NoStatus);
     }
 
     // If there is currently a session for given SSRC, let it process the report.
@@ -273,7 +290,7 @@ void ReceiverSessionGroup::halt_recv_stream(packet::stream_source_t send_source_
     if (old_sess && !session_router_.has_session(old_sess)) {
         // If session existed before unlink_source(), but does not exist anymore, it
         // means that there are no more routes to that session.
-        remove_session_(old_sess);
+        remove_session_(old_sess, status::NoStatus);
     }
 }
 
@@ -323,8 +340,7 @@ ReceiverSessionGroup::route_transport_packet_(const packet::PacketPtr& packet) {
         return create_session_(packet);
     }
 
-    // TODO(gh-183): return status
-    return status::StatusOK;
+    return status::StatusNoRoute;
 }
 
 status::StatusCode
@@ -350,18 +366,16 @@ bool ReceiverSessionGroup::can_create_session_(const packet::PacketPtr& packet) 
 
 status::StatusCode
 ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
-    if (!packet->rtp()) {
+    if (!packet->has_flags(packet::Packet::FlagRTP)) {
         roc_log(LogError,
                 "session group: can't create session, unexpected non-rtp packet");
-        // TODO(gh-183): return status
-        return status::StatusOK;
+        return status::StatusNoRoute;
     }
 
-    if (!packet->udp()) {
+    if (!packet->has_flags(packet::Packet::FlagUDP)) {
         roc_log(LogError,
                 "session group: can't create session, unexpected non-udp packet");
-        // TODO(gh-183): return status
-        return status::StatusOK;
+        return status::StatusNoRoute;
     }
 
     const ReceiverSessionConfig sess_config = make_session_config_(packet);
@@ -375,14 +389,20 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
             address::socket_addr_to_str(src_address).c_str(),
             address::socket_addr_to_str(dst_address).c_str());
 
-    core::SharedPtr<ReceiverSession> sess =
-        new (arena_) ReceiverSession(sess_config, source_config_.common, encoding_map_,
-                                     packet_factory_, frame_factory_, arena_);
+    core::SharedPtr<ReceiverSession> sess = new (arena_)
+        ReceiverSession(sess_config, source_config_.common, processor_map_, encoding_map_,
+                        packet_factory_, frame_factory_, arena_, dumper_);
 
-    if (!sess || !sess->is_valid()) {
-        roc_log(LogError, "session group: can't create session, initialization failed");
-        // TODO(gh-183): return status
-        return status::StatusOK;
+    if (!sess) {
+        roc_log(LogError, "session group: can't create session, allocation failed");
+        return status::StatusNoMem;
+    }
+
+    if (sess->init_status() != status::StatusOK) {
+        roc_log(LogError,
+                "session group: can't create session, initialization failed: status=%s",
+                status::code_to_str(sess->init_status()));
+        return sess->init_status();
     }
 
     status::StatusCode code = sess->route_packet(packet);
@@ -391,8 +411,7 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
             LogError,
             "session group: can't create session, can't handle first packet: status=%s",
             status::code_to_str(code));
-        // TODO(gh-183): handle and return status
-        return status::StatusOK;
+        return code;
     }
 
     code = session_router_.add_session(sess, source_id, src_address);
@@ -400,33 +419,45 @@ ReceiverSessionGroup::create_session_(const packet::PacketPtr& packet) {
         roc_log(LogError,
                 "session group: can't create session, can't create route: status=%s",
                 status::code_to_str(code));
-        // TODO(gh-183): handle and return status
-        return status::StatusOK;
+        return code;
     }
 
-    mixer_.add_input(sess->frame_reader());
-    sessions_.push_back(*sess);
+    code = mixer_.add_input(sess->frame_reader());
+    if (code != status::StatusOK) {
+        roc_log(LogError,
+                "session group: can't create session, can't add input: status=%s",
+                status::code_to_str(code));
+        session_router_.remove_session(sess);
+        return code;
+    }
 
-    state_tracker_.add_active_sessions(+1);
+    sessions_.push_back(*sess);
+    state_tracker_.register_session();
 
     return status::StatusOK;
 }
 
-void ReceiverSessionGroup::remove_session_(core::SharedPtr<ReceiverSession> sess) {
-    roc_log(LogInfo, "session group: removing session");
+void ReceiverSessionGroup::remove_session_(core::SharedPtr<ReceiverSession> sess,
+                                           status::StatusCode code) {
+    if (code != status::NoStatus) {
+        roc_log(LogInfo, "session group: removing session: status=%s",
+                status::code_to_str(code));
+    } else {
+        roc_log(LogInfo, "session group: removing session");
+    }
 
     mixer_.remove_input(sess->frame_reader());
     sessions_.remove(*sess);
 
     session_router_.remove_session(sess);
-    state_tracker_.add_active_sessions(-1);
+    state_tracker_.unregister_session();
 }
 
 void ReceiverSessionGroup::remove_all_sessions_() {
     roc_log(LogDebug, "session group: removing all sessions");
 
     while (!sessions_.is_empty()) {
-        remove_session_(sessions_.back());
+        remove_session_(sessions_.back(), status::NoStatus);
     }
 }
 

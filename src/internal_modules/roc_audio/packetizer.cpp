@@ -33,9 +33,9 @@ Packetizer::Packetizer(packet::IWriter& writer,
     , packet_pos_(0)
     , packet_cts_(0)
     , capture_ts_(0)
-    , valid_(false) {
-    roc_panic_if_msg(!sample_spec_.is_valid() || !sample_spec_.is_raw(),
-                     "packetizer: required valid sample spec with raw format: %s",
+    , init_status_(status::NoStatus) {
+    roc_panic_if_msg(!sample_spec_.is_complete() || !sample_spec_.is_raw(),
+                     "packetizer: required complete sample spec with raw format: %s",
                      sample_spec_to_str(sample_spec_).c_str());
 
     if (packet_length <= 0 || sample_spec.ns_2_stream_timestamp(packet_length) <= 0) {
@@ -44,6 +44,7 @@ Packetizer::Packetizer(packet::IWriter& writer,
                 " packet_length=%.3fms samples_per_packet=%lu",
                 (double)packet_length / core::Millisecond,
                 (unsigned long)samples_per_packet_);
+        init_status_ = status::StatusBadConfig;
         return;
     }
 
@@ -57,41 +58,47 @@ Packetizer::Packetizer(packet::IWriter& writer,
         (double)packet_length / core::Millisecond, (unsigned long)samples_per_packet_,
         (unsigned long)payload_size_, sample_spec_to_str(sample_spec_).c_str());
 
-    valid_ = true;
+    init_status_ = status::StatusOK;
 }
 
-bool Packetizer::is_valid() const {
-    return valid_;
+status::StatusCode Packetizer::init_status() const {
+    return init_status_;
 }
 
 size_t Packetizer::sample_rate() const {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     return sample_spec_.sample_rate();
 }
 
 const PacketizerMetrics& Packetizer::metrics() const {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     return metrics_;
 }
 
-void Packetizer::write(Frame& frame) {
-    if (frame.num_raw_samples() % sample_spec_.num_channels() != 0) {
-        roc_panic("packetizer: unexpected frame size");
-    }
+status::StatusCode Packetizer::write(Frame& in_frame) {
+    roc_panic_if(init_status_ != status::StatusOK);
 
-    const sample_t* buffer_ptr = frame.raw_samples();
-    size_t buffer_samples = frame.num_raw_samples() / sample_spec_.num_channels();
-    capture_ts_ = frame.capture_timestamp();
+    sample_spec_.validate_frame(in_frame);
+
+    const sample_t* buffer_ptr = in_frame.raw_samples();
+    size_t buffer_samples = in_frame.num_raw_samples() / sample_spec_.num_channels();
+
+    capture_ts_ = in_frame.capture_timestamp();
 
     while (buffer_samples != 0) {
         if (!packet_) {
-            if (!begin_packet_()) {
-                return;
+            const status::StatusCode code = begin_packet_();
+            if (code != status::StatusOK) {
+                return code;
             }
         }
 
         const size_t n_requested =
             std::min(buffer_samples, samples_per_packet_ - packet_pos_);
 
-        const size_t n_encoded = payload_encoder_.write(buffer_ptr, n_requested);
+        const size_t n_encoded = payload_encoder_.write_samples(buffer_ptr, n_requested);
         roc_panic_if_not(n_encoded == n_requested);
 
         buffer_ptr += n_encoded * sample_spec_.num_channels();
@@ -103,96 +110,132 @@ void Packetizer::write(Frame& frame) {
         }
 
         if (packet_pos_ == samples_per_packet_) {
-            end_packet_();
+            const status::StatusCode code = end_packet_();
+            if (code != status::StatusOK) {
+                return code;
+            }
         }
     }
+
+    return status::StatusOK;
 }
 
-void Packetizer::flush() {
+status::StatusCode Packetizer::flush() {
+    roc_panic_if(init_status_ != status::StatusOK);
+
     if (packet_) {
-        end_packet_();
+        const status::StatusCode code = end_packet_();
+        if (code != status::StatusOK) {
+            return code;
+        }
     }
+
+    return status::StatusOK;
 }
 
-bool Packetizer::begin_packet_() {
-    packet::PacketPtr pp = create_packet_();
-    if (!pp) {
-        return false;
+status::StatusCode Packetizer::begin_packet_() {
+    status::StatusCode code = create_packet_();
+    if (code != status::StatusOK) {
+        return code;
     }
 
-    packet_ = pp;
+    roc_panic_if(!packet_);
+
     packet_pos_ = 0;
     packet_cts_ = capture_ts_;
 
     // Begin encoding samples into packet.
-    payload_encoder_.begin(packet_->payload().data(), packet_->payload().size());
-
-    return true;
+    code = payload_encoder_.begin_frame(packet_->payload().data(),
+                                        packet_->payload().size());
+    if (code != status::StatusOK) {
+        roc_log(LogError, "packetizer: failed to encode packet: status=%s",
+                status::code_to_str(code));
+    }
+    return code;
 }
 
-void Packetizer::end_packet_() {
+status::StatusCode Packetizer::end_packet_() {
     // How much bytes we've written into packet payload.
     const size_t written_payload_size = payload_encoder_.encoded_byte_count(packet_pos_);
     roc_panic_if_not(written_payload_size <= payload_size_);
 
+    status::StatusCode code = status::StatusOK;
+
     // Finish encoding samples into packet.
-    payload_encoder_.end();
+    code = payload_encoder_.end_frame();
+
+    if (code != status::StatusOK) {
+        roc_log(LogError, "packetizer: failed to encode packet: status=%s",
+                status::code_to_str(code));
+        return code;
+    }
 
     // Fill protocol-specific fields.
     sequencer_.next(*packet_, packet_cts_, (packet::stream_timestamp_t)packet_pos_);
 
     // Apply padding if needed.
     if (packet_pos_ < samples_per_packet_) {
-        pad_packet_(written_payload_size);
+        code = pad_packet_(written_payload_size);
+        if (code != status::StatusOK) {
+            return code;
+        }
     }
 
-    const status::StatusCode code = writer_.write(packet_);
-    // TODO(gh-183): forward status
-    roc_panic_if(code != status::StatusOK);
+    code = writer_.write(packet_);
+    if (code != status::StatusOK) {
+        return code;
+    }
 
-    metrics_.packet_count++;
-    metrics_.payload_count += written_payload_size;
+    metrics_.encoded_packets++;
+    metrics_.payload_bytes += written_payload_size;
 
     packet_ = NULL;
     packet_pos_ = 0;
     packet_cts_ = 0;
+
+    return status::StatusOK;
 }
 
-void Packetizer::pad_packet_(size_t written_payload_size) {
-    if (written_payload_size == payload_size_) {
-        return;
-    }
-
-    if (!composer_.pad(*packet_, payload_size_ - written_payload_size)) {
-        roc_panic("packetizer: can't pad packet: orig_size=%lu actual_size=%lu",
-                  (unsigned long)payload_size_, (unsigned long)written_payload_size);
-    }
-}
-
-packet::PacketPtr Packetizer::create_packet_() {
-    packet::PacketPtr packet = packet_factory_.new_packet();
-    if (!packet) {
+status::StatusCode Packetizer::create_packet_() {
+    packet::PacketPtr pp = packet_factory_.new_packet();
+    if (!pp) {
         roc_log(LogError, "packetizer: can't allocate packet");
-        return NULL;
+        return status::StatusNoMem;
     }
 
-    packet->add_flags(packet::Packet::FlagAudio);
+    pp->add_flags(packet::Packet::FlagAudio);
 
     core::Slice<uint8_t> buffer = packet_factory_.new_packet_buffer();
     if (!buffer) {
         roc_log(LogError, "packetizer: can't allocate buffer");
-        return NULL;
+        return status::StatusNoMem;
     }
 
-    if (!composer_.prepare(*packet, buffer, payload_size_)) {
+    status::StatusCode status = composer_.prepare(*pp, buffer, payload_size_);
+    if (status != status::StatusOK) {
         roc_log(LogError, "packetizer: can't prepare packet");
-        return NULL;
+        return status;
     }
-    packet->add_flags(packet::Packet::FlagPrepared);
+    pp->add_flags(packet::Packet::FlagPrepared);
 
-    packet->set_buffer(buffer);
+    pp->set_buffer(buffer);
 
-    return packet;
+    packet_ = pp;
+    return status::StatusOK;
+}
+
+status::StatusCode Packetizer::pad_packet_(size_t written_payload_size) {
+    if (written_payload_size == payload_size_) {
+        return status::StatusOK;
+    }
+
+    status::StatusCode status =
+        composer_.pad(*packet_, payload_size_ - written_payload_size);
+    if (status != status::StatusOK) {
+        roc_log(LogError, "packetizer: can't pad packet: orig_size=%lu actual_size=%lu",
+                (unsigned long)payload_size_, (unsigned long)written_payload_size);
+    }
+    return status;
 }
 
 } // namespace audio

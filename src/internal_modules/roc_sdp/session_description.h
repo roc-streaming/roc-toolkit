@@ -41,33 +41,33 @@ public:
     const char* guid() const;
 
     //! Set GUID
-    ROC_ATTR_NODISCARD bool set_guid(const char* start_p_origin_username,
-                                     const char* end_p_origin_username,
-                                     const char* start_p_origin_sess_id,
-                                     const char* end_p_origin_sess_id,
-                                     const char* start_p_origin_nettype,
-                                     const char* end_p_origin_nettype,
-                                     const char* start_p_origin_addr,
-                                     const char* end_p_origin_addr);
+    ROC_NODISCARD bool set_guid(const char* start_p_origin_username,
+                                const char* end_p_origin_username,
+                                const char* start_p_origin_sess_id,
+                                const char* end_p_origin_sess_id,
+                                const char* start_p_origin_nettype,
+                                const char* end_p_origin_nettype,
+                                const char* start_p_origin_addr,
+                                const char* end_p_origin_addr);
 
     //! Origin unicast address.
     const address::SocketAddr& origin_unicast_address() const;
 
     //! Check and set origin unicast address from a string.
-    ROC_ATTR_NODISCARD bool set_origin_unicast_address(address::AddrFamily addrtype,
-                                                       const char* str,
-                                                       size_t str_len);
+    ROC_NODISCARD bool set_origin_unicast_address(address::AddrFamily addrtype,
+                                                  const char* str,
+                                                  size_t str_len);
 
     //! Check and set session connection address from a string.
-    ROC_ATTR_NODISCARD bool set_session_connection_data(address::AddrFamily addrtype,
-                                                        const char* str,
-                                                        size_t str_len);
+    ROC_NODISCARD bool set_session_connection_data(address::AddrFamily addrtype,
+                                                   const char* str,
+                                                   size_t str_len);
 
     //! Get reference to the connection data of the session.
     const ConnectionData& session_connection_data();
 
     //! Create and add a new empty media description.
-    ROC_ATTR_NODISCARD bool add_media_description();
+    ROC_NODISCARD bool add_media_description();
 
     //! Get a shared pointer to the last added media description.
     const core::SharedPtr<MediaDescription> last_media_description() const;

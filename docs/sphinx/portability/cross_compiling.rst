@@ -396,13 +396,19 @@ You can either copy their binaries from ``3rdparty/<toolchain>/rpath`` directory
 
 Here are examples for Raspbian:
 
-If ALSA support is enabled, install libasound:
+Install ``libatomic1``:
+
+.. code::
+
+   $ apt-get install libatomic1
+
+If ALSA support is enabled, install ``libasound``:
 
 .. code::
 
    $ apt-get install libasound2
 
-If PulseAudio support is enabled, install libltdl and libpulse:
+If PulseAudio support is enabled, install ``libltdl`` and ``libpulse``:
 
 .. code::
 

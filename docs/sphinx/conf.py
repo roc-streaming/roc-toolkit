@@ -72,9 +72,9 @@ html_css_files = [
     'sphinx_extras.css',
 ]
 
-html_js_files = [
-    'analytics.js',
-]
+html_theme_options = {
+    'globaltoc_collapse': False,
+}
 
 # -- Options for manual page output ---------------------------------------
 
