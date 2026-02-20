@@ -63,7 +63,7 @@ private:
     }
 
     StateTracker& t_;
-    core::Atomic<int> r_;
+    core::AtomicInt<int32_t> r_;
     unsigned int state_mask_;
     core::nanoseconds_t deadline_;
 };
