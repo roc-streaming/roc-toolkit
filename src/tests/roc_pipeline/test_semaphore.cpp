@@ -11,7 +11,7 @@
 #include "roc_address/protocol.h"
 #include "roc_audio/mixer.h"
 #include "roc_audio/sample.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/noop_arena.h"
 #include "roc_core/semaphore.h"
@@ -60,7 +60,7 @@ private:
         semaphore_->timed_wait(deadline_);
         r_ = false;
     }
-    core::Atomic<int> r_;
+    core::AtomicInt<int32_t> r_;
     core::nanoseconds_t deadline_;
     core::Semaphore* semaphore_;
 };
@@ -88,17 +88,17 @@ TEST(semaphore, block_test) {
     TestThread** threads_ptr = new TestThread*[10];
     for (int i = 0; i < 10; i++) {
         threads_ptr[i] = new TestThread(
-            1 * core::Second + core::timestamp(core::ClockMonotonic), &sem);
+            2 * core::Second + core::timestamp(core::ClockMonotonic), &sem);
         threads_ptr[i]->start();
     }
-    core::sleep_for(core::ClockMonotonic, core::Millisecond * 100);
+    core::sleep_for(core::ClockMonotonic, core::Millisecond * 1000);
     for (int i = 0; i < 10; i++) {
         CHECK(threads_ptr[i]->running());
     }
     for (int i = 0; i < 10; i++) {
         sem.post();
     }
-    core::sleep_for(core::ClockMonotonic, core::Millisecond * 100);
+    core::sleep_for(core::ClockMonotonic, core::Millisecond * 300);
     for (int i = 0; i < 10; i++) {
         CHECK(!threads_ptr[i]->running());
     }

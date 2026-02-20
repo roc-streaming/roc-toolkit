@@ -42,6 +42,7 @@ bool StateTracker::wait_state(unsigned int state_mask, core::nanoseconds_t deadl
 
     mutex_.lock();
     for (;;) {
+        //roc_log(LogDebug, "loop top, state=%d, now=%lld, deadline=%lld", get_state(), core::timestamp(core::ClockMonotonic), deadline);
         if (static_cast<unsigned>(get_state()) & state_mask) {
             mutex_.unlock();
             return true;

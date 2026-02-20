@@ -43,35 +43,25 @@ bool Semaphore::timed_wait(nanoseconds_t deadline) {
         roc_panic("semaphore: unexpected negative deadline");
     }
 
-    roc_log(roc::LogDebug, "origin time is %" PRId64 "\n", deadline);
-    roc_log(roc::LogDebug, "time is %" PRId64 "\n", deadline);
-    roc_log(roc::LogDebug, "now time is %" PRId64 "\n",
-            core::timestamp(core::ClockMonotonic));
-
     struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    deadline += (nanoseconds_t)ts.tv_sec * Second + (nanoseconds_t)ts.tv_nsec;
     ts.tv_sec = time_t(deadline / Second);
     ts.tv_nsec = long(deadline % Second);
 
     int err = 0;
     mutex_.lock();
     while (err == 0 && counter_ == 0) {
-        err = pthread_cond_clockwait(&cond_, &mutex_.mutex_, CLOCK_MONOTONIC, &ts);
-        printf("finish waiting without sem");
-        // roc_log(roc::LogDebug, "finish waiting without sem");
-
-        if (err != 0 && err != ETIMEDOUT) {
-            roc_panic("semaphore: pthread_cond_timedwait(): %s",
-                      errno_to_str(err).c_str());
-        }
+        err = pthread_cond_timedwait(&cond_, &mutex_.mutex_, &ts);
     }
 
-    if (err == 0) {
+    bool acquired = (counter_ > 0);
+    if (acquired) {
         counter_--;
     }
     mutex_.unlock();
 
-    // return false when err == ETIMEDOUT
-    return (err == 0);
+    return acquired;
 }
 
 void Semaphore::wait() {

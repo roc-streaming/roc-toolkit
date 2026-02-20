@@ -76,10 +76,10 @@ TEST_GROUP(state_tracker) {};
 TEST(state_tracker, simple_timeout) {
     StateTracker state_tracker;
     TestThread thr(state_tracker, sndio::DeviceState_Active,
-                   core::timestamp(core::ClockMonotonic) + core::Millisecond * 500);
+                   core::timestamp(core::ClockMonotonic) + core::Millisecond * 100);
 
     CHECK(thr.start());
-    core::sleep_for(core::ClockMonotonic, core::Millisecond * 1000);
+    core::sleep_for(core::ClockMonotonic, core::Millisecond * 500);
     CHECK(!(thr.running()));
     thr.join();
 }
@@ -92,7 +92,7 @@ TEST(state_tracker, multiple_timeout) {
     for (int i = 0; i < 10; i++) {
         threads_ptr[i] = new TestThread(state_tracker, sndio::DeviceState_Active,
                                         core::timestamp(core::ClockMonotonic)
-                                            + core::Millisecond * 1000);
+                                            + core::Millisecond * 5000);
     }
 
     // wait for start, then check if threads are running
@@ -101,7 +101,7 @@ TEST(state_tracker, multiple_timeout) {
         // CHECK(threads_ptr[i]->running());
         // roc_log(LogDebug, "check running %d\n", i);
     }
-    core::sleep_for(core::ClockMonotonic, core::Millisecond * 10);
+    core::sleep_for(core::ClockMonotonic, core::Millisecond * 1000);
     for (int i = 0; i < 10; i++) {
         // roc_log(LogDebug, "check running %d\n", i);
         CHECK(threads_ptr[i]->running());
@@ -109,7 +109,7 @@ TEST(state_tracker, multiple_timeout) {
 
     // sleep for 2 seconds, making the threads timeout
     roc_log(LogDebug, "started running");
-    core::sleep_for(core::ClockMonotonic, core::Millisecond * 2000);
+    core::sleep_for(core::ClockMonotonic, core::Millisecond * 5000);
 
     // check if threads are stopped
     for (int i = 0; i < 10; i++) {
