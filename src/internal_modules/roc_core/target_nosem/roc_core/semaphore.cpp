@@ -28,7 +28,8 @@ Semaphore::Semaphore(unsigned counter)
         roc_panic("semaphore: pthread_condattr_init(): %s", errno_to_str(err).c_str());
     }
     if (int err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC)) {
-        roc_panic("semaphore: pthread_condattr_setclock(): %s", errno_to_str(err).c_str());
+        roc_panic("semaphore: pthread_condattr_setclock(): %s",
+                  errno_to_str(err).c_str());
     }
     if (int err = pthread_cond_init(&cond_, &attr)) {
         roc_panic("semaphore: pthread_cond_init(): %s", errno_to_str(err).c_str());

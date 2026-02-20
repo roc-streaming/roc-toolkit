@@ -94,15 +94,15 @@ TEST(state_tracker, multiple_timeout) {
                                         core::timestamp(core::ClockMonotonic)
                                             + core::Millisecond * 5000);
     }
-    for (int i = 0; i < 10; i++) {
-        (void)threads_ptr[i]->wait_running();
-    }
 
     // wait for start, then check if threads are running
     for (int i = 0; i < 10; i++) {
         CHECK(threads_ptr[i]->start());
         // CHECK(threads_ptr[i]->running());
         // roc_log(LogDebug, "check running %d\n", i);
+    }
+    for (int i = 0; i < 10; i++) {
+        (void)threads_ptr[i]->wait_running();
     }
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 1000);
     for (int i = 0; i < 10; i++) {
