@@ -96,15 +96,15 @@ bool Semaphore::timed_wait(nanoseconds_t deadline) {
             break;
         }
         nanoseconds_t timeout = deadline - now;
-        
+
         ts.tv_sec = time_t(timeout / Second);
         ts.tv_nsec = long(timeout % Second);
-        
+
         err = pthread_cond_timedwait_relative_np(&cond_, &mutex_.mutex_, &ts);
 #else
         ts.tv_sec = time_t(deadline / Second);
         ts.tv_nsec = long(deadline % Second);
-        
+
         err = pthread_cond_timedwait(&cond_, &mutex_.mutex_, &ts);
 #endif
     }

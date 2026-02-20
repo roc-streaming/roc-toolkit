@@ -85,19 +85,19 @@ TEST(state_tracker, simple_timeout) {
     (void)thr.wait_running();
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 500);
     CHECK(!(thr.running()));
-    thr.join();  // Thread will be destroyed automatically when going out of scope
+    thr.join(); // Thread will be destroyed automatically when going out of scope
 }
 
 TEST(state_tracker, multiple_timeout) {
     StateTracker state_tracker;
     const int num_threads = 10;
     TestThread* threads[num_threads];
-    
+
     // set threads that last for 1 second
     for (int i = 0; i < num_threads; i++) {
         threads[i] = new TestThread(state_tracker, sndio::DeviceState_Active,
-                                        core::timestamp(core::ClockMonotonic)
-                                            + core::Millisecond * 5000);
+                                    core::timestamp(core::ClockMonotonic)
+                                        + core::Millisecond * 5000);
     }
 
     // wait for start, then check if threads are running
@@ -107,7 +107,7 @@ TEST(state_tracker, multiple_timeout) {
     for (int i = 0; i < num_threads; i++) {
         (void)threads[i]->wait_running();
     }
-    
+
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 1000);
     for (int i = 0; i < num_threads; i++) {
         CHECK(threads[i]->running());
@@ -131,24 +131,24 @@ TEST(state_tracker, multiple_timeout) {
     roc_log(LogDebug, "finished joining");
 
     for (int i = 0; i < num_threads; ++i) {
-        delete threads[i];  
+        delete threads[i];
     }
 }
 
 TEST(state_tracker, multiple_switch) {
     StateTracker state_tracker;
     const int num_threads = 10;
-    TestThread* threads[num_threads]; 
+    TestThread* threads[num_threads];
 
     // set threads without waiting time
     for (int i = 0; i < num_threads; i++) {
         threads[i] = new TestThread(state_tracker, sndio::DeviceState_Active, -1);
     }
-    
+
     for (int i = 0; i < num_threads; i++) {
         CHECK(threads[i]->start());
     }
-    
+
     for (int i = 0; i < num_threads; i++) {
         (void)threads[i]->wait_running();
     }
@@ -179,7 +179,7 @@ TEST(state_tracker, multiple_switch) {
     roc_log(LogDebug, "finished joining");
 
     for (int i = 0; i < num_threads; ++i) {
-        delete threads[i];  
+        delete threads[i];
     }
 }
 
