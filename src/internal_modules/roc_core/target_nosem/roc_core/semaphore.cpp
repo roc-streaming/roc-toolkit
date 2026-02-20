@@ -22,8 +22,20 @@ Semaphore::Semaphore(unsigned counter)
     : mutex_()
     , counter_(counter)
     , guard_(0) {
-    if (int err = pthread_cond_init(&cond_, NULL)) {
-        roc_panic("sem: pthread_cond_init(): %s", errno_to_str(err).c_str());
+    pthread_condattr_t attr;
+
+    if (int err = pthread_condattr_init(&attr)) {
+        roc_panic("semaphore: pthread_condattr_init(): %s", errno_to_str(err).c_str());
+    }
+    if (int err = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC)) {
+        roc_panic("semaphore: pthread_condattr_setclock(): %s", errno_to_str(err).c_str());
+    }
+    if (int err = pthread_cond_init(&cond_, &attr)) {
+        roc_panic("semaphore: pthread_cond_init(): %s", errno_to_str(err).c_str());
+    }
+
+    if (int err = pthread_condattr_destroy(&attr)) {
+        roc_panic("semaphore: pthread_condattr_destroy(): %s", errno_to_str(err).c_str());
     }
 }
 

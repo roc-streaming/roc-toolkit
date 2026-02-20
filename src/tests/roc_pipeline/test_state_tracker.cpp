@@ -77,9 +77,8 @@ TEST(state_tracker, simple_timeout) {
     StateTracker state_tracker;
     TestThread thr(state_tracker, sndio::DeviceState_Active,
                    core::timestamp(core::ClockMonotonic) + core::Millisecond * 100);
-
-    (void)thr.wait_running();
     CHECK(thr.start());
+    (void)thr.wait_running();
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 500);
     CHECK(!(thr.running()));
     thr.join();
