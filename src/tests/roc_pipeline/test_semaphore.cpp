@@ -44,6 +44,10 @@ public:
         semaphore_ = semaphore;
     }
 
+    ~TestThread() {
+        join();
+    }
+
     bool running() const {
         return r_;
     }
@@ -85,31 +89,43 @@ TEST(semaphore, timeout_test) {
 TEST(semaphore, block_test) {
     core::Semaphore sem(0);
     roc_log(LogDebug, "ready");
-    TestThread** threads_ptr = new TestThread*[10];
-    for (int i = 0; i < 10; i++) {
-        threads_ptr[i] = new TestThread(
+    
+    // Use a vector or array of pointers that we'll clean up
+    const int num_threads = 10;
+    TestThread* threads[num_threads];
+    
+    for (int i = 0; i < num_threads; i++) {
+        threads[i] = new TestThread(
             2 * core::Second + core::timestamp(core::ClockMonotonic), &sem);
-        (void)threads_ptr[i]->start();
+        (void)threads[i]->start();
     }
-    for (int i = 0; i < 10; i++) {
-        (void)threads_ptr[i]->wait_running();
+    
+    for (int i = 0; i < num_threads; i++) {
+        (void)threads[i]->wait_running();
     }
     roc_log(LogDebug, "finish waiting running");
+    
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 100);
-    for (int i = 0; i < 10; i++) {
-        CHECK(threads_ptr[i]->running());
+    
+    for (int i = 0; i < num_threads; i++) {
+        CHECK(threads[i]->running());
     }
     roc_log(LogDebug, "finish checking running");
-    for (int i = 0; i < 10; i++) {
+    
+    for (int i = 0; i < num_threads; i++) {
         sem.post();
     }
+    
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 300);
-    for (int i = 0; i < 10; i++) {
-        CHECK(!threads_ptr[i]->running());
+    
+    for (int i = 0; i < num_threads; i++) {
+        CHECK(!threads[i]->running());
     }
     roc_log(LogDebug, "finish all finished running");
-    for (int i = 0; i < 10; i++) {
-        threads_ptr[i]->join();
+    
+    for (int i = 0; i < num_threads; i++) {
+        threads[i]->join();
+        delete threads[i]; 
     }
 }
 
@@ -136,19 +152,19 @@ TEST(semaphore, multiple_post_before_wait) {
 TEST(semaphore, concurrent_post_and_wait) {
     core::Semaphore sem(0);
     const int num_threads = 20;
-    TestThread** threads_ptr = new TestThread*[num_threads];
+    TestThread* threads[num_threads];
 
     // Start threads that will wait
     for (int i = 0; i < num_threads; i++) {
-        threads_ptr[i] = new TestThread(
+        threads[i] = new TestThread(
             1 * core::Second + core::timestamp(core::ClockMonotonic), &sem);
-        (void)threads_ptr[i]->start();
+        (void)threads[i]->start();
     }
 
     // Wait for all threads to be running and blocked
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 100);
     for (int i = 0; i < num_threads; i++) {
-        CHECK(threads_ptr[i]->running());
+        CHECK(threads[i]->running());
     }
 
     // Post from multiple iterations to wake them up gradually
@@ -159,11 +175,12 @@ TEST(semaphore, concurrent_post_and_wait) {
     // All threads should eventually finish
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 200);
     for (int i = 0; i < num_threads; i++) {
-        CHECK(!threads_ptr[i]->running());
+        CHECK(!threads[i]->running());
     }
 
     for (int i = 0; i < num_threads; i++) {
-        threads_ptr[i]->join();
+        threads[i]->join();
+        delete threads[i]; 
     }
 }
 

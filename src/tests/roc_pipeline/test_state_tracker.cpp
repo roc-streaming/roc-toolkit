@@ -45,6 +45,10 @@ public:
         , deadline_(deadline) {
     }
 
+    ~TestThread() {
+        join();
+    }
+
     bool running() const {
         return r_;
     }
@@ -81,33 +85,32 @@ TEST(state_tracker, simple_timeout) {
     (void)thr.wait_running();
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 500);
     CHECK(!(thr.running()));
-    thr.join();
+    thr.join();  // Thread will be destroyed automatically when going out of scope
 }
 
 TEST(state_tracker, multiple_timeout) {
     StateTracker state_tracker;
-    TestThread** threads_ptr = new TestThread*[10];
-
+    const int num_threads = 10;
+    TestThread* threads[num_threads];
+    
     // set threads that last for 1 second
-    for (int i = 0; i < 10; i++) {
-        threads_ptr[i] = new TestThread(state_tracker, sndio::DeviceState_Active,
+    for (int i = 0; i < num_threads; i++) {
+        threads[i] = new TestThread(state_tracker, sndio::DeviceState_Active,
                                         core::timestamp(core::ClockMonotonic)
                                             + core::Millisecond * 5000);
     }
 
     // wait for start, then check if threads are running
-    for (int i = 0; i < 10; i++) {
-        CHECK(threads_ptr[i]->start());
-        // CHECK(threads_ptr[i]->running());
-        // roc_log(LogDebug, "check running %d\n", i);
+    for (int i = 0; i < num_threads; i++) {
+        CHECK(threads[i]->start());
     }
-    for (int i = 0; i < 10; i++) {
-        (void)threads_ptr[i]->wait_running();
+    for (int i = 0; i < num_threads; i++) {
+        (void)threads[i]->wait_running();
     }
+    
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 1000);
-    for (int i = 0; i < 10; i++) {
-        // roc_log(LogDebug, "check running %d\n", i);
-        CHECK(threads_ptr[i]->running());
+    for (int i = 0; i < num_threads; i++) {
+        CHECK(threads[i]->running());
     }
 
     // sleep for 2 seconds, making the threads timeout
@@ -115,37 +118,39 @@ TEST(state_tracker, multiple_timeout) {
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 5000);
 
     // check if threads are stopped
-    for (int i = 0; i < 10; i++) {
-        CHECK(!threads_ptr[i]->running());
+    for (int i = 0; i < num_threads; i++) {
+        CHECK(!threads[i]->running());
     }
 
     roc_log(LogDebug, "started joining");
 
-    for (int i = 0; i < 10; i++) {
-        threads_ptr[i]->join();
+    for (int i = 0; i < num_threads; i++) {
+        threads[i]->join();
     }
 
     roc_log(LogDebug, "finished joining");
 
-    for (int i = 0; i < 10; ++i) {
-        delete threads_ptr[i];
+    for (int i = 0; i < num_threads; ++i) {
+        delete threads[i];  
     }
-    delete[] threads_ptr;
 }
 
 TEST(state_tracker, multiple_switch) {
     StateTracker state_tracker;
-    TestThread** threads_ptr = new TestThread*[10];
+    const int num_threads = 10;
+    TestThread* threads[num_threads]; 
 
     // set threads without waiting time
-    for (int i = 0; i < 10; i++) {
-        threads_ptr[i] = new TestThread(state_tracker, sndio::DeviceState_Active, -1);
+    for (int i = 0; i < num_threads; i++) {
+        threads[i] = new TestThread(state_tracker, sndio::DeviceState_Active, -1);
     }
-    for (int i = 0; i < 10; i++) {
-        CHECK(threads_ptr[i]->start());
+    
+    for (int i = 0; i < num_threads; i++) {
+        CHECK(threads[i]->start());
     }
-    for (int i = 0; i < 10; i++) {
-        (void)threads_ptr[i]->wait_running();
+    
+    for (int i = 0; i < num_threads; i++) {
+        (void)threads[i]->wait_running();
     }
     roc_log(LogDebug, "started running");
 
@@ -153,8 +158,8 @@ TEST(state_tracker, multiple_switch) {
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 500);
 
     // check if the threads have started
-    for (int i = 0; i < 10; i++) {
-        CHECK(threads_ptr[i]->running());
+    for (int i = 0; i < num_threads; i++) {
+        CHECK(threads[i]->running());
     }
 
     // register a packet
@@ -163,20 +168,20 @@ TEST(state_tracker, multiple_switch) {
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 500);
 
     // check if the threads have been stopped
-    for (int i = 0; i < 10; i++) {
-        CHECK(!(threads_ptr[i]->running()));
+    for (int i = 0; i < num_threads; i++) {
+        CHECK(!(threads[i]->running()));
     }
 
     roc_log(LogDebug, "started joining");
-    for (int i = 0; i < 10; i++) {
-        threads_ptr[i]->join();
+    for (int i = 0; i < num_threads; i++) {
+        threads[i]->join();
     }
     roc_log(LogDebug, "finished joining");
 
-    for (int i = 0; i < 10; ++i) {
-        delete threads_ptr[i];
+    for (int i = 0; i < num_threads; ++i) {
+        delete threads[i];  
     }
-    delete[] threads_ptr;
 }
+
 } // namespace pipeline
 } // namespace roc
