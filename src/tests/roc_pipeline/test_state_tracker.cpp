@@ -11,7 +11,7 @@
 #include "roc_address/protocol.h"
 #include "roc_audio/mixer.h"
 #include "roc_audio/sample.h"
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/noop_arena.h"
 #include "roc_core/semaphore.h"
