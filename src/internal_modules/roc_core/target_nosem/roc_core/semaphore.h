@@ -6,18 +6,18 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-//! @file roc_core/target_posix_ext/roc_core/semaphore.h
+//! @file roc_core/target_nosem/roc_core/semaphore.h
 //! @brief Semaphore.
 
 #ifndef ROC_CORE_SEMAPHORE_H_
 #define ROC_CORE_SEMAPHORE_H_
 
-#include "roc_core/atomic_int.h"
+#include "roc_core/atomic.h"
 #include "roc_core/attributes.h"
+#include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
-
-#include <semaphore.h>
+#include <pthread.h>
 
 namespace roc {
 namespace core {
@@ -39,13 +39,14 @@ public:
     void wait();
 
     //! Increment counter and wake up blocked waits.
-    //! This method is lock-free at least on recent glibc and musl versions
-    //! (which implement POSIX semaphores using a futex and an atomic).
+    //! This method is implemented using mutex for platforms where
     void post();
 
 private:
-    sem_t sem_;
-    AtomicInt<int32_t> guard_;
+    pthread_cond_t cond_;
+    core::Mutex mutex_;
+    Atomic<unsigned> counter_;
+    Atomic<int> guard_;
 };
 
 } // namespace core

@@ -19,7 +19,6 @@ StateTracker::StateTracker()
     , active_sessions_(0)
     , pending_packets_(0)
     , sem_is_occupied_(0)
-    , waiting_mask_(0)
     , mutex_()
     , waiting_con_(mutex_) {
 }
@@ -36,24 +35,24 @@ StateTracker::StateTracker()
 // Questions:
 // - When should the function return true vs false
 bool StateTracker::wait_state(unsigned int state_mask, core::nanoseconds_t deadline) {
-    
+    // If no state is specified in state_mask, return immediately
+    if (state_mask == 0) {
+        return true;
+    }
+
     mutex_.lock();
     for (;;) {
-        // If no state is specified in state_mask, return immediately
-        if (state_mask == 0) {
-            return true;
-        }
-
         if (static_cast<unsigned>(get_state()) & state_mask) {
+            mutex_.unlock();
             return true;
         }
 
         if (deadline >= 0 && deadline <= core::timestamp(core::ClockMonotonic)) {
+            mutex_.unlock();
             return false;
         }
 
         if (sem_is_occupied_.compare_exchange(0, 1)) {
-
             if (deadline >= 0) {
                 mutex_.unlock();
                 (void)sem_.timed_wait(deadline);
