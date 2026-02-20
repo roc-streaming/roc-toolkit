@@ -44,10 +44,10 @@ bool Semaphore::timed_wait(nanoseconds_t deadline) {
     }
 
     struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    deadline += (nanoseconds_t)ts.tv_sec * Second + (nanoseconds_t)ts.tv_nsec;
     ts.tv_sec = time_t(deadline / Second);
     ts.tv_nsec = long(deadline % Second);
+    // roc_log(LogDebug, "loop top, now=%lld, deadline=%lld",
+    // core::timestamp(core::ClockMonotonic), deadline);
 
     int err = 0;
     mutex_.lock();

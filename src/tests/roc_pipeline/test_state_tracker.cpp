@@ -78,6 +78,7 @@ TEST(state_tracker, simple_timeout) {
     TestThread thr(state_tracker, sndio::DeviceState_Active,
                    core::timestamp(core::ClockMonotonic) + core::Millisecond * 100);
 
+    (void)thr.wait_running();
     CHECK(thr.start());
     core::sleep_for(core::ClockMonotonic, core::Millisecond * 500);
     CHECK(!(thr.running()));
@@ -93,6 +94,9 @@ TEST(state_tracker, multiple_timeout) {
         threads_ptr[i] = new TestThread(state_tracker, sndio::DeviceState_Active,
                                         core::timestamp(core::ClockMonotonic)
                                             + core::Millisecond * 5000);
+    }
+    for (int i = 0; i < 10; i++) {
+        (void)threads_ptr[i]->wait_running();
     }
 
     // wait for start, then check if threads are running
@@ -138,11 +142,12 @@ TEST(state_tracker, multiple_switch) {
     for (int i = 0; i < 10; i++) {
         threads_ptr[i] = new TestThread(state_tracker, sndio::DeviceState_Active, -1);
     }
-
     for (int i = 0; i < 10; i++) {
         CHECK(threads_ptr[i]->start());
     }
-
+    for (int i = 0; i < 10; i++) {
+        (void)threads_ptr[i]->wait_running();
+    }
     roc_log(LogDebug, "started running");
 
     // wait for threads starting

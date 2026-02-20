@@ -13,11 +13,11 @@
 #define ROC_PIPELINE_STATE_TRACKER_H_
 
 #include "roc_core/atomic_int.h"
+#include "roc_core/cond.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/semaphore.h"
 #include "roc_core/stddefs.h"
 #include "roc_core/time.h"
-#include "roc_core/cond.h"
 #include "roc_sndio/device_defs.h"
 
 namespace roc {

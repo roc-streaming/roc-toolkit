@@ -57,7 +57,7 @@ public:
 private:
     virtual void run() {
         r_ = true;
-        semaphore_->timed_wait(deadline_);
+        (void)semaphore_->timed_wait(deadline_);
         r_ = false;
     }
     core::AtomicInt<int32_t> r_;
@@ -89,12 +89,17 @@ TEST(semaphore, block_test) {
     for (int i = 0; i < 10; i++) {
         threads_ptr[i] = new TestThread(
             2 * core::Second + core::timestamp(core::ClockMonotonic), &sem);
-        threads_ptr[i]->start();
+        (void)threads_ptr[i]->start();
     }
-    core::sleep_for(core::ClockMonotonic, core::Millisecond * 1000);
+    for (int i = 0; i < 10; i++) {
+        (void)threads_ptr[i]->wait_running();
+    }
+    roc_log(LogDebug, "finish waiting running");
+    core::sleep_for(core::ClockMonotonic, core::Millisecond * 100);
     for (int i = 0; i < 10; i++) {
         CHECK(threads_ptr[i]->running());
     }
+    roc_log(LogDebug, "finish checking running");
     for (int i = 0; i < 10; i++) {
         sem.post();
     }
@@ -102,6 +107,7 @@ TEST(semaphore, block_test) {
     for (int i = 0; i < 10; i++) {
         CHECK(!threads_ptr[i]->running());
     }
+    roc_log(LogDebug, "finish all finished running");
     for (int i = 0; i < 10; i++) {
         threads_ptr[i]->join();
     }
@@ -136,7 +142,7 @@ TEST(semaphore, concurrent_post_and_wait) {
     for (int i = 0; i < num_threads; i++) {
         threads_ptr[i] = new TestThread(
             1 * core::Second + core::timestamp(core::ClockMonotonic), &sem);
-        threads_ptr[i]->start();
+        (void)threads_ptr[i]->start();
     }
 
     // Wait for all threads to be running and blocked
