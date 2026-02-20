@@ -12,7 +12,7 @@
 #ifndef ROC_PIPELINE_STATE_TRACKER_H_
 #define ROC_PIPELINE_STATE_TRACKER_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/semaphore.h"
 #include "roc_core/stddefs.h"
@@ -69,10 +69,10 @@ public:
 
 private:
     core::Semaphore sem_;
-    core::Atomic<int> halt_state_;
-    core::Atomic<int> active_sessions_;
-    core::Atomic<int> pending_packets_;
-    core::Atomic<int> sem_is_occupied_;
+    core::AtomicInt<int32_t> halt_state_;
+    core::AtomicInt<int32_t> active_sessions_;
+    core::AtomicInt<int32_t> pending_packets_;
+    core::AtomicInt<int32_t> sem_is_occupied_;
     core::Mutex mutex_;
     core::Cond waiting_con_;
 

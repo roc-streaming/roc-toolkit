@@ -12,7 +12,7 @@
 #ifndef ROC_CORE_SEMAPHORE_H_
 #define ROC_CORE_SEMAPHORE_H_
 
-#include "roc_core/atomic.h"
+#include "roc_core/atomic_int.h"
 #include "roc_core/attributes.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
@@ -45,8 +45,8 @@ public:
 private:
     pthread_cond_t cond_;
     core::Mutex mutex_;
-    Atomic<unsigned> counter_;
-    Atomic<int> guard_;
+    AtomicInt<unsigned> counter_;
+    AtomicInt<int> guard_;
 };
 
 } // namespace core
