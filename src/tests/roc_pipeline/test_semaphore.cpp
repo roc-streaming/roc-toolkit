@@ -139,7 +139,8 @@ TEST(semaphore, multiple_post_before_wait) {
 
     // All waits should succeed immediately without blocking
     for (int i = 0; i < 5; i++) {
-        bool result = sem.timed_wait(core::timestamp(core::ClockMonotonic));
+        bool result = sem.timed_wait(core::timestamp(core::ClockMonotonic)
+                                     + 100 * core::Millisecond);
         CHECK(result == true);
     }
 
