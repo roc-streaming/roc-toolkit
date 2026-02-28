@@ -113,6 +113,17 @@ bool build_context_config(const gengetopt_args_info& args,
             roc_log(LogError, "invalid --max-frame-size: should be > 0");
             return false;
         }
+    } else {
+        audio::SampleSpec spec = io_config.sample_spec;
+        spec.use_defaults(audio::Format_Pcm, audio::PcmSubformat_Raw,
+                          audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
+                          audio::ChanMask_Surround_7_1_4, 48000);
+        core::nanoseconds_t len = io_config.frame_length;
+        if (len == 0) {
+            len = 10 * core::Millisecond;
+        }
+        context_config.max_frame_size =
+            spec.ns_2_samples_overall(len) * sizeof(audio::sample_t);
     }
 
     return true;
