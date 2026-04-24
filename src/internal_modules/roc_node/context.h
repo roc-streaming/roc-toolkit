@@ -35,7 +35,7 @@ struct ContextConfig {
     size_t max_frame_size;
 
     ContextConfig()
-        : max_packet_size(2048)
+        : max_packet_size(16384)
         , max_frame_size(4096) {
     }
 };

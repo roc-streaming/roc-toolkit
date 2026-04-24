@@ -185,7 +185,12 @@ packet::PacketPtr Packetizer::create_packet_() {
     }
 
     if (!composer_.prepare(*packet, buffer, payload_size_)) {
-        roc_log(LogError, "packetizer: can't prepare packet");
+        roc_log(LogError,
+                "packetizer: can't prepare packet:"
+                " packet buffer is too small for the requested payload:"
+                " payload_size=%lu buffer_capacity=%lu"
+                " (increase max_packet_size in context config)",
+                (unsigned long)payload_size_, (unsigned long)buffer.capacity());
         return NULL;
     }
     packet->add_flags(packet::Packet::FlagPrepared);
