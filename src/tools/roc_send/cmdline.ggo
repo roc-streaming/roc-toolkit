@@ -50,6 +50,9 @@ section "Options"
     option "rate" - "Override input sample rate, Hz"
         int optional
 
+    option "packet-encoding" - "Register custom packet encoding (e.g. \"96:s16/48000/stereo\")"
+        typestr="ENCODING" string optional
+
     option "latency-backend" - "Which latency to use in latency tuner"
         values="niq" default="niq" enum optional
 
