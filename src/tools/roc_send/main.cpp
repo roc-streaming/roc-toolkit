@@ -20,6 +20,7 @@
 #include "roc_node/context.h"
 #include "roc_node/sender.h"
 #include "roc_pipeline/sender_sink.h"
+#include "roc_rtp/encoding.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/print_supported.h"
@@ -109,6 +110,17 @@ int main(int argc, char** argv) {
         }
         if (sender_config.packet_length <= 0) {
             roc_log(LogError, "invalid --packet-len: should be > 0");
+            return 1;
+        }
+    }
+
+    if (args.packet_mtu_given) {
+        if (!core::parse_size(args.packet_mtu_arg, sender_config.packet_mtu)) {
+            roc_log(LogError, "invalid --packet-mtu: bad format");
+            return 1;
+        }
+        if (sender_config.packet_mtu == 0) {
+            roc_log(LogError, "invalid --packet-mtu: should be > 0");
             return 1;
         }
     }
@@ -266,6 +278,22 @@ int main(int argc, char** argv) {
     if (!context.is_valid()) {
         roc_log(LogError, "can't initialize node context");
         return 1;
+    }
+
+    if (args.packet_encoding_given) {
+        rtp::Encoding enc;
+        if (!rtp::parse_encoding(args.packet_encoding_arg, enc)) {
+            roc_log(LogError,
+                    "invalid --packet-encoding: bad format,"
+                    " expected \"<id>:<format>/<rate>/<channels>\","
+                    " e.g. \"96:s16/48000/stereo\"");
+            return 1;
+        }
+        if (!context.encoding_map().add_encoding(enc)) {
+            roc_log(LogError, "invalid --packet-encoding: failed to register encoding");
+            return 1;
+        }
+        sender_config.payload_type = enc.payload_type;
     }
 
     sndio::BackendDispatcher backend_dispatcher(context.arena());
