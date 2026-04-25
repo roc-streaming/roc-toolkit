@@ -8,6 +8,7 @@
 
 #include "roc_pipeline/sender_sink.h"
 #include "roc_audio/resampler_map.h"
+#include "roc_audio/sample_spec.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 
@@ -27,7 +28,15 @@ SenderSink::SenderSink(const SenderSinkConfig& sink_config,
     , arena_(arena)
     , frame_writer_(NULL)
     , valid_(false) {
-    sink_config_.deduce_defaults();
+    // Resolve packet_length using encoding spec if available.
+    {
+        const rtp::Encoding* enc = encoding_map_.find_by_pt(sink_config_.payload_type);
+        if (enc) {
+            sink_config_.deduce_defaults(enc->sample_spec);
+        } else {
+            sink_config_.deduce_defaults(audio::SampleSpec());
+        }
+    }
 
     audio::IFrameWriter* frm_writer = &fanout_;
 

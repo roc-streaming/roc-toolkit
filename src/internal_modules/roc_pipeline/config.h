@@ -48,6 +48,16 @@ static const audio::SampleSpec DefaultSampleSpec(DefaultSampleRate,
 //!  a lower length may be required depending on network MTU, e.g. for Internet.
 const core::nanoseconds_t DefaultPacketLength = 5 * core::Millisecond;
 
+//! Default MTU (maximum transmission unit) in bytes.
+//! @remarks
+//!  1200 bytes is the default MTU used in WebRTC and is safe for most networks.
+//!  When neither packet_length nor packet_mtu is configured by the user, the
+//!  effective packet length is min(DefaultPacketLength, mtu_derived_length).
+const size_t DefaultPacketMtu = 1200;
+
+//! RTP header size in bytes (fixed part, no CSRC).
+const size_t RtpHeaderSize = 12;
+
 //! Default latency.
 //! @remarks
 //!  200ms works well on majority Wi-Fi networks and is not too annoying. However, many
@@ -66,7 +76,16 @@ struct SenderSinkConfig {
     unsigned payload_type;
 
     //! Packet length, in nanoseconds.
+    //! @remarks
+    //!  If zero and packet_mtu is also zero, derived from DefaultPacketMtu.
+    //!  If zero and packet_mtu is set, derived from packet_mtu.
     core::nanoseconds_t packet_length;
+
+    //! Maximum transmission unit (MTU) in bytes.
+    //! @remarks
+    //!  If zero and packet_length is also zero, DefaultPacketMtu is used.
+    //!  If zero and packet_length is set, packet_mtu is ignored.
+    size_t packet_mtu;
 
     //! FEC writer parameters.
     fec::WriterConfig fec_writer;
@@ -108,7 +127,9 @@ struct SenderSinkConfig {
     SenderSinkConfig();
 
     //! Fill unset values with defaults.
-    void deduce_defaults();
+    //! @p encoding_sample_spec is the packet encoding spec (rate + channels + format),
+    //! used to derive packet_length from packet_mtu when needed.
+    void deduce_defaults(const audio::SampleSpec& encoding_sample_spec);
 };
 
 //! Parameters of sender slot.

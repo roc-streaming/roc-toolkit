@@ -114,6 +114,17 @@ int main(int argc, char** argv) {
         }
     }
 
+    if (args.packet_mtu_given) {
+        if (!core::parse_size(args.packet_mtu_arg, sender_config.packet_mtu)) {
+            roc_log(LogError, "invalid --packet-mtu: bad format");
+            return 1;
+        }
+        if (sender_config.packet_mtu == 0) {
+            roc_log(LogError, "invalid --packet-mtu: should be > 0");
+            return 1;
+        }
+    }
+
     if (args.source_given) {
         address::EndpointUri source_endpoint(heap_arena);
         if (!address::parse_endpoint_uri(

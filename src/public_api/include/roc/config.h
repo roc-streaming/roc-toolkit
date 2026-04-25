@@ -671,9 +671,22 @@ typedef struct roc_sender_config {
      * accumulated or the sender is flushed or closed. Larger number reduces
      * packet overhead but also does not allow smaller latency.
      *
-     * If zero, default value is used.
+     * If zero and \c packet_mtu is also zero, default value is used.
+     * If zero and \c packet_mtu is set, packet length is derived from MTU.
+     * If both are set, a warning is logged and the smaller resulting size is used.
      */
     unsigned long long packet_length;
+
+    /** Maximum transmission unit (MTU) for outgoing packets, in bytes.
+     *
+     * Defines the maximum network packet size. The sender will choose a packet
+     * duration that fits within this MTU (accounting for RTP header overhead).
+     *
+     * If zero and \c packet_length is also zero, a default MTU of 1200 bytes is used.
+     * If zero and \c packet_length is set, MTU is ignored.
+     * If both are set, a warning is logged and the smaller resulting size is used.
+     */
+    unsigned int packet_mtu;
 
     /** Enable packet interleaving.
      *

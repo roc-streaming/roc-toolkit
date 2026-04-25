@@ -94,6 +94,10 @@ bool sender_config_from_user(node::Context& context,
         out.packet_length = (core::nanoseconds_t)in.packet_length;
     }
 
+    if (in.packet_mtu != 0) {
+        out.packet_mtu = (size_t)in.packet_mtu;
+    }
+
     if (in.target_latency != 0) {
         out.latency.target_latency = (core::nanoseconds_t)in.target_latency;
     }

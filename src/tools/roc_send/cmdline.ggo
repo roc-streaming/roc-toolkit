@@ -38,6 +38,9 @@ section "Options"
     option "packet-len" - "Outgoing packet length, TIME units"
         string optional
 
+    option "packet-mtu" - "Maximum network packet size, in SIZE units (e.g. 1200, 1480)"
+        typestr="SIZE" string optional
+
     option "frame-len" - "Duration of the internal frames, TIME units"
         typestr="TIME" string optional
 
