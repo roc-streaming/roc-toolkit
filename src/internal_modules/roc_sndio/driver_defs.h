@@ -24,7 +24,7 @@ class IBackend;
 static const size_t MaxDrivers = 16;
 
 //! Maximum number of file formats.
-static const size_t MaxFormats = 128;
+static const size_t MaxFormats = 256;
 
 //! Driver flags.
 enum DriverFlags {
