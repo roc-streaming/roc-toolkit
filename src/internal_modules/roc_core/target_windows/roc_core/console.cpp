@@ -9,12 +9,12 @@
 #include "roc_core/console.h"
 #include "roc_core/atomic_ops.h"
 
-#include <windows.h>
+#include <io.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <io.h>
+#include <windows.h>
 
 // ANSI Color Codes.
 #define COLOR_NONE ""
@@ -38,7 +38,7 @@ namespace core {
 namespace {
 
 // Serializes console operations.
-HANDLE console_mutex = CreateMutex(NULL,FALSE,NULL);
+HANDLE console_mutex = CreateMutex(NULL, FALSE, NULL);
 
 // -1 means unknown, 0 means no support, +1 means have support.
 int console_colors = -1;
@@ -112,7 +112,7 @@ bool console_supports_colors() {
     int colors = AtomicOps::load_seq_cst(console_colors);
 
     if (colors == -1) {
-		WaitForSingleObject(console_mutex,INFINITE);
+        WaitForSingleObject(console_mutex, INFINITE);
 
         colors = detect_color_support() ? 1 : 0;
         AtomicOps::store_seq_cst(console_colors, colors);
@@ -124,7 +124,7 @@ bool console_supports_colors() {
 }
 
 void console_println(const char* format, ...) {
-    WaitForSingleObject(console_mutex,INFINITE);
+    WaitForSingleObject(console_mutex, INFINITE);
 
     va_list args;
     va_start(args, format);
@@ -140,7 +140,7 @@ void console_println(const char* format, ...) {
 void console_println(Color color, const char* format, ...) {
     const bool use_colors = (color != Color_None) && console_supports_colors();
 
-    WaitForSingleObject(console_mutex,INFINITE);
+    WaitForSingleObject(console_mutex, INFINITE);
 
     if (use_colors) {
         fprintf(stderr, "%s", color_code(color));
