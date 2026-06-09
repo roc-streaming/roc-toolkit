@@ -39,8 +39,6 @@ public:
     void wait();
 
     //! Increment counter and wake up blocked waits.
-    //! This method is lock-free at least on recent glibc and musl versions
-    //! (which implement POSIX semaphores using a futex and an atomic).
     void post();
 
 private:
