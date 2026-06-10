@@ -653,7 +653,9 @@ int main(int argc, char** argv) {
     }
 
     io_config.sample_spec = output_sink->sample_spec();
-    io_config.frame_length = output_sink->frame_length();
+    if (!args.io_frame_len_given) {
+        io_config.frame_length = output_sink->frame_length();
+    }
 
     pipeline::ReceiverSourceConfig receiver_config;
     if (!build_receiver_config(args, receiver_config, context, *output_sink)) {

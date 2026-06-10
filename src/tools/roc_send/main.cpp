@@ -587,7 +587,9 @@ int main(int argc, char** argv) {
     }
 
     io_config.sample_spec = input_source->sample_spec();
-    io_config.frame_length = input_source->frame_length();
+    if (!args.io_frame_len_given) {
+        io_config.frame_length = input_source->frame_length();
+    }
 
     pipeline::SenderSinkConfig sender_config;
     if (!build_sender_config(args, sender_config, context, *input_source)) {
