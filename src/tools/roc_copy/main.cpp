@@ -259,7 +259,9 @@ int main(int argc, char** argv) {
     }
 
     input_config.sample_spec = input_source->sample_spec();
-    input_config.frame_length = input_source->frame_length();
+    if (!args.io_frame_len_given) {
+        input_config.frame_length = input_source->frame_length();
+    }
 
     sndio::IoConfig output_config;
     if (!build_output_config(args, input_config, output_config)) {
