@@ -149,7 +149,7 @@ bool SocketAddr::get_host(char* buf, size_t bufsz) const {
     return true;
 }
 
-SocketAddr::operator const struct unspecified_bool *() const {
+SocketAddr::operator const struct unspecified_bool*() const {
     return (const unspecified_bool*)has_host_port();
 }
 
