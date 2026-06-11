@@ -309,7 +309,7 @@ bool LatencyTuner::update_stream() {
     default:
         break;
     }
-
+    
     if (enable_bounds_) {
         if (!check_bounds_(latency)) {
             return false;
@@ -461,6 +461,33 @@ const char* latency_tuner_profile_to_str(LatencyTunerProfile profile) {
     }
 
     return "<invalid>";
+}
+
+bool LatencyTuner::can_start() const {
+    roc_panic_if(!is_valid());
+
+    packet::stream_timestamp_diff_t latency = 0;
+
+    switch (backend_) {
+    case audio::LatencyTunerBackend_Niq:
+        if (!has_niq_latency_) {
+            return true;
+        }
+        latency = niq_latency_;
+        break;
+
+    case audio::LatencyTunerBackend_E2e:
+        if (!has_e2e_latency_) {
+            return true;
+        }
+        latency = e2e_latency_;
+        break;
+
+    default:
+        break;
+    }
+
+    return latency >= target_latency_;
 }
 
 } // namespace audio
