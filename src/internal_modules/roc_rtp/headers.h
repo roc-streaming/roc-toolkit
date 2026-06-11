@@ -140,7 +140,7 @@ public:
     //! Set version.
     void set_version(Version v) {
         roc_panic_if((v & Flag_VersionMask) != v);
-        flags_ &= (uint8_t) ~(Flag_VersionMask << Flag_VersionShift);
+        flags_ &= (uint8_t)~(Flag_VersionMask << Flag_VersionShift);
         flags_ |= ((uint8_t)v << Flag_VersionShift);
     }
 
@@ -151,7 +151,7 @@ public:
 
     //! Set padding flag.
     void set_padding(bool v) {
-        flags_ &= (uint8_t) ~(Flag_PaddingMask << Flag_PaddingShift);
+        flags_ &= (uint8_t)~(Flag_PaddingMask << Flag_PaddingShift);
         flags_ |= ((v ? 1 : 0) << Flag_PaddingShift);
     }
 
@@ -168,7 +168,7 @@ public:
     //! Set payload type.
     void set_payload_type(uint8_t pt) {
         roc_panic_if((pt & MPT_PayloadTypeMask) != pt);
-        mpt_ &= (uint8_t) ~(MPT_PayloadTypeMask << MPT_PayloadTypeShift);
+        mpt_ &= (uint8_t)~(MPT_PayloadTypeMask << MPT_PayloadTypeShift);
         mpt_ |= (pt << MPT_PayloadTypeShift);
     }
 
@@ -179,7 +179,7 @@ public:
 
     //! Set marker bit.
     void set_marker(bool m) {
-        mpt_ &= (uint8_t) ~(MPT_MarkerMask << MPT_MarkerShift);
+        mpt_ &= (uint8_t)~(MPT_MarkerMask << MPT_MarkerShift);
         mpt_ |= ((!!m) << MPT_MarkerShift);
     }
 

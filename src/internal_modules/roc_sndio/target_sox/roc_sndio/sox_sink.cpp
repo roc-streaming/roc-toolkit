@@ -231,6 +231,7 @@ status::StatusCode SoxSink::write(audio::Frame& frame) {
     SOX_SAMPLE_LOCALS;
 
     size_t clips = 0;
+    (void)clips;
 
     while (frame_size > 0) {
         for (; buffer_pos < buffer_size_ && frame_size > 0; buffer_pos++) {
