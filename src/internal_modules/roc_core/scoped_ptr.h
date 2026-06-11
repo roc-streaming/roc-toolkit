@@ -99,7 +99,7 @@ public:
     }
 
     //! Convert to bool.
-    operator const struct unspecified_bool *() const {
+    operator const struct unspecified_bool*() const {
         return (unspecified_bool*)ptr_;
     }
 
