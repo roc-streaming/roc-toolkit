@@ -11,8 +11,7 @@ STRIP_FROM_INC_PATH     = .
 FILE_PATTERNS           = *.h *.dox
 
 EXCLUDE = \
-    roc_core/target_posix/roc_core/cpu_traits.h \
-    roc_core/target_windows/roc_core/cpu_traits.h
+    roc_core/target_posix/roc_core/cpu_traits.h
 
 EXCLUDE_SYMBOLS = \
     AllocationPolicy
@@ -42,17 +41,12 @@ ENABLE_PREPROCESSING    = YES
 MACRO_EXPANSION         = YES
 EXPAND_ONLY_PREDEF      = YES
 
-PREDEFINED              =   \
-    ROC_DOXYGEN=            \
-    ROC_EXPORT=             \
-    ROC_ALIGNED=            \
-    ROC_PACKED_BEGIN=       \
-    ROC_PACKED_END=         \
-    ROC_PRINTF(x,y)=        \
-    ROC_NORETURN=           \
-    ROC_NODISCARD=          \
-    ROC_NOUNUSED=           \
-    ROC_NOSANITIZE=
+PREDEFINED              =      \
+    ROC_ATTR_NORETURN=         \
+    ROC_ATTR_NODISCARD=        \
+    ROC_ATTR_PRINTF(x,y)=      \
+    ROC_ATTR_PACKED_BEGIN=     \
+    ROC_ATTR_PACKED_END=
 
 OUTPUT_DIRECTORY        = ../../build/docs/internal_modules
 HTML_OUTPUT             = ../../../docs/html/doxygen

@@ -45,7 +45,7 @@ The job of ``roc-send`` and ``roc-recv`` is thus to open a source and a sink and
 
 - in ``roc-recv``, ``ISource`` is implemented by receiver pipeline from ``roc_pipeline``, and ``ISink`` is implemented by device or file from ``roc_sndio``
 
-The task of transferring sound from ``ISource`` to ``ISink`` is implemented in `sndio::IoPump <https://roc-streaming.org/toolkit/doxygen/classroc_1_1sndio_1_1IoPump.html>`_ class, which works uniformly with any pair of source and sink, being it file, device, or pipeline.
+The task of transferring sound from ``ISource`` to ``ISink`` is implemented in `sndio::Pump <https://roc-streaming.org/toolkit/doxygen/classroc_1_1sndio_1_1Pump.html>`_ class, which works uniformly with any pair of source and sink, being it file, device, or pipeline.
 
 Backends and drivers
 ====================

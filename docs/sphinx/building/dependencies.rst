@@ -77,6 +77,11 @@ Runtime dependencies
      - LGPL
      - optional, enables additional audio file formats
 
+   * - `libsndfile <https://libsndfile.github.io/libsndfile/>`_
+     - >= 1.0.26
+     - LGPL
+     - optional, used for audio I/O
+
    * - `libunwind <https://www.nongnu.org/libunwind/>`_
      - >= 1.2.1
      - X11
@@ -90,7 +95,7 @@ Runtime dependencies
    * - `OpenFEC <https://openfec.inrialpes.fr>`_
      - >= 1.4.2 (recommended to use `our fork <https://github.com/roc-streaming/openfec>`_)
      - CeCCIL-C (LGPL-like) + CeCCIL (GPL-like, only for LDPC-Staircase) + BSD-like + CC BY-SA
-     - optional, enables packet loss repair with FECFRAME
+     - optional, used for FECFRAME support
 
    * - `OpenSSL <https://www.openssl.org/>`_
      - >= 1.1.1
@@ -105,7 +110,7 @@ Runtime dependencies
    * - `SoX <https://sox.sourceforge.net>`_
      - >= 14.4.0
      - LGPL
-     - optional, enables additional audio file formats and sound servers
+     - optional, used for audio I/O
 
    * - `SpeexDSP <https://github.com/xiph/speexdsp>`_
      - >= 1.2beta3

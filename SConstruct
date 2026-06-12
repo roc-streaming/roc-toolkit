@@ -440,13 +440,13 @@ doc_env = env.DeepClone()
 doc_env.SConscript('docs/SConscript',
                    duplicate=0, exports='doc_env')
 
-# run python doctests
-env.AlwaysBuild(env.Alias('doctest', [], [
-    env.DocTest('#scripts/scons_helpers/build-3rdparty.py'),
+# run scons self-test
+env.AlwaysBuild(env.Alias('selftest', [], [
+    env.SelfTest(),
 ]))
 
 # exit early if there is nothing to build
-non_build_targets = ['fmt', 'docs', 'sphinx', 'doxygen', 'doctest']
+non_build_targets = ['fmt', 'docs', 'sphinx', 'doxygen', 'selftest']
 if set(COMMAND_LINE_TARGETS) \
   and set(COMMAND_LINE_TARGETS).intersection(non_build_targets) == set(COMMAND_LINE_TARGETS):
     Return()
@@ -893,7 +893,7 @@ if meta.compiler in ['gcc', 'clang']:
         '-std=c11',
     ])
 
-if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['macos']:
+if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['darwin']:
     # macOS is special, otherwise rely on _POSIX_C_SOURCE
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', env['ROC_POSIX_PLATFORM'])])
 
@@ -901,18 +901,6 @@ env.Append(CPPDEFINES=[
     # for UINT32_MAX and others (https://bugzilla.mozilla.org/show_bug.cgi?id=673556):
     ('__STDC_LIMIT_MACROS', '1'),
 ])
-
-if meta.platform in ['windows']:
-    env.Append(CPPDEFINES=[
-        # enable M_PI and similar
-        '_USE_MATH_DEFINES',
-        # disable min() and max() macros
-        'NOMINMAX',
-        # disable winsock1 and redundant macros like far/near
-        'WIN32_LEAN_AND_MEAN',
-        # minimal supported windows version (windows 7)
-        ('_WIN32_WINNT', '0x0601'),
-    ])
 
 # env will hold settings common to all code
 # subenvs will hold settings specific to particular parts of code
@@ -927,7 +915,7 @@ subenvs = type('subenvs', (), subenv_attrs)
 env, subenvs = env.SConscript('3rdparty/SConscript',
                        duplicate=0, exports='env subenvs meta')
 
-if meta.platform in ['macos']:
+if meta.platform in ['darwin']:
     if env['ROC_MACOS_PLATFORM']:
         for var in ['CXXFLAGS', 'CFLAGS', 'LINKFLAGS']:
             env.Append(**{var: [

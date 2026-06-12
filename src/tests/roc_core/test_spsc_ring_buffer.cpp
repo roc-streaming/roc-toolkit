@@ -44,7 +44,6 @@ struct Object {
 
     Object& operator=(const Object& other) {
         value = other.value;
-        valid = other.valid;
         return *this;
     }
 };
