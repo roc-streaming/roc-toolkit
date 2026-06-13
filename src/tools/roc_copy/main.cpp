@@ -124,7 +124,12 @@ size_t compute_max_frame_size(const sndio::IoConfig& io_config) {
                       audio::ChanLayout_Surround, audio::ChanOrder_Smpte,
                       audio::ChanMask_Surround_7_1_4, 48000);
 
-    return spec.ns_2_samples_overall(io_config.frame_length) * sizeof(audio::sample_t);
+    core::nanoseconds_t len = io_config.frame_length;
+    if (len == 0) {
+        len = 10 * core::Millisecond;
+    }
+
+    return spec.ns_2_samples_overall(len) * sizeof(audio::sample_t);
 }
 
 bool parse_input_uri(const gengetopt_args_info& args, address::IoUri& input_uri) {
