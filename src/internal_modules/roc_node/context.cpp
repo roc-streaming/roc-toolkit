@@ -23,7 +23,7 @@ Context::Context(const ContextConfig& config, core::IArena& arena)
           "frame_buffer_pool", arena_, sizeof(core::Buffer) + config.max_frame_size)
     , processor_map_(arena_)
     , encoding_map_(arena_)
-    , network_loop_(packet_pool_, packet_buffer_pool_, arena_)
+    , network_loop_(packet_pool_, packet_buffer_pool_, (int)config.realtime_prio, arena_)
     , control_loop_(network_loop_, arena_)
     , init_status_(status::NoStatus) {
     roc_log(LogDebug, "context: initializing");

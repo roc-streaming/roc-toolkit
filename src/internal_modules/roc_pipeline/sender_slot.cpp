@@ -142,13 +142,13 @@ status::StatusCode SenderSlot::refresh(core::nanoseconds_t current_time,
     status::StatusCode code = status::NoStatus;
 
     if (source_endpoint_) {
-        if ((code = source_endpoint_->pull_packets(current_time)) != status::StatusOK) {
+        if ((code = source_endpoint_->pull_packets(0)) != status::StatusOK) {
             return code;
         }
     }
 
     if (repair_endpoint_) {
-        if ((code = repair_endpoint_->pull_packets(current_time)) != status::StatusOK) {
+        if ((code = repair_endpoint_->pull_packets(0)) != status::StatusOK) {
             return code;
         }
     }
