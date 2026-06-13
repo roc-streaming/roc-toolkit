@@ -15,7 +15,7 @@ namespace rtp {
 
 TEST_GROUP(encoding) {};
 
-IGNORE_TEST(encoding, parse) {
+TEST(encoding, parse) {
     Encoding enc;
     CHECK(parse_encoding("101:pcm@s18/48000/surround4.1", enc));
 
