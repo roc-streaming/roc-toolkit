@@ -13,7 +13,7 @@ namespace roc {
 namespace core {
 
 errno_to_str::errno_to_str() {
-    format_(GetLastError());
+    format_((int)GetLastError());
 }
 
 errno_to_str::errno_to_str(int err) {
@@ -23,10 +23,10 @@ errno_to_str::errno_to_str(int err) {
 void errno_to_str::format_(int err) {
     wchar_t wbuf[sizeof(buffer_)] = {};
 
-    const size_t size =
+    size_t size =
         FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                       nullptr, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), wbuf,
-                       sizeof(wbuf) / sizeof(wchar_t) - 1, nullptr);
+                       nullptr, (DWORD)err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                       wbuf, sizeof(wbuf) / sizeof(wchar_t) - 1, nullptr);
 
     if (size == 0) {
         strcpy(buffer_, "<unknown error>");

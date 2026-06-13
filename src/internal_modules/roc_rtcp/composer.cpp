@@ -25,7 +25,7 @@ ROC_NODISCARD status::StatusCode Composer::init_status() const {
 ROC_NODISCARD status::StatusCode Composer::align(core::Slice<uint8_t>& buffer,
                                                  size_t header_size,
                                                  size_t payload_alignment) {
-    if ((unsigned long)buffer.data() % payload_alignment != 0) {
+    if ((size_t)buffer.data() % payload_alignment != 0) {
         roc_panic("rtcp composer: unexpected non-aligned buffer");
     }
 

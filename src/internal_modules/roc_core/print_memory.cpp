@@ -176,7 +176,7 @@ void print_memory_slice_t(const T* inner,
 
     p.writef("@ slice: type=%s off=%lu size=%lu cap=%lu\n", type_to_str<T>(),
              (unsigned long)off, (unsigned long)inner_size,
-             (unsigned long)outer_size - off);
+             (unsigned long)(outer_size - off));
 
     if (outer) {
         print_impl_t(p, outer, outer_size, off, off + inner_size);

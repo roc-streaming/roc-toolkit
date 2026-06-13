@@ -8,10 +8,17 @@
 
 #include <errno.h>
 #include <fcntl.h>
+
+#ifdef ROC_TARGET_POSIX
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <signal.h>
 #include <sys/socket.h>
+#else // ! ROC_TARGET_POSIX
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif // ROC_TARGET_POSIX
+
+#include <signal.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
@@ -25,6 +32,16 @@ namespace roc {
 namespace netio {
 
 namespace {
+
+#ifndef ROC_TARGET_WINDOWS
+typedef void sockbuf_t;
+typedef int sockopt_t;
+#else  // ROC_TARGET_WINDOWS
+typedef char sockbuf_t;
+typedef char sockopt_t;
+typedef ADDRESS_FAMILY sa_family_t;
+typedef USHORT in_port_t;
+#endif // ! ROC_TARGET_WINDOWS
 
 int to_domain(address::AddrFamily family) {
     switch (family) {
@@ -75,6 +92,20 @@ bool is_malformed(int err) {
     return err == EBADF || err == EFAULT || err == ENOTSOCK;
 }
 
+#ifndef ROC_TARGET_WINDOWS
+
+bool valid_socket(SocketHandle sock) {
+    return sock >= 0;
+}
+
+#else
+
+bool valid_socket(SocketHandle sock) {
+    return sock != SocketInvalid;
+}
+
+#endif
+
 bool get_local_address(SocketHandle sock, address::SocketAddr& address) {
     socklen_t addrlen = address.max_slen();
 
@@ -98,7 +129,7 @@ bool get_int_option(
     SocketHandle sock, int level, int opt, const char* opt_name, int& opt_val) {
     socklen_t opt_len = sizeof(opt_val);
 
-    if (getsockopt(sock, level, opt, &opt_val, &opt_len) == -1) {
+    if (getsockopt(sock, level, opt, (sockopt_t*)&opt_val, &opt_len) == -1) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: getsockopt(%s): %s", opt_name,
@@ -118,7 +149,7 @@ bool get_int_option(
 
 bool set_int_option(
     SocketHandle sock, int level, int opt, const char* opt_name, int opt_val) {
-    if (setsockopt(sock, level, opt, &opt_val, sizeof(opt_val)) == -1) {
+    if (setsockopt(sock, level, opt, (const sockopt_t*)&opt_val, sizeof(opt_val)) == -1) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: setsockopt(%s): %s", opt_name,
@@ -140,6 +171,9 @@ bool set_int_option(
 //    creation and fcntl() call, during which fork() can be called from another thread
 //
 //  - for performance reasons: without SOCK_CLOEXEC there are two more system calls
+
+#if defined(ROC_TARGET_POSIX) && defined(FD_CLOEXEC)
+
 bool set_cloexec(SocketHandle sock) {
     int flags;
 
@@ -170,6 +204,14 @@ bool set_cloexec(SocketHandle sock) {
     return true;
 }
 
+#else // !defined(ROC_TARGET_POSIX) || !defined(FD_CLOEXEC)
+
+bool set_cloexec(SocketHandle sock) {
+    return true;
+}
+
+#endif // defined(ROC_TARGET_POSIX) && defined(FD_CLOEXEC)
+
 #endif // !defined(SOCK_CLOEXEC)
 
 #if !defined(SOCK_NONBLOCK)
@@ -178,6 +220,9 @@ bool set_cloexec(SocketHandle sock) {
 //
 // Using SOCK_NONBLOCK is preferred because of performance reasons.
 // Without SOCK_NONBLOCK there are two more system calls.
+
+#if defined(ROC_TARGET_POSIX)
+
 bool set_nonblock(SocketHandle sock) {
     int flags;
 
@@ -208,11 +253,66 @@ bool set_nonblock(SocketHandle sock) {
     return true;
 }
 
+#elif defined(ROC_TARGET_WINDOWS)
+
+bool set_nonblock(SocketHandle sock) {
+    unsigned long mode = 1; // 0 for blocking, nonzero for non blocking
+
+    int res = ioctlsocket(sock, (long)FIONBIO, &mode);
+    if (res == SOCKET_ERROR) {
+        roc_log(LogError, "socket: ioctlsocket(FIONBIO): %s",
+                core::errno_to_str(WSAGetLastError()).c_str());
+        return false;
+    }
+
+    return (res == NO_ERROR);
+}
+
+#endif // defined(ROC_TARGET_POSIX)
+
 #endif // !defined(SOCK_NONBLOCK)
 
 } // namespace
 
-#if defined(SOCK_CLOEXEC) && defined(SOCK_NONBLOCK)
+#ifdef ROC_TARGET_WINDOWS
+
+bool socket_init() {
+    WSADATA wsaData;
+    int err = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (err) {
+        roc_log(LogError, "WSAStartup: %s", core::errno_to_str(err).c_str());
+        return false;
+    }
+    return true;
+}
+
+bool socket_deinit() {
+    int res = WSACleanup();
+    if (res) {
+        if (res == SOCKET_ERROR) {
+            roc_log(LogError, "WSACleanup: %s",
+                    core::errno_to_str(WSAGetLastError()).c_str());
+        } else {
+            roc_log(LogError, "WSACleanup: returned unexpected value %d", res);
+        }
+        return false;
+    }
+    return true;
+}
+
+#else // !ROC_TARTGET_WINDOWS
+
+bool socket_init() {
+    return true;
+}
+
+bool socket_deinit() {
+    return true;
+}
+
+#endif // ROC_TARGET_WINDOWS
+
+#if defined(ROC_TARGET_POSIX) && defined(SOCK_CLOEXEC) && defined(SOCK_NONBLOCK)
 
 bool socket_create(address::AddrFamily family, SocketType type, SocketHandle& new_sock) {
     new_sock = socket(to_domain(family), to_type(type) | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
@@ -227,16 +327,16 @@ bool socket_create(address::AddrFamily family, SocketType type, SocketHandle& ne
     return true;
 }
 
-#else // !defined(SOCK_CLOEXEC) || !defined(SOCK_NONBLOCK)
+#else // !defined(ROC_TARGET_POSIX) || !defined(SOCK_CLOEXEC) || !defined(SOCK_NONBLOCK)
 
 bool socket_create(address::AddrFamily family, SocketType type, SocketHandle& new_sock) {
     new_sock = socket(to_domain(family), to_type(type), 0);
 
-    if (new_sock == -1) {
+    if (new_sock == SocketInvalid) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: socket(): %s", core::errno_to_str().c_str());
-        return SockErr_Failure;
+        return false;
     }
 
     if (!set_cloexec(new_sock)) {
@@ -252,14 +352,14 @@ bool socket_create(address::AddrFamily family, SocketType type, SocketHandle& ne
     return true;
 }
 
-#endif // defined(SOCK_CLOEXEC) && defined(SOCK_NONBLOCK)
+#endif // defined(ROC_TARGET_POSIX) && defined(SOCK_CLOEXEC) && defined(SOCK_NONBLOCK)
 
-#if defined(SOCK_CLOEXEC) && defined(SOCK_NONBLOCK)
+#if defined(ROC_TARGET_POSIX) && defined(SOCK_CLOEXEC) && defined(SOCK_NONBLOCK)
 
 bool socket_accept(SocketHandle sock,
                    SocketHandle& new_sock,
                    address::SocketAddr& remote_address) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     socklen_t addrlen = remote_address.max_slen();
 
@@ -285,18 +385,18 @@ bool socket_accept(SocketHandle sock,
     return true;
 }
 
-#else // !defined(SOCK_CLOEXEC) || !defined(SOCK_NONBLOCK)
+#else // !defined(ROC_TARGET_POSIX) || !defined(SOCK_CLOEXEC) || !defined(SOCK_NONBLOCK)
 
 bool socket_accept(SocketHandle sock,
                    SocketHandle& new_sock,
                    address::SocketAddr& remote_address) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     socklen_t addrlen = remote_address.max_slen();
 
     new_sock = accept(sock, remote_address.saddr(), &addrlen);
 
-    if (new_sock == -1) {
+    if (new_sock == SocketInvalid) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: accept(): %s", core::errno_to_str().c_str());
@@ -323,10 +423,10 @@ bool socket_accept(SocketHandle sock,
     return true;
 }
 
-#endif // defined(SOCK_CLOEXEC) && defined(SOCK_NONBLOCK)
+#endif // defined(ROC_TARGET_POSIX) && defined(SOCK_CLOEXEC) && defined(SOCK_NONBLOCK)
 
 bool socket_setup(SocketHandle sock, const SocketOpts& options) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     // If SO_NOSIGPIPE is available, enable it here for socket_try_send().
 #if defined(SO_NOSIGPIPE)
@@ -344,7 +444,7 @@ bool socket_setup(SocketHandle sock, const SocketOpts& options) {
 }
 
 bool socket_bind(SocketHandle sock, address::SocketAddr& local_address) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
     roc_panic_if(!local_address.has_host_port());
 
     // If IPV6_V6ONLY is available, use it for IPv6 addresses.
@@ -372,7 +472,7 @@ bool socket_bind(SocketHandle sock, address::SocketAddr& local_address) {
 }
 
 bool socket_listen(SocketHandle sock, size_t backlog) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     if (listen(sock, (int)backlog) == -1) {
         roc_panic_if(is_malformed(errno));
@@ -387,7 +487,7 @@ bool socket_listen(SocketHandle sock, size_t backlog) {
 bool socket_begin_connect(SocketHandle sock,
                           const address::SocketAddr& remote_address,
                           bool& completed_immediately) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
     roc_panic_if(!remote_address.has_host_port());
 
     int saved_errno = errno;
@@ -415,7 +515,7 @@ bool socket_begin_connect(SocketHandle sock,
 }
 
 bool socket_end_connect(SocketHandle sock) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     int err = 0;
 
@@ -435,15 +535,20 @@ bool socket_end_connect(SocketHandle sock) {
 }
 
 ssize_t socket_try_recv(SocketHandle sock, void* buf, size_t bufsz) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
     roc_panic_if(!buf);
 
     if (bufsz == 0) {
         return 0;
     }
 
+    int flags = 0;
+#ifdef MSG_DONTWAIT
+    flags |= MSG_DONTWAIT;
+#endif
+
     ssize_t ret;
-    while ((ret = recv(sock, buf, bufsz, MSG_DONTWAIT)) == -1) {
+    while ((ret = recv(sock, (sockbuf_t*)buf, bufsz, flags)) == -1) {
         roc_panic_if(is_malformed(errno));
 
         if (errno != EINTR) {
@@ -467,7 +572,8 @@ ssize_t socket_try_recv(SocketHandle sock, void* buf, size_t bufsz) {
     return ret;
 }
 
-#if defined(SO_NOSIGPIPE) || defined(MSG_NOSIGNAL)
+#if (defined(ROC_TARGET_POSIX) && (defined(SO_NOSIGPIPE) || defined(MSG_NOSIGNAL)))      \
+    || defined(ROC_TARGET_WINDOWS)
 
 // This version is used if either SO_NOSIGPIPE or MSG_NOSIGNAL is available
 //.
@@ -479,20 +585,25 @@ ssize_t socket_try_recv(SocketHandle sock, void* buf, size_t bufsz) {
 //
 // If MSG_NOSIGNAL is available (e.g. on Linux), we pass it to send().
 ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
     roc_panic_if(!buf);
 
     if (bufsz == 0) {
         return 0;
     }
 
-    int flags = MSG_DONTWAIT;
+    int flags = 0;
+
+#ifdef MSG_DONTWAIT
+    flags |= MSG_DONTWAIT;
+#endif
+
 #if defined(MSG_NOSIGNAL)
     flags |= MSG_NOSIGNAL;
 #endif
 
     ssize_t ret;
-    while ((ret = send(sock, buf, bufsz, flags)) == -1) {
+    while ((ret = send(sock, (const sockbuf_t*)buf, bufsz, flags)) == -1) {
         roc_panic_if(is_malformed(errno));
 
         if (errno != EINTR) {
@@ -517,7 +628,8 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
     return ret;
 }
 
-#else // !defined(SO_NOSIGPIPE) && !defined(MSG_NOSIGNAL)
+#else // !defined(ROC_TARGET_POSIX) || (!defined(SO_NOSIGPIPE) && !defined(MSG_NOSIGNAL)))
+      //    && !defined(ROC_TARGET_WINDOWS)
 
 // This version is used when both SO_NOSIGPIPE and MSG_NOSIGNAL aren't available.
 //
@@ -533,7 +645,7 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
 //
 // This implementation requires POSIX 2001.
 ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
     roc_panic_if(!buf);
 
     if (bufsz == 0) {
@@ -565,7 +677,7 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
     }
 
     ssize_t ret;
-    while ((ret = send(sock, buf, bufsz, MSG_DONTWAIT)) == -1) {
+    while ((ret = send(sock, (sockbuf_t*)buf, bufsz, MSG_DONTWAIT)) == -1) {
         roc_panic_if(is_malformed(errno));
 
         if (errno != EINTR) {
@@ -612,19 +724,26 @@ ssize_t socket_try_send(SocketHandle sock, const void* buf, size_t bufsz) {
     return ret;
 }
 
-#endif // defined(SO_NOSIGPIPE) || defined(MSG_NOSIGNAL)
+#endif // (defined(ROC_TARGET_POSIX) && (defined(SO_NOSIGPIPE) || defined(MSG_NOSIGNAL)))
+       //    || defined(ROC_TARGET_WINDOWS)
 
 ssize_t socket_try_send_to(SocketHandle sock,
                            const void* buf,
                            size_t bufsz,
                            const address::SocketAddr& remote_address) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
     roc_panic_if(!buf);
     roc_panic_if(!remote_address.has_host_port());
 
+    int flags = 0;
+
+#ifdef MSG_DONTWAIT
+    flags |= MSG_DONTWAIT;
+#endif
+
     ssize_t ret;
-    while ((ret = sendto(sock, buf, bufsz, MSG_DONTWAIT, remote_address.saddr(),
-                         remote_address.slen()))
+    while ((ret = sendto(sock, (const sockbuf_t*)buf, bufsz, flags,
+                         remote_address.saddr(), remote_address.slen()))
            == -1) {
         roc_panic_if(is_malformed(errno));
 
@@ -653,10 +772,22 @@ ssize_t socket_try_send_to(SocketHandle sock,
     return ret;
 }
 
-bool socket_shutdown(SocketHandle sock) {
-    roc_panic_if(sock < 0);
+#ifdef ROC_TARGET_WINDOWS
+#define SHUT_RDWR (SD_BOTH)
+#endif
 
-    if (shutdown(sock, SHUT_RDWR) == -1) {
+bool socket_shutdown(SocketHandle sock) {
+    roc_panic_if(!valid_socket(sock));
+
+    int flags = 0;
+
+#ifdef SHUT_RDWR
+    flags |= SHUT_RDWR;
+#else
+    flags |= SD_BOTH;
+#endif
+
+    if (shutdown(sock, flags) == -1) {
         roc_panic_if(is_malformed(errno));
 
         // shutdown() on macOS may return ENOTCONN if the other side gracefully
@@ -673,8 +804,10 @@ bool socket_shutdown(SocketHandle sock) {
     return true;
 }
 
+#ifndef ROC_TARGET_WINDOWS
+
 bool socket_close(SocketHandle sock) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     if (close(sock) == -1) {
         roc_panic_if(is_malformed(errno));
@@ -696,8 +829,24 @@ bool socket_close(SocketHandle sock) {
     return true;
 }
 
+#else // ROC_TARGET_WINDOWS
+
+bool socket_close(SocketHandle sock) {
+    roc_panic_if(sock == SocketInvalid);
+
+    if (closesocket(sock) == SOCKET_ERROR) {
+        roc_log(LogError, "socket: closesocket(): %s",
+                core::errno_to_str(WSAGetLastError()).c_str());
+        return false;
+    }
+
+    return true;
+}
+
+#endif // ROC_TARGET_WINDOWS
+
 bool socket_close_with_reset(SocketHandle sock) {
-    roc_panic_if(sock < 0);
+    roc_panic_if(!valid_socket(sock));
 
     // SO_LINGER with zero timeout instructs close() to send RST instead of FIN.
     struct linger ling;
@@ -705,7 +854,8 @@ bool socket_close_with_reset(SocketHandle sock) {
     ling.l_linger = 0;
 
     bool setsockopt_failed = false;
-    if (setsockopt(sock, SOL_SOCKET, SO_LINGER, &ling, sizeof(ling)) == -1) {
+    if (setsockopt(sock, SOL_SOCKET, SO_LINGER, (const sockopt_t*)&ling, sizeof(ling))
+        == -1) {
         roc_panic_if(is_malformed(errno));
 
         roc_log(LogError, "socket: setsockopt(SO_LINGER): %s",

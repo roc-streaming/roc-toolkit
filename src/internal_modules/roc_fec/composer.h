@@ -43,7 +43,7 @@ public:
     //! Adjust buffer to align payload.
     ROC_NODISCARD virtual status::StatusCode
     align(core::Slice<uint8_t>& buffer, size_t header_size, size_t payload_alignment) {
-        if ((unsigned long)buffer.data() % payload_alignment != 0) {
+        if ((size_t)buffer.data() % payload_alignment != 0) {
             roc_panic("fec composer: unexpected non-aligned buffer");
         }
 
