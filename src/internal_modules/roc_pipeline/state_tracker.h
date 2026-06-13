@@ -13,8 +13,11 @@
 #define ROC_PIPELINE_STATE_TRACKER_H_
 
 #include "roc_core/atomic_int.h"
+#include "roc_core/cond.h"
 #include "roc_core/noncopyable.h"
+#include "roc_core/semaphore.h"
 #include "roc_core/stddefs.h"
+#include "roc_core/time.h"
 #include "roc_sndio/device_defs.h"
 
 namespace roc {
@@ -31,6 +34,9 @@ class StateTracker : public core::NonCopyable<> {
 public:
     //! Initialize all counters to zero.
     StateTracker();
+
+    //! Block until state becomes any of the ones specified by state_mask.
+    bool wait_state(unsigned state_mask, core::nanoseconds_t deadline);
 
     //! Compute current state.
     sndio::DeviceState get_state() const;
@@ -63,9 +69,15 @@ public:
     void unregister_packet();
 
 private:
+    core::Semaphore sem_;
     core::AtomicInt<int32_t> halt_state_;
     core::AtomicInt<int32_t> active_sessions_;
     core::AtomicInt<int32_t> pending_packets_;
+    core::AtomicInt<int32_t> sem_is_occupied_;
+    core::Mutex mutex_;
+    core::Cond waiting_con_;
+
+    void signal_state_change();
 };
 
 } // namespace pipeline

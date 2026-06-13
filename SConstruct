@@ -788,10 +788,15 @@ else:
             'target_posix_pc',
         ])
 
-    if meta.platform in ['linux', 'unix', 'android']:
-        env.Append(ROC_TARGETS=[
-            'target_posix_ext',
-        ])
+    if meta.platform in ['linux', 'android', 'unix']:
+        if 'ROC_HAVE_SEM_CLOCKWAIT' in env['CPPDEFINES']:
+            env.Append(ROC_TARGETS=[
+                'target_posix_sem',
+            ])
+        else:
+            env.Append(ROC_TARGETS=[
+                'target_nosem',
+            ])
 
     if meta.platform in ['linux', 'unix', 'macos', 'windows', 'android']:
         env.Append(ROC_TARGETS=[
