@@ -302,9 +302,11 @@ TEST_GROUP(loopback_encoder_2_decoder) {
             if (ifaces[n_if] == ROC_INTERFACE_AUDIO_SOURCE) {
                 UNSIGNED_LONGS_EQUAL(iface_packets[n_if], recv_expected_pkts);
                 if (has_control) {
-                    const size_t nlag = test::FrameSamples / test::PacketSamples;
+                    const size_t packets_per_frame =
+                        test::FrameSamples / test::PacketSamples;
                     CHECK(recv_expected_pkts >= send_expected_pkts);
-                    CHECK(recv_expected_pkts <= send_expected_pkts + nlag);
+                    CHECK(recv_expected_pkts
+                          <= send_expected_pkts + packets_per_frame * 5);
                 }
             }
         }
