@@ -56,7 +56,10 @@ __pycache__/
 /debian/roc
 
 # llm
+.aider/
 .aider.*
+.opencode
+.agent-shell
 
 # personal
 TODO.org
