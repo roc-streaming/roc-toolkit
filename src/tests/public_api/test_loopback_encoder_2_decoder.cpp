@@ -303,8 +303,8 @@ TEST_GROUP(loopback_encoder_2_decoder) {
                 UNSIGNED_LONGS_EQUAL(iface_packets[n_if], recv_expected_pkts);
                 if (has_control) {
                     const size_t nlag = test::FrameSamples / test::PacketSamples;
-                    CHECK(recv_expected_pkts >= send_expected_pkts
-                          && recv_expected_pkts <= send_expected_pkts + nlag);
+                    CHECK(recv_expected_pkts >= send_expected_pkts);
+                    CHECK(recv_expected_pkts <= send_expected_pkts + nlag);
                 }
             }
         }
