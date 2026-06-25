@@ -430,26 +430,31 @@ jobs:
       matrix:
         include:
           - macos-arch: arm64
-            macos-version: 15
+            macos-version: 26
+            image: macos-26
             script: standard-build
 
           - macos-arch: arm64
-            macos-version: 15
+            macos-version: 26
+            image: macos-26
             script: build-3rdparty
 
           - macos-arch: arm64
-            macos-version: 15
+            macos-version: 26
+            image: macos-26
             script: universal-binaries
+
+          - macos-arch: x86_64
+            macos-version: 15
+            image: macos-15-intel
+            script: standard-build
 
           - macos-arch: arm64
             macos-version: 14
+            image: macos-14
             script: standard-build
 
-          - macos-arch: x86_64
-            macos-version: 13
-            script: standard-build
-
-    runs-on: macos-${{ matrix.macos-version }}
+    runs-on: ${{ matrix.image }}
 
     name: macos${{ matrix.macos-version }}-${{ matrix.macos-arch }}/${{ matrix.script }}
     steps:
