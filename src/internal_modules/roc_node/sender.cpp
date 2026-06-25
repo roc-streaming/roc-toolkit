@@ -245,6 +245,8 @@ bool Sender::connect(slot_index_t slot_index,
             break_slot_(*slot);
             return false;
         }
+
+        port.inbound_writer = endpoint_task.get_inbound_writer();
     }
 
     update_compatibility_(iface, uri);
@@ -469,7 +471,19 @@ core::SharedPtr<Sender::Slot> Sender::get_slot_(slot_index_t slot_index,
 }
 
 void Sender::cleanup_slot_(Slot& slot) {
-    // First remove pipeline slot, because it writes to network ports.
+    // First stop receiving, because network ports may write to pipeline endpoints.
+    for (size_t p = 0; p < address::Iface_Max; p++) {
+        if (slot.ports[p].handle && slot.ports[p].inbound_writer) {
+            netio::NetworkLoop::Tasks::StopUdpRecv task(slot.ports[p].handle);
+            if (!context().network_loop().schedule_and_wait(task)) {
+                roc_panic("sender node: can't stop receiving on network port of slot %lu",
+                          (unsigned long)slot.index);
+            }
+            slot.ports[p].inbound_writer = NULL;
+        }
+    }
+
+    // Then remove pipeline slot, because it writes to network ports.
     if (slot.handle) {
         pipeline::SenderLoop::Tasks::DeleteSlot task(slot.handle);
         if (!pipeline_.schedule_and_wait(task)) {

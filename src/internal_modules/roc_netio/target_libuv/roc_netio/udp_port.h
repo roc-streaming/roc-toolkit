@@ -99,6 +99,11 @@ public:
     //!  Writer will be invoked from network thread.
     bool start_recv(packet::IWriter& inbound_writer);
 
+    //! Stop receiving packets.
+    //! @remarks
+    //!  After this call returns, writer won't be used anymore.
+    bool stop_recv();
+
 protected:
     //! Format descriptor.
     virtual void format_descriptor(core::StringBuilder& b);

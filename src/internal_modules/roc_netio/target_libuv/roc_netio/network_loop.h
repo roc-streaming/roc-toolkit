@@ -111,6 +111,13 @@ public:
             packet::IWriter* inbound_writer_;
         };
 
+        //! Stop receiving on UDP port.
+        class StopUdpRecv : public NetworkTask {
+        public:
+            //! Set task parameters.
+            StopUdpRecv(PortHandle handle);
+        };
+
         //! Add TCP server port.
         class AddTcpServerPort : public NetworkTask {
         public:
@@ -242,6 +249,7 @@ private:
     void task_add_udp_port_(NetworkTask&);
     void task_start_udp_send_(NetworkTask&);
     void task_start_udp_recv_(NetworkTask&);
+    void task_stop_udp_recv_(NetworkTask&);
     void task_add_tcp_server_(NetworkTask&);
     void task_add_tcp_client_(NetworkTask&);
     void task_remove_port_(NetworkTask&);

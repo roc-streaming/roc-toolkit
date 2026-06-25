@@ -407,7 +407,29 @@ core::SharedPtr<Receiver::Slot> Receiver::get_slot_(slot_index_t slot_index,
 }
 
 void Receiver::cleanup_slot_(Slot& slot) {
-    // First remove network ports, because they write to pipeline slot.
+    // First stop receiving, because network ports may write to pipeline endpoints.
+    for (size_t p = 0; p < address::Iface_Max; p++) {
+        if (slot.ports[p].handle) {
+            netio::NetworkLoop::Tasks::StopUdpRecv task(slot.ports[p].handle);
+            if (!context().network_loop().schedule_and_wait(task)) {
+                roc_panic(
+                    "receiver node: can't stop receiving on network port of slot %lu",
+                    (unsigned long)slot.index);
+            }
+        }
+    }
+
+    // Then remove pipeline slot, because it writes to network ports.
+    if (slot.handle) {
+        pipeline::ReceiverLoop::Tasks::DeleteSlot task(slot.handle);
+        if (!pipeline_.schedule_and_wait(task)) {
+            roc_panic("receiver node: can't remove pipeline slot %lu",
+                      (unsigned long)slot.index);
+        }
+        slot.handle = NULL;
+    }
+
+    // Then remove network ports.
     for (size_t p = 0; p < address::Iface_Max; p++) {
         if (slot.ports[p].handle) {
             netio::NetworkLoop::Tasks::RemovePort task(slot.ports[p].handle);
@@ -417,16 +439,6 @@ void Receiver::cleanup_slot_(Slot& slot) {
             }
             slot.ports[p].handle = NULL;
         }
-    }
-
-    // Then remove pipeline slot.
-    if (slot.handle) {
-        pipeline::ReceiverLoop::Tasks::DeleteSlot task(slot.handle);
-        if (!pipeline_.schedule_and_wait(task)) {
-            roc_panic("receiver node: can't remove pipeline slot %lu",
-                      (unsigned long)slot.index);
-        }
-        slot.handle = NULL;
     }
 }
 

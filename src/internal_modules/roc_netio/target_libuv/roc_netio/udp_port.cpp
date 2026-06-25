@@ -139,6 +139,8 @@ AsyncOperationStatus UdpPort::async_close(ICloseHandler& handler, void* handler_
 
     want_close_ = true;
 
+    inbound_writer_ = NULL;
+
     if (fully_closed_()) {
         return AsyncOp_Completed;
     }
@@ -190,6 +192,20 @@ bool UdpPort::start_recv(packet::IWriter& inbound_writer) {
     }
 
     inbound_writer_ = &inbound_writer;
+    return true;
+}
+
+bool UdpPort::stop_recv() {
+    if (recv_started_) {
+        if (int err = uv_udp_recv_stop(&handle_)) {
+            roc_log(LogError, "udp port: %s: uv_udp_recv_stop(): [%s] %s", descriptor(),
+                    uv_err_name(err), uv_strerror(err));
+            return false;
+        }
+        recv_started_ = false;
+    }
+
+    inbound_writer_ = NULL;
     return true;
 }
 

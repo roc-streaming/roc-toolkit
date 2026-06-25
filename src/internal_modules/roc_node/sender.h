@@ -98,10 +98,12 @@ private:
         netio::UdpConfig orig_config;
         netio::NetworkLoop::PortHandle handle;
         packet::IWriter* outbound_writer;
+        packet::IWriter* inbound_writer;
 
         Port()
             : handle(NULL)
-            , outbound_writer(NULL) {
+            , outbound_writer(NULL)
+            , inbound_writer(NULL) {
         }
     };
 

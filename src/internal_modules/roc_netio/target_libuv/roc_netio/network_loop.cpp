@@ -53,6 +53,14 @@ NetworkLoop::Tasks::StartUdpRecv::StartUdpRecv(PortHandle handle,
     inbound_writer_ = &inbound_writer;
 }
 
+NetworkLoop::Tasks::StopUdpRecv::StopUdpRecv(PortHandle handle) {
+    func_ = &NetworkLoop::task_stop_udp_recv_;
+    if (!handle) {
+        roc_panic("network loop: port handle is null");
+    }
+    port_ = (BasicPort*)handle;
+}
+
 NetworkLoop::Tasks::AddTcpServerPort::AddTcpServerPort(TcpServerConfig& config,
                                                        IConnAcceptor& conn_acceptor) {
     func_ = &NetworkLoop::task_add_tcp_server_;
@@ -454,6 +462,26 @@ void NetworkLoop::task_start_udp_recv_(NetworkTask& base_task) {
 
     if (!port->start_recv(*task.inbound_writer_)) {
         roc_log(LogError, "network loop: can't start receiving on port %s",
+                task.port_->descriptor());
+        task.success_ = false;
+        task.state_ = NetworkTask::StateFinishing;
+        return;
+    }
+
+    task.success_ = true;
+    task.state_ = NetworkTask::StateFinishing;
+}
+
+void NetworkLoop::task_stop_udp_recv_(NetworkTask& base_task) {
+    Tasks::StopUdpRecv& task = (Tasks::StopUdpRecv&)base_task;
+
+    roc_log(LogDebug, "network loop: stopping receiving packets on port %s",
+            task.port_->descriptor());
+
+    core::SharedPtr<UdpPort> port = (UdpPort*)task.port_.get();
+
+    if (!port->stop_recv()) {
+        roc_log(LogError, "network loop: can't stop receiving on port %s",
                 task.port_->descriptor());
         task.success_ = false;
         task.state_ = NetworkTask::StateFinishing;
