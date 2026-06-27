@@ -1,0 +1,3 @@
+# Test-only dependencies. Install with:
+#   pip install -r requirements-dev.txt
+PyYAML>=6.0

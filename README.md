@@ -4,6 +4,7 @@
 
 [![build](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/roc-streaming/roc-toolkit/actions/workflows/build.yml) [![release](https://img.shields.io/github/release/roc-streaming/roc-toolkit.svg)](https://github.com/roc-streaming/roc-toolkit/releases) [![matrix](https://matrix.to/img/matrix-badge.svg)](https://app.element.io/#/room/#roc-streaming:matrix.org)
 
+What is roc ?
 Roc is a toolkit for real-time audio streaming over the network.
 
 You can read about the project here:
@@ -18,13 +19,13 @@ The toolkit consists of a [C library](https://roc-streaming.org/toolkit/docs/api
 
 Key features:
 
-* real-time streaming with guaranteed latency;
-* restoring lost packets using Forward Erasure Correction codes;
-* converting between the sender and receiver clock domains;
-* CD-quality audio;
-* multiple profiles for different CPU and latency requirements;
-* portability;
-* relying on open, standard protocols.
+* Real-time streaming with guaranteed latency;
+* Restoring lost packets using Forward Erasure Correction codes;
+* Converting between the sender and receiver clock domains;
+* CD-quality Audio;
+* Multiple profiles for different C.P.U and latency requirements;
+* Portability;
+* Relying on open, standard protocols.
 
 Roc Streaming ecosystem also includes numerous projects built on top of Roc Toolkit:
 
@@ -85,19 +86,19 @@ Thank you!
 
 <a href="https://github.com/sponsors/roc-streaming"><img alt="Donate on GitHub Sponsors" src="https://roc-streaming.org/images/logos/github_sponsors.svg"></a>
 
-Community
+Community :
 ---------
 
 We have a forum, mailing list, and Matrix chat room. See details [here](https://roc-streaming.org/toolkit/docs/about_project/contacts.html).
 
-Contributing
+Contributing :
 ------------
 
 Contributions in any form are always welcome! Please check out [contribution guidelines](https://roc-streaming.org/toolkit/docs/development/contribution_guidelines.html).
 
 Tasks needing help are [listed here](https://github.com/roc-streaming/roc-toolkit/labels/help%20wanted).
 
-Licensing
+Licensing :
 ---------
 
 See details on licenses [here](https://roc-streaming.org/toolkit/docs/about_project/licensing.html).
@@ -105,4 +106,4 @@ See details on licenses [here](https://roc-streaming.org/toolkit/docs/about_proj
 Authors
 -------
 
-See a list of maintainers and contributors [here](https://roc-streaming.org/toolkit/docs/about_project/authors.html).
+See the list of maintainers and contributors [here](https://roc-streaming.org/toolkit/docs/about_project/authors.html).

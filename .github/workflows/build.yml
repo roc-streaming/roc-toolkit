@@ -1,3 +1,22 @@
+# --------------------------------------------------------------------------
+# Notes on CI invariants guarded by tests/test_build_workflow.py
+# --------------------------------------------------------------------------
+#
+# 1. Matrix entries are coupled to scripts under scripts/ci_checks/ via
+#    `${{ matrix.script }}`. A typo or rename on either side would
+#    produce a confusing "No such file or directory" on the runner
+#    instead of a local failure. The test asserts every matrix.include
+#    entry points at an existing script.
+#
+# 2. `concurrency.group` uses github.workflow + github.event_name +
+#    github.ref (rather than the previous
+#    `github.event.pull_request.number || github.ref`) so that pushes,
+#    schedule, repository_dispatch, and workflow_dispatch do not all
+#    collapse into a single group on the same ref. With
+#    `cancel-in-progress: true` the previous form would let a later
+#    push cancel the earlier one mid-flight.
+# --------------------------------------------------------------------------
+
 name: "build"
 
 on:
@@ -25,7 +44,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: build-${{ github.event.pull_request.number || github.ref }}
+  group: build-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
