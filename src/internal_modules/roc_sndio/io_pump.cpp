@@ -14,12 +14,6 @@
 namespace roc {
 namespace sndio {
 
-namespace {
-
-const core::nanoseconds_t DefaultFrameLength = 10 * core::Millisecond;
-
-} // namespace
-
 IoPump::IoPump(core::IPool& frame_pool,
                core::IPool& frame_buffer_pool,
                ISource& source,

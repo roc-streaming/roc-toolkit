@@ -16,12 +16,6 @@
 namespace roc {
 namespace sndio {
 
-namespace {
-
-const core::nanoseconds_t DefaultFrameLength = 10 * core::Millisecond;
-
-} // namespace
-
 SoxSink::SoxSink(audio::FrameFactory& frame_factory,
                  core::IArena& arena,
                  const IoConfig& io_config,

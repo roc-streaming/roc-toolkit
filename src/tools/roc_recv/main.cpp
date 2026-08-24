@@ -110,7 +110,7 @@ bool build_context_config(const gengetopt_args_info& args,
                           audio::ChanMask_Surround_7_1_4, 48000);
         core::nanoseconds_t len = io_config.frame_length;
         if (len == 0) {
-            len = 10 * core::Millisecond;
+            len = sndio::DefaultFrameLength;
         }
         context_config.max_frame_size =
             spec.ns_2_samples_overall(len) * sizeof(audio::sample_t);
