@@ -899,7 +899,7 @@ if meta.compiler in ['gcc', 'clang']:
         '-std=c11',
     ])
 
-if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['macos']:
+if 'target_posix' in env['ROC_TARGETS'] and meta.platform not in ['macos', 'unix']:
     # macOS is special, otherwise rely on _POSIX_C_SOURCE
     env.Append(CPPDEFINES=[('_POSIX_C_SOURCE', env['ROC_POSIX_PLATFORM'])])
 
@@ -982,7 +982,7 @@ if meta.compiler in ['gcc', 'clang']:
             '-fPIC',
         ]})
 
-    if meta.platform in ['linux', 'macos']:
+    if meta.platform in ['linux', 'macos', 'unix']:
         env.AddManualDependency(libs=['pthread'])
 
     if meta.platform in ['linux', 'android'] or meta.gnu_toolchain:
