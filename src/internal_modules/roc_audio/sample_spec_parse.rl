@@ -298,9 +298,10 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
             sample_spec.set_sample_rate(rate);
         }
 
+        delimiter = [,_\.] | space;
         surround_mask = ([a-z] [a-z0-9.]+) >start_token %set_surround_mask;
         surround_channel = [A-Z]+ >start_token %set_surround_channel;
-        surround_list = surround_channel (',' surround_channel)*;
+        surround_list = surround_channel (delimiter surround_channel)*;
 
         surround = (surround_mask | surround_list) %set_surround;
 
@@ -312,15 +313,14 @@ bool parse_sample_spec_imp(const char* str, SampleSpec& sample_spec) {
         mtr_range_end = [0-9]+ >start_token %set_mtr_range_end;
         mtr_range = (mtr_range_begin '-' mtr_range_end) >start_token %set_mtr_range;
         mtr_channel = mtr_number | mtr_range;
-        mtr_list = mtr_channel (',' mtr_channel)*;
+        mtr_list = mtr_channel (delimiter mtr_channel)*;
 
         mtr = (mtr_mask | mtr_list) %set_mtr;
 
         format = [a-z0-9_]+ >start_token %set_format;
         subformat = [a-z0-9_]+ >start_token %set_subformat;
         rate = [0-9]+ >start_token %set_rate;
-        channels_DISABLED = surround | mtr;
-        channels = ('stereo' | 'mono') >start_token %set_surround_mask %set_surround;
+        channels = surround | mtr;
 
         main := ( ('-' | format ('@' subformat)?) '/' ('-' | rate) '/' ('-' | channels) )
                 %{ success = true; }
