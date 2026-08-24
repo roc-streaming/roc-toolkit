@@ -205,8 +205,8 @@ SenderEncoder::read_packet(address::Interface iface, void* bytes, size_t* n_byte
         roc_log(LogError,
                 "sender encoder node:"
                 " not enough space in provided packet:"
-                " provided=%lu needed=%lu",
-                (unsigned long)n_bytes, (unsigned long)packet->buffer().size());
+                " provided=%llu needed=%llu",
+                (unsigned long long)n_bytes, (unsigned long long)packet->buffer().size());
         return status::StatusBadBuffer;
     }
 
@@ -230,9 +230,9 @@ SenderEncoder::write_packet(address::Interface iface, const void* bytes, size_t 
         roc_log(LogError,
                 "sender encoder node:"
                 " provided packet exceeds maximum packet size (see roc_context_config):"
-                " provided=%lu maximum=%lu",
-                (unsigned long)n_bytes,
-                (unsigned long)packet_factory_.packet_buffer_size());
+                " provided=%llu maximum=%llu",
+                (unsigned long long)n_bytes,
+                (unsigned long long)packet_factory_.packet_buffer_size());
         return status::StatusBadBuffer;
     }
 

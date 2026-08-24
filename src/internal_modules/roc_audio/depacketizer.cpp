@@ -526,14 +526,15 @@ void Depacketizer::commit_frame_(Frame& frame,
                          && frame_stats.n_missing_samples != 0,
                      "depacketizer: incorrect sample counters");
 
-    roc_log(LogTrace,
-            "depacketizer: returning frame:"
-            " stream_ts=%lu n_decoded=%lu n_missing=%lu n_dropped=%lu",
-            (unsigned long)stream_ts_
-                - (frame_stats.n_written_samples / sample_spec_.num_channels()),
-            (unsigned long)frame_stats.n_decoded_samples / sample_spec_.num_channels(),
-            (unsigned long)frame_stats.n_missing_samples / sample_spec_.num_channels(),
-            (unsigned long)frame_stats.n_dropped_packets);
+    roc_log(
+        LogTrace,
+        "depacketizer: returning frame:"
+        " stream_ts=%lu n_decoded=%lu n_missing=%lu n_dropped=%lu",
+        (unsigned long)(stream_ts_
+                        - (frame_stats.n_written_samples / sample_spec_.num_channels())),
+        (unsigned long)(frame_stats.n_decoded_samples / sample_spec_.num_channels()),
+        (unsigned long)(frame_stats.n_missing_samples / sample_spec_.num_channels()),
+        (unsigned long)frame_stats.n_dropped_packets);
 
     unsigned flags = 0;
     if (frame_stats.n_decoded_samples != 0) {

@@ -8,6 +8,7 @@
 
 #include "roc_sndio/wav_source.h"
 #include "roc_audio/sample_spec_to_str.h"
+#include "roc_core/errno_to_str.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
 #include "roc_status/code_to_str.h"

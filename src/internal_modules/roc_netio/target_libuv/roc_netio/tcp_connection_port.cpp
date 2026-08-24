@@ -804,7 +804,7 @@ void TcpConnectionPort::format_descriptor(core::StringBuilder& b) {
     }
 
     b.append_str(" 0x");
-    b.append_uint((unsigned long)this, 16);
+    b.append_uint((size_t)this, 16);
 
     b.append_str(" local=");
     b.append_str(address::socket_addr_to_str(local_address_).c_str());

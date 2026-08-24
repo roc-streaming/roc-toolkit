@@ -91,7 +91,7 @@ void Frame::set_num_raw_samples(size_t n_samples) {
         roc_panic("frame: frame buffer does not have enough capacity:"
                   " requested=%lu available=%lu",
                   (unsigned long)n_samples,
-                  (unsigned long)buffer_.capacity() / sizeof(sample_t));
+                  (unsigned long)(buffer_.capacity() / sizeof(sample_t)));
     }
 
     buffer_.reslice(0, n_samples * sizeof(sample_t));
