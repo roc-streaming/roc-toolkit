@@ -248,7 +248,7 @@ TEST(plugin_plc, losses_restored_by_fec) {
 
         receiver.bind();
 
-        test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
+        test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(), NULL,
                           test::SourcePackets, test::RepairPackets, Flags);
 
         test::Sender sender(context, sender_conf, SampleStep, NumChans,
@@ -303,7 +303,7 @@ TEST(plugin_plc, losses_restored_by_plc) {
 
         receiver.bind();
 
-        test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(),
+        test::Proxy proxy(receiver.source_endpoint(), receiver.repair_endpoint(), NULL,
                           test::SourcePackets, test::RepairPackets, Flags);
 
         test::Sender sender(context, sender_conf, SampleStep, NumChans,
