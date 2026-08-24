@@ -9,6 +9,7 @@
 #include "roc_core/semaphore.h"
 #include "roc_core/cpu_instructions.h"
 #include "roc_core/errno_to_str.h"
+#include "roc_core/log.h"
 #include "roc_core/panic.h"
 
 #include <errno.h>
@@ -34,16 +35,17 @@ Semaphore::~Semaphore() {
 }
 
 bool Semaphore::timed_wait(nanoseconds_t deadline) {
+    printf("Enter function of timed_wait");
     if (deadline < 0) {
         roc_panic("semaphore: unexpected negative deadline");
     }
 
-    for (;;) {
-        timespec ts;
-        ts.tv_sec = long(deadline / Second);
-        ts.tv_nsec = long(deadline % Second);
+    timespec ts;
+    ts.tv_sec = long(deadline / Second);
+    ts.tv_nsec = long(deadline % Second);
 
-        if (sem_timedwait(&sem_, &ts) == 0) {
+    for (;;) {
+        if (sem_clockwait(&sem_, CLOCK_MONOTONIC, &ts) == 0) {
             return true;
         }
 
