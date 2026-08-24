@@ -308,6 +308,21 @@ TEST(composer_parser, rs8m_repair) {
 
     test_all(test);
 }
+TEST(composer_parser, parse_bad_buffer) {
+    core::Slice<uint8_t> buffer = packet_factory.new_packet_buffer();
+    CHECK(buffer);
 
+    buffer.reslice(0, sizeof(RS8M_PayloadID) - 1);
+
+    packet::PacketPtr packet = packet_factory.new_packet();
+    CHECK(packet);
+
+    packet->set_buffer(buffer);
+    rtp::EncodingMap rtp_encoding_map(arena);
+    rtp::Parser rtp_parser(NULL, rtp_encoding_map, arena);
+    Parser<RS8M_PayloadID, Source, Footer> rs8m_parser(&rtp_parser, arena);
+
+    LONGS_EQUAL(status::StatusBadPacket, rs8m_parser.parse(*packet, packet->buffer()));
+}
 } // namespace fec
 } // namespace roc
