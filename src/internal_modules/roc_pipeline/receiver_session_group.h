@@ -19,6 +19,7 @@
 #include "roc_core/list.h"
 #include "roc_core/noncopyable.h"
 #include "roc_dbgio/csv_dumper.h"
+#include "roc_packet/packet.h"
 #include "roc_packet/packet_factory.h"
 #include "roc_pipeline/metrics.h"
 #include "roc_pipeline/receiver_endpoint.h"
@@ -131,6 +132,8 @@ private:
     status::StatusCode route_transport_packet_(const packet::PacketPtr& packet);
     status::StatusCode route_control_packet_(const packet::PacketPtr& packet,
                                              core::nanoseconds_t current_time);
+    void enqueue_prebuf_packet_(const packet::PacketPtr& packet);
+    void dequeue_prebuf_packet_(ReceiverSession& sess);
 
     bool can_create_session_(const packet::PacketPtr& packet);
 
@@ -164,6 +167,8 @@ private:
     ReceiverSessionRouter session_router_;
 
     dbgio::CsvDumper* dumper_;
+
+    core::List<packet::Packet> prebuf_packets_;
 
     status::StatusCode init_status_;
 };

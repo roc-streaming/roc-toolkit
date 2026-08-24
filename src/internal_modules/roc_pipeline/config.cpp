@@ -66,7 +66,8 @@ bool ReceiverCommonConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
 // ReceiverSessionConfig
 
 ReceiverSessionConfig::ReceiverSessionConfig()
-    : payload_type(0) {
+    : payload_type(0)
+    , prebuf_len(0) {
 }
 
 bool ReceiverSessionConfig::deduce_defaults(audio::ProcessorMap& processor_map) {
@@ -95,12 +96,17 @@ bool ReceiverSessionConfig::deduce_defaults(audio::ProcessorMap& processor_map) 
         return false;
     }
 
+    if (!prebuf_len) {
+        prebuf_len = latency.target_latency;
+    }
+
     return true;
 }
 
 // ReceiverSourceConfig
 
-ReceiverSourceConfig::ReceiverSourceConfig() {
+ReceiverSourceConfig::ReceiverSourceConfig()
+    : max_session_packets(0) {
 }
 
 bool ReceiverSourceConfig::deduce_defaults(audio::ProcessorMap& processor_map) {

@@ -8,7 +8,6 @@
 
 #include "roc_address/io_uri.h"
 #include "roc_address/network_uri.h"
-#include "roc_address/protocol_map.h"
 #include "roc_core/crash_handler.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
@@ -309,6 +308,18 @@ bool build_receiver_config(const gengetopt_args_info& args,
         }
         if (receiver_config.session_defaults.watchdog.no_playback_timeout <= 0) {
             roc_log(LogError, "invalid --no-play-timeout: should be > 0");
+            return false;
+        }
+    }
+
+    if (args.prebuf_len_given) {
+        if (!core::parse_duration(args.prebuf_len_arg,
+                                  receiver_config.session_defaults.prebuf_len)) {
+            roc_log(LogError, "invalid --prebuf-len: bad format");
+            return false;
+        }
+        if (receiver_config.session_defaults.prebuf_len) {
+            roc_log(LogError, "invalid --prebuf-len: should be > 0");
             return false;
         }
     }
