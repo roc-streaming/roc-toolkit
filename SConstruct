@@ -431,12 +431,10 @@ if 'fmt' in COMMAND_LINE_TARGETS:
 
     fmt_actions = []
 
-    fmt_actions.append(env.ClangFormat('#src'))
-
-    fmt_actions.append(env.HeaderFormat('#src/internal_modules'))
-    fmt_actions.append(env.HeaderFormat('#src/public_api/src'))
-    fmt_actions.append(env.HeaderFormat('#src/tests'))
-    fmt_actions.append(env.HeaderFormat('#src/tools'))
+    fmt_actions.append(env.CodeFormat('#src/internal_modules'))
+    fmt_actions.append(env.CodeFormat('#src/public_api'))
+    fmt_actions.append(env.CodeFormat('#src/tests'))
+    fmt_actions.append(env.CodeFormat('#src/tools'))
 
     env.AlwaysBuild(
         env.Alias('fmt', [], fmt_actions))

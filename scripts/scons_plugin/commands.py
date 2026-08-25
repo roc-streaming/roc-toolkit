@@ -10,7 +10,7 @@ try:
 except:
     from pipes import quote
 
-def ClangFormat(env, src_dir):
+def CodeFormat(env, src_dir):
     exclude_files = [
         os.path.relpath(env.File('#'+s).srcnode().abspath)
             for s in open(env.File('#.fmtignore').abspath).read().split()
@@ -21,24 +21,9 @@ def ClangFormat(env, src_dir):
         exclude=exclude_files)
 
     return env.Action(
-        '{clang_format} -i {files}'.format(
-            clang_format=quote(env['CLANG_FORMAT']),
-            files=' '.join(map(str, files))),
-        env.PrettyCommand('FMT', env.Dir(src_dir).path, 'yellow'))
-
-def HeaderFormat(env, src_dir):
-    exclude_files = [
-        os.path.relpath(env.File('#'+s).srcnode().abspath)
-            for s in open(env.File('#.fmtignore').abspath).read().split()
-        ]
-
-    files = env.GlobRecursive(
-        src_dir, ['*.h', '*.cpp'],
-        exclude=exclude_files)
-
-    return env.Action(
-        '{python} scripts/scons_helpers/format-header.py {files}'.format(
+        '{python} scripts/scons_helpers/formatter.py {clang_format} {files}'.format(
             python=quote(env.GetPythonExecutable()),
+            clang_format=quote(env['CLANG_FORMAT']),
             files=' '.join(map(str, files))),
         env.PrettyCommand('FMT', env.Dir(src_dir).path, 'yellow'))
 
@@ -309,8 +294,7 @@ def Artifact(env, dst, src):
     return target
 
 def init(env):
-    env.AddMethod(ClangFormat, 'ClangFormat')
-    env.AddMethod(HeaderFormat, 'HeaderFormat')
+    env.AddMethod(CodeFormat, 'CodeFormat')
     env.AddMethod(DocTest, 'DocTest')
     env.AddMethod(Doxygen, 'Doxygen')
     env.AddMethod(Sphinx, 'Sphinx')

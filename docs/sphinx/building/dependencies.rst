@@ -142,7 +142,7 @@ Development dependencies
    * - `Google Benchmark <https://github.com/google/benchmark>`_ >= 1.5.5
      - needed to build benchmarks
 
-   * - `clang-format <https://clang.llvm.org/docs/ClangFormat.html>`_ >= 10
+   * - `clang-format <https://clang.llvm.org/docs/ClangFormat.html>`_ >= 12
      - needed to format code with ``scons fmt``
 
    * - `doxygen <https://www.doxygen.nl/>`_ >= 1.6, `graphviz <https://graphviz.gitlab.io/>`_

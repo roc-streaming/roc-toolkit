@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 import re
+import subprocess
 import sys
 
 COPYRIGHT_HEADER = """
@@ -45,6 +46,8 @@ CPP_REGEXP = re.compile(r'''
     (?P<body> .* )?
     $
 ''', re.DOTALL | re.VERBOSE)
+
+PUBLIC_API_DIR = 'src/public_api/include/'
 
 def process_h(content, file_path, doxygen_path):
     m = H_REGEXP.match(content)
@@ -110,7 +113,7 @@ def process_file(file_path):
     with open(file_path, 'r') as fp:
         content = fp.read()
 
-    if file_path.endswith('.h'):
+    if file_path.endswith('.h') and not file_path.startswith(PUBLIC_API_DIR):
         new_content = process_h(content, file_path, doxygen_path)
     else:
         new_content = process_cpp(content)
@@ -119,5 +122,39 @@ def process_file(file_path):
         with open(file_path, 'w') as fp:
             fp.write(new_content)
 
-for file_path in sys.argv[1:]:
+def clang_format(clang_format, files):
+    command = [clang_format, '--Wno-error=unknown', '-i'] + files
+    proc = subprocess.Popen(command, stderr=subprocess.PIPE, universal_newlines=True)
+    skip_lines = 0
+
+    for line in proc.stderr:
+        if skip_lines:
+            skip_lines -= 1
+            continue
+
+        if re.search(r": warning: unknown key 'SpaceInEmptyBraces'$", line.rstrip()):
+            skip_lines = 2
+            continue
+
+        print(line, end='', file=sys.stderr)
+
+    ret = proc.wait()
+    if ret > 0:
+        return ret
+    if ret < 0:
+        return 128 - ret
+    return 0
+
+if len(sys.argv) < 3:
+    print('usage: formatter.py <clang-format> <file>...', file=sys.stderr)
+    exit(1)
+
+clang_format_exe = sys.argv[1]
+source_files = sys.argv[2:]
+
+ret = clang_format(clang_format_exe, source_files)
+if ret:
+    exit(ret)
+
+for file_path in source_files:
     process_file(file_path)

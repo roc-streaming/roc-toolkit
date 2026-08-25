@@ -316,7 +316,7 @@ def FindClangFormat(context):
         context.Result(env['CLANG_FORMAT'])
         return True
 
-    min_ver = 10
+    min_ver = 12
     max_ver = 99
 
     def _checkver(exe):
