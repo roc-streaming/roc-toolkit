@@ -214,6 +214,10 @@ status::StatusCode SoxSource::resume() {
     return status::StatusOK;
 }
 
+bool SoxSource::has_poll() const {
+    return false;
+}
+
 bool SoxSource::has_latency() const {
     return false;
 }

@@ -102,6 +102,13 @@ public:
     //! Resume sink.
     virtual ROC_NODISCARD status::StatusCode resume();
 
+    //! Check if the sink supports blocking until state change.
+    virtual bool has_poll() const;
+
+    //! Block until sink state becomes one of the states from the mask.
+    virtual ROC_NODISCARD status::StatusCode
+    poll(unsigned event_mask, unsigned& ret_events, core::nanoseconds_t deadline);
+
     //! Check if the sink supports latency reports.
     virtual bool has_latency() const;
 

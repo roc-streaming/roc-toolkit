@@ -84,6 +84,10 @@ bool SndfileSource::has_state() const {
     return false;
 }
 
+bool SndfileSource::has_poll() const {
+    return false;
+}
+
 bool SndfileSource::has_latency() const {
     return false;
 }

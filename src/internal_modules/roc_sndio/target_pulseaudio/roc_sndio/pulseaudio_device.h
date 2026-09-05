@@ -71,6 +71,9 @@ public:
     //! Resume device.
     virtual ROC_NODISCARD status::StatusCode resume();
 
+    //! Check if the device supports blocking until state change.
+    virtual bool has_poll() const;
+
     //! Check if the device supports latency reports.
     virtual bool has_latency() const;
 

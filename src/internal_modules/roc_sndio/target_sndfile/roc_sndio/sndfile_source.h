@@ -59,6 +59,9 @@ public:
     //! Check if the source supports state updates.
     virtual bool has_state() const;
 
+    //! Check if the source supports blocking until state change.
+    virtual bool has_poll() const;
+
     //! Check if the source supports latency reports.
     virtual bool has_latency() const;
 

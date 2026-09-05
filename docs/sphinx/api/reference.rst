@@ -49,6 +49,10 @@ roc_sender
 
 .. doxygenfunction:: roc_sender_unlink
 
+.. doxygenfunction:: roc_sender_get_state
+
+.. doxygenfunction:: roc_sender_poll
+
 .. doxygenfunction:: roc_sender_write
 
 .. doxygenfunction:: roc_sender_close
@@ -71,6 +75,10 @@ roc_receiver
 .. doxygenfunction:: roc_receiver_query
 
 .. doxygenfunction:: roc_receiver_unlink
+
+.. doxygenfunction:: roc_receiver_get_state
+
+.. doxygenfunction:: roc_receiver_poll
 
 .. doxygenfunction:: roc_receiver_read
 
@@ -239,6 +247,15 @@ roc_metrics
 
 .. doxygenstruct:: roc_receiver_metrics
    :members:
+
+roc_state
+=========
+
+.. code-block:: c
+
+   #include <roc/state.h>
+
+.. doxygenenum:: roc_state
 
 roc_plugin
 ==========

@@ -80,6 +80,10 @@ bool SndfileSink::has_state() const {
     return false;
 }
 
+bool SndfileSink::has_poll() const {
+    return false;
+}
+
 bool SndfileSink::has_latency() const {
     return false;
 }

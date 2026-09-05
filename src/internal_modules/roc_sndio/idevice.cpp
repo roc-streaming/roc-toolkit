@@ -40,6 +40,16 @@ status::StatusCode IDevice::resume() {
     return status::StatusOK;
 }
 
+status::StatusCode
+IDevice::poll(unsigned event_mask, unsigned& ret_events, core::nanoseconds_t deadline) {
+    roc_panic_if_msg(has_poll(),
+                     "device: if has_poll() is true, poll() should be implemented");
+
+    ret_events = 0;
+
+    return status::StatusOK;
+}
+
 core::nanoseconds_t IDevice::latency() const {
     roc_panic_if_msg(has_latency(),
                      "device: if has_latency() is true, latency() should be implemented");

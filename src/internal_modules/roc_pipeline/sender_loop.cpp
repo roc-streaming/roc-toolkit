@@ -187,6 +187,19 @@ status::StatusCode SenderLoop::resume() {
     return sink_.resume();
 }
 
+// Deliberately not taking sink_mutex_: poll() blocks for arbitrarily long, and
+// write() holds that mutex, so locking here would stall the frame writer.
+// Polling touches only StateTracker, which is thread-safe on its own.
+bool SenderLoop::has_poll() const {
+    return sink_.has_poll();
+}
+
+status::StatusCode SenderLoop::poll(unsigned event_mask,
+                                    unsigned& ret_events,
+                                    core::nanoseconds_t deadline) {
+    return sink_.poll(event_mask, ret_events, deadline);
+}
+
 bool SenderLoop::has_latency() const {
     core::Mutex::Lock lock(sink_mutex_);
 

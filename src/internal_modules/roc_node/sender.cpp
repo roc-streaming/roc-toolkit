@@ -375,6 +375,22 @@ bool Sender::has_broken_slots() {
     return false;
 }
 
+sndio::DeviceState Sender::get_state() {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    return pipeline_.sink().state();
+}
+
+// Deliberately not taking control_mutex_: poll() blocks for arbitrarily long,
+// and holding the mutex would block unlink() and close(), which are the calls
+// the user needs to interrupt polling.
+status::StatusCode
+Sender::poll(unsigned event_mask, unsigned& ret_events, core::nanoseconds_t deadline) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    return pipeline_.sink().poll(event_mask, ret_events, deadline);
+}
+
 status::StatusCode Sender::write_frame(const void* bytes, size_t n_bytes) {
     core::Mutex::Lock lock(frame_mutex_);
 

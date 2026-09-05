@@ -12,9 +12,12 @@
 #include "roc_core/atomic_bool.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/slab_pool.h"
+#include "roc_core/thread.h"
+#include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
 #include "roc_pipeline/receiver_loop.h"
 #include "roc_rtp/encoding_map.h"
+#include "roc_sndio/device_defs.h"
 
 namespace roc {
 namespace pipeline {
@@ -109,6 +112,56 @@ private:
     core::AtomicBool done_;
 };
 
+// Deadline value that means "block forever".
+const core::nanoseconds_t NoDeadline = -1;
+
+// Time given to a freshly started thread to actually block inside poll().
+const core::nanoseconds_t SettleDelay = core::Microsecond * 100;
+
+enum { NumFrames = 10, FrameSamples = 10 };
+
+// Calls poll() in a separate thread, so that the main thread can do I/O.
+class PollThread : public core::Thread {
+public:
+    PollThread()
+        : source_(NULL)
+        , event_mask_(0)
+        , deadline_(0)
+        , ret_events_(0)
+        , result_(status::NoStatus) {
+    }
+
+    void init(sndio::ISource& source, unsigned event_mask, core::nanoseconds_t deadline) {
+        source_ = &source;
+        event_mask_ = event_mask;
+        deadline_ = deadline;
+    }
+
+    // Value returned by poll(); valid only after join().
+    status::StatusCode result() const {
+        return result_;
+    }
+
+    void wait_running() {
+        while (!running_) {
+            core::sleep_for(core::ClockMonotonic, core::Microsecond);
+        }
+    }
+
+private:
+    virtual void run() {
+        running_ = true;
+        result_ = source_->poll(event_mask_, ret_events_, deadline_);
+    }
+
+    sndio::ISource* source_;
+    unsigned event_mask_;
+    core::nanoseconds_t deadline_;
+    unsigned ret_events_;
+    status::StatusCode result_;
+    core::AtomicBool running_;
+};
+
 } // namespace
 
 TEST_GROUP(receiver_loop) {
@@ -169,6 +222,42 @@ TEST(receiver_loop, endpoints_async) {
     ti.wait_done();
 
     scheduler.wait_done();
+}
+
+// Blocking poll() must not hold the pipeline mutex, otherwise it would stall
+// the thread that reads frames.
+TEST(receiver_loop, poll_does_not_block_read) {
+    ReceiverLoop receiver(scheduler, config, processor_map, encoding_map, packet_pool,
+                          packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
+
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
+
+    sndio::ISource& source = receiver.source();
+
+    CHECK(source.has_poll());
+
+    PollThread poller;
+    poller.init(source, sndio::DeviceState_Active | sndio::DeviceState_Closed,
+                NoDeadline);
+
+    CHECK(poller.start());
+    poller.wait_running();
+    core::sleep_for(core::ClockMonotonic, SettleDelay);
+
+    for (size_t nf = 0; nf < NumFrames; nf++) {
+        audio::FramePtr frame = frame_factory.allocate_frame_no_buffer();
+        CHECK(frame);
+
+        LONGS_EQUAL(status::StatusOK, source.read(*frame, FrameSamples, audio::ModeHard));
+    }
+
+    CHECK(source.state() == sndio::DeviceState_Idle);
+
+    LONGS_EQUAL(status::StatusOK, source.close());
+
+    poller.join();
+
+    LONGS_EQUAL(status::StatusOK, poller.result());
 }
 
 } // namespace pipeline

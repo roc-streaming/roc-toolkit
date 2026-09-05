@@ -124,6 +124,10 @@ bool TranscoderSink::has_state() const {
     return false;
 }
 
+bool TranscoderSink::has_poll() const {
+    return false;
+}
+
 bool TranscoderSink::has_latency() const {
     return false;
 }

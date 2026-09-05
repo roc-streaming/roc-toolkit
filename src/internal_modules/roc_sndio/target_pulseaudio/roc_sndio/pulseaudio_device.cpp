@@ -296,6 +296,10 @@ status::StatusCode PulseaudioDevice::resume() {
     return status::StatusOK;
 }
 
+bool PulseaudioDevice::has_poll() const {
+    return false;
+}
+
 bool PulseaudioDevice::has_latency() const {
     return true;
 }

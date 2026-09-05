@@ -211,6 +211,10 @@ status::StatusCode SoxSink::resume() {
     return status::StatusOK;
 }
 
+bool SoxSink::has_poll() const {
+    return false;
+}
+
 bool SoxSink::has_latency() const {
     return false;
 }

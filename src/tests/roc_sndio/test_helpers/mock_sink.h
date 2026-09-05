@@ -63,6 +63,10 @@ public:
         return status::StatusAbort;
     }
 
+    virtual bool has_poll() const {
+        return false;
+    }
+
     virtual bool has_latency() const {
         return false;
     }

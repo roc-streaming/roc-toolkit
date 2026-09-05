@@ -107,6 +107,10 @@ bool WavSource::has_state() const {
     return false;
 }
 
+bool WavSource::has_poll() const {
+    return false;
+}
+
 bool WavSource::has_latency() const {
     return false;
 }

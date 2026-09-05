@@ -71,6 +71,9 @@ public:
     //! Resume sink.
     virtual ROC_NODISCARD status::StatusCode resume();
 
+    //! Check if the sink supports blocking until state change.
+    virtual bool has_poll() const;
+
     //! Check if the sink supports latency reports.
     virtual bool has_latency() const;
 

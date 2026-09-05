@@ -152,6 +152,9 @@ private:
     virtual sndio::DeviceState state() const;
     virtual status::StatusCode pause();
     virtual status::StatusCode resume();
+    virtual bool has_poll() const;
+    virtual status::StatusCode
+    poll(unsigned event_mask, unsigned& ret_events, core::nanoseconds_t deadline);
     virtual bool has_latency() const;
     virtual core::nanoseconds_t latency() const;
     virtual bool has_clock() const;

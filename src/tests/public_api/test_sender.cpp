@@ -621,5 +621,117 @@ TEST(sender, write_args) {
     LONGS_EQUAL(0, roc_sender_close(sender));
 }
 
+TEST(sender, get_state) {
+    roc_sender* sender = NULL;
+    CHECK(roc_sender_open(context, &sender_config, &sender) == 0);
+    CHECK(sender);
+
+    roc_state state = ROC_STATE_BROKEN;
+    LONGS_EQUAL(0, roc_sender_get_state(sender, &state));
+    LONGS_EQUAL(ROC_STATE_IDLE, state);
+
+    LONGS_EQUAL(-1, roc_sender_get_state(NULL, &state));
+    LONGS_EQUAL(-1, roc_sender_get_state(sender, NULL));
+
+    LONGS_EQUAL(0, roc_sender_close(sender));
+}
+
+TEST(sender, poll_bad_args) {
+    roc_sender* sender = NULL;
+    CHECK(roc_sender_open(context, &sender_config, &sender) == 0);
+    CHECK(sender);
+
+    int ret_events = 0;
+
+    LONGS_EQUAL(-1, roc_sender_poll(NULL, ROC_STATE_IDLE, &ret_events, 0));
+    LONGS_EQUAL(-1, roc_sender_poll(sender, 1 << 20, &ret_events, 0));
+    LONGS_EQUAL(-1, roc_sender_poll(sender, ROC_STATE_IDLE | (1 << 20), &ret_events, 0));
+    LONGS_EQUAL(-1, roc_sender_poll(sender, -1, &ret_events, 0));
+
+    LONGS_EQUAL(0, roc_sender_close(sender));
+}
+
+// Sender becomes active on connect and stays active afterwards.
+TEST(sender, poll_active_after_connect) {
+    roc_sender* sender = NULL;
+    CHECK(roc_sender_open(context, &sender_config, &sender) == 0);
+    CHECK(sender);
+
+    int ret_events = 0;
+
+    LONGS_EQUAL(1, roc_sender_poll(sender, ROC_STATE_IDLE, &ret_events, -1));
+    LONGS_EQUAL(ROC_STATE_IDLE, ret_events);
+
+    LONGS_EQUAL(0, roc_sender_poll(sender, ROC_STATE_ACTIVE, &ret_events, 0));
+    LONGS_EQUAL(0, ret_events);
+
+    roc_endpoint* source_endpoint = NULL;
+    CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
+    CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:0") == 0);
+
+    CHECK(roc_sender_connect(sender, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                             source_endpoint)
+          == 0);
+
+    LONGS_EQUAL(1, roc_sender_poll(sender, ROC_STATE_ACTIVE, &ret_events, -1));
+    LONGS_EQUAL(ROC_STATE_ACTIVE, ret_events);
+
+    LONGS_EQUAL(0, roc_sender_poll(sender, ROC_STATE_IDLE, &ret_events, 10000000));
+    LONGS_EQUAL(0, ret_events);
+
+    CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
+    LONGS_EQUAL(0, roc_sender_close(sender));
+}
+
+// Zero timeout checks the state without blocking.
+TEST(sender, poll_no_timeout) {
+    roc_sender* sender = NULL;
+    CHECK(roc_sender_open(context, &sender_config, &sender) == 0);
+    CHECK(sender);
+
+    int ret_events = ROC_STATE_ACTIVE;
+
+    LONGS_EQUAL(0, roc_sender_poll(sender, ROC_STATE_ACTIVE, &ret_events, 0));
+    LONGS_EQUAL(0, ret_events);
+
+    LONGS_EQUAL(1, roc_sender_poll(sender, ROC_STATE_IDLE, &ret_events, 0));
+    LONGS_EQUAL(ROC_STATE_IDLE, ret_events);
+
+    LONGS_EQUAL(1, roc_sender_poll(sender, ROC_STATE_IDLE | ROC_STATE_ACTIVE, NULL, 0));
+
+    roc_endpoint* source_endpoint = NULL;
+    CHECK(roc_endpoint_allocate(&source_endpoint) == 0);
+    CHECK(roc_endpoint_set_uri(source_endpoint, "rtp://127.0.0.1:0") == 0);
+
+    CHECK(roc_sender_connect(sender, ROC_SLOT_DEFAULT, ROC_INTERFACE_AUDIO_SOURCE,
+                             source_endpoint)
+          == 0);
+
+    LONGS_EQUAL(1, roc_sender_poll(sender, ROC_STATE_ACTIVE, &ret_events, 0));
+    LONGS_EQUAL(ROC_STATE_ACTIVE, ret_events);
+
+    ret_events = ROC_STATE_IDLE;
+    LONGS_EQUAL(0, roc_sender_poll(sender, ROC_STATE_IDLE, &ret_events, 0));
+    LONGS_EQUAL(0, ret_events);
+
+    CHECK(roc_endpoint_deallocate(source_endpoint) == 0);
+    LONGS_EQUAL(0, roc_sender_close(sender));
+}
+
+// Huge timeout must not overflow when converted to deadline.
+TEST(sender, poll_huge_timeout) {
+    roc_sender* sender = NULL;
+    CHECK(roc_sender_open(context, &sender_config, &sender) == 0);
+    CHECK(sender);
+
+    int ret_events = 0;
+
+    LONGS_EQUAL(
+        1, roc_sender_poll(sender, ROC_STATE_IDLE, &ret_events, ROC_MAX_OF(long long)));
+    LONGS_EQUAL(ROC_STATE_IDLE, ret_events);
+
+    LONGS_EQUAL(0, roc_sender_close(sender));
+}
+
 } // namespace api
 } // namespace roc

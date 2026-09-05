@@ -55,6 +55,9 @@ public:
     //! Check if the sink supports state updates.
     virtual bool has_state() const;
 
+    //! Check if the sink supports blocking until state change.
+    virtual bool has_poll() const;
+
     //! Check if the sink supports latency reports.
     virtual bool has_latency() const;
 

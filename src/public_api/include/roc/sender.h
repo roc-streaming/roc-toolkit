@@ -20,6 +20,7 @@
 #include "roc/frame.h"
 #include "roc/metrics.h"
 #include "roc/platform.h"
+#include "roc/state.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -312,6 +313,64 @@ ROC_API int roc_sender_query(roc_sender* sender,
  *  - returns a negative value if the slot does not exist
  */
 ROC_API int roc_sender_unlink(roc_sender* sender, roc_slot slot);
+
+/** Get current sender state.
+ *
+ * Retrieves the state of the sender as a whole, not of an individual slot.
+ *
+ * **Parameters**
+ *  - \p sender should point to an opened sender
+ *  - \p result defines where to write the state
+ *
+ * **Returns**
+ *  - returns zero if the state was successfully retrieved
+ *  - returns a negative value if the arguments are invalid
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownership of \p result; it may be safely deallocated
+ *    after the function returns
+ */
+ROC_API int roc_sender_get_state(roc_sender* sender, roc_state* result);
+
+/** Wait until sender reaches one of the desired states.
+ *
+ * Blocks until the sender state becomes one of the states from \p events, or until
+ * \p timeout_ns expires. The state of the sender as a whole is polled, not of an
+ * individual slot.
+ *
+ * \ref ROC_STATE_BROKEN and \ref ROC_STATE_CLOSED are error conditions and are always
+ * awaited and reported, whether they were requested in \p events or not, so that
+ * polling a halted sender doesn't block forever. Hence, empty \p events means to wait
+ * until the sender is broken or closed.
+ *
+ * The sender may be polled from any thread, concurrently with other operations,
+ * including writing frames. Polling never blocks other operations, and polling from
+ * multiple threads with different \p events is allowed.
+ *
+ * Note that the sender becomes \ref ROC_STATE_ACTIVE when the first slot is
+ * connected using roc_sender_connect(), and stays active until it is broken, closed,
+ * or all its slots are removed using roc_sender_unlink(). It does not become idle
+ * when the user stops writing frames.
+ *
+ * **Parameters**
+ *  - \p sender should point to an opened sender
+ *  - \p events is a bitmask of zero or more \ref roc_state values to wait for
+ *  - \p ret_events defines where to write the bitmask of the states that actually
+ *    triggered the wakeup (may be NULL); it is set to zero on timeout
+ *  - \p timeout_ns defines maximum waiting time, in nanoseconds; zero means to check
+ *    the state and return immediately; negative value means no timeout
+ *
+ * **Returns**
+ *  - returns one if the sender reached one of the awaited states
+ *  - returns zero if the timeout expired
+ *  - returns a negative value if the arguments are invalid
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownership of \p ret_events; it may be safely
+ *    deallocated after the function returns
+ */
+ROC_API int
+roc_sender_poll(roc_sender* sender, int events, int* ret_events, long long timeout_ns);
 
 /** Encode samples to packets and transmit them to the receiver.
  *
