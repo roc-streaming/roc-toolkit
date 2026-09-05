@@ -682,6 +682,10 @@ if meta.platform in ['linux', 'unix']:
 elif meta.platform in ['android']:
     meta.gnu_toolchain = True
 
+if conf.CheckFunc('sem_clockwait',
+                  header="#define _GNU_SOURCE\n#include <semaphore.h>\n"):
+    conf.env.Append(CPPDEFINES=['ROC_HAVE_SEM_CLOCKWAIT'])
+
 conf.env['ROC_SYSTEM_BINDIR'] = GetOption('bindir')
 conf.env['ROC_SYSTEM_INCDIR'] = GetOption('incdir')
 
@@ -788,10 +792,15 @@ else:
             'target_posix_pc',
         ])
 
-    if meta.platform in ['linux', 'unix', 'android']:
-        env.Append(ROC_TARGETS=[
-            'target_posix_ext',
-        ])
+    if meta.platform in ['linux', 'android', 'unix']:
+        if 'ROC_HAVE_SEM_CLOCKWAIT' in env['CPPDEFINES']:
+            env.Append(ROC_TARGETS=[
+                'target_posix_sem',
+            ])
+        else:
+            env.Append(ROC_TARGETS=[
+                'target_nosem',
+            ])
 
     if meta.platform in ['linux', 'unix', 'macos', 'windows', 'android']:
         env.Append(ROC_TARGETS=[
