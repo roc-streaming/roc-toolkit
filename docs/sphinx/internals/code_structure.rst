@@ -130,13 +130,14 @@ target_libuuid        Enabled if libuuid is available
 target_nobacktrace    Enabled if no backtrace API is available
 target_nocsprng       Enabled if no CSPRNG API available
 target_nodemangle     Enabled if no demangling API is available
+target_nosem          Enabled on Linux, Android and Unix if sem_clockwait() is not available
 target_nouuid         Enabled if no UUID API is available
 target_openfec        Enabled if OpenFEC is available
 target_openssl        Enabled if OpenSSL is available
 target_pc             Enabled for PC (like server, desktop, laptop)
 target_posix          Enabled for a POSIX OS
-target_posix_ext      Enabled for a POSIX OS with POSIX extensions
 target_posix_pc       Enabled for a POSIX OS on PC
+target_posix_sem      Enabled on Linux, Android and Unix if sem_clockwait() is available
 target_pulseaudio     Enabled if PulseAudio is available
 target_sndfile        Enabled if libsndfile is available
 target_sox            Enabled if SoX is available
@@ -153,11 +154,11 @@ Example directory structure employing targets:
     │       ├── ...
     │       ├── mutex.cpp
     │       └── mutex.h
-    ├── target_posix_ext
+    ├── target_posix_sem
     │   └── roc_core
     │       ├── ...
-    │       ├── time.cpp
-    │       └── time.h
+    │       ├── semaphore.cpp
+    │       └── semaphore.h
     ├── target_darwin
     │   └── roc_core
     │       ├── ...

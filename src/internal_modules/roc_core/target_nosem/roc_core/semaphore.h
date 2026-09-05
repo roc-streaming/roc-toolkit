@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Roc Streaming authors
+ * Copyright (c) 2026 Roc Streaming authors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,41 +12,42 @@
 #ifndef ROC_CORE_SEMAPHORE_H_
 #define ROC_CORE_SEMAPHORE_H_
 
-#include "roc_core/atomic_int.h"
 #include "roc_core/attributes.h"
+#include "roc_core/cond.h"
 #include "roc_core/mutex.h"
 #include "roc_core/noncopyable.h"
 #include "roc_core/time.h"
-#include <pthread.h>
 
 namespace roc {
 namespace core {
 
 //! Semaphore.
+//!
+//! @remarks
+//!  This implementation is used on platforms that don't provide sem_clockwait(),
+//!  and hence can't wait on a POSIX semaphore using monotonic clock. It is based
+//!  on mutex and condition variable. Unlike other implementations, post() is not
+//!  lock-free here.
 class Semaphore : public NonCopyable<> {
 public:
     //! Initialize semaphore with given counter.
     explicit Semaphore(unsigned counter = 0);
 
-    ~Semaphore();
-
     //! Wait until the counter becomes non-zero, decrement it, and return true.
     //! If deadline expires before the counter becomes non-zero, returns false.
-    //! Deadline should be in the same time domain as core::timestamp().
+    //! Deadline is an absolute timestamp in ClockMonotonic domain.
     ROC_NODISCARD bool timed_wait(nanoseconds_t deadline);
 
     //! Wait until the counter becomes non-zero, decrement it, and return.
     void wait();
 
     //! Increment counter and wake up blocked waits.
-    //! This method is implemented using mutex for platforms where
     void post();
 
 private:
-    pthread_cond_t cond_;
-    core::Mutex mutex_;
-    AtomicInt<unsigned> counter_;
-    AtomicInt<int> guard_;
+    Mutex mutex_;
+    Cond cond_;
+    unsigned counter_;
 };
 
 } // namespace core

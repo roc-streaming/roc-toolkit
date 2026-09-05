@@ -70,7 +70,6 @@ public:
 
 private:
     friend class Cond;
-    friend class Semaphore;
 
     mutable pthread_mutex_t mutex_;
     mutable AtomicInt<int32_t> guard_;

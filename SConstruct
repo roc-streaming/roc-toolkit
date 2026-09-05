@@ -680,6 +680,12 @@ if meta.platform in ['linux', 'unix']:
 elif meta.platform in ['android']:
     meta.gnu_toolchain = True
 
+# if sem_clockwait() is available, we use lock-free POSIX semaphore (target_posix_sem),
+# otherwise we fall back to semaphore built on top of mutex and condvar (target_nosem)
+meta.have_sem_clockwait = False
+if meta.platform in ['linux', 'unix', 'android']:
+    meta.have_sem_clockwait = bool(conf.CheckSemClockwait())
+
 conf.env['ROC_SYSTEM_BINDIR'] = GetOption('bindir')
 conf.env['ROC_SYSTEM_INCDIR'] = GetOption('incdir')
 
@@ -786,8 +792,8 @@ else:
             'target_posix_pc',
         ])
 
-    if meta.platform in ['linux', 'android', 'unix']:
-        if 'ROC_HAVE_SEM_CLOCKWAIT' in env['CPPDEFINES']:
+    if meta.platform in ['linux', 'unix', 'android']:
+        if meta.have_sem_clockwait:
             env.Append(ROC_TARGETS=[
                 'target_posix_sem',
             ])
