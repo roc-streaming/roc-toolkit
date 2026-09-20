@@ -81,7 +81,7 @@ Running sender
 
 See :doc:`roc-send manual page </manuals/roc_send>` for the full list of options and some examples.
 
-Here is an example of starting the sender reads audio stream from a WAV file and sends it to the receiver on 127.0.0.1 (locahost) with two UDP ports 10001 (for source packets) and 10002 (for repair packets).
+Here is an example of starting the sender reads audio stream from a WAV file and sends it to the receiver on 127.0.0.1 (localhost) with two UDP ports 10001 (for source packets) and 10002 (for repair packets).
 
 .. code::
 

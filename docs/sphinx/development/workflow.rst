@@ -49,7 +49,7 @@ Please follow a few simple rules to ease maintainers work:
 
 * When you submit updated version after review, don't forget to **re-request review**.
 
-* When you adderess issues raised during review, please **don't resolve discussions** by yourself. Instead, leave a comment or thumbs up on that discussion.
+* When you address issues raised during review, please **don't resolve discussions** by yourself. Instead, leave a comment or thumbs up on that discussion.
 
 It's recommended to group independent changes, like formatting, refactoring, bug fixes, and new features into separate commits. Bonus points if build and tests pass on every commit. This helps a lot when bisecting a regression.
 
@@ -61,7 +61,7 @@ Review cycle
 The following labels are used during code review to indicate pull request state:
 
 - ``work in progress`` -- author is doing changes and maintainer should not do review
-- ``ready for review`` -- author have finished doing changes and requests review from maintaner
+- ``ready for review`` -- author have finished doing changes and requests review from maintainer
 - ``review in progress`` -- maintainer started doing review; used when review can take long time, e.g. a few days
 - ``needs revision`` -- maintainer finished review and requested updates or clarifications from author
 - ``needs rebase`` -- automatically added when CI detects that there are unresolved conflicts; author should rebase PR on fresh develop branch
