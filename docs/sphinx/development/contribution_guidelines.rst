@@ -27,7 +27,7 @@ First of all, thank you for your interest! We welcome and appreciate all help. M
 
 In case of any questions, welcome to join our :doc:`chat and mailing list </about_project/contacts>`.
 
-The guide bellow will help you to prepare your first patch.
+The guide below will help you to prepare your first patch.
 
 * **Step 1: Checkout and build project**
 

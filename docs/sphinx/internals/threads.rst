@@ -67,7 +67,7 @@ While all these threads provide similar task-based interface, the underlying imp
 
 * network thread runs an event loop, and supports multiplexing socket I/O and execution of tasks
 
-* pipeline thread runs processing loop, and is capable of running tasks during gaps between frames, to ensure that execution of tasks wont introduce processing delays and glitches
+* pipeline thread runs processing loop, and is capable of running tasks during gaps between frames, to ensure that execution of tasks won't introduce processing delays and glitches
 
 * control thread is dedicated entirely for task processing and implements advanced interfaces like scheduling tasks with specific deadline, canceling tasks, pausing and resuming tasks, etc.
 
