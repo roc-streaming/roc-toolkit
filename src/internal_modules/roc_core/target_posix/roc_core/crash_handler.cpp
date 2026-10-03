@@ -29,6 +29,8 @@ const char* signal_string(int sig, siginfo_t* si) {
         return "caught SIGSEGV";
     case SIGILL:
         return "caught SIGILL";
+    case SIGQUIT:
+        return "caught SIGQUIT";
 #ifdef SIGBUS
     case SIGBUS:
         return "caught SIGBUS";
@@ -83,6 +85,7 @@ CrashHandler::CrashHandler()
     install_(SIGSTKFLT);
 #endif // SIGSTKFLT
     install_(SIGFPE);
+    install_(SIGQUIT);
 }
 
 CrashHandler::~CrashHandler() {
