@@ -136,7 +136,7 @@ SenderEndpoint* SenderSlot::add_endpoint(address::Interface iface,
 }
 
 status::StatusCode SenderSlot::refresh(core::nanoseconds_t current_time,
-                                       core::nanoseconds_t& next_deadline) {
+                                       core::nanoseconds_t& next_delay) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     status::StatusCode code = status::NoStatus;
@@ -159,7 +159,7 @@ status::StatusCode SenderSlot::refresh(core::nanoseconds_t current_time,
         }
     }
 
-    if ((code = session_.refresh(current_time, next_deadline)) != status::StatusOK) {
+    if ((code = session_.refresh(current_time, next_delay)) != status::StatusOK) {
         return code;
     }
 

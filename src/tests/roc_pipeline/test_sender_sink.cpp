@@ -975,6 +975,58 @@ TEST(sender_sink, reports_two_receivers) {
     }
 }
 
+// Delay reported by refresh() is used by pipeline loop to schedule next
+// refresh, so it should always be positive when reported.
+TEST(sender_sink, refresh_delay) {
+    init_with_defaults();
+
+    packet::FifoQueue queue;
+
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
+
+    SenderSlot* slot = create_slot(sender);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
+
+    packet::FifoQueue control_outbound_queue;
+    create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                            dst_addr2, control_outbound_queue);
+
+    test::FrameWriter frame_writer(sender, frame_factory);
+
+    const core::nanoseconds_t unix_base = 1000000000000000;
+
+    // no frames were written yet, hence there is nothing to report yet
+    {
+        const core::nanoseconds_t refresh_ts = frame_writer.refresh_ts(unix_base);
+
+        core::nanoseconds_t delay = 0;
+        LONGS_EQUAL(status::StatusOK, sender.refresh(refresh_ts, &delay));
+        LONGS_EQUAL(0, delay);
+    }
+
+    size_t n_delays = 0;
+
+    for (size_t nf = 0; nf < FramesPerPacket * 5; nf++) {
+        frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
+
+        const core::nanoseconds_t refresh_ts = frame_writer.refresh_ts();
+
+        core::nanoseconds_t delay = 0;
+        LONGS_EQUAL(status::StatusOK, sender.refresh(refresh_ts, &delay));
+
+        // delay is not reported until sender starts sending packets, but
+        // once it's reported, it should always be positive
+        if (delay != 0) {
+            CHECK(delay > 0);
+            n_delays++;
+        }
+    }
+
+    CHECK(n_delays > 0);
+}
+
 // Sender is idle until a transport endpoint is added, and stays active after
 // that, no matter whether frames are written or not.
 TEST(sender_sink, pipeline_state) {

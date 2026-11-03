@@ -142,7 +142,7 @@ size_t SenderSink::num_sessions() const {
 }
 
 status::StatusCode SenderSink::refresh(core::nanoseconds_t current_time,
-                                       core::nanoseconds_t* next_deadline) {
+                                       core::nanoseconds_t* next_delay) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (!state_tracker_.is_usable()) {
@@ -156,9 +156,9 @@ status::StatusCode SenderSink::refresh(core::nanoseconds_t current_time,
 
     for (core::SharedPtr<SenderSlot> slot = slots_.front(); slot;
          slot = slots_.nextof(*slot)) {
-        core::nanoseconds_t slot_deadline = 0;
+        core::nanoseconds_t slot_delay = 0;
 
-        const status::StatusCode code = slot->refresh(current_time, slot_deadline);
+        const status::StatusCode code = slot->refresh(current_time, slot_delay);
         if (code != status::StatusOK) {
             roc_log(LogError, "sender sink: failed to refresh slot: status=%s",
                     status::code_to_str(code));
@@ -166,10 +166,9 @@ status::StatusCode SenderSink::refresh(core::nanoseconds_t current_time,
             return code;
         }
 
-        if (next_deadline && slot_deadline != 0) {
-            *next_deadline = *next_deadline == 0
-                ? slot_deadline
-                : std::min(*next_deadline, slot_deadline);
+        if (next_delay && slot_delay != 0) {
+            *next_delay =
+                *next_delay == 0 ? slot_delay : std::min(*next_delay, slot_delay);
         }
     }
 

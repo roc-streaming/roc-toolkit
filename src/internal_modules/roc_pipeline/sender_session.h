@@ -87,9 +87,10 @@ public:
     //! @remarks
     //!  Should be invoked before reading each frame.
     //!  If there are no frames for a while, should be invoked no
-    //!  later than the deadline returned via @p next_deadline.
+    //!  later than @p next_delay nanoseconds after @p current_time
+    //!  (zero means that no refresh is needed).
     ROC_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
-                                             core::nanoseconds_t& next_deadline);
+                                             core::nanoseconds_t& next_delay);
 
     //! Route a packet to the session.
     //! @remarks

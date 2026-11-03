@@ -259,7 +259,7 @@ audio::IFrameWriter* SenderSession::frame_writer() {
 }
 
 status::StatusCode SenderSession::refresh(core::nanoseconds_t current_time,
-                                          core::nanoseconds_t& next_deadline) {
+                                          core::nanoseconds_t& next_delay) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (fail_status_ != status::NoStatus) {
@@ -274,8 +274,11 @@ status::StatusCode SenderSession::refresh(core::nanoseconds_t current_time,
             if (code != status::StatusOK) {
                 return code;
             }
+
+            // Until we have send stream, communicator does not generate reports and
+            // its deadline does not advance, so don't report it to the caller.
+            next_delay = rtcp_communicator_->generation_delay(current_time);
         }
-        next_deadline = rtcp_communicator_->generation_deadline(current_time);
     }
 
     return status::StatusOK;

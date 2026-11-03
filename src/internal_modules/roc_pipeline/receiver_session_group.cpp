@@ -85,7 +85,7 @@ ReceiverSessionGroup::create_control_pipeline(ReceiverEndpoint* control_endpoint
 
 status::StatusCode
 ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time,
-                                       core::nanoseconds_t& next_deadline) {
+                                       core::nanoseconds_t& next_delay) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (rtcp_communicator_) {
@@ -98,7 +98,7 @@ ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time,
             return code;
         }
 
-        next_deadline = rtcp_communicator_->generation_deadline(current_time);
+        next_delay = rtcp_communicator_->generation_delay(current_time);
     }
 
     core::SharedPtr<ReceiverSession> curr_sess, next_sess;
@@ -106,8 +106,8 @@ ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time,
     for (curr_sess = sessions_.front(); curr_sess; curr_sess = next_sess) {
         next_sess = sessions_.nextof(*curr_sess);
 
-        core::nanoseconds_t sess_deadline = 0;
-        const status::StatusCode code = curr_sess->refresh(current_time, sess_deadline);
+        core::nanoseconds_t sess_delay = 0;
+        const status::StatusCode code = curr_sess->refresh(current_time, sess_delay);
 
         // These errors break only session, but not the whole receiver.
         if (code == status::StatusFinish || code == status::StatusAbort) {
@@ -119,9 +119,9 @@ ReceiverSessionGroup::refresh_sessions(core::nanoseconds_t current_time,
             return code;
         }
 
-        if (sess_deadline != 0) {
-            next_deadline = (next_deadline == 0 ? sess_deadline
-                                                : std::min(next_deadline, sess_deadline));
+        if (sess_delay != 0) {
+            next_delay =
+                (next_delay == 0 ? sess_delay : std::min(next_delay, sess_delay));
         }
     }
 

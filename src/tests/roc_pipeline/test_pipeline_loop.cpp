@@ -130,8 +130,10 @@ public:
         , exp_frame_cts_(0)
         , exp_frame_mode_((audio::FrameReadMode)-1)
         , exp_sched_deadline_(-1)
+        , refresh_deadline_(0)
         , n_processed_frames_(0)
         , n_processed_tasks_(0)
+        , n_processed_refreshes_(0)
         , n_sched_calls_(0)
         , n_sched_cancellations_(0) {
     }
@@ -199,6 +201,11 @@ public:
         return n_processed_frames_;
     }
 
+    size_t num_processed_refreshes() const {
+        core::Mutex::Lock lock(mutex_);
+        return n_processed_refreshes_;
+    }
+
     size_t num_processed_tasks() const {
         core::Mutex::Lock lock(mutex_);
         UNSIGNED_LONGS_EQUAL(n_processed_tasks_,
@@ -257,6 +264,12 @@ public:
     void expect_sched_deadline(core::nanoseconds_t d) {
         core::Mutex::Lock lock(mutex_);
         exp_sched_deadline_ = d;
+    }
+
+    // Deadline reported by every frame processing and refresh.
+    void set_refresh_deadline_value(core::nanoseconds_t d) {
+        core::Mutex::Lock lock(mutex_);
+        refresh_deadline_ = d;
     }
 
     void write_frame_and_process_tasks(audio::Frame& frame,
@@ -327,7 +340,18 @@ private:
             }
         }
 
+        set_refresh_deadline(refresh_deadline_);
+
         n_processed_frames_++;
+        return status::StatusOK;
+    }
+
+    virtual status::StatusCode process_refresh_imp(core::nanoseconds_t& next_deadline) {
+        core::Mutex::Lock lock(mutex_);
+
+        n_processed_refreshes_++;
+        next_deadline = refresh_deadline_;
+
         return status::StatusOK;
     }
 
@@ -401,8 +425,11 @@ private:
 
     core::nanoseconds_t exp_sched_deadline_;
 
+    core::nanoseconds_t refresh_deadline_;
+
     size_t n_processed_frames_;
     size_t n_processed_tasks_;
+    size_t n_processed_refreshes_;
 
     size_t n_sched_calls_;
     size_t n_sched_cancellations_;
@@ -2541,6 +2568,184 @@ TEST(pipeline_loop, schedule_and_wait_until_process_frame_called) {
 
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_calls());
     UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_cancellations());
+}
+
+TEST(pipeline_loop, refresh_no_deadline) {
+    TestPipeline pipeline(config, TestPipeline::Dir_WriteFrames);
+
+    audio::FramePtr frame = new_frame(FrameSize, 0, 0);
+    fill_frame(*frame, 0.1f, 0, FrameSize);
+
+    pipeline.set_time(StartTime);
+    pipeline.expect_frame(0.1f, FrameSize);
+
+    // pipeline reports that it does not need refresh, hence nothing is scheduled
+    pipeline.write_frame_and_process_tasks(*frame);
+
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_refreshes());
+
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_calls());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
+
+    // process_tasks() has nothing to do
+    pipeline.process_tasks();
+
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_refreshes());
+
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_calls());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
+}
+
+TEST(pipeline_loop, refresh_scheduled_after_frame) {
+    TestPipeline pipeline(config, TestPipeline::Dir_WriteFrames);
+
+    const core::nanoseconds_t refresh_deadline = StartTime + core::Second;
+
+    audio::FramePtr frame = new_frame(FrameSize, 0, 0);
+    fill_frame(*frame, 0.1f, 0, FrameSize);
+
+    pipeline.set_time(StartTime);
+    pipeline.expect_frame(0.1f, FrameSize);
+    pipeline.set_refresh_deadline_value(refresh_deadline);
+
+    // frame processing reports refresh deadline, and asynchronous processing
+    // should be scheduled exactly for that deadline
+    pipeline.expect_sched_deadline(refresh_deadline);
+    pipeline.write_frame_and_process_tasks(*frame);
+
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_refreshes());
+
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_calls());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
+}
+
+TEST(pipeline_loop, refresh_not_cancelled_by_frame) {
+    TestPipeline pipeline(config, TestPipeline::Dir_WriteFrames);
+
+    const core::nanoseconds_t refresh_deadline = StartTime + core::Second;
+
+    audio::FramePtr frame1 = new_frame(FrameSize, 0, 0);
+    fill_frame(*frame1, 0.1f, 0, FrameSize);
+
+    audio::FramePtr frame2 = new_frame(FrameSize, 0, 0);
+    fill_frame(*frame2, 0.2f, 0, FrameSize);
+
+    pipeline.set_time(StartTime);
+    pipeline.expect_frame(0.1f, FrameSize);
+    pipeline.set_refresh_deadline_value(refresh_deadline);
+    pipeline.expect_sched_deadline(refresh_deadline);
+
+    pipeline.write_frame_and_process_tasks(*frame1);
+
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_calls());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
+
+    // refresh is scheduled far in future and there are no tasks, so the next
+    // frame should not bother scheduler at all
+    pipeline.expect_frame(0.2f, FrameSize);
+    pipeline.write_frame_and_process_tasks(*frame2);
+
+    UNSIGNED_LONGS_EQUAL(2, pipeline.num_processed_frames());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_refreshes());
+
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_calls());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
+}
+
+TEST(pipeline_loop, refresh_performed_by_process_tasks) {
+    TestPipeline pipeline(config, TestPipeline::Dir_WriteFrames);
+
+    const core::nanoseconds_t first_deadline = StartTime + core::Second;
+    const core::nanoseconds_t second_deadline = StartTime + core::Second * 2;
+
+    audio::FramePtr frame = new_frame(FrameSize, 0, 0);
+    fill_frame(*frame, 0.1f, 0, FrameSize);
+
+    pipeline.set_time(StartTime);
+    pipeline.expect_frame(0.1f, FrameSize);
+    pipeline.set_refresh_deadline_value(first_deadline);
+    pipeline.expect_sched_deadline(first_deadline);
+
+    pipeline.write_frame_and_process_tasks(*frame);
+
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_refreshes());
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_calls());
+
+    // deadline is not expired yet, refresh should not be performed,
+    // but should be scheduled again
+    pipeline.set_time(first_deadline - core::Millisecond);
+    pipeline.process_tasks();
+
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_refreshes());
+    UNSIGNED_LONGS_EQUAL(2, pipeline.num_sched_calls());
+
+    // deadline expired, refresh should be performed and scheduled again
+    // for the newly reported deadline
+    pipeline.set_time(first_deadline);
+    pipeline.set_refresh_deadline_value(second_deadline);
+    pipeline.expect_sched_deadline(second_deadline);
+
+    pipeline.process_tasks();
+
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_refreshes());
+    UNSIGNED_LONGS_EQUAL(3, pipeline.num_sched_calls());
+
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_frames());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
+}
+
+TEST(pipeline_loop, refresh_rescheduled_when_task_added) {
+    TestPipeline pipeline(config, TestPipeline::Dir_WriteFrames);
+
+    const core::nanoseconds_t refresh_deadline = StartTime + core::Second;
+    const core::nanoseconds_t next_frame_deadline =
+        StartTime + FrameSize * core::Microsecond;
+
+    audio::FramePtr frame = new_frame(FrameSize, 0, 0);
+    fill_frame(*frame, 0.1f, 0, FrameSize);
+
+    pipeline.set_time(StartTime);
+    pipeline.expect_frame(0.1f, FrameSize);
+    pipeline.set_refresh_deadline_value(refresh_deadline);
+    pipeline.expect_sched_deadline(refresh_deadline);
+
+    pipeline.write_frame_and_process_tasks(*frame);
+
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_sched_calls());
+
+    TestCompleter completer(pipeline);
+    TestPipeline::Task task;
+
+    // schedule task from another thread, right before next frame, so that it
+    // can't be processed in-place
+    pipeline.set_tid(BackgroundThread);
+    pipeline.set_time(next_frame_deadline - NoTaskProcessingGap / 4);
+
+    // asynchronous processing is already scheduled, but for the refresh deadline,
+    // which is too far in future for the task, so it should be rescheduled
+    pipeline.expect_sched_deadline(next_frame_deadline + NoTaskProcessingGap / 2);
+    pipeline.schedule(task, completer);
+
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_pending_tasks());
+    UNSIGNED_LONGS_EQUAL(2, pipeline.num_sched_calls());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
+
+    // process task; refresh deadline is not expired yet, so refresh is not
+    // performed, but is scheduled again
+    pipeline.set_time(next_frame_deadline + NoTaskProcessingGap);
+    pipeline.expect_sched_deadline(refresh_deadline);
+    pipeline.process_tasks();
+
+    POINTERS_EQUAL(&task, completer.get_task());
+
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_pending_tasks());
+    UNSIGNED_LONGS_EQUAL(1, pipeline.num_processed_tasks());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_processed_refreshes());
+
+    UNSIGNED_LONGS_EQUAL(3, pipeline.num_sched_calls());
+    UNSIGNED_LONGS_EQUAL(0, pipeline.num_sched_cancellations());
 }
 
 } // namespace pipeline

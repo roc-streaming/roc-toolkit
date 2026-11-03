@@ -9,6 +9,7 @@
 #include "roc_pipeline/pipeline_loop.h"
 #include "roc_core/log.h"
 #include "roc_core/panic.h"
+#include "roc_status/code_to_str.h"
 
 namespace roc {
 namespace pipeline {
@@ -38,8 +39,11 @@ PipelineLoop::PipelineLoop(IPipelineTaskScheduler& scheduler,
     , pending_tasks_(0)
     , pending_frames_(0)
     , processing_state_(ProcNotScheduled)
+    , refresh_only_scheduled_(false)
+    , scheduled_deadline_(0)
     , frame_processing_tid_(0)
     , next_frame_deadline_(0)
+    , next_refresh_deadline_(0)
     , subframe_tasks_deadline_(0)
     , samples_processed_(0)
     , enough_samples_to_process_tasks_(false)
@@ -137,7 +141,7 @@ bool PipelineLoop::schedule_and_maybe_process_task_(PipelineTask& task) {
 
     pipeline_mutex_.unlock();
 
-    if (n_pending_frames == 0 && pending_tasks_ != 0) {
+    if (n_pending_frames == 0 && need_async_processing_()) {
         schedule_async_task_processing_();
     }
 
@@ -145,7 +149,7 @@ bool PipelineLoop::schedule_and_maybe_process_task_(PipelineTask& task) {
 }
 
 void PipelineLoop::process_tasks() {
-    const bool need_reschedule = maybe_process_tasks_();
+    const bool need_reschedule = maybe_refresh_and_process_tasks_();
 
     processing_state_ = ProcNotScheduled;
 
@@ -154,7 +158,7 @@ void PipelineLoop::process_tasks() {
     }
 }
 
-bool PipelineLoop::maybe_process_tasks_() {
+bool PipelineLoop::maybe_refresh_and_process_tasks_() {
     core::nanoseconds_t next_frame_deadline;
     if (!next_frame_deadline_.try_load(next_frame_deadline)) {
         return false;
@@ -167,6 +171,7 @@ bool PipelineLoop::maybe_process_tasks_() {
     processing_state_ = ProcRunning;
 
     int n_pending_frames = 0;
+    bool allow_refresh = true;
 
     for (;;) {
         if (!interframe_task_processing_allowed_(next_frame_deadline)) {
@@ -175,6 +180,13 @@ bool PipelineLoop::maybe_process_tasks_() {
 
         if ((n_pending_frames = pending_frames_) != 0) {
             break;
+        }
+
+        if (allow_refresh) {
+            // Refresh at most once, so that a pipeline reporting an already expired
+            // deadline can't trap us here with the pipeline mutex locked.
+            allow_refresh = false;
+            maybe_process_refresh_();
         }
 
         PipelineTask* task = task_queue_.try_pop_front_exclusive();
@@ -194,7 +206,53 @@ bool PipelineLoop::maybe_process_tasks_() {
 
     pipeline_mutex_.unlock();
 
-    return (n_pending_frames == 0 && pending_tasks_ != 0);
+    return (n_pending_frames == 0 && need_async_processing_());
+}
+
+void PipelineLoop::maybe_process_refresh_() {
+    core::nanoseconds_t refresh_deadline = 0;
+    if (!next_refresh_deadline_.try_load(refresh_deadline)) {
+        return;
+    }
+
+    if (refresh_deadline == 0 || timestamp_imp() < refresh_deadline) {
+        return;
+    }
+
+    core::nanoseconds_t next_deadline = 0;
+
+    const status::StatusCode code = process_refresh_imp(next_deadline);
+    if (code != status::StatusOK) {
+        // Pipeline is broken, error is reported to user from read() or write().
+        roc_log(LogError, "pipeline loop: failed to refresh pipeline: status=%s",
+                status::code_to_str(code));
+        next_deadline = 0;
+    }
+
+    next_refresh_deadline_.exclusive_store(next_deadline);
+}
+
+void PipelineLoop::set_refresh_deadline(core::nanoseconds_t deadline) {
+    roc_panic_if_msg(deadline < 0,
+                     "pipeline loop: refresh deadline can't be negative: deadline=%lld",
+                     (long long)deadline);
+
+    next_refresh_deadline_.exclusive_store(deadline);
+}
+
+bool PipelineLoop::need_async_processing_() const {
+    if (pending_tasks_ != 0) {
+        return true;
+    }
+
+    core::nanoseconds_t refresh_deadline = 0;
+    if (!next_refresh_deadline_.try_load(refresh_deadline)) {
+        // Refresh deadline is being updated right now, thread that updates it
+        // will schedule asynchronous processing if needed.
+        return false;
+    }
+
+    return refresh_deadline != 0;
 }
 
 status::StatusCode
@@ -222,7 +280,7 @@ status::StatusCode PipelineLoop::process_subframes_and_tasks_simple_(
 
     pipeline_mutex_.unlock();
 
-    if (--pending_frames_ == 0 && pending_tasks_ != 0) {
+    if (--pending_frames_ == 0 && need_async_processing_()) {
         schedule_async_task_processing_();
     }
 
@@ -282,7 +340,7 @@ status::StatusCode PipelineLoop::process_subframes_and_tasks_precise_(
 
     pipeline_mutex_.unlock();
 
-    if (--pending_frames_ == 0 && pending_tasks_ != 0) {
+    if (--pending_frames_ == 0 && need_async_processing_()) {
         schedule_async_task_processing_();
     }
 
@@ -295,14 +353,25 @@ void PipelineLoop::schedule_async_task_processing_() {
         return;
     }
 
+    core::nanoseconds_t refresh_deadline = 0;
+    if (!next_refresh_deadline_.try_load(refresh_deadline)) {
+        refresh_deadline = 0;
+    }
+
     if (!scheduler_mutex_.try_lock()) {
         return;
     }
 
-    if (processing_state_ == ProcNotScheduled) {
-        core::nanoseconds_t deadline = 0;
+    if (pending_tasks_ != 0 || refresh_deadline != 0) {
+        // Tasks should be processed as soon as possible, while refresh should be
+        // performed exactly at its deadline, unless it has already expired.
+        const bool want_asap =
+            (pending_tasks_ != 0
+             || (refresh_deadline != 0 && refresh_deadline <= timestamp_imp()));
 
-        if (config_.enable_precise_task_scheduling) {
+        core::nanoseconds_t deadline = want_asap ? 0 : refresh_deadline;
+
+        if (want_asap && config_.enable_precise_task_scheduling) {
             const core::nanoseconds_t now = timestamp_imp();
 
             if (now < (next_frame_deadline - no_task_proc_half_interval_)) {
@@ -314,10 +383,24 @@ void PipelineLoop::schedule_async_task_processing_() {
             }
         }
 
-        scheduler_.schedule_task_processing(*this, deadline);
-        stats_.scheduler_calls++;
+        // If we're already scheduled for a refresh, bother scheduler only if we
+        // need to be invoked significantly earlier than it's currently scheduled.
+        // Refresh deadline slightly jitters from frame to frame, and re-scheduling
+        // on every jitter would be just a waste of cpu.
+        const bool want_earlier =
+            (refresh_only_scheduled_
+             && (deadline == 0
+                 || deadline + no_task_proc_half_interval_ < scheduled_deadline_));
 
-        processing_state_ = ProcScheduled;
+        if (processing_state_ == ProcNotScheduled
+            || (processing_state_ == ProcScheduled && want_earlier)) {
+            scheduler_.schedule_task_processing(*this, deadline);
+            stats_.scheduler_calls++;
+
+            scheduled_deadline_ = deadline;
+            refresh_only_scheduled_ = !want_asap;
+            processing_state_ = ProcScheduled;
+        }
     }
 
     scheduler_mutex_.unlock();
@@ -333,10 +416,19 @@ void PipelineLoop::cancel_async_task_processing_() {
     }
 
     if (processing_state_ == ProcScheduled) {
-        scheduler_.cancel_task_processing(*this);
-        stats_.scheduler_cancellations++;
+        // Scheduled refresh wont happen until the frame is processed anyway,
+        // so keep it scheduled instead of cancelling and re-scheduling it
+        // on every frame.
+        const bool keep_scheduled =
+            (refresh_only_scheduled_ && scheduled_deadline_ > timestamp_imp());
 
-        processing_state_ = ProcNotScheduled;
+        if (!keep_scheduled) {
+            scheduler_.cancel_task_processing(*this);
+            stats_.scheduler_cancellations++;
+
+            refresh_only_scheduled_ = false;
+            processing_state_ = ProcNotScheduled;
+        }
     }
 
     scheduler_mutex_.unlock();

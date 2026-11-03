@@ -79,12 +79,12 @@ public:
     ROC_NODISCARD status::StatusCode process_packet(const packet::PacketPtr& packet);
 
     //! When we should generate packets next time.
-    //! Returns absolute time.
+    //! Returns positive delay in nanoseconds, relative to @p current_time.
     //! @p current_time is current time in nanoseconds since Unix epoch.
-    core::nanoseconds_t generation_deadline(core::nanoseconds_t current_time);
+    core::nanoseconds_t generation_delay(core::nanoseconds_t current_time);
 
     //! Generate and send report packet(s).
-    //! Should be called according to generation_deadline().
+    //! Should be called according to generation_delay().
     //! @p current_time is current time in nanoseconds since Unix epoch.
     //! Invokes IParticipant methods during generation.
     ROC_NODISCARD status::StatusCode generate_reports(core::nanoseconds_t current_time);
@@ -144,7 +144,7 @@ private:
     const Config config_;
     Reporter reporter_;
 
-    // When generation_deadline() should be called next time.
+    // Absolute time (same clock as current_time) when reports should be generated next.
     core::nanoseconds_t next_deadline_;
 
     size_t dest_addr_count_; // Total count of destination addresses.

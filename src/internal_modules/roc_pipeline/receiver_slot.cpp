@@ -78,7 +78,7 @@ ReceiverEndpoint* ReceiverSlot::add_endpoint(address::Interface iface,
 }
 
 status::StatusCode ReceiverSlot::refresh(core::nanoseconds_t current_time,
-                                         core::nanoseconds_t& next_deadline) {
+                                         core::nanoseconds_t& next_delay) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     status::StatusCode code = status::NoStatus;
@@ -101,7 +101,7 @@ status::StatusCode ReceiverSlot::refresh(core::nanoseconds_t current_time,
         }
     }
 
-    if ((code = session_group_.refresh_sessions(current_time, next_deadline))
+    if ((code = session_group_.refresh_sessions(current_time, next_delay))
         != status::StatusOK) {
         return code;
     }

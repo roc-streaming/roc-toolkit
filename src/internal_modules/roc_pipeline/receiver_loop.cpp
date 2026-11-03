@@ -292,17 +292,42 @@ status::StatusCode ReceiverLoop::process_subframe_imp(audio::Frame& frame,
                                                       audio::FrameReadMode mode) {
     status::StatusCode code = status::NoStatus;
 
-    // TODO(gh-674): handle returned deadline and schedule refresh
     core::nanoseconds_t next_deadline = 0;
 
-    if ((code = source_.refresh(core::timestamp(core::ClockUnix), &next_deadline))
-        != status::StatusOK) {
+    if ((code = refresh_(next_deadline)) != status::StatusOK) {
         return code;
     }
+
+    set_refresh_deadline(next_deadline);
 
     if ((code = source_.read(frame, duration, mode)) != status::StatusOK) {
         return code;
     }
+
+    return status::StatusOK;
+}
+
+status::StatusCode ReceiverLoop::process_refresh_imp(core::nanoseconds_t& next_deadline) {
+    return refresh_(next_deadline);
+}
+
+status::StatusCode ReceiverLoop::refresh_(core::nanoseconds_t& next_deadline) {
+    // Refresh works in unix clock domain and reports next refresh as a delay,
+    // which does not depend on clock domain. Pipeline loop schedules refreshes
+    // in its own clock domain, so convert delay to absolute deadline here.
+    // Both timestamps should be obtained at the same point of time, so that
+    // the deadline does not depend on refresh duration.
+    const core::nanoseconds_t unix_time = core::timestamp(core::ClockUnix);
+    const core::nanoseconds_t loop_time = timestamp_imp();
+
+    core::nanoseconds_t delay = 0;
+
+    const status::StatusCode code = source_.refresh(unix_time, &delay);
+    if (code != status::StatusOK) {
+        return code;
+    }
+
+    next_deadline = delay == 0 ? 0 : loop_time + delay;
 
     return status::StatusOK;
 }
