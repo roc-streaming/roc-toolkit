@@ -8,9 +8,11 @@
 
 #include <CppUTest/TestHarness.h>
 
+#include "test_helpers/exact_pool.h"
 #include "test_helpers/mock_reader.h"
 #include "test_helpers/mock_writer.h"
 
+#include "roc_audio/builtin_resampler.h"
 #include "roc_audio/iresampler.h"
 #include "roc_audio/processor_map.h"
 #include "roc_audio/resampler_reader.h"
@@ -18,6 +20,9 @@
 #include "roc_core/heap_arena.h"
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
+
+#include <cmath>
+#include <cstdlib>
 
 namespace roc {
 namespace audio {
@@ -1396,6 +1401,58 @@ TEST(resampler, reader_preallocated_buffer) {
             LONGS_EQUAL(OutFrameSize * sizeof(sample_t), frame->num_bytes());
         }
     }
+}
+
+TEST(resampler, window_edge_at_frame_boundary) {
+    enum { Rate = 48000, ChMask = 0x1, NumFrames = 8, NumOutputs = 64 };
+
+    const SampleSpec spec(Rate, PcmSubformat_Raw, ChanLayout_Surround, ChanOrder_Smpte,
+                          ChMask);
+
+    const size_t frame_size = 24;
+
+    // Every buffer is allocated separately and has exactly frame_size samples.
+    test::ExactPool frame_pool(sizeof(Frame));
+    test::ExactPool buffer_pool(sizeof(core::Buffer) + frame_size * sizeof(sample_t));
+    FrameFactory exact_frame_factory(frame_pool, buffer_pool);
+
+    BuiltinResampler resampler(
+        make_config(ResamplerBackend_Builtin, ResamplerProfile_Low), spec, spec,
+        exact_frame_factory, arena);
+    LONGS_EQUAL(status::StatusOK, resampler.init_status());
+
+    // When the right edge of the window falls exactly onto the boundary between the
+    // current and the next frame, resampler should correctly handle the boundary
+    // without reading past the end of the current frame.
+    //
+    // Fixed-point positions are Q12.20 and the Low profile has window size 16 and cutoff
+    // 0.9, so the half-window is 17.77777862548828 and the frame is 24 samples. Step of
+    // 960312 / 2^20 makes the position after 33 outputs exactly 24 - 17.77777862548828,
+    // so the right edge of the window hits the frame boundary.
+    CHECK(resampler.set_scaling(Rate, Rate, 960312.0f / (1 << 20)));
+
+    size_t total_output = 0;
+
+    for (size_t n = 0; n < NumFrames; n++) {
+        const core::Slice<sample_t>& input = resampler.begin_push_input();
+        CHECK(input.size() == frame_size);
+
+        for (size_t i = 0; i < input.size(); i++) {
+            input.data()[i] = 0.5f;
+        }
+
+        resampler.end_push_input();
+
+        sample_t output[NumOutputs];
+        const size_t n_out = resampler.pop_output(output, NumOutputs);
+        total_output += n_out;
+
+        for (size_t i = 0; i < n_out; i++) {
+            CHECK(std::isfinite(output[i]));
+        }
+    }
+
+    CHECK(total_output > 33);
 }
 
 } // namespace audio

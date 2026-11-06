@@ -436,13 +436,13 @@ sample_t BuiltinResampler::resample_(const size_t channel_offset) {
     roc_panic_if(ind_begin_cur > frame_size_ch_);
     ind_begin_cur = channelize_index(ind_begin_cur, channel_offset);
 
-    ind_end_cur = ((qt_sample_ + qt_half_window_size_) > qt_frame_size_)
+    ind_end_cur = ((qt_sample_ + qt_half_window_size_) >= qt_frame_size_)
         ? frame_size_ch_ - 1
         : fixedpoint_to_size(qfloor(qt_sample_ + qt_half_window_size_));
-    roc_panic_if(ind_end_cur > frame_size_ch_);
+    roc_panic_if(ind_end_cur >= frame_size_ch_);
     ind_end_cur = channelize_index(ind_end_cur, channel_offset);
 
-    ind_end_next = ((qt_sample_ + qt_half_window_size_) > qt_frame_size_)
+    ind_end_next = ((qt_sample_ + qt_half_window_size_) >= qt_frame_size_)
         ? fixedpoint_to_size(qfloor(qt_sample_ + qt_half_window_size_ - qt_frame_size_))
             + 1
         : 0;
