@@ -7,14 +7,18 @@
  */
 
 #include "test_harness.h"
+#include "test_helpers/frame_writer.h"
 #include "test_helpers/mock_scheduler.h"
 
 #include "roc_core/atomic_bool.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/slab_pool.h"
+#include "roc_core/thread.h"
+#include "roc_core/time.h"
 #include "roc_packet/fifo_queue.h"
 #include "roc_pipeline/sender_loop.h"
 #include "roc_rtp/encoding_map.h"
+#include "roc_sndio/device_defs.h"
 
 namespace roc {
 namespace pipeline {
@@ -37,6 +41,58 @@ core::SlabPool<core::Buffer>
 
 audio::ProcessorMap processor_map(arena);
 rtp::EncodingMap encoding_map(arena);
+
+audio::FrameFactory frame_factory(frame_pool, frame_buffer_pool);
+
+// Deadline value that means "block forever".
+const core::nanoseconds_t NoDeadline = -1;
+
+// Time given to a freshly started thread to actually block inside poll().
+const core::nanoseconds_t SettleDelay = core::Microsecond * 100;
+
+enum { NumFrames = 10, FrameSamples = 10 };
+
+// Calls poll() in a separate thread, so that the main thread can do I/O.
+class PollThread : public core::Thread {
+public:
+    PollThread()
+        : sink_(NULL)
+        , event_mask_(0)
+        , deadline_(0)
+        , ret_events_(0)
+        , result_(status::NoStatus) {
+    }
+
+    void init(sndio::ISink& sink, unsigned event_mask, core::nanoseconds_t deadline) {
+        sink_ = &sink;
+        event_mask_ = event_mask;
+        deadline_ = deadline;
+    }
+
+    // Value returned by poll(); valid only after join().
+    status::StatusCode result() const {
+        return result_;
+    }
+
+    void wait_running() {
+        while (!running_) {
+            core::sleep_for(core::ClockMonotonic, core::Microsecond);
+        }
+    }
+
+private:
+    virtual void run() {
+        running_ = true;
+        result_ = sink_->poll(event_mask_, ret_events_, deadline_);
+    }
+
+    sndio::ISink* sink_;
+    unsigned event_mask_;
+    core::nanoseconds_t deadline_;
+    unsigned ret_events_;
+    status::StatusCode result_;
+    core::AtomicBool running_;
+};
 
 class TaskIssuer : public IPipelineTaskCompleter {
 public:
@@ -170,6 +226,37 @@ TEST(sender_loop, endpoints_async) {
     ti.wait_done();
 
     scheduler.wait_done();
+}
+
+// Blocking poll() must not hold the pipeline mutex, otherwise it would stall
+// the thread that writes frames.
+TEST(sender_loop, poll_does_not_block_write) {
+    SenderLoop sender(scheduler, config, processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
+
+    sndio::ISink& sink = sender.sink();
+
+    CHECK(sink.has_poll());
+
+    PollThread poller;
+    poller.init(sink, sndio::DeviceState_Active | sndio::DeviceState_Closed, NoDeadline);
+
+    CHECK(poller.start());
+    poller.wait_running();
+    core::sleep_for(core::ClockMonotonic, SettleDelay);
+
+    test::FrameWriter frame_writer(sink, frame_factory);
+
+    for (size_t nf = 0; nf < NumFrames; nf++) {
+        frame_writer.write_samples(FrameSamples, sink.sample_spec());
+    }
+
+    LONGS_EQUAL(status::StatusOK, sink.close());
+
+    poller.join();
+
+    LONGS_EQUAL(status::StatusOK, poller.result());
 }
 
 } // namespace pipeline

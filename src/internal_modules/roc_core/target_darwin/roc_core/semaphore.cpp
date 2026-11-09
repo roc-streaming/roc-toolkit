@@ -38,10 +38,8 @@ bool Semaphore::timed_wait(nanoseconds_t deadline) {
     }
 
     for (;;) {
-        const nanoseconds_t timeout = deadline - timestamp(ClockMonotonic);
-        if (timeout <= 0) {
-            return false;
-        }
+        const nanoseconds_t remaining = deadline - timestamp(ClockMonotonic);
+        const nanoseconds_t timeout = remaining > 0 ? remaining : 0;
 
         mach_timespec_t ts;
         ts.tv_sec = unsigned(timeout / Second);

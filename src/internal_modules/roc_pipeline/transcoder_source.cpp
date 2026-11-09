@@ -134,6 +134,16 @@ status::StatusCode TranscoderSource::resume() {
     return input_source_.resume();
 }
 
+bool TranscoderSource::has_poll() const {
+    return input_source_.has_poll();
+}
+
+status::StatusCode TranscoderSource::poll(unsigned event_mask,
+                                          unsigned& ret_events,
+                                          core::nanoseconds_t deadline) {
+    return input_source_.poll(event_mask, ret_events, deadline);
+}
+
 bool TranscoderSource::has_latency() const {
     return input_source_.has_latency();
 }

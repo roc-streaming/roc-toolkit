@@ -175,6 +175,10 @@ bool WavSink::has_state() const {
     return false;
 }
 
+bool WavSink::has_poll() const {
+    return false;
+}
+
 bool WavSink::has_latency() const {
     return false;
 }

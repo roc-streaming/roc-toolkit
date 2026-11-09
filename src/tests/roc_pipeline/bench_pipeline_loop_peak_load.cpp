@@ -355,6 +355,11 @@ private:
         return status::StatusOK;
     }
 
+    virtual status::StatusCode process_refresh_imp(core::nanoseconds_t& next_deadline) {
+        next_deadline = 0;
+        return status::StatusOK;
+    }
+
     virtual bool process_task_imp(PipelineTask& basic_task) {
         Task& task = (Task&)basic_task;
         stats_.task_processing_started(task.elapsed_time());

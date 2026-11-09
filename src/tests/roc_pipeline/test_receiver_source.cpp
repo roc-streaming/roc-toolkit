@@ -14,8 +14,10 @@
 
 #include "roc_address/interface.h"
 #include "roc_address/protocol.h"
+#include "roc_core/atomic_bool.h"
 #include "roc_core/heap_arena.h"
 #include "roc_core/slab_pool.h"
+#include "roc_core/thread.h"
 #include "roc_core/time.h"
 #include "roc_pipeline/receiver_source.h"
 #include "roc_rtp/encoding_map.h"
@@ -202,6 +204,79 @@ core::nanoseconds_t get_niq_latency(ReceiverSlot& receiver_slot) {
     UNSIGNED_LONGS_EQUAL(1, slot_metrics.num_participants);
 
     return party_metrics.latency.niq_latency;
+}
+
+// Deadline value that means "block forever".
+const core::nanoseconds_t NoDeadline = -1;
+
+// Deadline offset for tests that expect the deadline to expire.
+const core::nanoseconds_t ShortTimeout = core::Millisecond * 10;
+
+// Upper bound for calls that must not block at all.
+const core::nanoseconds_t MaxImmediate = core::Millisecond * 100;
+
+// Time given to a freshly started thread to actually block inside poll().
+const core::nanoseconds_t SettleDelay = core::Microsecond * 100;
+
+// Calls poll() in a separate thread, so that the main thread can change state.
+class PollThread : public core::Thread {
+public:
+    PollThread()
+        : source_(NULL)
+        , event_mask_(0)
+        , deadline_(0)
+        , ret_events_(0)
+        , result_(status::NoStatus) {
+    }
+
+    void init(ReceiverSource& source, unsigned event_mask, core::nanoseconds_t deadline) {
+        source_ = &source;
+        event_mask_ = event_mask;
+        deadline_ = deadline;
+    }
+
+    // Value returned by poll(); valid only after join().
+    status::StatusCode result() const {
+        return result_;
+    }
+
+    // Events reported by poll(); valid only after join().
+    unsigned ret_events() const {
+        return ret_events_;
+    }
+
+    void wait_running() {
+        while (!running_) {
+            core::sleep_for(core::ClockMonotonic, core::Microsecond);
+        }
+    }
+
+private:
+    virtual void run() {
+        running_ = true;
+        result_ = source_->poll(event_mask_, ret_events_, deadline_);
+    }
+
+    ReceiverSource* source_;
+    unsigned event_mask_;
+    core::nanoseconds_t deadline_;
+    unsigned ret_events_;
+    status::StatusCode result_;
+    core::AtomicBool running_;
+};
+
+// Calls poll() that is expected to return without blocking.
+status::StatusCode poll_immediately(ReceiverSource& source,
+                                    unsigned event_mask,
+                                    unsigned& ret_events,
+                                    core::nanoseconds_t deadline) {
+    const core::nanoseconds_t start = core::timestamp(core::ClockMonotonic);
+
+    const status::StatusCode code = source.poll(event_mask, ret_events, deadline);
+
+    CHECK(core::timestamp(core::ClockMonotonic) - start < MaxImmediate);
+
+    return code;
 }
 
 } // namespace
@@ -4614,6 +4689,245 @@ TEST(receiver_source, pipeline_state) {
             break;
         }
     }
+}
+
+TEST(receiver_source, poll_matching_state) {
+    init_with_defaults();
+
+    ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
+                            packet_pool, packet_buffer_pool, frame_pool,
+                            frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
+
+    CHECK(receiver.has_poll());
+    CHECK(receiver.state() == sndio::DeviceState_Idle);
+
+    const core::nanoseconds_t start = core::timestamp(core::ClockMonotonic);
+
+    unsigned ret_events = 0;
+    LONGS_EQUAL(status::StatusOK,
+                receiver.poll(sndio::DeviceState_Idle, ret_events, NoDeadline));
+    UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Idle, ret_events);
+
+    CHECK(core::timestamp(core::ClockMonotonic) - start < MaxImmediate);
+}
+
+// Empty mask still waits for error conditions.
+TEST(receiver_source, poll_empty_mask) {
+    init_with_defaults();
+
+    ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
+                            packet_pool, packet_buffer_pool, frame_pool,
+                            frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
+
+    PollThread poller;
+    poller.init(receiver, 0, NoDeadline);
+
+    CHECK(poller.start());
+    poller.wait_running();
+    core::sleep_for(core::ClockMonotonic, SettleDelay);
+
+    LONGS_EQUAL(status::StatusOK, receiver.close());
+
+    poller.join();
+
+    LONGS_EQUAL(status::StatusOK, poller.result());
+    UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Closed, poller.ret_events());
+}
+
+TEST(receiver_source, poll_timeout) {
+    init_with_defaults();
+
+    ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
+                            packet_pool, packet_buffer_pool, frame_pool,
+                            frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
+
+    const core::nanoseconds_t deadline =
+        core::timestamp(core::ClockMonotonic) + ShortTimeout;
+
+    unsigned ret_events = 0;
+    LONGS_EQUAL(status::StatusTimeout,
+                receiver.poll(sndio::DeviceState_Active, ret_events, deadline));
+    UNSIGNED_LONGS_EQUAL(0, ret_events);
+
+    CHECK(core::timestamp(core::ClockMonotonic) >= deadline);
+}
+
+// Zero deadline checks the state once and returns immediately, instead of
+// blocking until the mask matches.
+TEST(receiver_source, poll_zero_deadline) {
+    init_with_defaults();
+
+    ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
+                            packet_pool, packet_buffer_pool, frame_pool,
+                            frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
+
+    ReceiverSlot* slot = create_slot(receiver);
+    packet::IWriter* endpoint_writer =
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
+
+    test::PacketWriter packet_writer(arena, *endpoint_writer, encoding_map,
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
+
+    CHECK(receiver.state() == sndio::DeviceState_Idle);
+
+    unsigned ret_events = sndio::DeviceState_Active;
+    LONGS_EQUAL(status::StatusTimeout,
+                poll_immediately(receiver, sndio::DeviceState_Active, ret_events, 0));
+    UNSIGNED_LONGS_EQUAL(0, ret_events);
+
+    LONGS_EQUAL(status::StatusOK,
+                poll_immediately(receiver, sndio::DeviceState_Idle, ret_events, 0));
+    UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Idle, ret_events);
+
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                packet_sample_spec);
+
+    CHECK(receiver.state() == sndio::DeviceState_Active);
+
+    ret_events = sndio::DeviceState_Idle;
+    LONGS_EQUAL(status::StatusTimeout,
+                poll_immediately(receiver, sndio::DeviceState_Idle, ret_events, 0));
+    UNSIGNED_LONGS_EQUAL(0, ret_events);
+
+    LONGS_EQUAL(status::StatusOK,
+                poll_immediately(receiver, sndio::DeviceState_Active, ret_events, 0));
+    UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Active, ret_events);
+}
+
+// Deadline that has already passed behaves like zero deadline.
+TEST(receiver_source, poll_past_deadline) {
+    init_with_defaults();
+
+    ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
+                            packet_pool, packet_buffer_pool, frame_pool,
+                            frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
+
+    CHECK(receiver.state() == sndio::DeviceState_Idle);
+
+    for (int i = 0; i < 2; i++) {
+        const core::nanoseconds_t deadline =
+            (i == 0 ? 1 : core::timestamp(core::ClockMonotonic));
+
+        unsigned ret_events = sndio::DeviceState_Active;
+        LONGS_EQUAL(
+            status::StatusTimeout,
+            poll_immediately(receiver, sndio::DeviceState_Active, ret_events, deadline));
+        UNSIGNED_LONGS_EQUAL(0, ret_events);
+
+        LONGS_EQUAL(
+            status::StatusOK,
+            poll_immediately(receiver, sndio::DeviceState_Idle, ret_events, deadline));
+        UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Idle, ret_events);
+    }
+}
+
+// Broken and Closed are reported even if they were not requested, and even if
+// the deadline doesn't allow to wait.
+TEST(receiver_source, poll_zero_deadline_closed) {
+    init_with_defaults();
+
+    ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
+                            packet_pool, packet_buffer_pool, frame_pool,
+                            frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
+
+    LONGS_EQUAL(status::StatusOK, receiver.close());
+
+    unsigned ret_events = 0;
+    LONGS_EQUAL(status::StatusOK,
+                poll_immediately(receiver, sndio::DeviceState_Active, ret_events, 0));
+    UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Closed, ret_events);
+}
+
+// Pipeline becomes active as soon as a packet arrives, without any read.
+// This is what allows the user to stop reading frames while waiting.
+TEST(receiver_source, poll_wakeup_on_packet) {
+    init_with_defaults();
+
+    ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
+                            packet_pool, packet_buffer_pool, frame_pool,
+                            frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
+
+    ReceiverSlot* slot = create_slot(receiver);
+    packet::IWriter* endpoint_writer =
+        create_transport_endpoint(slot, address::Iface_AudioSource, proto1, dst_addr1);
+
+    test::PacketWriter packet_writer(arena, *endpoint_writer, encoding_map,
+                                     packet_factory, src_id1, src_addr1, dst_addr1,
+                                     PayloadType_Ch2);
+
+    PollThread poller;
+    poller.init(receiver, sndio::DeviceState_Active, NoDeadline);
+
+    CHECK(poller.start());
+    poller.wait_running();
+    core::sleep_for(core::ClockMonotonic, SettleDelay);
+
+    packet_writer.write_packets(Latency / SamplesPerPacket, SamplesPerPacket,
+                                packet_sample_spec);
+
+    poller.join();
+
+    LONGS_EQUAL(status::StatusOK, poller.result());
+    UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Active, poller.ret_events());
+    CHECK(receiver.state() == sndio::DeviceState_Active);
+}
+
+// Waiting for a state that never comes must not hang when pipeline is closed.
+TEST(receiver_source, poll_wakeup_on_close) {
+    init_with_defaults();
+
+    ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
+                            packet_pool, packet_buffer_pool, frame_pool,
+                            frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
+
+    PollThread poller;
+    poller.init(receiver, sndio::DeviceState_Active, NoDeadline);
+
+    CHECK(poller.start());
+    poller.wait_running();
+    core::sleep_for(core::ClockMonotonic, SettleDelay);
+
+    LONGS_EQUAL(status::StatusOK, receiver.close());
+
+    poller.join();
+
+    // Closed is reported even though it was not requested.
+    LONGS_EQUAL(status::StatusOK, poller.result());
+    UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Closed, poller.ret_events());
+}
+
+TEST(receiver_source, poll_closed_state_requested) {
+    init_with_defaults();
+
+    ReceiverSource receiver(make_default_config(), processor_map, encoding_map,
+                            packet_pool, packet_buffer_pool, frame_pool,
+                            frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, receiver.init_status());
+
+    PollThread poller;
+    poller.init(receiver, sndio::DeviceState_Active | sndio::DeviceState_Closed,
+                NoDeadline);
+
+    CHECK(poller.start());
+    poller.wait_running();
+    core::sleep_for(core::ClockMonotonic, SettleDelay);
+
+    LONGS_EQUAL(status::StatusOK, receiver.close());
+
+    poller.join();
+
+    LONGS_EQUAL(status::StatusOK, poller.result());
+    UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Closed, poller.ret_events());
+    CHECK(receiver.state() == sndio::DeviceState_Closed);
 }
 
 } // namespace pipeline

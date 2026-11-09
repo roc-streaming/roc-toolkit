@@ -187,6 +187,19 @@ status::StatusCode SenderLoop::resume() {
     return sink_.resume();
 }
 
+// Deliberately not taking sink_mutex_: poll() blocks for arbitrarily long, and
+// write() holds that mutex, so locking here would stall the frame writer.
+// Polling touches only StateTracker, which is thread-safe on its own.
+bool SenderLoop::has_poll() const {
+    return sink_.has_poll();
+}
+
+status::StatusCode SenderLoop::poll(unsigned event_mask,
+                                    unsigned& ret_events,
+                                    core::nanoseconds_t deadline) {
+    return sink_.poll(event_mask, ret_events, deadline);
+}
+
 bool SenderLoop::has_latency() const {
     core::Mutex::Lock lock(sink_mutex_);
 
@@ -270,13 +283,38 @@ status::StatusCode SenderLoop::process_subframe_imp(audio::Frame& frame,
         return code;
     }
 
-    // TODO(gh-674): handle returned deadline and schedule refresh
     core::nanoseconds_t next_deadline = 0;
 
-    if ((code = sink_.refresh(core::timestamp(core::ClockUnix), &next_deadline))
-        != status::StatusOK) {
+    if ((code = refresh_(next_deadline)) != status::StatusOK) {
         return code;
     }
+
+    set_refresh_deadline(next_deadline);
+
+    return status::StatusOK;
+}
+
+status::StatusCode SenderLoop::process_refresh_imp(core::nanoseconds_t& next_deadline) {
+    return refresh_(next_deadline);
+}
+
+status::StatusCode SenderLoop::refresh_(core::nanoseconds_t& next_deadline) {
+    // Refresh works in unix clock domain and reports next refresh as a delay,
+    // which does not depend on clock domain. Pipeline loop schedules refreshes
+    // in its own clock domain, so convert delay to absolute deadline here.
+    // Both timestamps should be obtained at the same point of time, so that
+    // the deadline does not depend on refresh duration.
+    const core::nanoseconds_t unix_time = core::timestamp(core::ClockUnix);
+    const core::nanoseconds_t loop_time = timestamp_imp();
+
+    core::nanoseconds_t delay = 0;
+
+    const status::StatusCode code = sink_.refresh(unix_time, &delay);
+    if (code != status::StatusOK) {
+        return code;
+    }
+
+    next_deadline = delay == 0 ? 0 : loop_time + delay;
 
     return status::StatusOK;
 }

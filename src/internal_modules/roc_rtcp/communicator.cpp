@@ -17,6 +17,8 @@
 #include "roc_status/code_to_str.h"
 #include "roc_status/status_code.h"
 
+#include <algorithm>
+
 namespace roc {
 namespace rtcp {
 
@@ -329,7 +331,7 @@ void Communicator::process_extended_report_(const XrTraverser& xr) {
     }
 }
 
-core::nanoseconds_t Communicator::generation_deadline(core::nanoseconds_t current_time) {
+core::nanoseconds_t Communicator::generation_delay(core::nanoseconds_t current_time) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     roc_panic_if_msg(current_time <= 0,
@@ -343,7 +345,9 @@ core::nanoseconds_t Communicator::generation_deadline(core::nanoseconds_t curren
         next_deadline_ = current_time;
     }
 
-    return next_deadline_;
+    // Zero is reserved by callers for "no deadline", so overdue or immediate
+    // generation is reported as the smallest positive delay.
+    return std::max<core::nanoseconds_t>(next_deadline_ - current_time, 1);
 }
 
 status::StatusCode Communicator::generate_reports(core::nanoseconds_t current_time) {

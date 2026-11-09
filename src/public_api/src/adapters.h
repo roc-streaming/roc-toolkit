@@ -12,11 +12,14 @@
 #include "roc/config.h"
 #include "roc/log.h"
 #include "roc/metrics.h"
+#include "roc/state.h"
 
 #include "roc_audio/freq_estimator.h"
+#include "roc_core/time.h"
 #include "roc_node/context.h"
 #include "roc_node/receiver.h"
 #include "roc_node/sender.h"
+#include "roc_sndio/device_defs.h"
 
 namespace roc {
 namespace api {
@@ -65,6 +68,13 @@ bool interface_from_user(address::Interface& out, const roc_interface& in);
 
 bool proto_from_user(address::Protocol& out, const roc_protocol& in);
 bool proto_to_user(roc_protocol& out, address::Protocol in);
+
+bool state_mask_from_user(unsigned& out, int in);
+bool state_mask_to_user(int& out, unsigned in);
+bool state_to_user(roc_state& out, sndio::DeviceState in);
+
+//! Convert a positive relative timeout to an absolute ClockMonotonic deadline.
+core::nanoseconds_t deadline_from_timeout(long long timeout);
 
 void receiver_slot_metrics_to_user(const pipeline::ReceiverSlotMetrics& slot_metrics,
                                    void* slot_arg);

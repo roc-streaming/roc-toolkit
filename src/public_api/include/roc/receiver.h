@@ -20,6 +20,7 @@
 #include "roc/frame.h"
 #include "roc/metrics.h"
 #include "roc/platform.h"
+#include "roc/state.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -340,6 +341,72 @@ ROC_API int roc_receiver_query(roc_receiver* receiver,
  *  - returns a negative value if the slot does not exist
  */
 ROC_API int roc_receiver_unlink(roc_receiver* receiver, roc_slot slot);
+
+/** Get current receiver state.
+ *
+ * Retrieves the state of the receiver as a whole, not of an individual slot.
+ *
+ * **Parameters**
+ *  - \p receiver should point to an opened receiver
+ *  - \p result defines where to write the state
+ *
+ * **Returns**
+ *  - returns zero if the state was successfully retrieved
+ *  - returns a negative value if the arguments are invalid
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownership of \p result; it may be safely deallocated
+ *    after the function returns
+ */
+ROC_API int roc_receiver_get_state(roc_receiver* receiver, roc_state* result);
+
+/** Wait until receiver reaches one of the desired states.
+ *
+ * Blocks until the receiver state becomes one of the states from \p events, or until
+ * \p timeout_ns expires. The state of the receiver as a whole is polled, not of an
+ * individual slot.
+ *
+ * \ref ROC_STATE_BROKEN and \ref ROC_STATE_CLOSED are error conditions and are always
+ * awaited and reported, whether they were requested in \p events or not, so that
+ * polling a halted receiver doesn't block forever. Hence, empty \p events means to
+ * wait until the receiver is broken or closed.
+ *
+ * The receiver may be polled from any thread, concurrently with other operations,
+ * including reading frames. Polling never blocks other operations, and polling from
+ * multiple threads with different \p events is allowed. The user may either poll from
+ * a dedicated thread, or use it in the same thread to know when to call
+ * roc_receiver_read() next.
+ *
+ * Typical usage is to stop reading frames and release the audio device when the
+ * receiver becomes \ref ROC_STATE_IDLE, and to acquire it again when the receiver
+ * becomes \ref ROC_STATE_ACTIVE.
+ *
+ * Note that the receiver leaves \ref ROC_STATE_ACTIVE only while the user keeps
+ * calling roc_receiver_read(). If the user stops reading frames, the receiver remains
+ * active. Becoming active, on the other hand, doesn't require reading, so it's safe
+ * to stop reading while waiting for \ref ROC_STATE_ACTIVE.
+ *
+ * **Parameters**
+ *  - \p receiver should point to an opened receiver
+ *  - \p events is a bitmask of zero or more \ref roc_state values to wait for
+ *  - \p ret_events defines where to write the bitmask of the states that actually
+ *    triggered the wakeup (may be NULL); it is set to zero on timeout
+ *  - \p timeout_ns defines maximum waiting time, in nanoseconds; zero means to check
+ *    the state and return immediately; negative value means no timeout
+ *
+ * **Returns**
+ *  - returns one if the receiver reached one of the awaited states
+ *  - returns zero if the timeout expired
+ *  - returns a negative value if the arguments are invalid
+ *
+ * **Ownership**
+ *  - doesn't take or share the ownership of \p ret_events; it may be safely
+ *    deallocated after the function returns
+ */
+ROC_API int roc_receiver_poll(roc_receiver* receiver,
+                              int events,
+                              int* ret_events,
+                              long long timeout_ns);
 
 /** Read samples from the receiver.
  *

@@ -67,6 +67,15 @@ enum StatusCode {
     //!  stream when reading from network.
     StatusFinish,
 
+    //! Deadline expired.
+    //! @remarks
+    //!  Indicates that the awaited condition did not happen until the deadline
+    //!  expired. This is not an error and the operation may be repeated.
+    //! @note
+    //!  Example: we've been waiting for the pipeline to become active, but no
+    //!  packets arrived before the deadline.
+    StatusTimeout,
+
     //! Insufficient memory.
     //! @remarks
     //!  Indicates low memory or reached memory limit.

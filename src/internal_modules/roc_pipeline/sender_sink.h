@@ -71,9 +71,10 @@ public:
     //! @remarks
     //!  Should be invoked before reading each frame.
     //!  If there are no frames for a while, should be invoked no
-    //!  later than the deadline returned via @p next_deadline.
+    //!  later than @p next_delay nanoseconds after @p current_time
+    //!  (zero means that no refresh is needed).
     ROC_NODISCARD status::StatusCode refresh(core::nanoseconds_t current_time,
-                                             core::nanoseconds_t* next_deadline);
+                                             core::nanoseconds_t* next_delay);
 
     //! Get type (sink or source).
     virtual sndio::DeviceType type() const;
@@ -101,6 +102,13 @@ public:
 
     //! Resume sink.
     virtual ROC_NODISCARD status::StatusCode resume();
+
+    //! Check if the sink supports blocking until state change.
+    virtual bool has_poll() const;
+
+    //! Block until sink state becomes one of the states from the mask.
+    virtual ROC_NODISCARD status::StatusCode
+    poll(unsigned event_mask, unsigned& ret_events, core::nanoseconds_t deadline);
 
     //! Check if the sink supports latency reports.
     virtual bool has_latency() const;

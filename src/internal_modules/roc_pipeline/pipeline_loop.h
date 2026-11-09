@@ -149,6 +149,21 @@ struct PipelineLoopConfig {
 //! The pipeline may also cancel the scheduled task processing by invoking
 //! IPipelineTaskScheduler::cancel_task_processing().
 //!
+//! Asynchronous refresh
+//! --------------------
+//!
+//! Besides tasks, pipeline may need to perform periodic maintenance (refresh), which
+//! normally happens when processing a frame. If the user does not read or write frames
+//! for a while, refresh is performed asynchronously, using the same mechanism as for
+//! tasks: subclass reports the refresh deadline via set_refresh_deadline(), pipeline
+//! schedules asynchronous processing for that deadline, and process_tasks() invokes
+//! process_refresh_imp() when the deadline expires.
+//!
+//! Unlike task processing, asynchronous processing scheduled for a refresh which is
+//! still far in future is not cancelled by frame processing. Otherwise every frame
+//! would have to cancel and re-schedule it, which is a lot of pointless work when
+//! frames are small.
+//!
 //! In-place task processing
 //! ------------------------
 //!
@@ -245,7 +260,8 @@ public:
     //! @returns false if the task fails.
     bool schedule_and_wait(PipelineTask& task);
 
-    //! Process some of the enqueued tasks, if any.
+    //! Process some of the enqueued tasks, if any, and refresh pipeline if its
+    //! refresh deadline has expired.
     void process_tasks();
 
 protected:
@@ -311,6 +327,13 @@ protected:
                                 packet::stream_timestamp_t frame_duration,
                                 audio::FrameReadMode mode);
 
+    //! Set deadline when process_refresh_imp() should be invoked next time.
+    //! @remarks
+    //!  Should be called from process_subframe_imp(), which is expected to perform
+    //!  refresh by itself. @p deadline is an absolute timestamp from the same clock
+    //!  domain as timestamp_imp(). Zero means that no refresh is needed.
+    void set_refresh_deadline(core::nanoseconds_t deadline);
+
     //! Get current time.
     virtual core::nanoseconds_t timestamp_imp() const = 0;
 
@@ -322,6 +345,14 @@ protected:
     process_subframe_imp(audio::Frame& frame,
                          packet::stream_timestamp_t frame_duration,
                          audio::FrameReadMode frame_mode) = 0;
+
+    //! Refresh pipeline without reading or writing a frame.
+    //! @remarks
+    //!  Invoked when the deadline passed to set_refresh_deadline() expires and the
+    //!  user did not read or write a frame until then. @p next_deadline should be
+    //!  set just like in set_refresh_deadline().
+    virtual status::StatusCode
+    process_refresh_imp(core::nanoseconds_t& next_deadline) = 0;
 
     //! Process task.
     virtual bool process_task_imp(PipelineTask& task) = 0;
@@ -339,8 +370,10 @@ private:
                                          audio::FrameReadMode frame_mode);
 
     bool schedule_and_maybe_process_task_(PipelineTask& task);
-    bool maybe_process_tasks_();
+    bool maybe_refresh_and_process_tasks_();
+    void maybe_process_refresh_();
 
+    bool need_async_processing_() const;
     void schedule_async_task_processing_();
     void cancel_async_task_processing_();
 
@@ -403,11 +436,20 @@ private:
     // asynchronous processing state
     core::AtomicInt<int32_t> processing_state_;
 
+    // set if asynchronous processing was scheduled only because of refresh deadline
+    bool refresh_only_scheduled_;
+
+    // deadline of the currently scheduled asynchronous processing
+    core::nanoseconds_t scheduled_deadline_;
+
     // tid of last thread that performed frame processing
     core::Seqlock<uint64_t> frame_processing_tid_;
 
     // when next frame is expected to be started
     core::Seqlock<core::nanoseconds_t> next_frame_deadline_;
+
+    // when next refresh should be performed, zero if not needed
+    core::Seqlock<core::nanoseconds_t> next_refresh_deadline_;
 
     // when task processing before next sub-frame ends
     core::nanoseconds_t subframe_tasks_deadline_;

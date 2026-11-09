@@ -12,6 +12,7 @@
 
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/time.h"
 #include "roc_node/receiver.h"
 #include "roc_status/code_to_str.h"
 
@@ -146,6 +147,81 @@ int roc_receiver_unlink(roc_receiver* receiver, roc_slot slot) {
     }
 
     return 0;
+}
+
+int roc_receiver_get_state(roc_receiver* receiver, roc_state* result) {
+    if (!receiver) {
+        roc_log(LogError,
+                "roc_receiver_get_state(): invalid arguments: receiver is null");
+        return -1;
+    }
+
+    if (!result) {
+        roc_log(LogError, "roc_receiver_get_state(): invalid arguments: result is null");
+        return -1;
+    }
+
+    node::Receiver* imp_receiver = (node::Receiver*)receiver;
+
+    if (!api::state_to_user(*result, imp_receiver->get_state())) {
+        roc_log(LogError, "roc_receiver_get_state(): operation failed");
+        return -1;
+    }
+
+    return 0;
+}
+
+int roc_receiver_poll(roc_receiver* receiver,
+                      int events,
+                      int* ret_events,
+                      long long timeout_ns) {
+    if (!receiver) {
+        roc_log(LogError, "roc_receiver_poll(): invalid arguments: receiver is null");
+        return -1;
+    }
+
+    unsigned imp_events = 0;
+    if (!api::state_mask_from_user(imp_events, events)) {
+        roc_log(LogError, "roc_receiver_poll(): invalid arguments: bad events");
+        return -1;
+    }
+
+    node::Receiver* imp_receiver = (node::Receiver*)receiver;
+
+    if (ret_events) {
+        *ret_events = 0;
+    }
+
+    unsigned imp_ret_events = 0;
+
+    // Negative deadline means no deadline, zero deadline means to check the
+    // state once without blocking.
+    core::nanoseconds_t deadline = -1;
+    if (timeout_ns == 0) {
+        deadline = 0;
+    } else if (timeout_ns > 0) {
+        deadline = api::deadline_from_timeout(timeout_ns);
+    }
+
+    const status::StatusCode code =
+        imp_receiver->poll(imp_events, imp_ret_events, deadline);
+
+    if (code != status::StatusOK && code != status::StatusTimeout) {
+        roc_log(LogError, "roc_receiver_poll(): operation failed: status=%s",
+                status::code_to_str(code));
+        return -1;
+    }
+
+    if (imp_ret_events == 0) {
+        return 0;
+    }
+
+    if (ret_events && !api::state_mask_to_user(*ret_events, imp_ret_events)) {
+        roc_log(LogError, "roc_receiver_poll(): operation failed");
+        return -1;
+    }
+
+    return 1;
 }
 
 int roc_receiver_query(roc_receiver* receiver,

@@ -12,6 +12,7 @@
 #include "test_helpers/receiver.h"
 #include "test_helpers/sender.h"
 
+#include "roc_core/macro_helpers.h"
 #include "roc_core/time.h"
 #include "roc_fec/codec_map.h"
 
@@ -963,6 +964,81 @@ TEST(loopback_sender_2_receiver, metrics_connections_slots) {
     }
 
     receiver.stop_and_join();
+    sender.stop_and_join();
+}
+
+// Receiver becomes active when the first packet arrives, even though nobody
+// reads frames from it. This is what allows the user to release the audio
+// device while waiting for a sender to appear.
+TEST(loopback_sender_2_receiver, poll_active_without_reading) {
+    enum {
+        Flags = test::FlagInfinite,
+        SampleRate = 44100,
+        FrameChans = 2,
+        PacketChans = 2
+    };
+
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
+
+    test::Context context;
+
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples, Flags);
+
+    receiver.bind();
+
+    roc_state state = ROC_STATE_BROKEN;
+    LONGS_EQUAL(0, roc_receiver_get_state(receiver.get(), &state));
+    LONGS_EQUAL(ROC_STATE_IDLE, state);
+
+    test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
+                        Flags);
+
+    sender.connect(receiver.source_endpoint(), NULL, NULL);
+
+    CHECK(sender.start());
+
+    int ret_events = 0;
+    LONGS_EQUAL(1, roc_receiver_poll(receiver.get(), ROC_STATE_ACTIVE, &ret_events, -1));
+    LONGS_EQUAL(ROC_STATE_ACTIVE, ret_events);
+
+    LONGS_EQUAL(0, roc_receiver_get_state(receiver.get(), &state));
+    LONGS_EQUAL(ROC_STATE_ACTIVE, state);
+
+    sender.stop_and_join();
+}
+
+// Same as above, but with a huge finite timeout, which must behave like no timeout.
+TEST(loopback_sender_2_receiver, poll_active_huge_timeout) {
+    enum {
+        Flags = test::FlagInfinite,
+        SampleRate = 44100,
+        FrameChans = 2,
+        PacketChans = 2
+    };
+
+    init_config(Flags, SampleRate, FrameChans, PacketChans);
+
+    test::Context context;
+
+    test::Receiver receiver(context, receiver_conf, sample_step, FrameChans,
+                            test::FrameSamples, Flags);
+
+    receiver.bind();
+
+    test::Sender sender(context, sender_conf, sample_step, FrameChans, test::FrameSamples,
+                        Flags);
+
+    sender.connect(receiver.source_endpoint(), NULL, NULL);
+
+    CHECK(sender.start());
+
+    int ret_events = 0;
+    LONGS_EQUAL(1,
+                roc_receiver_poll(receiver.get(), ROC_STATE_ACTIVE, &ret_events,
+                                  ROC_MAX_OF(long long)));
+    LONGS_EQUAL(ROC_STATE_ACTIVE, ret_events);
+
     sender.stop_and_join();
 }
 

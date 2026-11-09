@@ -74,8 +74,9 @@ ReceiverDecoder::~ReceiverDecoder() {
         }
     }
 
-    // Then wait until processing task is fully completed, before
-    // proceeding to its destruction.
+    // Then cancel processing task, which may be scheduled for pipeline refresh,
+    // and wait until it's fully completed, before proceeding to its destruction.
+    context().control_loop().async_cancel(processing_task_);
     context().control_loop().wait(processing_task_);
 }
 

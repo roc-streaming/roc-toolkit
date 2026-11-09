@@ -18,6 +18,7 @@
 #include "roc_packet/fifo_queue.h"
 #include "roc_pipeline/sender_sink.h"
 #include "roc_rtp/encoding_map.h"
+#include "roc_sndio/device_defs.h"
 
 // This file contains tests for SenderSink. SenderSink can be seen as a big
 // composite processor (consisting of chained smaller processors) that transforms
@@ -121,6 +122,29 @@ packet::IWriter* create_control_endpoint(SenderSlot* slot,
 
 void refresh_sink(SenderSink& sender_sink, core::nanoseconds_t refresh_ts) {
     LONGS_EQUAL(status::StatusOK, sender_sink.refresh(refresh_ts, NULL));
+}
+
+// Deadline value that means "block forever".
+const core::nanoseconds_t NoDeadline = -1;
+
+// Deadline offset for tests that expect the deadline to expire.
+const core::nanoseconds_t ShortTimeout = core::Millisecond * 10;
+
+// Upper bound for calls that must not block at all.
+const core::nanoseconds_t MaxImmediate = core::Millisecond * 100;
+
+// Calls poll() that is expected to return without blocking.
+status::StatusCode poll_immediately(SenderSink& sink,
+                                    unsigned event_mask,
+                                    unsigned& ret_events,
+                                    core::nanoseconds_t deadline) {
+    const core::nanoseconds_t start = core::timestamp(core::ClockMonotonic);
+
+    const status::StatusCode code = sink.poll(event_mask, ret_events, deadline);
+
+    CHECK(core::timestamp(core::ClockMonotonic) - start < MaxImmediate);
+
+    return code;
 }
 
 } // namespace
@@ -949,6 +973,209 @@ TEST(sender_sink, reports_two_receivers) {
             n_reports++;
         }
     }
+}
+
+// Delay reported by refresh() is used by pipeline loop to schedule next
+// refresh, so it should always be positive when reported.
+TEST(sender_sink, refresh_delay) {
+    init_with_defaults();
+
+    packet::FifoQueue queue;
+
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
+
+    SenderSlot* slot = create_slot(sender);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
+
+    packet::FifoQueue control_outbound_queue;
+    create_control_endpoint(slot, address::Iface_AudioControl, address::Proto_RTCP,
+                            dst_addr2, control_outbound_queue);
+
+    test::FrameWriter frame_writer(sender, frame_factory);
+
+    const core::nanoseconds_t unix_base = 1000000000000000;
+
+    // no frames were written yet, hence there is nothing to report yet
+    {
+        const core::nanoseconds_t refresh_ts = frame_writer.refresh_ts(unix_base);
+
+        core::nanoseconds_t delay = 0;
+        LONGS_EQUAL(status::StatusOK, sender.refresh(refresh_ts, &delay));
+        LONGS_EQUAL(0, delay);
+    }
+
+    size_t n_delays = 0;
+
+    for (size_t nf = 0; nf < FramesPerPacket * 5; nf++) {
+        frame_writer.write_samples(SamplesPerFrame, input_sample_spec, unix_base);
+
+        const core::nanoseconds_t refresh_ts = frame_writer.refresh_ts();
+
+        core::nanoseconds_t delay = 0;
+        LONGS_EQUAL(status::StatusOK, sender.refresh(refresh_ts, &delay));
+
+        // delay is not reported until sender starts sending packets, but
+        // once it's reported, it should always be positive
+        if (delay != 0) {
+            CHECK(delay > 0);
+            n_delays++;
+        }
+    }
+
+    CHECK(n_delays > 0);
+}
+
+// Sender is idle until a transport endpoint is added, and stays active after
+// that, no matter whether frames are written or not.
+TEST(sender_sink, pipeline_state) {
+    init_with_defaults();
+
+    packet::FifoQueue queue;
+
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
+
+    CHECK(sender.state() == sndio::DeviceState_Idle);
+
+    SenderSlot* slot = create_slot(sender);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
+
+    CHECK(sender.state() == sndio::DeviceState_Active);
+
+    test::FrameWriter frame_writer(sender, frame_factory);
+
+    for (size_t nf = 0; nf < ManyFrames; nf++) {
+        frame_writer.write_samples(SamplesPerFrame, input_sample_spec);
+        refresh_sink(sender, frame_writer.refresh_ts());
+
+        CHECK(sender.state() == sndio::DeviceState_Active);
+    }
+}
+
+TEST(sender_sink, poll_matching_state) {
+    init_with_defaults();
+
+    packet::FifoQueue queue;
+
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
+
+    CHECK(sender.has_poll());
+
+    SenderSlot* slot = create_slot(sender);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
+
+    const core::nanoseconds_t start = core::timestamp(core::ClockMonotonic);
+
+    unsigned ret_events = 0;
+    LONGS_EQUAL(status::StatusOK,
+                sender.poll(sndio::DeviceState_Active, ret_events, NoDeadline));
+    UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Active, ret_events);
+
+    CHECK(core::timestamp(core::ClockMonotonic) - start < MaxImmediate);
+}
+
+TEST(sender_sink, poll_timeout) {
+    init_with_defaults();
+
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
+
+    const core::nanoseconds_t deadline =
+        core::timestamp(core::ClockMonotonic) + ShortTimeout;
+
+    unsigned ret_events = 0;
+    LONGS_EQUAL(status::StatusTimeout,
+                sender.poll(sndio::DeviceState_Active, ret_events, deadline));
+    UNSIGNED_LONGS_EQUAL(0, ret_events);
+
+    CHECK(core::timestamp(core::ClockMonotonic) >= deadline);
+}
+
+// Zero deadline checks the state once and returns immediately, instead of
+// blocking until the mask matches.
+TEST(sender_sink, poll_zero_deadline) {
+    init_with_defaults();
+
+    packet::FifoQueue queue;
+
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
+
+    CHECK(sender.state() == sndio::DeviceState_Idle);
+
+    unsigned ret_events = sndio::DeviceState_Active;
+    LONGS_EQUAL(status::StatusTimeout,
+                poll_immediately(sender, sndio::DeviceState_Active, ret_events, 0));
+    UNSIGNED_LONGS_EQUAL(0, ret_events);
+
+    LONGS_EQUAL(status::StatusOK,
+                poll_immediately(sender, sndio::DeviceState_Idle, ret_events, 0));
+    UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Idle, ret_events);
+
+    SenderSlot* slot = create_slot(sender);
+    create_transport_endpoint(slot, address::Iface_AudioSource, proto, dst_addr1, queue);
+
+    CHECK(sender.state() == sndio::DeviceState_Active);
+
+    ret_events = sndio::DeviceState_Idle;
+    LONGS_EQUAL(status::StatusTimeout,
+                poll_immediately(sender, sndio::DeviceState_Idle, ret_events, 0));
+    UNSIGNED_LONGS_EQUAL(0, ret_events);
+
+    LONGS_EQUAL(status::StatusOK,
+                poll_immediately(sender, sndio::DeviceState_Active, ret_events, 0));
+    UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Active, ret_events);
+}
+
+// Deadline that has already passed behaves like zero deadline.
+TEST(sender_sink, poll_past_deadline) {
+    init_with_defaults();
+
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
+
+    CHECK(sender.state() == sndio::DeviceState_Idle);
+
+    for (int i = 0; i < 2; i++) {
+        const core::nanoseconds_t deadline =
+            (i == 0 ? 1 : core::timestamp(core::ClockMonotonic));
+
+        unsigned ret_events = sndio::DeviceState_Active;
+        LONGS_EQUAL(
+            status::StatusTimeout,
+            poll_immediately(sender, sndio::DeviceState_Active, ret_events, deadline));
+        UNSIGNED_LONGS_EQUAL(0, ret_events);
+
+        LONGS_EQUAL(
+            status::StatusOK,
+            poll_immediately(sender, sndio::DeviceState_Idle, ret_events, deadline));
+        UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Idle, ret_events);
+    }
+}
+
+// Broken and Closed are reported even if they were not requested, and even if
+// the deadline doesn't allow to wait.
+TEST(sender_sink, poll_zero_deadline_closed) {
+    init_with_defaults();
+
+    SenderSink sender(make_config(), processor_map, encoding_map, packet_pool,
+                      packet_buffer_pool, frame_pool, frame_buffer_pool, arena);
+    LONGS_EQUAL(status::StatusOK, sender.init_status());
+
+    LONGS_EQUAL(status::StatusOK, sender.close());
+
+    unsigned ret_events = 0;
+    LONGS_EQUAL(status::StatusOK,
+                poll_immediately(sender, sndio::DeviceState_Active, ret_events, 0));
+    UNSIGNED_LONGS_EQUAL(sndio::DeviceState_Closed, ret_events);
 }
 
 } // namespace pipeline

@@ -150,6 +150,9 @@ private:
     virtual sndio::DeviceState state() const;
     virtual status::StatusCode pause();
     virtual status::StatusCode resume();
+    virtual bool has_poll() const;
+    virtual status::StatusCode
+    poll(unsigned event_mask, unsigned& ret_events, core::nanoseconds_t deadline);
     virtual bool has_latency() const;
     virtual core::nanoseconds_t latency() const;
     virtual bool has_clock() const;
@@ -164,7 +167,10 @@ private:
     virtual status::StatusCode process_subframe_imp(audio::Frame& frame,
                                                     packet::stream_timestamp_t duration,
                                                     audio::FrameReadMode mode);
+    virtual status::StatusCode process_refresh_imp(core::nanoseconds_t& next_deadline);
     virtual bool process_task_imp(PipelineTask&);
+
+    status::StatusCode refresh_(core::nanoseconds_t& next_deadline);
 
     // Methods for tasks
     bool task_create_slot_(Task&);

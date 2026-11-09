@@ -27,6 +27,7 @@
 #include "roc_packet/iwriter.h"
 #include "roc_pipeline/ipipeline_task_scheduler.h"
 #include "roc_pipeline/sender_loop.h"
+#include "roc_sndio/device_defs.h"
 
 namespace roc {
 namespace node {
@@ -82,6 +83,17 @@ public:
 
     //! Check if there are broken slots.
     bool has_broken_slots();
+
+    //! Get current pipeline state.
+    sndio::DeviceState get_state();
+
+    //! Block until pipeline state becomes one of the states from the mask.
+    //! @remarks
+    //!  @p deadline is an absolute timestamp in ClockMonotonic domain;
+    //!  negative deadline means no deadline, zero (or past) deadline means
+    //!  to check the state once and return immediately.
+    ROC_NODISCARD status::StatusCode
+    poll(unsigned event_mask, unsigned& ret_events, core::nanoseconds_t deadline);
 
     //! Write frame.
     //! @remarks

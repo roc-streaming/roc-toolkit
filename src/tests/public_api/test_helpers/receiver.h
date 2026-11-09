@@ -139,6 +139,10 @@ public:
         return source_endp_[slot];
     }
 
+    roc_receiver* get() {
+        return recv_;
+    }
+
     const roc_endpoint* repair_endpoint(roc_slot slot = ROC_SLOT_DEFAULT) const {
         CHECK(repair_endp_[slot]);
         return repair_endp_[slot];

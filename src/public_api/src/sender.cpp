@@ -12,6 +12,7 @@
 
 #include "roc_core/log.h"
 #include "roc_core/scoped_ptr.h"
+#include "roc_core/time.h"
 #include "roc_node/sender.h"
 #include "roc_status/code_to_str.h"
 
@@ -174,6 +175,80 @@ int roc_sender_unlink(roc_sender* sender, roc_slot slot) {
     }
 
     return 0;
+}
+
+int roc_sender_get_state(roc_sender* sender, roc_state* result) {
+    if (!sender) {
+        roc_log(LogError, "roc_sender_get_state(): invalid arguments: sender is null");
+        return -1;
+    }
+
+    if (!result) {
+        roc_log(LogError, "roc_sender_get_state(): invalid arguments: result is null");
+        return -1;
+    }
+
+    node::Sender* imp_sender = (node::Sender*)sender;
+
+    if (!api::state_to_user(*result, imp_sender->get_state())) {
+        roc_log(LogError, "roc_sender_get_state(): operation failed");
+        return -1;
+    }
+
+    return 0;
+}
+
+int roc_sender_poll(roc_sender* sender,
+                    int events,
+                    int* ret_events,
+                    long long timeout_ns) {
+    if (!sender) {
+        roc_log(LogError, "roc_sender_poll(): invalid arguments: sender is null");
+        return -1;
+    }
+
+    unsigned imp_events = 0;
+    if (!api::state_mask_from_user(imp_events, events)) {
+        roc_log(LogError, "roc_sender_poll(): invalid arguments: bad events");
+        return -1;
+    }
+
+    node::Sender* imp_sender = (node::Sender*)sender;
+
+    if (ret_events) {
+        *ret_events = 0;
+    }
+
+    unsigned imp_ret_events = 0;
+
+    // Negative deadline means no deadline, zero deadline means to check the
+    // state once without blocking.
+    core::nanoseconds_t deadline = -1;
+    if (timeout_ns == 0) {
+        deadline = 0;
+    } else if (timeout_ns > 0) {
+        deadline = api::deadline_from_timeout(timeout_ns);
+    }
+
+    const status::StatusCode code =
+        imp_sender->poll(imp_events, imp_ret_events, deadline);
+
+    if (code != status::StatusOK && code != status::StatusTimeout) {
+        roc_log(LogError, "roc_sender_poll(): operation failed: status=%s",
+                status::code_to_str(code));
+        return -1;
+    }
+
+    if (imp_ret_events == 0) {
+        return 0;
+    }
+
+    if (ret_events && !api::state_mask_to_user(*ret_events, imp_ret_events)) {
+        roc_log(LogError, "roc_sender_poll(): operation failed");
+        return -1;
+    }
+
+    return 1;
 }
 
 int roc_sender_write(roc_sender* sender, const roc_frame* frame) {

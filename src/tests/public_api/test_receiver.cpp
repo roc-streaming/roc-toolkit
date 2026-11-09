@@ -616,5 +616,103 @@ TEST(receiver, read_args) {
     LONGS_EQUAL(0, roc_receiver_close(receiver));
 }
 
+TEST(receiver, get_state) {
+    roc_receiver* receiver = NULL;
+    CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+    CHECK(receiver);
+
+    roc_state state = ROC_STATE_BROKEN;
+    LONGS_EQUAL(0, roc_receiver_get_state(receiver, &state));
+    LONGS_EQUAL(ROC_STATE_IDLE, state);
+
+    LONGS_EQUAL(-1, roc_receiver_get_state(NULL, &state));
+    LONGS_EQUAL(-1, roc_receiver_get_state(receiver, NULL));
+
+    LONGS_EQUAL(0, roc_receiver_close(receiver));
+}
+
+TEST(receiver, poll_bad_args) {
+    roc_receiver* receiver = NULL;
+    CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+    CHECK(receiver);
+
+    int ret_events = 0;
+
+    LONGS_EQUAL(-1, roc_receiver_poll(NULL, ROC_STATE_IDLE, &ret_events, 0));
+    LONGS_EQUAL(-1, roc_receiver_poll(receiver, 1 << 20, &ret_events, 0));
+    LONGS_EQUAL(-1,
+                roc_receiver_poll(receiver, ROC_STATE_IDLE | (1 << 20), &ret_events, 0));
+    LONGS_EQUAL(-1, roc_receiver_poll(receiver, -1, &ret_events, 0));
+
+    LONGS_EQUAL(0, roc_receiver_close(receiver));
+}
+
+// Zero timeout checks the state without blocking.
+TEST(receiver, poll_no_timeout) {
+    roc_receiver* receiver = NULL;
+    CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+    CHECK(receiver);
+
+    int ret_events = 0;
+
+    LONGS_EQUAL(1, roc_receiver_poll(receiver, ROC_STATE_IDLE, &ret_events, 0));
+    LONGS_EQUAL(ROC_STATE_IDLE, ret_events);
+
+    LONGS_EQUAL(
+        1,
+        roc_receiver_poll(receiver, ROC_STATE_IDLE | ROC_STATE_ACTIVE, &ret_events, 0));
+    LONGS_EQUAL(ROC_STATE_IDLE, ret_events);
+
+    LONGS_EQUAL(0, roc_receiver_poll(receiver, ROC_STATE_ACTIVE, &ret_events, 0));
+    LONGS_EQUAL(0, ret_events);
+
+    // ret_events is optional.
+    LONGS_EQUAL(1, roc_receiver_poll(receiver, ROC_STATE_IDLE, NULL, 0));
+
+    LONGS_EQUAL(0, roc_receiver_close(receiver));
+}
+
+TEST(receiver, poll_matching_state) {
+    roc_receiver* receiver = NULL;
+    CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+    CHECK(receiver);
+
+    int ret_events = 0;
+
+    LONGS_EQUAL(1, roc_receiver_poll(receiver, ROC_STATE_IDLE, &ret_events, -1));
+    LONGS_EQUAL(ROC_STATE_IDLE, ret_events);
+
+    LONGS_EQUAL(0, roc_receiver_close(receiver));
+}
+
+TEST(receiver, poll_timeout) {
+    roc_receiver* receiver = NULL;
+    CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+    CHECK(receiver);
+
+    int ret_events = ROC_STATE_ACTIVE;
+
+    LONGS_EQUAL(0, roc_receiver_poll(receiver, ROC_STATE_ACTIVE, &ret_events, 10000000));
+    LONGS_EQUAL(0, ret_events);
+
+    LONGS_EQUAL(0, roc_receiver_close(receiver));
+}
+
+// Huge timeout must not overflow when converted to deadline.
+TEST(receiver, poll_huge_timeout) {
+    roc_receiver* receiver = NULL;
+    CHECK(roc_receiver_open(context, &receiver_config, &receiver) == 0);
+    CHECK(receiver);
+
+    int ret_events = 0;
+
+    LONGS_EQUAL(
+        1,
+        roc_receiver_poll(receiver, ROC_STATE_IDLE, &ret_events, ROC_MAX_OF(long long)));
+    LONGS_EQUAL(ROC_STATE_IDLE, ret_events);
+
+    LONGS_EQUAL(0, roc_receiver_close(receiver));
+}
+
 } // namespace api
 } // namespace roc

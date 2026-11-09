@@ -159,6 +159,15 @@ ReceiverEndpoint::ReceiverEndpoint(address::Protocol proto,
     init_status_ = status::StatusOK;
 }
 
+ReceiverEndpoint::~ReceiverEndpoint() {
+    // Packets that were written to the endpoint, but never pulled into the pipeline,
+    // are still registered in state tracker. Unregister them, otherwise the tracker
+    // would report pipeline as active forever.
+    while (inbound_queue_.pop_front_exclusive()) {
+        state_tracker_.unregister_packet();
+    }
+}
+
 status::StatusCode ReceiverEndpoint::init_status() const {
     return init_status_;
 }

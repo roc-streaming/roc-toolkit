@@ -142,7 +142,7 @@ size_t SenderSink::num_sessions() const {
 }
 
 status::StatusCode SenderSink::refresh(core::nanoseconds_t current_time,
-                                       core::nanoseconds_t* next_deadline) {
+                                       core::nanoseconds_t* next_delay) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (!state_tracker_.is_usable()) {
@@ -156,9 +156,9 @@ status::StatusCode SenderSink::refresh(core::nanoseconds_t current_time,
 
     for (core::SharedPtr<SenderSlot> slot = slots_.front(); slot;
          slot = slots_.nextof(*slot)) {
-        core::nanoseconds_t slot_deadline = 0;
+        core::nanoseconds_t slot_delay = 0;
 
-        const status::StatusCode code = slot->refresh(current_time, slot_deadline);
+        const status::StatusCode code = slot->refresh(current_time, slot_delay);
         if (code != status::StatusOK) {
             roc_log(LogError, "sender sink: failed to refresh slot: status=%s",
                     status::code_to_str(code));
@@ -166,10 +166,9 @@ status::StatusCode SenderSink::refresh(core::nanoseconds_t current_time,
             return code;
         }
 
-        if (next_deadline && slot_deadline != 0) {
-            *next_deadline = *next_deadline == 0
-                ? slot_deadline
-                : std::min(*next_deadline, slot_deadline);
+        if (next_delay && slot_delay != 0) {
+            *next_delay =
+                *next_delay == 0 ? slot_delay : std::min(*next_delay, slot_delay);
         }
     }
 
@@ -219,6 +218,27 @@ status::StatusCode SenderSink::resume() {
 
     if (!state_tracker_.is_usable()) {
         return status::StatusBadState;
+    }
+
+    return status::StatusOK;
+}
+
+bool SenderSink::has_poll() const {
+    return true;
+}
+
+status::StatusCode SenderSink::poll(unsigned event_mask,
+                                    unsigned& ret_events,
+                                    core::nanoseconds_t deadline) {
+    roc_panic_if(init_status_ != status::StatusOK);
+
+    // Halted pipeline never changes state again, so wake up on it even if the
+    // caller didn't ask for it, instead of blocking forever.
+    const unsigned wait_mask =
+        event_mask | sndio::DeviceState_Broken | sndio::DeviceState_Closed;
+
+    if (!state_tracker_.wait_state(wait_mask, ret_events, deadline)) {
+        return status::StatusTimeout;
     }
 
     return status::StatusOK;

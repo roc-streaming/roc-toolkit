@@ -106,6 +106,11 @@ private:
         return status::StatusOK;
     }
 
+    virtual status::StatusCode process_refresh_imp(core::nanoseconds_t& next_deadline) {
+        next_deadline = 0;
+        return status::StatusOK;
+    }
+
     virtual bool process_task_imp(PipelineTask& task) {
         return true;
     }

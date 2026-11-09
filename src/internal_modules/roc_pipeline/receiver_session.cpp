@@ -288,7 +288,7 @@ audio::IFrameReader& ReceiverSession::frame_reader() {
 }
 
 status::StatusCode ReceiverSession::refresh(core::nanoseconds_t current_time,
-                                            core::nanoseconds_t& next_deadline) {
+                                            core::nanoseconds_t& next_delay) {
     roc_panic_if(init_status_ != status::StatusOK);
 
     if (fail_status_ != status::NoStatus) {

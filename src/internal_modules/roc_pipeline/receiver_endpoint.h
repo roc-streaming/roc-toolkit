@@ -52,6 +52,8 @@ public:
                      packet::IWriter* outbound_writer,
                      core::IArena& arena);
 
+    ~ReceiverEndpoint();
+
     //! Check if the pipeline was successfully constructed.
     status::StatusCode init_status() const;
 

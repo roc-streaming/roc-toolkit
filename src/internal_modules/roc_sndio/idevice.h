@@ -99,6 +99,43 @@ public:
     //!  Makes sense only if has_state() is true.
     virtual ROC_NODISCARD status::StatusCode resume();
 
+    //! Check if the device supports blocking until state change.
+    //! @remarks
+    //!  If true, poll() can be used to wait until state becomes one of
+    //!  the desired states.
+    virtual bool has_poll() const = 0;
+
+    //! Block until device state becomes one of the states from the mask.
+    //! @remarks
+    //!  @p event_mask is a combination of DeviceState values to wait for, e.g.
+    //!  DeviceState_Active | DeviceState_Idle.
+    //!
+    //!  DeviceState_Broken and DeviceState_Closed are always awaited, whether
+    //!  requested or not, so that polling a halted device doesn't block forever.
+    //!  Hence empty mask means to wait until the device is broken or closed.
+    //!
+    //!  @p ret_events is set to the states that actually triggered the wakeup.
+    //!  It is always non-empty when StatusOK is returned, and may contain
+    //!  states that were not requested.
+    //!
+    //!  @p deadline is an absolute timestamp in ClockMonotonic domain.
+    //!  Negative deadline means no deadline: the method blocks until the
+    //!  mask matches, however long that takes. Zero deadline, or any deadline
+    //!  in the past, means to check the state once and return immediately.
+    //!
+    //!  Device may be polled from any thread, concurrently with each other and
+    //!  with I/O. Polling never blocks I/O.
+    //! @returns
+    //!  - status::StatusOK if any of the awaited states was reached
+    //!  - status::StatusTimeout if the deadline expired
+    //! @note
+    //!  Remember that device state may be outdated immediately after this
+    //!  method returns.
+    //! @note
+    //!  Makes sense only if has_poll() is true.
+    virtual ROC_NODISCARD status::StatusCode
+    poll(unsigned event_mask, unsigned& ret_events, core::nanoseconds_t deadline);
+
     //! Check if the device supports latency reports.
     //! @remarks
     //!  If true, latency() returns meaningful values.
