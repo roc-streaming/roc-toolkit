@@ -27,10 +27,6 @@ const core::nanoseconds_t ReportInterval = 10 * core::Second;
 // 40ms or 20ms, and sometimes even 10ms
 const core::nanoseconds_t DefaultLatency = core::Millisecond * 60;
 
-// 10ms is rather high, but works well even on cheap sound cards and CPUs.
-// Usually you can use much lower values.
-const core::nanoseconds_t DefaultFrameLength = 10 * core::Millisecond;
-
 const core::nanoseconds_t MinTimeout = core::Millisecond * 50;
 const core::nanoseconds_t MaxTimeout = core::Second * 2;
 

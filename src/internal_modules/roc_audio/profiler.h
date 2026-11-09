@@ -21,6 +21,7 @@
 #include "roc_core/rate_limiter.h"
 #include "roc_core/time.h"
 #include "roc_packet/units.h"
+#include "roc_sndio/io_config.h"
 #include "roc_status/code_to_str.h"
 
 namespace roc {
@@ -32,7 +33,7 @@ struct ProfilerConfig {
     //! Default Initialization.
     ProfilerConfig()
         : profiling_interval(core::Second)
-        , chunk_duration(10 * core::Millisecond) {
+        , chunk_duration(sndio::DefaultFrameLength) {
     }
 
     //! Override Initialization.

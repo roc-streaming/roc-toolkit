@@ -20,6 +20,15 @@
 namespace roc {
 namespace sndio {
 
+namespace {
+
+//! Default duration of a frame. 10ms is rather high,
+//! but works well even on cheap sound cards and CPUs.
+//! Usually you can use much lower values.
+const core::nanoseconds_t DefaultFrameLength = 10 * core::Millisecond;
+
+} // namespace
+
 //! Sink and source config.
 struct IoConfig {
     //! Sample spec
