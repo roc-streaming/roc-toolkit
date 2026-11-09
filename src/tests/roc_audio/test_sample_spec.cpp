@@ -471,7 +471,7 @@ TEST(sample_spec, parse_format) {
     }
 }
 
-IGNORE_TEST(sample_spec, parse_channels) {
+TEST(sample_spec, parse_channels) {
     { // surround stereo
         SampleSpec sample_spec;
         CHECK(parse_sample_spec("pcm@s16/48000/stereo", sample_spec));
