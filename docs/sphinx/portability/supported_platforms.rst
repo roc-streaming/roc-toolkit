@@ -55,9 +55,8 @@ Android versions:
 
 macOS versions:
 
+* macOS 26 (Tahoe)
 * macOS 15 (Sequoia)
-* macOS 14 (Sonoma)
-* macOS 13 (Ventura)
 
 Hardware architectures:
 

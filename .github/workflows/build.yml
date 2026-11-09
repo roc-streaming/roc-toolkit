@@ -448,11 +448,6 @@ jobs:
             image: macos-15-intel
             script: standard-build
 
-          - macos-arch: arm64
-            macos-version: 14
-            image: macos-14
-            script: standard-build
-
     runs-on: ${{ matrix.image }}
 
     name: macos${{ matrix.macos-version }}-${{ matrix.macos-arch }}/${{ matrix.script }}
