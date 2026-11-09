@@ -30,7 +30,7 @@ concurrency:
 jobs:
 
   linux-x86_64:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     strategy:
       fail-fast: false
@@ -92,7 +92,7 @@ jobs:
           scripts/ci_checks/failure.sh
 
   linux-arm:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     strategy:
       fail-fast: false
@@ -139,7 +139,7 @@ jobs:
           scripts/ci_checks/failure.sh
 
   linux-mips:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     strategy:
       fail-fast: false
@@ -171,7 +171,7 @@ jobs:
           scripts/ci_checks/failure.sh
 
   linux-checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     strategy:
       fail-fast: false
@@ -254,7 +254,7 @@ jobs:
           - toolchain: i686-linux-android29
             ndk: ndk21
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     name: android-linux-${{ matrix.ndk }}/${{ matrix.toolchain }}
     steps:
@@ -360,7 +360,7 @@ jobs:
             ndk: 21.4.7075529
             cmake: 3.10.2.4988404
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     env:
       ABI: ${{ matrix.abi }}
