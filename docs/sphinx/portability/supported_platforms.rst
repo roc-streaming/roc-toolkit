@@ -20,7 +20,7 @@ Operating systems:
 Compilers:
 
 * GCC (>= 4.8)
-* Clang (>= 3.4)
+* Clang (>= 3.5)
 
 Libc:
 
@@ -37,7 +37,7 @@ The following specific platform configurations are tested on a regular basis, pa
 
 Linux distributions:
 
-* Ubuntu (24.04, 22.04, 20.04, 18.04, 16.04, 14.04)
+* Ubuntu (26.04, 24.04, 22.04, 20.04, 18.04, 16.04)
 * Debian (stable)
 * Fedora (latest)
 * CentOS (latest)

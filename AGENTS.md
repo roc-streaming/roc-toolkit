@@ -148,7 +148,7 @@ When you need to know any of the things listed below, read the corresponding pag
 Build and portability docs
 --------------------------
 
-When you change user-facing build options, required dependency versions, supported platforms, CI coverage, and things like that, check these pages and update them if necessary:
+When you change user-facing build options, required dependency versions, supported platforms, CI coverage, and things like that, check these pages and update them in the same change, without asking separately:
 
 - `docs/sphinx/building/scons_options.rst`
 - `docs/sphinx/building/dependencies.rst`

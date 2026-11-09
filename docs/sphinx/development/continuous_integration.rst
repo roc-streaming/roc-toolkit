@@ -8,9 +8,9 @@ Continuous integration
 Overview
 ========
 
-GitHub Actions are configured to build ``master`` and ``develop`` branches and pull requests.
+GitHub Actions are configured to build ``master``, ``develop``, and ``feature/*`` branches, release tags, and pull requests. The build also runs weekly and can be started manually on any branch.
 
-GitHub Actions build Roc for Linux and macOS. Linux worker uses Docker to run builds on several Linux distros. Linux worker also uses QEMU to run cross-compiled tests.
+GitHub Actions build Roc for Linux, macOS, and Android. Linux worker uses Docker to run builds on several Linux distros. Linux worker also uses QEMU to run cross-compiled tests, and Android emulator to run Android tests.
 
 Docker images for continuous integration and cross-compilation are built using GitHub actions and pushed to Docker Hub. They are based on official upstream images, adding pre-installed packages required for our build. Dockerfiles for images are hosted in a separate GitHub repository.
 
@@ -28,22 +28,23 @@ The following Docker images are used on our CI builds.
 Linux native
 ------------
 
-=================================== ===================== ============= ==================================
+=================================== ===================== ============= ====================================
 Image                               Base image            Architecture  Compilers
-=================================== ===================== ============= ==================================
-rocstreaming/env-ubuntu:24.04       ubuntu:24.04          x86_64        gcc-14, gcc-13, clang-19, clang-16
+=================================== ===================== ============= ====================================
+rocstreaming/env-ubuntu:26.04       ubuntu:26.04          x86_64        gcc-15, clang-21
+rocstreaming/env-ubuntu:24.04       ubuntu:24.04          x86_64        gcc-13, clang-19, clang-16, clang-14
 rocstreaming/env-ubuntu:22.04       ubuntu:22.04          x86_64        gcc-11, clang-14
 rocstreaming/env-ubuntu:20.04       ubuntu:20.04          x86_64        gcc-9, clang-10
 rocstreaming/env-ubuntu:18.04       ubuntu:18.04          x86_64        gcc-7, clang-6
-rocstreaming/env-ubuntu:16.04       ubuntu:16.04          x86_64        gcc-5, clang-3.8
-rocstreaming/env-ubuntu:14.04       ubuntu:14.04          x86_64        gcc-4.8, clang-3.4
+rocstreaming/env-ubuntu:16.04       ubuntu:16.04          x86_64        gcc-5, gcc-4.8, clang-3.8, clang-3.5
+rocstreaming/env-ubuntu:latest      ubuntu:26.04          x86_64        distro default
 rocstreaming/env-ubuntu:nolibs      ubuntu:latest         x86_64        distro default
 rocstreaming/env-debian             debian:stable         x86_64        distro default
 rocstreaming/env-fedora             fedora:latest         x86_64        distro default
 rocstreaming/env-opensuse           opensuse/leap:latest  x86_64        distro default
 rocstreaming/env-archlinux          archlinux/base:latest x86_64        distro default
 rocstreaming/env-alpine             alpine:latest         x86_64        distro default
-=================================== ===================== ============= ==================================
+=================================== ===================== ============= ====================================
 
 Linux toolchains
 ----------------
@@ -91,7 +92,7 @@ Each image directory contains one or several dockerfiles and ``images.csv`` file
 
 This file defines what tags to build, path to dockerfile and build arguments for each tag. Build arguments are passed as ARGs to ``docker build``.
 
-If the value in the first column is left empty, it defaults to ``Dockerfile`` is in the same directory as ``images.csv``. If the value in the last column is omitted, it defaults to the name of the directory which contains Dockerfile, e.g. if Dockerfile path is ``14.04/Dockerfile``, then tag defaults to ``14.04``.
+If the value in the first column is left empty, it defaults to ``Dockerfile`` is in the same directory as ``images.csv``. If the value in the last column is omitted, it defaults to the name of the directory which contains Dockerfile, e.g. if Dockerfile path is ``24.04/Dockerfile``, then tag defaults to ``24.04``.
 
 Example:
 

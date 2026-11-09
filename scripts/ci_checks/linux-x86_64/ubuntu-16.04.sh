@@ -2,7 +2,7 @@
 
 set -euxo pipefail
 
-for comp in gcc-5 clang-3.8
+for comp in gcc-4.8 gcc-5 clang-3.5 clang-3.8
 do
     scons -Q \
           --enable-werror \
