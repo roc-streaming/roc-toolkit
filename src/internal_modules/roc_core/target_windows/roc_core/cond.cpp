@@ -7,6 +7,7 @@
  */
 
 #include "roc_core/cond.h"
+#include "roc_core/errno_to_str.h"
 #include "roc_core/panic.h"
 
 namespace roc {
@@ -34,7 +35,8 @@ bool Cond::timed_wait(nanoseconds_t timeout) const {
         if (err == ERROR_TIMEOUT || err == WAIT_TIMEOUT) {
             return false;
         }
-        roc_panic("cond: SleepConditionVariableCS(): error %lu", error);
+        roc_panic("cond: SleepConditionVariableCS(): %s",
+                  core::errno_to_str((int)err).c_str());
     }
 
     return true;
@@ -42,8 +44,7 @@ bool Cond::timed_wait(nanoseconds_t timeout) const {
 
 void Cond::wait() const {
     if (!SleepConditionVariableCS(&cond_, &mutex_, INFINITE)) {
-        DWORD error = GetLastError();
-        roc_panic("cond: SleepConditionVariableCS(): error %lu", error);
+        roc_panic("cond: SleepConditionVariableCS(): %s", core::errno_to_str().c_str());
     }
 }
 

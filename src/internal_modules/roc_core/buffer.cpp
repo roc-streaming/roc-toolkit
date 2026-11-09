@@ -18,7 +18,7 @@ Buffer::Buffer(IPool& buffer_pool, size_t buffer_size)
     roc_panic_if_msg(sizeof(Buffer) + buffer_size != buffer_pool.object_size(),
                      "buffer: attempt to create buffer with wrong size:"
                      " requested=%lu expected=%lu",
-                     (unsigned long)sizeof(Buffer) + buffer_size,
+                     (unsigned long)(sizeof(Buffer) + buffer_size),
                      (unsigned long)buffer_pool.object_size());
 
     new (data_) uint8_t[size_];

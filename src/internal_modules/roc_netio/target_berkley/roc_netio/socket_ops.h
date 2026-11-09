@@ -48,10 +48,24 @@ enum SocketError {
 };
 
 //! Platform-specific socket handle.
+#ifndef ROC_TARGET_WINDOWS
 typedef int SocketHandle;
+#else
+typedef SOCKET SocketHandle;
+#endif
 
 //! Invalid socket handle.
+#ifndef ROC_TARGET_WINDOWS
 const SocketHandle SocketInvalid = -1;
+#else
+const SocketHandle SocketInvalid = INVALID_SOCKET;
+#endif
+
+//! Initialize environment for socket functions.
+ROC_NODISCARD bool socket_init();
+
+//! Cleans socket functions environment.
+ROC_NODISCARD bool socket_deinit();
 
 //! Create non-blocking socket.
 ROC_NODISCARD bool

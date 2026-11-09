@@ -1253,7 +1253,7 @@ if __name__ == '__main__':
     elif ctx.pkg_name == 'libatomic_ops':
         download(
             ctx,
-            'https://github.com/ivmai/libatomic_ops/releases/download/'
+            'https://github.com/bdwgc/libatomic_ops/releases/download/'
                 'v{ctx.pkg_ver}/libatomic_ops-{ctx.pkg_ver}.tar.gz',
             'libatomic_ops-{ctx.pkg_ver}.tar.gz')
         unpack(ctx,
@@ -1326,7 +1326,8 @@ if __name__ == '__main__':
             setattr(ctx, 'res_dir', 'bin/Release')
         download(
             ctx,
-            'https://github.com/roc-streaming/openfec/archive/v{ctx.pkg_ver}.tar.gz',
+            #'https://github.com/roc-streaming/openfec/archive/v{ctx.pkg_ver}.tar.gz',
+            'https://www.jmd-tech.com/public/openfec-mgw-v{ctx.pkg_ver}.tar.gz',
             'openfec_v{ctx.pkg_ver}.tar.gz')
         unpack(ctx,
                'openfec_v{ctx.pkg_ver}.tar.gz',
