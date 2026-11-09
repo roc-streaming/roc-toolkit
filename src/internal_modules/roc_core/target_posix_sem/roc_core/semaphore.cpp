@@ -38,12 +38,12 @@ bool Semaphore::timed_wait(nanoseconds_t deadline) {
         roc_panic("semaphore: unexpected negative deadline");
     }
 
-    for (;;) {
-        timespec ts;
-        ts.tv_sec = long(deadline / Second);
-        ts.tv_nsec = long(deadline % Second);
+    timespec ts;
+    ts.tv_sec = long(deadline / Second);
+    ts.tv_nsec = long(deadline % Second);
 
-        if (sem_timedwait(&sem_, &ts) == 0) {
+    for (;;) {
+        if (sem_clockwait(&sem_, CLOCK_MONOTONIC, &ts) == 0) {
             return true;
         }
 
@@ -52,7 +52,7 @@ bool Semaphore::timed_wait(nanoseconds_t deadline) {
         }
 
         if (errno != EINTR) {
-            roc_panic("semaphore: sem_wait(): %s", errno_to_str().c_str());
+            roc_panic("semaphore: sem_clockwait(): %s", errno_to_str().c_str());
         }
     }
 }

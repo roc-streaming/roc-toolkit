@@ -180,6 +180,35 @@ def CheckCompilerOptionSupported(context, opt, language):
         context.Result('no')
         return False
 
+def CheckSemClockwait(context):
+    context.Message("Checking for sem_clockwait() ... ")
+
+    src = textwrap.dedent("""
+        #ifndef _GNU_SOURCE
+        #define _GNU_SOURCE
+        #endif
+        #include <semaphore.h>
+        #include <time.h>
+
+        int main() {
+            sem_t sem;
+            timespec ts;
+            return sem_clockwait(&sem, CLOCK_MONOTONIC, &ts);
+        }
+    """)
+
+    env = context.env
+    saved_linkflags = list(env.get('LINKFLAGS', []))
+
+    env.Append(LINKFLAGS=['-pthread'])
+    try:
+        ok = bool(context.TryLink(src, '.cpp'))
+    finally:
+        env.Replace(LINKFLAGS=saved_linkflags)
+
+    context.Result(ok)
+    return ok
+
 def FindProgram(context, var, tool):
     if tool:
         context.Message("Searching {} executable ... ".format(var))
@@ -538,6 +567,7 @@ def init(env):
         'CheckProg': CheckProg,
         'CheckCanRunProgs': CheckCanRunProgs,
         'CheckCompilerOptionSupported': CheckCompilerOptionSupported,
+        'CheckSemClockwait': CheckSemClockwait,
         'FindProgram': FindProgram,
         'FindTool': FindTool,
         'FindClangFormat': FindClangFormat,
