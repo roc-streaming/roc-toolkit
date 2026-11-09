@@ -106,6 +106,27 @@ TEST(composer, align_outer_header) {
           == 0);
 }
 
+TEST(composer, align_bad_buffer) {
+    enum { Alignment = 8, SliceStart = 96, OuterHeader = 3 };
+
+    core::BufferPtr buffer = packet_factory.new_packet_buffer();
+    CHECK(buffer);
+
+    core::Slice<uint8_t> slice(*buffer, SliceStart, BufferSize);
+    CHECK(slice);
+
+    UNSIGNED_LONGS_EQUAL(BufferSize - SliceStart, slice.size());
+    UNSIGNED_LONGS_EQUAL(BufferSize - SliceStart, slice.capacity());
+
+    CHECK(core::AlignOps::pad_as(sizeof(RS8M_PayloadID) + OuterHeader, Alignment)
+          > slice.size());
+    CHECK(((unsigned long)slice.data() + sizeof(RS8M_PayloadID) + OuterHeader) % Alignment
+          != 0);
+
+    Composer<RS8M_PayloadID, Source, Header> composer(NULL, arena);
+    LONGS_EQUAL(status::StatusBadBuffer, composer.align(slice, OuterHeader, Alignment));
+}
+
 TEST(composer, packet_size) {
     enum { Alignment = 8, PayloadSize = 10 };
 
@@ -125,6 +146,16 @@ TEST(composer, packet_size) {
     LONGS_EQUAL(status::StatusOK, composer.compose(*packet));
 
     UNSIGNED_LONGS_EQUAL(sizeof(RS8M_PayloadID) + PayloadSize, packet->buffer().size());
+}
+TEST(composer, padding) {
+    enum { Padding = 8 };
+
+    packet::PacketPtr packet = packet_factory.new_packet();
+    CHECK(packet);
+
+    Composer<RS8M_PayloadID, Source, Header> composer(NULL, arena);
+
+    LONGS_EQUAL(status::StatusBadOperation, composer.pad(*packet, Padding));
 }
 
 } // namespace fec
