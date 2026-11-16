@@ -17,20 +17,15 @@ namespace roc {
 namespace packet {
 
 DelayedReader::DelayedReader(IReader& reader,
-                             core::nanoseconds_t target_delay,
                              const audio::SampleSpec& sample_spec)
     : reader_(reader)
     , queue_(0)
-    , delay_(0)
     , started_(false)
     , sample_spec_(sample_spec)
     , valid_(false) {
-    if (target_delay > 0) {
-        delay_ = sample_spec.ns_2_stream_timestamp(target_delay);
-    }
 
-    roc_log(LogDebug, "delayed reader: initializing: delay=%lu(%.3fms)",
-            (unsigned long)delay_, sample_spec_.stream_timestamp_2_ms(delay_));
+    roc_log(LogDebug, "delayed reader: initializing: started=%d",
+            (bool)started_);
 
     valid_ = true;
 }
@@ -41,7 +36,6 @@ bool DelayedReader::is_valid() const {
 
 status::StatusCode DelayedReader::read(PacketPtr& ptr) {
     roc_panic_if(!valid_);
-
     if (!started_) {
         const status::StatusCode code = fetch_packets_();
         if (code != status::StatusOK) {
@@ -75,14 +69,14 @@ status::StatusCode DelayedReader::fetch_packets_() {
     }
 
     const stream_timestamp_t qs = queue_size_();
-    if (qs < delay_) {
+    if (!is_started()) {
         return status::StatusNoData;
     }
 
     roc_log(LogDebug,
             "delayed reader: initial queue:"
-            " delay=%lu(%.3fms) queue=%lu(%.3fms) packets=%lu",
-            (unsigned long)delay_, sample_spec_.stream_timestamp_2_ms(delay_),
+            " started=%d queue=%lu(%.3fms) packets=%lu",
+            (bool)started_,
             (unsigned long)qs, sample_spec_.stream_timestamp_2_ms(qs),
             (unsigned long)queue_.size());
 
@@ -99,7 +93,7 @@ status::StatusCode DelayedReader::read_queued_packet_(PacketPtr& pp) {
         }
 
         const stream_timestamp_t new_qs = queue_size_();
-        if (new_qs < delay_) {
+        if (!is_started()) {
             break;
         }
 
@@ -109,8 +103,8 @@ status::StatusCode DelayedReader::read_queued_packet_(PacketPtr& pp) {
     if (qs != 0) {
         roc_log(LogDebug,
                 "delayed reader: trimmed queue:"
-                " delay=%lu(%.3fms) queue=%lu(%.3fms) packets=%lu",
-                (unsigned long)delay_, sample_spec_.stream_timestamp_2_ms(delay_),
+                " started=%dqueue=%lu(%.3fms) packets=%lu",
+                (bool)started_,
                 (unsigned long)qs, sample_spec_.stream_timestamp_2_ms(qs),
                 (unsigned long)(queue_.size() + 1));
     }
@@ -134,6 +128,14 @@ stream_timestamp_t DelayedReader::queue_size_() const {
     }
 
     return (stream_timestamp_t)qs;
+}
+
+void DelayedReader::start() {
+    started_ = true;
+}
+
+bool DelayedReader::is_started() const {
+    return started_;
 }
 
 } // namespace packet

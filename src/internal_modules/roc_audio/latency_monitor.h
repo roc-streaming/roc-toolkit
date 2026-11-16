@@ -22,7 +22,9 @@
 #include "roc_core/noncopyable.h"
 #include "roc_core/optional.h"
 #include "roc_core/time.h"
+#include "roc_packet/delayed_reader.h"
 #include "roc_packet/ilink_meter.h"
+#include "roc_packet/ireader.h"
 #include "roc_packet/sorted_queue.h"
 #include "roc_packet/units.h"
 
@@ -67,7 +69,8 @@ public:
                    ResamplerReader* resampler,
                    const LatencyConfig& config,
                    const SampleSpec& packet_sample_spec,
-                   const SampleSpec& frame_sample_spec);
+                   const SampleSpec& frame_sample_spec,
+                   packet::DelayedReader& delayed_reader);
 
     //! Check if the object was initialized successfully.
     bool is_valid() const;
@@ -123,6 +126,8 @@ private:
 
     bool alive_;
     bool valid_;
+
+    packet::DelayedReader& delayed_reader_;
 };
 
 } // namespace audio
