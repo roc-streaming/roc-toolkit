@@ -52,6 +52,60 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
         return false;
     }
 
+    // Derive packet_length from packet_mtu if packet_length was not explicitly set.
+    // We use the encoding's sample spec to compute how many samples fit in the MTU.
+    core::nanoseconds_t effective_packet_length = sink_config_.packet_length;
+    if (sink_config_.packet_mtu > 0 && sink_config_.packet_length == 0) {
+        const size_t rtp_header_size = 64; // conservative RTP+FEC header estimate
+        if (sink_config_.packet_mtu > rtp_header_size) {
+            const size_t payload_bytes = sink_config_.packet_mtu - rtp_header_size;
+            // bytes -> samples per channel (PCM s16 = 2 bytes per sample per channel)
+            const size_t bytes_per_sample =
+                pkt_encoding->sample_spec.stream_timestamp_2_bytes(1);
+            const size_t samples_per_chan =
+                bytes_per_sample > 0 ? payload_bytes / bytes_per_sample : 0;
+            if (samples_per_chan > 0) {
+                effective_packet_length =
+                    pkt_encoding->sample_spec.samples_per_chan_2_ns(samples_per_chan);
+            }
+        }
+        if (effective_packet_length <= 0) {
+            roc_log(LogError,
+                    "sender session: can't derive packet length from mtu=%lu,"
+                    " mtu is too small",
+                    (unsigned long)sink_config_.packet_mtu);
+            return false;
+        }
+        roc_log(LogDebug,
+                "sender session: derived packet_length=%.3fms from packet_mtu=%lu",
+                (double)effective_packet_length / core::Millisecond,
+                (unsigned long)sink_config_.packet_mtu);
+    } else if (sink_config_.packet_length == 0) {
+        effective_packet_length = DefaultPacketLength;
+    }
+    // If both are set, warn and pick the smaller one.
+    if (sink_config_.packet_mtu > 0 && sink_config_.packet_length > 0) {
+        const size_t rtp_header_size = 64;
+        if (sink_config_.packet_mtu > rtp_header_size) {
+            const size_t payload_bytes = sink_config_.packet_mtu - rtp_header_size;
+            const size_t bytes_per_sample =
+                pkt_encoding->sample_spec.stream_timestamp_2_bytes(1);
+            const size_t samples_per_chan =
+                bytes_per_sample > 0 ? payload_bytes / bytes_per_sample : 0;
+            if (samples_per_chan > 0) {
+                const core::nanoseconds_t mtu_length =
+                    pkt_encoding->sample_spec.samples_per_chan_2_ns(samples_per_chan);
+                if (mtu_length < effective_packet_length) {
+                    roc_log(LogWarn,
+                            "sender session: both --packet-len and --packet-mtu set;"
+                            " using smaller value derived from mtu=%.3fms",
+                            (double)mtu_length / core::Millisecond);
+                    effective_packet_length = mtu_length;
+                }
+            }
+        }
+    }
+
     // First part of pipeline: chained packet writers from packetizer to endpoint.
     // Packetizer writes packet to this pipeline, and it the end it writes
     // packets into endpoint outbound writers.
@@ -133,7 +187,7 @@ bool SenderSession::create_transport_pipeline(SenderEndpoint* source_endpoint,
 
         packetizer_.reset(new (packetizer_) audio::Packetizer(
             *pkt_writer, source_endpoint->outbound_composer(), *sequencer_,
-            *payload_encoder_, packet_factory_, sink_config_.packet_length, in_spec));
+            *payload_encoder_, packet_factory_, effective_packet_length, in_spec));
         if (!packetizer_ || !packetizer_->is_valid()) {
             return false;
         }

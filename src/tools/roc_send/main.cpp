@@ -20,6 +20,7 @@
 #include "roc_node/context.h"
 #include "roc_node/sender.h"
 #include "roc_pipeline/sender_sink.h"
+#include "roc_rtp/encoding.h"
 #include "roc_sndio/backend_dispatcher.h"
 #include "roc_sndio/backend_map.h"
 #include "roc_sndio/print_supported.h"
@@ -111,6 +112,31 @@ int main(int argc, char** argv) {
             roc_log(LogError, "invalid --packet-len: should be > 0");
             return 1;
         }
+    }
+
+    if (args.packet_mtu_given) {
+        if (!core::parse_size(args.packet_mtu_arg, sender_config.packet_mtu)) {
+            roc_log(LogError, "invalid --packet-mtu: bad format");
+            return 1;
+        }
+        if (sender_config.packet_mtu == 0) {
+            roc_log(LogError, "invalid --packet-mtu: should be > 0");
+            return 1;
+        }
+        // Signal to the pipeline to derive packet_length from MTU.
+        if (!args.packet_len_given) {
+            sender_config.packet_length = 0;
+        }
+    }
+
+    if (args.packet_encoding_given) {
+        rtp::Encoding enc;
+        if (!rtp::parse_encoding(args.packet_encoding_arg, enc)) {
+            roc_log(LogError, "invalid --packet-encoding: bad format,"
+                              " expected PT:FORMAT/RATE/CHANNELS, e.g. 96:s16/48000/stereo");
+            return 1;
+        }
+        sender_config.payload_type = enc.payload_type;
     }
 
     if (args.source_given) {
@@ -266,6 +292,23 @@ int main(int argc, char** argv) {
     if (!context.is_valid()) {
         roc_log(LogError, "can't initialize node context");
         return 1;
+    }
+
+    if (args.packet_encoding_given) {
+        rtp::Encoding enc;
+        if (!rtp::parse_encoding(args.packet_encoding_arg, enc)) {
+            roc_log(LogError, "invalid --packet-encoding");
+            return 1;
+        }
+        // Only register if it's not a built-in payload type.
+        if (!context.encoding_map().find_by_pt(enc.payload_type)) {
+            if (!context.encoding_map().add_encoding(enc)) {
+                roc_log(LogError,
+                        "can't register --packet-encoding: payload type %u already exists",
+                        enc.payload_type);
+                return 1;
+            }
+        }
     }
 
     sndio::BackendDispatcher backend_dispatcher(context.arena());

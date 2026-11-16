@@ -66,7 +66,13 @@ struct SenderSinkConfig {
     unsigned payload_type;
 
     //! Packet length, in nanoseconds.
+    //! If zero and packet_mtu is set, derived automatically from packet_mtu.
     core::nanoseconds_t packet_length;
+
+    //! Maximum packet size (MTU), in bytes.
+    //! When non-zero and packet_length is zero, packet_length is auto-derived
+    //! so that the resulting packet fits within this MTU.
+    size_t packet_mtu;
 
     //! FEC writer parameters.
     fec::WriterConfig fec_writer;
